@@ -12,54 +12,108 @@ Entregar o primeiro Protótipo Zero de **Taijifu Masters**, validando movimento,
 
 Os índices Tai/Ji/Fu são derivados dos atributos da build e não substituem a habilidade do jogador.
 
-## Escopo implementado nesta fundação
+## Implementado
+
+### Fundação
 
 - Projeto Godot 4 inicializado.
 - Dois lutadores locais provisórios.
 - Atributos: força, defesa, agilidade, resistência, técnica, controle, percepção e foco.
 - Índices derivados Tai, Ji e Fu.
-- Presets Bastão Adaptativo e Rocha Guardiã.
-- Movimento horizontal, salto variável, coyote time, buffer de salto, queda rápida e esquiva.
 - Vida, postura e fôlego.
-- Golpe leve, empurrão provisório, defesa e knockback.
-- Arena com rotas Tai, Ji e Fu.
+- Câmera dinâmica e reinício rápido de rodada.
+
+### Preparação de batalha
+
+- Tela de preparação antes do confronto.
+- Quatro builds selecionáveis:
+  - Bastão Adaptativo;
+  - Fluxo Aéreo;
+  - Rocha Guardiã;
+  - Quebra-Fundação.
+- Resumo tático por build.
+- Técnicas preparadas em slots Tai, Ji e Fu.
+- Peso, atributos e especialização alterando movimento, resistência e impacto.
+
+### Movimento
+
+- Movimento horizontal com aceleração e desaceleração.
+- Salto variável.
+- Coyote time.
+- Buffer de salto.
+- Queda rápida.
+- Esquiva terrestre.
+- Recuperação aérea limitada a um uso por permanência no ar.
+- Wall slide.
+- Wall jump.
+
+### Combate orientado a dados
+
+- `TechniqueData` como recurso independente.
+- Catálogo inicial de técnicas Tai, Ji e Fu.
+- Fases de preparação, atividade e recuperação.
+- Hitbox configurada por técnica.
+- Custo de fôlego por técnica.
+- Dano e dano de postura separados.
+- Multiplicadores derivados do caminho da build.
+- Seleção contextual:
+  - corrida e ar favorecem Tai;
+  - curta distância e varredura favorecem Ji;
+  - builds adaptativas favorecem Fu.
+- Defesa frontal.
+- Janela de aparo perfeito.
+- Recuo do atacante após aparo.
+- Resistência de knockback derivada da build.
+
+### Arena
+
+- Rotas superiores Tai.
+- Corredores inferiores Ji.
+- Plataformas centrais Fu.
 - Plataforma móvel.
 - Manifestações do Fluxo contestáveis.
-- Câmera dinâmica para dois jogadores.
-- HUD técnico do protótipo.
+- Navegação horizontal e vertical.
 
-## Rotas da arena
+## Técnicas iniciais
 
-### Rota superior — Tai
+### Tai
 
-Espaços abertos, plataformas distantes, saltos e risco de queda.
+- Passo Longo.
+- Arco Ascendente.
 
-### Rota inferior — Ji
+### Ji
 
-Corredores, paredes, curta distância e controle de posição.
+- Gancho de Centro.
+- Varredura de Base.
+- Empurrão de Fundação.
 
-### Rota central — Fu
+### Fu
 
-Plataformas de transição, mudanças de altura e manifestações.
+- Golpe de Transição.
+- Reversão do Fluxo.
 
 ## Próximas entregas
 
-1. Separar golpes em dados externos.
-2. Implementar hitboxes por fase e regiões de hurtbox.
-3. Diferenciar golpe, empurrão e agarrão.
-4. Adicionar wall jump, ledge grab e recuperação aérea.
-5. Criar tela de preparo de batalha.
-6. Implementar slots Tai/Ji/Fu.
-7. Adicionar quatro elementos básicos.
-8. Implementar desarmamento e espólio temporário.
-9. Criar Observação Marcial.
-10. Adicionar fechamento lateral dos setores.
+1. Criar regiões de hurtbox.
+2. Diferenciar empurrão, agarrão e lançamento.
+3. Adicionar ledge grab.
+4. Implementar quatro elementos básicos.
+5. Criar vantagens e consequências ambientais dos elementos.
+6. Implementar desarmamento e espólio temporário.
+7. Criar Observação Marcial.
+8. Adicionar fechamento lateral dos setores.
+9. Externalizar técnicas para arquivos `.tres` após validação do catálogo.
+10. Integrar animações e eventos visuais às fases lógicas.
 
 ## Critérios de validação do Protótipo Zero
 
 - Dois jogadores conseguem jogar localmente.
+- A preparação de batalha altera perceptivelmente o comportamento.
 - Movimento responde sem estados presos.
-- Builds apresentam velocidade, postura e índices distintos.
+- Wall jump e recuperação aérea não garantem retorno infinito.
+- Tai, Ji e Fu produzem alcances e riscos diferentes.
+- A defesa não substitui aparo e movimentação.
+- Técnicas apresentam preparação e recuperação puníveis.
 - As três rotas oferecem vantagens situacionais diferentes.
 - Manifestações geram disputa territorial.
 - Perder uma rodada possui causa compreensível.
