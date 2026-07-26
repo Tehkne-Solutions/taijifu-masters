@@ -2,15 +2,16 @@ class_name VariantLoadoutRuntime
 extends Node
 
 @onready var hud: CanvasLayer = get_node("../HUD")
+@onready var master_training_runtime: MasterTrainingRuntime = get_node("../MasterTrainingRuntime")
 
-var ledger := MasterTrainingLedger.new()
+var ledger: MasterTrainingLedger
 var _connected_fighters: Dictionary = {}
 var _status_label: Label
 var _refresh_timer := 0.0
 var _feedback := ""
 
 func _ready() -> void:
-	ledger.load_from_disk()
+	ledger = master_training_runtime.ledger
 	_register_key_action(&"p1_variant_prev", KEY_Z)
 	_register_key_action(&"p1_variant_next", KEY_X)
 	_register_key_action(&"p2_variant_prev", KEY_KP_8)
@@ -86,7 +87,7 @@ func _create_status_label() -> void:
 	_update_status_label()
 
 func _update_status_label() -> void:
-	if not is_instance_valid(_status_label):
+	if not is_instance_valid(_status_label) or ledger == null:
 		return
 	var p1_variant := ledger.selected_variant("p1")
 	var p2_variant := ledger.selected_variant("p2")
@@ -112,4 +113,5 @@ func _register_key_action(action_id: StringName, physical_keycode: Key) -> void:
 	InputMap.action_add_event(action_id, event)
 
 func _exit_tree() -> void:
-	ledger.save_to_disk()
+	if ledger != null:
+		ledger.save_to_disk()
