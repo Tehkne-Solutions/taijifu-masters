@@ -19,10 +19,13 @@ A implementação atual valida:
 - técnicas orientadas a dados com fases de startup, atividade e recuperação;
 - caminhos Tai, Ji e Fu;
 - hurtboxes de cabeça, tronco e pernas;
-- agarrões e projeções direcionais;
+- agarrões, projeções direcionais e fuga ativa;
+- disputa de controle baseada em Ji, Fu, Controle, Técnica e fôlego;
 - desarmamento por pressão acumulada;
 - armas temporárias coletáveis;
 - ecos de técnica utilizáveis uma vez;
+- Observação Marcial persistente em sete estágios;
+- telemetria de rotas, técnicas, elementos, agarrões e resultados;
 - vida, postura, fôlego e resistência a knockback;
 - arena horizontal e vertical;
 - fechamento lateral em quatro fases;
@@ -67,7 +70,7 @@ A implementação atual valida:
 - `Q`: esquiva;
 - `F`: técnica contextual;
 - `G`: empurrão de Fundação;
-- `E`: agarrão Ji;
+- `E`: agarrão Ji ou reforço de controle;
 - `C`: técnica elemental preparada;
 - `H`: executar eco de técnica;
 - `R`: defender e aparar.
@@ -80,10 +83,58 @@ A implementação atual valida:
 - `Num 0`: esquiva;
 - `Num 1`: técnica contextual;
 - `Num 2`: empurrão de Fundação;
-- `Num 4`: agarrão Ji;
+- `Num 4`: agarrão Ji ou reforço de controle;
 - `Num 6`: técnica elemental preparada;
 - `Num 5`: executar eco de técnica;
 - `Num 3`: defender e aparar.
+
+## Fuga ativa de agarrões
+
+Durante um agarrão, o alvo pode:
+
+- alternar esquerda e direita para gerar progresso de fuga;
+- usar esquiva para uma tentativa forte que consome fôlego;
+- usar ataque ou defesa para ganhos menores;
+- aproveitar um índice Fu elevado para escapar com maior eficiência.
+
+O agarrador pode pressionar novamente o comando de agarrão para gastar fôlego e reduzir o progresso do alvo. Ji e Controle aumentam a dificuldade da fuga.
+
+## Observação Marcial
+
+O conhecimento de uma técnica evolui por ações reais:
+
+1. vista;
+2. reconhecida;
+3. compreendida;
+4. defendida;
+5. reproduzida;
+6. adaptada;
+7. dominada.
+
+Ver repetidamente ajuda apenas nos primeiros estágios. Para avançar, o jogador precisa defender, aparar, reproduzir o eco e adaptar a técnica em combate.
+
+O registro é salvo em:
+
+```text
+user://martial_observation.json
+```
+
+## Telemetria do protótipo
+
+Cada rodada registra:
+
+- tempo nas rotas Tai, Ji e Fu;
+- técnicas utilizadas e enfrentadas;
+- elementos conjurados;
+- interações elementais;
+- agarrões iniciados, concluídos e escapados;
+- resultado e duração.
+
+Os relatórios são gravados em:
+
+```text
+user://telemetry/taijifu_<sessão>.json
+```
 
 ## Elementos
 
@@ -127,6 +178,7 @@ A borda causa pressão intervalada, move a câmera e nunca deve causar dano a ca
 - Builds mudam possibilidades, não garantem vitória.
 - Atributos devem alterar comportamento, não apenas números.
 - Elementos geram estados e decisões, não dano gratuito.
+- Conhecimento exige observação, defesa, reprodução e adaptação.
 - Itens da arena geram disputa territorial, não vantagem gratuita.
 - Espólios são temporários no núcleo competitivo.
 - A arte permanece provisória até a validação da jogabilidade.
@@ -137,15 +189,15 @@ A borda causa pressão intervalada, move a câmera e nunca deve causar dano a ca
 - [`docs/PROTOTYPE-ZERO-TEST-PLAN.md`](docs/PROTOTYPE-ZERO-TEST-PLAN.md)
 - [`docs/COMBAT-REGIONAL-GRAPPLE-LOOT.md`](docs/COMBAT-REGIONAL-GRAPPLE-LOOT.md)
 - [`docs/ELEMENTS-MOVING-ARENA.md`](docs/ELEMENTS-MOVING-ARENA.md)
+- [`docs/MARTIAL-OBSERVATION-GRAB-TELEMETRY.md`](docs/MARTIAL-OBSERVATION-GRAB-TELEMETRY.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ## Próxima implementação
 
-- Observação Marcial persistente;
-- fuga e disputa ativa de agarrões;
-- armas com kits técnicos próprios;
+- kits técnicos próprios por arma;
 - bot de teste;
-- telemetria de rotas e elementos;
+- relatório visual de telemetria;
+- combinação entre Observação Marcial, mestres e treinamento;
 - arte e animações provisórias mais expressivas.
 
 ---

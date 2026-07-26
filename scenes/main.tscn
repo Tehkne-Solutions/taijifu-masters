@@ -1,13 +1,17 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
+[ext_resource type="Script" path="res://scripts/runtime/prototype_intelligence_runtime.gd" id="3_runtime"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
 [node name="Arena" type="Node2D" parent="."]
 script = ExtResource("2_arena")
+
+[node name="PrototypeIntelligenceRuntime" type="Node" parent="."]
+script = ExtResource("3_runtime")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 430)
@@ -45,12 +49,23 @@ vertical_alignment = 1
 
 [node name="CenterInfo" type="Label" parent="HUD"]
 offset_left = 425.0
-offset_top = 20.0
+offset_top = 12.0
 offset_right = 855.0
-offset_bottom = 158.0
+offset_bottom = 134.0
 theme_override_colors/font_color = Color(0.95, 0.87, 0.53, 1)
 theme_override_font_sizes/font_size = 20
 text = "TAIJIFU MASTERS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="KnowledgeInfo" type="Label" parent="HUD"]
+offset_left = 390.0
+offset_top = 136.0
+offset_right = 890.0
+offset_bottom = 168.0
+theme_override_colors/font_color = Color(0.64, 0.86, 1, 0.96)
+theme_override_font_sizes/font_size = 11
+text = "OBSERVAÇÃO MARCIAL"
 horizontal_alignment = 1
 vertical_alignment = 1
 
