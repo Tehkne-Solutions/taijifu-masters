@@ -10,11 +10,15 @@ A implementação atual valida:
 
 - dois jogadores locais ou P1 contra bot tático;
 - preparação com quatro builds e quatro elementos;
+- arma principal e secundária por build;
+- troca manual com custo e recuperação vulnerável;
+- terceiro slot temporário para arma roubada;
 - kits técnicos definidos pela arma realmente equipada;
-- Bastão Adaptativo e Manoplas Sísmicas;
-- troca imediata de repertório ao roubar uma arma;
+- domínio persistente separado por arma;
+- Bastão Adaptativo, Faixas do Vento e Manoplas Sísmicas;
 - quatro dificuldades de IA;
 - quatro personalidades de IA;
+- troca tática de arma pelo bot;
 - navegação por pontos estratégicos Tai, Ji e Fu;
 - objetivos de engajar, controlar, transicionar, disputar e escapar;
 - prevenção contra bloqueio de navegação;
@@ -32,10 +36,10 @@ A implementação atual valida:
 
 ## Tecnologia
 
-- Godot 4.3+
-- GDScript
-- simulação a 60 Hz
-- primeiro alvo: Windows e Linux
+- Godot 4.3+;
+- GDScript;
+- simulação a 60 Hz;
+- primeiro alvo: Windows e Linux.
 
 ## Executar
 
@@ -80,7 +84,8 @@ O P2 começa controlado pelo bot.
 - `E`: agarrão Ji ou reforço de controle;
 - `C`: técnica elemental;
 - `H`: executar eco;
-- `R`: defender e aparar.
+- `R`: defender e aparar;
+- `V`: trocar arma principal, secundária ou espólio.
 
 ### Jogador 2 local
 
@@ -93,7 +98,57 @@ O P2 começa controlado pelo bot.
 - `Num 4`: agarrão ou reforço;
 - `Num 6`: técnica elemental;
 - `Num 5`: executar eco;
-- `Num 3`: defender e aparar.
+- `Num 3`: defender e aparar;
+- `Num 7`: trocar arma principal, secundária ou espólio.
+
+## Arma principal, secundária e espólio
+
+Cada build possui dois slots originais.
+
+A troca:
+
+- custa 8 de fôlego;
+- exige que o lutador esteja no chão;
+- aplica 0,32 segundo de recuperação;
+- não pode ocorrer durante ataque, esquiva, defesa ou agarrão;
+- altera imediatamente o repertório contextual.
+
+Quando uma arma é derrubada, apenas aquele slot fica indisponível. O jogador ainda pode usar outro slot preservado.
+
+Uma arma adversária coletada ocupa temporariamente um terceiro slot de espólio. Os equipamentos originais retornam no início da rodada seguinte.
+
+## Domínio de arma
+
+O domínio é separado por jogador e arma.
+
+Estágios:
+
+1. Desconhecida;
+2. Familiar;
+3. Treinada;
+4. Proficiente;
+5. Dominada;
+6. Lendária.
+
+A progressão considera:
+
+- técnicas do kit utilizadas;
+- acertos;
+- contatos bloqueados, aparados ou evadidos;
+- aparos realizados;
+- trocas;
+- acertos logo após a troca;
+- desarmamentos sofridos.
+
+Magias e ações genéricas não aumentam domínio da arma.
+
+O registro é salvo em:
+
+```text
+user://weapon_mastery.json
+```
+
+Nesta etapa, domínio não concede bônus oculto de dano, vida ou defesa. Ele prepara a integração futura com mestres, treinamentos e variações técnicas.
 
 ## Kits técnicos
 
@@ -117,52 +172,27 @@ Prioriza alcance, varredura e redirecionamento Fu.
 
 Priorizam entrada pesada, postura e desarmamento.
 
+### Faixas do Vento
+
+Priorizam movimento aéreo, aproximações Tai, esquiva e mudança de nível.
+
 ## Dificuldades do bot
 
-### Aprendiz
+- **Aprendiz:** reação lenta, hesitações e defesa inconsistente;
+- **Discípulo:** nível padrão e erros legíveis;
+- **Adepto:** decisões frequentes e melhor leitura;
+- **Mestre:** alta consistência, mantendo atraso mínimo e as mesmas regras físicas.
 
-- reação lenta;
-- mais hesitações;
-- defesa inconsistente;
-- menor eficiência em fuga e navegação.
-
-### Discípulo
-
-- nível padrão;
-- comportamento equilibrado;
-- erros legíveis.
-
-### Adepto
-
-- decisões mais frequentes;
-- defesa consistente;
-- menos erros táticos.
-
-### Mestre
-
-- maior consistência e leitura;
-- atraso mínimo preservado;
-- nenhuma vantagem de dano, vida, fôlego ou atributos.
+Nenhuma dificuldade recebe bônus de dano, vida, fôlego ou atributos.
 
 ## Personalidades do bot
 
-### Agressivo
+- **Agressivo:** contato Ji, agarrões e pressão;
+- **Guardião:** defesa, território e recuperação;
+- **Técnico:** Fu, transições e adaptação;
+- **Caótico:** elementos, manifestações e variação de rotas.
 
-Busca contato Ji, agarrões e pressão contínua.
-
-### Guardião
-
-Prioriza defesa, controle territorial e recuperação de postura.
-
-### Técnico
-
-Prioriza Fu, transições, leitura e adaptação. É o perfil padrão.
-
-### Caótico
-
-Usa mais elementos, manifestações e mudanças de rota, sem ignorar ameaças imediatas.
-
-O bot utiliza as mesmas ações, custos, técnicas, recursos e colisões dos jogadores. Ele observa apenas estados legíveis da luta e nunca lê diretamente o botão pressionado pelo adversário.
+O bot pode trocar de arma conforme alcance, personalidade e disponibilidade dos slots. A troca usa o mesmo custo e a mesma recuperação dos jogadores.
 
 ## Pontos estratégicos
 
@@ -203,15 +233,7 @@ user://martial_observation.json
 
 ## Telemetria e dashboard
 
-Cada rodada registra:
-
-- ocupação Tai, Ji e Fu;
-- técnicas;
-- respostas defensivas;
-- elementos;
-- interações;
-- agarrões e fugas;
-- vencedor e duração.
+Cada rodada registra ocupação Tai/Ji/Fu, técnicas, respostas defensivas, elementos, agarrões, fugas, vencedor e duração.
 
 `F2` abre o relatório visual. O JSON completo é gravado em:
 
@@ -234,26 +256,17 @@ O heatmap acumula células de permanência separadas para P1 e P2 e marca pontos
 user://telemetry/heatmap_<sessão>.json
 ```
 
-## Espólio do protótipo
-
-- armas derrubadas são temporárias;
-- o antigo dono não pode recolher imediatamente o próprio item;
-- a primeira quebra de postura pode liberar um eco;
-- o eco é consumido após uma execução;
-- itens originais retornam na rodada seguinte;
-- não existe perda persistente de inventário.
-
 ## Princípios do protótipo
 
 - técnica e leitura permanecem decisivas;
 - builds mudam possibilidades, não garantem vitória;
 - atributos alteram comportamento, não apenas números;
-- armas mudam repertório e risco;
-- dificuldade altera consistência, não poder oculto;
-- personalidade altera prioridades, não regras;
+- armas mudam repertório, distância e risco;
+- troca de arma cria vulnerabilidade real;
+- domínio registra experiência, não poder oculto;
+- dificuldade altera consistência, não regras;
+- personalidade altera prioridades, não vantagens;
 - elementos geram estados e decisões;
-- pontos estratégicos orientam, mas não aprisionam a IA;
-- conhecimento exige observação, defesa, reprodução e adaptação;
 - espólios são temporários no núcleo competitivo.
 
 ## Documentação
@@ -266,14 +279,15 @@ user://telemetry/heatmap_<sessão>.json
 - [`docs/WEAPON-KITS-TACTICAL-BOT.md`](docs/WEAPON-KITS-TACTICAL-BOT.md)
 - [`docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md`](docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md)
 - [`docs/BOT-DIFFICULTY-PERSONALITY-HEATMAP.md`](docs/BOT-DIFFICULTY-PERSONALITY-HEATMAP.md)
+- [`docs/SECONDARY-WEAPON-MASTERY.md`](docs/SECONDARY-WEAPON-MASTERY.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ## Próxima implementação
 
-- arma secundária e troca manual;
-- domínio de arma baseado em uso real;
-- integração entre Observação Marcial, mestres e treinamento;
+- integração entre domínio, mestres e treinamento;
+- técnicas variantes liberadas por domínio;
 - comparação de heatmaps entre sessões;
+- exportação visual para playtests;
 - arte e animações provisórias mais expressivas.
 
 ---
