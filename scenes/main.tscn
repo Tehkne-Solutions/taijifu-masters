@@ -18,46 +18,56 @@ position_smoothing_enabled = false
 
 [node name="TopShade" type="ColorRect" parent="HUD"]
 offset_right = 1280.0
-offset_bottom = 112.0
+offset_bottom = 148.0
 mouse_filter = 2
-color = Color(0.018, 0.023, 0.035, 0.84)
+color = Color(0.018, 0.023, 0.035, 0.88)
 
 [node name="PlayerOne" type="Label" parent="HUD"]
 offset_left = 22.0
-offset_top = 16.0
-offset_right = 410.0
-offset_bottom = 104.0
+offset_top = 12.0
+offset_right = 425.0
+offset_bottom = 140.0
 theme_override_colors/font_color = Color(0.66, 0.87, 1, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
 text = "P1"
+vertical_alignment = 1
 
 [node name="PlayerTwo" type="Label" parent="HUD"]
-offset_left = 870.0
-offset_top = 16.0
+offset_left = 855.0
+offset_top = 12.0
 offset_right = 1258.0
-offset_bottom = 104.0
+offset_bottom = 140.0
 theme_override_colors/font_color = Color(1, 0.72, 0.62, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
 text = "P2"
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="CenterInfo" type="Label" parent="HUD"]
-offset_left = 430.0
+offset_left = 425.0
 offset_top = 20.0
-offset_right = 850.0
-offset_bottom = 92.0
+offset_right = 855.0
+offset_bottom = 132.0
 theme_override_colors/font_color = Color(0.95, 0.87, 0.53, 1)
-theme_override_font_sizes/font_size = 21
+theme_override_font_sizes/font_size = 20
 text = "TAIJIFU MASTERS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="BottomShade" type="ColorRect" parent="HUD"]
+offset_top = 654.0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.018, 0.023, 0.035, 0.8)
+
 [node name="Controls" type="Label" parent="HUD"]
 offset_left = 20.0
-offset_top = 665.0
+offset_top = 661.0
 offset_right = 1260.0
-offset_bottom = 708.0
-theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 0.9)
+offset_bottom = 712.0
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 0.95)
 theme_override_font_sizes/font_size = 14
-text = "P1: A/D mover • W saltar • S queda • Q esquiva • F golpe • G empurrão • R defesa     |     P2: Setas • Num0 esquiva • Num1 golpe • Num2 empurrão • Num3 defesa"
+text = "P1 e P2 selecionam builds antes da batalha"
 horizontal_alignment = 1
+vertical_alignment = 1
