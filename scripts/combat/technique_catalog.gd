@@ -95,6 +95,19 @@ static func get_technique(technique_id: StringName) -> TechniqueData:
 			technique.hitbox_size = Vector2(48, 54)
 			technique.hitbox_offset = Vector2(27, -22)
 			technique.grounded_only = true
+		&"ji_directional_throw":
+			technique.display_name = "Projeção Direcional"
+			technique.path = "ji"
+			technique.startup_frames = 1
+			technique.active_frames = 1
+			technique.recovery_frames = 13
+			technique.stamina_cost = 0.0
+			technique.damage = 4.0
+			technique.posture_damage = 18.0
+			technique.horizontal_force = 340.0
+			technique.vertical_force = -145.0
+			technique.causes_disarm_pressure = true
+			technique.disarm_pressure = 18.0
 		&"fu_flow_strike":
 			technique.display_name = "Golpe de Transição"
 			technique.path = "fu"
