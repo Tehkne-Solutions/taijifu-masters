@@ -30,6 +30,7 @@ var _status_label: Label
 var _feedback := ""
 var _reaction_cooldown := 0.0
 var _tap_timers: Dictionary = {}
+var _holding_block := false
 
 func _ready() -> void:
 	_register_key_action(&"dojo_toggle", KEY_F8)
@@ -140,13 +141,14 @@ func _apply_resource_profile() -> void:
 func _drive_dummy() -> void:
 	if not is_instance_valid(_player_one) or not is_instance_valid(_dummy):
 		return
-	_release_continuous_actions()
+	_release_movement_actions()
 	var distance := _player_one.global_position.distance_to(_dummy.global_position)
 	var incoming := _player_one._attack_phase in [FighterController.AttackPhase.STARTUP, FighterController.AttackPhase.ACTIVE]
+	var should_hold_block := false
 
 	match dummy_mode:
 		&"guard":
-			Input.action_press(&"p2_block")
+			should_hold_block = true
 		&"parry":
 			if incoming and distance < 205.0 and _reaction_cooldown <= 0.0:
 				_tap_action(&"p2_block", 0.11)
@@ -157,19 +159,35 @@ func _drive_dummy() -> void:
 				_reaction_cooldown = 0.48
 		&"counter":
 			if incoming:
-				Input.action_press(&"p2_block")
+				should_hold_block = true
 			elif _player_one._attack_phase == FighterController.AttackPhase.RECOVERY and distance < 190.0 and _reaction_cooldown <= 0.0:
 				_tap_action(&"p2_attack", 0.10)
 				_reaction_cooldown = 0.42
 		_:
 			pass
 
-func _release_continuous_actions() -> void:
-	for action_id in [&"p2_left", &"p2_right", &"p2_down", &"p2_jump", &"p2_block"]:
+	_set_block_hold(should_hold_block)
+
+func _release_movement_actions() -> void:
+	for action_id in [&"p2_left", &"p2_right", &"p2_down", &"p2_jump"]:
 		if not _tap_timers.has(action_id):
 			Input.action_release(action_id)
 
+func _set_block_hold(should_hold: bool) -> void:
+	if _tap_timers.has(&"p2_block"):
+		_holding_block = false
+		return
+	if should_hold and not _holding_block:
+		Input.action_press(&"p2_block")
+		_holding_block = true
+	elif not should_hold and _holding_block:
+		Input.action_release(&"p2_block")
+		_holding_block = false
+
 func _tap_action(action_id: StringName, duration: float) -> void:
+	if action_id == &"p2_block" and _holding_block:
+		Input.action_release(action_id)
+		_holding_block = false
 	Input.action_press(action_id)
 	_tap_timers[action_id] = duration
 
@@ -191,6 +209,7 @@ func _release_dummy_actions() -> void:
 	]:
 		Input.action_release(action_id)
 	_tap_timers.clear()
+	_holding_block = false
 
 func _create_status_label() -> void:
 	_status_label = Label.new()
