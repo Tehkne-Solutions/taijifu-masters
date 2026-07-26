@@ -14,6 +14,7 @@ extends Resource
 @export var display_name: String = "Build equilibrada"
 @export var tactical_summary: String = "Equilíbrio entre distância, contato e transição."
 @export var weapon_id: StringName = &"training_staff"
+@export var secondary_weapon_id: StringName = &"wind_wraps"
 @export var element_id: StringName = &"air"
 @export var armor_weight: float = 20.0
 
@@ -115,6 +116,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.focus = 58.0
 			profile.armor_weight = 16.0
 			profile.weapon_id = &"training_staff"
+			profile.secondary_weapon_id = &"wind_wraps"
 			profile.element_id = &"air"
 			profile.tai_techniques = [&"staff_long_thrust", &"staff_vault_arc"]
 			profile.ji_techniques = [&"staff_center_hook", &"staff_low_sweep"]
@@ -132,6 +134,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.focus = 66.0
 			profile.armor_weight = 8.0
 			profile.weapon_id = &"wind_wraps"
+			profile.secondary_weapon_id = &"training_staff"
 			profile.element_id = &"air"
 			profile.tai_techniques = [&"tai_aerial_arc", &"tai_advancing_kick"]
 			profile.ji_techniques = [&"ji_body_hook", &"ji_shove"]
@@ -149,6 +152,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.focus = 42.0
 			profile.armor_weight = 48.0
 			profile.weapon_id = &"seismic_gauntlets"
+			profile.secondary_weapon_id = &"training_staff"
 			profile.element_id = &"earth"
 			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
 			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
@@ -166,6 +170,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.focus = 34.0
 			profile.armor_weight = 54.0
 			profile.weapon_id = &"breaker_gauntlets"
+			profile.secondary_weapon_id = &"seismic_gauntlets"
 			profile.element_id = &"earth"
 			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
 			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
