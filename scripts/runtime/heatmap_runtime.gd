@@ -106,8 +106,8 @@ func _summary() -> Dictionary:
 	return {
 		"p1_hottest_cell": _hottest_cell("p1"),
 		"p2_hottest_cell": _hottest_cell("p2"),
-		"p1_falls": (_falls.get("p1", []) as Array).size(),
-		"p2_falls": (_falls.get("p2", []) as Array).size()
+		"p1_falls": _fall_count("p1"),
+		"p2_falls": _fall_count("p2")
 	}
 
 func _hottest_cell(profile_id: String) -> Dictionary:
@@ -120,6 +120,10 @@ func _hottest_cell(profile_id: String) -> Dictionary:
 			best_count = count
 			best_key = String(key_variant)
 	return {"cell": best_key, "samples": best_count}
+
+func _fall_count(profile_id: String) -> int:
+	var profile_falls: Array = _falls.get(profile_id, [])
+	return profile_falls.size()
 
 func _draw() -> void:
 	if not _visible:
@@ -185,16 +189,16 @@ func _update_status_label() -> void:
 	if not is_instance_valid(_status_label):
 		return
 	var mode_label := "VISÍVEL" if _visible else "OCULTO"
-	var p1_falls := (_falls.get("p1", []) as Array).size()
-	var p2_falls := (_falls.get("p2", []) as Array).size()
+	var path_suffix := ""
+	if _saved_path != "":
+		path_suffix = " • %s" % _saved_path.get_file()
 	_status_label.text = "F3 HEATMAP %s • ROUNDS %d • QUEDAS P1 %d / P2 %d%s" % [
 		mode_label,
 		_rounds_recorded,
-		p1_falls,
-		p2_falls,
-		" • %s" % _saved_path.get_file() if _saved_path != "" else ""
+		_fall_count("p1"),
+		_fall_count("p2"),
+		path_suffix
 	]
 
 func _exit_tree() -> void:
-	if not _cells.is_empty():
-		_write_heatmap()
+	_write_heatmap()
