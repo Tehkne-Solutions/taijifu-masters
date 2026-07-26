@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="4_bot"]
 [ext_resource type="Script" path="res://scripts/runtime/telemetry_dashboard_runtime.gd" id="5_dashboard"]
 [ext_resource type="Script" path="res://scripts/runtime/heatmap_runtime.gd" id="6_heatmap"]
+[ext_resource type="Script" path="res://scripts/runtime/weapon_mastery_runtime.gd" id="7_mastery"]
+[ext_resource type="Script" path="res://scripts/runtime/bot_weapon_swap_runtime.gd" id="8_bot_swap"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -18,6 +20,12 @@ script = ExtResource("3_runtime")
 
 [node name="TacticalBotRuntime" type="Node" parent="."]
 script = ExtResource("4_bot")
+
+[node name="BotWeaponSwapRuntime" type="Node" parent="."]
+script = ExtResource("8_bot_swap")
+
+[node name="WeaponMasteryRuntime" type="Node" parent="."]
+script = ExtResource("7_mastery")
 
 [node name="TelemetryDashboardRuntime" type="Node" parent="."]
 script = ExtResource("5_dashboard")
