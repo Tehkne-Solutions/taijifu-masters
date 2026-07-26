@@ -1,6 +1,8 @@
 class_name WeaponKitCatalog
 extends RefCounted
 
+const CONTEXT_KEYS: Array[String] = ["air", "low", "advance", "neutral_ji", "neutral_fu"]
+
 const KITS := {
 	&"training_staff": {
 		"label": "BASTÃO ADAPTATIVO",
@@ -80,6 +82,15 @@ static func technique_for(
 			return build.technique_for("ji", 0)
 		_:
 			return build.technique_for("fu", 0)
+
+static func is_technique_for_weapon(weapon_id: StringName, technique_id: StringName) -> bool:
+	if technique_id == &"":
+		return false
+	var kit := _kit_for(weapon_id)
+	for context_key in CONTEXT_KEYS:
+		if StringName(kit.get(context_key, &"")) == technique_id:
+			return true
+	return false
 
 static func label_for(weapon_id: StringName) -> String:
 	return String(_kit_for(weapon_id).get("label", String(weapon_id).to_upper()))
