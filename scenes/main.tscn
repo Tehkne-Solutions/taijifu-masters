@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -9,6 +9,9 @@
 [ext_resource type="Script" path="res://scripts/runtime/weapon_mastery_runtime.gd" id="7_mastery"]
 [ext_resource type="Script" path="res://scripts/runtime/bot_weapon_swap_runtime.gd" id="8_bot_swap"]
 [ext_resource type="Script" path="res://scripts/runtime/master_training_runtime.gd" id="9_training"]
+[ext_resource type="Script" path="res://scripts/runtime/variant_loadout_runtime.gd" id="10_variant"]
+[ext_resource type="Script" path="res://scripts/runtime/dojo_training_runtime.gd" id="11_dojo"]
+[ext_resource type="Script" path="res://scripts/runtime/master_recommendation_runtime.gd" id="12_recommendation"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -30,6 +33,15 @@ script = ExtResource("7_mastery")
 
 [node name="MasterTrainingRuntime" type="Node" parent="."]
 script = ExtResource("9_training")
+
+[node name="VariantLoadoutRuntime" type="Node" parent="."]
+script = ExtResource("10_variant")
+
+[node name="DojoTrainingRuntime" type="Node" parent="."]
+script = ExtResource("11_dojo")
+
+[node name="MasterRecommendationRuntime" type="Node" parent="."]
+script = ExtResource("12_recommendation")
 
 [node name="TelemetryDashboardRuntime" type="Node" parent="."]
 script = ExtResource("5_dashboard")
