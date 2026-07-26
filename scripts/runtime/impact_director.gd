@@ -95,10 +95,17 @@ func _update_camera_shake(delta: float) -> void:
 			randf_range(-amplitude * 0.62, amplitude * 0.62)
 		)
 	else:
+		_shake_duration = 0.0
+		_shake_amplitude = 0.0
 		camera.offset = camera.offset.lerp(_base_camera_offset, minf(1.0, delta * 18.0))
 
 func _start_shake(duration: float, amplitude: float) -> void:
 	if duration <= 0.0 or amplitude <= 0.0:
+		return
+	if _shake_time <= 0.0:
+		_shake_time = duration
+		_shake_duration = duration
+		_shake_amplitude = amplitude
 		return
 	if duration >= _shake_time or amplitude >= _shake_amplitude:
 		_shake_time = maxf(_shake_time, duration)
