@@ -3,6 +3,16 @@ extends FighterController
 
 signal elemental_state_changed(fighter: FighterController, status_id: StringName)
 signal elemental_interaction(fighter: FighterController, interaction_id: StringName, element_id: StringName)
+signal technique_started(fighter: FighterController, technique_id: StringName)
+signal technique_experienced(
+	fighter: FighterController,
+	opponent: FighterController,
+	technique_id: StringName,
+	outcome_id: StringName
+)
+signal technique_reproduced(fighter: FighterController, technique_id: StringName)
+signal grab_escape_progress_changed(fighter: FighterController, progress: float, threshold: float)
+signal grab_escaped(fighter: FighterController, attacker: FighterController)
 
 const ELEMENT_TECHNIQUES := {
 	&"fire": &"element_fire_burst",
@@ -26,9 +36,14 @@ var air_unstable_timer := 0.0
 var steam_timer := 0.0
 
 var _burn_tick_timer := 0.0
+var _grab_escape_progress := 0.0
+var _grab_escape_threshold := 100.0
+var _last_escape_direction := 0
+var _grab_reinforce_cooldown := 0.0
 
 func _physics_process(delta: float) -> void:
 	_update_elemental_states(delta)
+	_update_grab_escape(delta)
 	super._physics_process(delta)
 
 func _process_actions() -> void:
@@ -60,6 +75,18 @@ func _perform_wall_jump() -> void:
 		return
 	super._perform_wall_jump()
 
+func _begin_technique(technique_id: StringName) -> bool:
+	var began := super._begin_technique(technique_id)
+	if began:
+		technique_started.emit(self, technique_id)
+	return began
+
+func _try_borrowed_technique() -> void:
+	var echo_id := borrowed_technique_id
+	super._try_borrowed_technique()
+	if echo_id != &"" and borrowed_technique_id == &"":
+		technique_reproduced.emit(self, echo_id)
+
 func receive_hit(
 	damage: float,
 	posture_damage: float,
@@ -71,6 +98,9 @@ func receive_hit(
 	bypass_guard: bool = false,
 	disarm_multiplier: float = 1.0
 ) -> bool:
+	var was_blocking := _is_blocking
+	var parry_was_ready := _parry_timer > 0.0
+	var dodge_was_active := _dodge_timer > 0.06
 	var adjusted_impulse := impulse
 	if anchored_timer > 0.0:
 		adjusted_impulse *= 0.62
@@ -94,6 +124,16 @@ func receive_hit(
 		disarm_multiplier
 	)
 
+	if is_instance_valid(technique) and is_instance_valid(attacker):
+		var outcome_id := &"hit"
+		if not applied:
+			outcome_id = &"parried" if was_blocking and parry_was_ready else &"evaded"
+		elif was_blocking and not bypass_guard:
+			outcome_id = &"blocked"
+		elif dodge_was_active:
+			outcome_id = &"evaded"
+		technique_experienced.emit(self, attacker, technique.technique_id, outcome_id)
+
 	if applied and is_instance_valid(technique) and technique.has_element():
 		_apply_element(StringName(technique.element_id), technique.element_power, attacker)
 	return applied
@@ -110,6 +150,14 @@ func _weapon_posture_multiplier() -> float:
 		multiplier *= 0.88
 	return multiplier
 
+func _set_grabbed_by(attacker: FighterController) -> void:
+	_grab_escape_progress = 0.0
+	_last_escape_direction = 0
+	_grab_reinforce_cooldown = 0.0
+	super._set_grabbed_by(attacker)
+	_update_grab_escape_threshold()
+	grab_escape_progress_changed.emit(self, _grab_escape_progress, _grab_escape_threshold)
+
 func reset_fighter(spawn_position: Vector2) -> void:
 	super.reset_fighter(spawn_position)
 	burning_timer = 0.0
@@ -119,6 +167,10 @@ func reset_fighter(spawn_position: Vector2) -> void:
 	air_unstable_timer = 0.0
 	steam_timer = 0.0
 	_burn_tick_timer = 0.0
+	_grab_escape_progress = 0.0
+	_grab_escape_threshold = 100.0
+	_last_escape_direction = 0
+	_grab_reinforce_cooldown = 0.0
 	queue_redraw()
 
 func _try_elemental_technique() -> void:
@@ -216,6 +268,85 @@ func _update_elemental_states(delta: float) -> void:
 	else:
 		_burn_tick_timer = 0.0
 
+func _update_grab_escape(delta: float) -> void:
+	_grab_reinforce_cooldown = maxf(0.0, _grab_reinforce_cooldown - delta)
+	if not is_instance_valid(_grabbed_by):
+		_grab_escape_progress = 0.0
+		_last_escape_direction = 0
+		return
+
+	_update_grab_escape_threshold()
+	_grab_escape_progress = maxf(0.0, _grab_escape_progress - 4.0 * delta)
+	var changed := false
+	var escape_direction := 0
+	if Input.is_action_just_pressed(_action("left")):
+		escape_direction = -1
+	elif Input.is_action_just_pressed(_action("right")):
+		escape_direction = 1
+
+	if escape_direction != 0:
+		var direction_gain := 13.0 + build.fu_index() * 0.04
+		if escape_direction == _last_escape_direction:
+			direction_gain *= 0.35
+		_grab_escape_progress += direction_gain
+		_last_escape_direction = escape_direction
+		changed = true
+
+	if Input.is_action_just_pressed(_action("dodge")) and stamina >= 12.0:
+		stamina -= 12.0
+		_grab_escape_progress += 18.0 + build.agility * 0.035
+		changed = true
+
+	if Input.is_action_just_pressed(_action("attack")):
+		_grab_escape_progress += 7.0 + build.technique * 0.02
+		changed = true
+
+	if Input.is_action_just_pressed(_action("block")):
+		_grab_escape_progress += 5.0 + build.control * 0.02
+		changed = true
+
+	if (
+		Input.is_action_just_pressed(_grabbed_by._action("grab"))
+		and _grab_reinforce_cooldown <= 0.0
+		and _grabbed_by.stamina >= 7.0
+	):
+		_grabbed_by.stamina -= 7.0
+		_grab_escape_progress = maxf(
+			0.0,
+			_grab_escape_progress - (15.0 + _grabbed_by.build.control * 0.035)
+		)
+		_grab_reinforce_cooldown = 0.28
+		changed = true
+
+	if changed:
+		_grab_escape_progress = minf(_grab_escape_progress, _grab_escape_threshold)
+		grab_escape_progress_changed.emit(self, _grab_escape_progress, _grab_escape_threshold)
+		combat_state_changed.emit(self)
+
+	if _grab_escape_progress >= _grab_escape_threshold:
+		_complete_grab_escape()
+
+func _update_grab_escape_threshold() -> void:
+	if not is_instance_valid(_grabbed_by):
+		_grab_escape_threshold = 100.0
+		return
+	_grab_escape_threshold = clampf(
+		82.0 + _grabbed_by.build.ji_index() * 0.22 - build.fu_index() * 0.12,
+		72.0,
+		128.0
+	)
+
+func _complete_grab_escape() -> void:
+	if not is_instance_valid(_grabbed_by):
+		return
+	var attacker := _grabbed_by
+	attacker._release_grab_without_throw()
+	velocity = Vector2(-attacker.facing * 165.0, -82.0)
+	_grab_escape_progress = 0.0
+	_last_escape_direction = 0
+	grab_escaped.emit(self, attacker)
+	combat_state_changed.emit(self)
+
 func current_element_label() -> String:
 	match StringName(build.element_id):
 		&"fire":
@@ -247,6 +378,13 @@ func current_elemental_status_label() -> String:
 		return "ESTÁVEL"
 	return " + ".join(labels.slice(0, 2))
 
+func current_technique_label() -> String:
+	if is_instance_valid(_grabbed_by):
+		return "JI • FUGA %d%%" % roundi(
+			100.0 * _grab_escape_progress / maxf(1.0, _grab_escape_threshold)
+		)
+	return super.current_technique_label()
+
 func _draw() -> void:
 	super._draw()
 	var element_id := StringName(build.element_id)
@@ -263,3 +401,8 @@ func _draw() -> void:
 		draw_circle(Vector2(15, -60), 5.0, ELEMENT_COLORS[&"air"])
 	if steam_timer > 0.0:
 		draw_arc(Vector2(0, -46), 18.0, -2.8, -0.2, 12, Color(0.86, 0.88, 0.92, 0.78), 3.0)
+
+	if is_instance_valid(_grabbed_by):
+		var escape_ratio := _grab_escape_progress / maxf(1.0, _grab_escape_threshold)
+		draw_rect(Rect2(-30, -64, 60, 3), Color(0.07, 0.07, 0.09, 0.92))
+		draw_rect(Rect2(-30, -64, 60 * escape_ratio, 3), Color(0.52, 0.86, 1.0, 0.96))
