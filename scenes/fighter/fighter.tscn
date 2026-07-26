@@ -1,0 +1,34 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/fighter/fighter_controller.gd" id="1_fighter"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape_fighter"]
+radius = 16.0
+height = 78.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_attack"]
+size = Vector2(58, 42)
+
+[node name="Fighter" type="CharacterBody2D" groups=["fighters"]]
+collision_layer = 1
+collision_mask = 1
+floor_stop_on_slope = true
+floor_constant_speed = true
+floor_snap_length = 8.0
+script = ExtResource("1_fighter")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -16)
+shape = SubResource("CapsuleShape_fighter")
+
+[node name="AttackArea" type="Area2D" parent="."]
+position = Vector2(35, -18)
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
+position = Vector2(0, -5)
+shape = SubResource("RectangleShape_attack")
+disabled = true
