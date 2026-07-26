@@ -77,7 +77,11 @@ static func variant_mapping(variant_ids: Array) -> Dictionary:
 			var data := master(master_id)
 			if StringName(data.get("variant_id", &"")) != variant_id:
 				continue
-			mapping[String(data.get("base_technique_id", &""))] = variant_id
+			var base_technique := String(data.get("base_technique_id", &""))
+			var weapon_ids: Array = data.get("weapon_ids", [])
+			for weapon_value in weapon_ids:
+				var key := "%s|%s" % [String(weapon_value), base_technique]
+				mapping[key] = variant_id
 	return mapping
 
 static func apply_variant(technique: TechniqueData, variant_id: StringName) -> void:
