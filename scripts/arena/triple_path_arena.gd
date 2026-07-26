@@ -27,7 +27,10 @@ func _physics_process(delta: float) -> void:
 	_manifestation_timer += delta
 
 	if is_instance_valid(_moving_platform):
-		_moving_platform.position = _moving_origin + Vector2(sin(_elapsed * 0.85) * 240.0, cos(_elapsed * 1.15) * 85.0)
+		_moving_platform.position = _moving_origin + Vector2(
+			sin(_elapsed * 0.85) * 240.0,
+			cos(_elapsed * 1.15) * 85.0
+		)
 
 	if _active_manifestation < 0 and _manifestation_timer >= 5.5:
 		_manifestation_timer = 0.0
@@ -98,16 +101,16 @@ func _collect_manifestation_if_reached() -> void:
 		return
 
 	var slot: Dictionary = _manifestation_slots[_active_manifestation]
-	var slot_position: Vector2 = to_global(slot.position)
+	var slot_position: Vector2 = to_global(slot["position"])
 
 	for node in get_tree().get_nodes_in_group("fighters"):
-		if node is not FighterController:
+		if not (node is FighterController):
 			continue
 		var fighter := node as FighterController
 		if fighter.global_position.distance_to(slot_position) > 44.0:
 			continue
 
-		match slot.type:
+		match slot["type"]:
 			&"tai":
 				fighter.stamina = minf(100.0, fighter.stamina + 38.0)
 				fighter.velocity.y -= 170.0
@@ -119,7 +122,7 @@ func _collect_manifestation_if_reached() -> void:
 
 		_active_manifestation = -1
 		_manifestation_timer = 0.0
-		fighter.combat_state_changed.emit(fighter)
+		fighter.queue_redraw()
 		break
 
 func respawn_point(player_index: int) -> Vector2:
@@ -141,14 +144,21 @@ func _draw() -> void:
 	)
 
 	for platform in _platforms:
-		draw_rect(platform.rect, platform.color)
-		draw_line(platform.rect.position, platform.rect.position + Vector2(platform.rect.size.x, 0), platform.color.lightened(0.22), 3.0)
+		var rect: Rect2 = platform["rect"]
+		var color: Color = platform["color"]
+		draw_rect(rect, color)
+		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0), color.lightened(0.22), 3.0)
 
 	if is_instance_valid(_moving_platform):
-		draw_rect(Rect2(_moving_platform.position - Vector2(75, 11), Vector2(150, 22)), Color(0.55, 0.36, 0.76))
+		draw_rect(
+			Rect2(_moving_platform.position - Vector2(75, 11), Vector2(150, 22)),
+			Color(0.55, 0.36, 0.76)
+		)
 
 	if _active_manifestation >= 0:
 		var slot: Dictionary = _manifestation_slots[_active_manifestation]
+		var slot_position: Vector2 = slot["position"]
+		var slot_color: Color = slot["color"]
 		var pulse := 18.0 + sin(_elapsed * 4.0) * 4.0
-		draw_circle(slot.position, pulse, Color(slot.color, 0.32))
-		draw_arc(slot.position, pulse + 8.0, 0.0, TAU, 30, slot.color, 3.0)
+		draw_circle(slot_position, pulse, Color(slot_color, 0.32))
+		draw_arc(slot_position, pulse + 8.0, 0.0, TAU, 30, slot_color, 3.0)
