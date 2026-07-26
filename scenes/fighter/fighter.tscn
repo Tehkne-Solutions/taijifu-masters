@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://scripts/fighter/weapon_kit_fighter_controller.gd" id="1_fighter"]
+[ext_resource type="Script" path="res://scripts/fighter/mastered_weapon_fighter_controller.gd" id="1_fighter"]
 [ext_resource type="Script" path="res://scripts/combat/hurtbox_region.gd" id="2_hurtbox"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape_fighter"]
