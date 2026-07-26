@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/runtime/variant_loadout_runtime.gd" id="10_variant"]
 [ext_resource type="Script" path="res://scripts/runtime/dojo_training_runtime.gd" id="11_dojo"]
 [ext_resource type="Script" path="res://scripts/runtime/master_recommendation_runtime.gd" id="12_recommendation"]
+[ext_resource type="Script" path="res://scripts/runtime/dojo_sequence_runtime.gd" id="13_sequence"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -39,6 +40,9 @@ script = ExtResource("10_variant")
 
 [node name="DojoTrainingRuntime" type="Node" parent="."]
 script = ExtResource("11_dojo")
+
+[node name="DojoSequenceRuntime" type="Node" parent="."]
+script = ExtResource("13_sequence")
 
 [node name="MasterRecommendationRuntime" type="Node" parent="."]
 script = ExtResource("12_recommendation")
