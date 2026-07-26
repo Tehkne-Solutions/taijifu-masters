@@ -20,9 +20,12 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed(&"toggle_telemetry_dashboard"):
 		if _last_report.is_empty():
 			return
-		_pinned = not _panel.visible
-		_panel.visible = not _panel.visible
-		if _panel.visible:
+		if _panel.visible and _auto_hide_timer > 0.0 and not _pinned:
+			_pinned = true
+			_auto_hide_timer = 0.0
+		else:
+			_panel.visible = not _panel.visible
+			_pinned = _panel.visible
 			_auto_hide_timer = 0.0
 
 	if _auto_hide_timer > 0.0 and not _pinned:
@@ -51,8 +54,11 @@ func _build_panel() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.025, 0.035, 0.055, 0.96)
 	style.border_color = Color(0.34, 0.57, 0.80, 0.92)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(12)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	_apply_corner_radius(style, 12)
 	_panel.add_theme_stylebox_override("panel", style)
 
 	var margin := MarginContainer.new()
@@ -75,11 +81,12 @@ func _render_report() -> void:
 	var round_index := int(_last_report.get("round_index", 0))
 	var duration_seconds := float(_last_report.get("duration_msec", 0)) / 1000.0
 	var winner := String(_last_report.get("winner_profile_id", ""))
+	var winner_label := winner.to_upper() if winner != "" else "INDEFINIDO"
 	var title := _make_label(
 		"RELATÓRIO DO FLUXO • ROUND %d • %.1fs • VENCEDOR %s" % [
 			round_index,
 			duration_seconds,
-			winner.to_upper() if winner != "" else "INDEFINIDO"
+			winner_label
 		],
 		20,
 		Color(0.95, 0.84, 0.48)
@@ -99,10 +106,9 @@ func _render_report() -> void:
 	columns.add_child(_create_player_column(&"p1", players.get("p1", {}), winner == "p1"))
 	columns.add_child(_create_player_column(&"p2", players.get("p2", {}), winner == "p2"))
 
+	var file_label := _last_saved_path.get_file() if _last_saved_path != "" else "não salvo"
 	var footer := _make_label(
-		"F2 mantém/abre o último relatório • JSON: %s" % (
-			_last_saved_path.get_file() if _last_saved_path != "" else "não salvo"
-		),
+		"F2 fixa/abre o último relatório • JSON: %s" % file_label,
 		11,
 		Color(0.66, 0.72, 0.82)
 	)
@@ -110,15 +116,19 @@ func _render_report() -> void:
 	_content.add_child(footer)
 
 func _create_player_column(profile_id: StringName, metrics_variant: Variant, is_winner: bool) -> VBoxContainer:
-	var metrics: Dictionary = metrics_variant if metrics_variant is Dictionary else {}
+	var metrics: Dictionary = {}
+	if metrics_variant is Dictionary:
+		metrics = metrics_variant
+
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2(425.0, 300.0)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 7)
 
 	var player_color := Color(0.54, 0.82, 1.0) if profile_id == &"p1" else Color(1.0, 0.64, 0.48)
+	var result_suffix := " • VITÓRIA" if is_winner else ""
 	var heading := _make_label(
-		"%s%s" % [String(profile_id).to_upper(), " • VITÓRIA" if is_winner else ""],
+		"%s%s" % [String(profile_id).to_upper(), result_suffix],
 		17,
 		player_color
 	)
@@ -186,10 +196,10 @@ func _route_bar(route_label: String, seconds: float, total: float, route_color: 
 
 	var fill_style := StyleBoxFlat.new()
 	fill_style.bg_color = Color(route_color, 0.86)
-	fill_style.set_corner_radius_all(5)
+	_apply_corner_radius(fill_style, 5)
 	var background_style := StyleBoxFlat.new()
 	background_style.bg_color = Color(0.10, 0.12, 0.17, 0.92)
-	background_style.set_corner_radius_all(5)
+	_apply_corner_radius(background_style, 5)
 	bar.add_theme_stylebox_override("fill", fill_style)
 	bar.add_theme_stylebox_override("background", background_style)
 	row.add_child(bar)
@@ -238,6 +248,12 @@ func _make_label(text_value: String, font_size: int, color: Color) -> Label:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	return label
+
+func _apply_corner_radius(style: StyleBoxFlat, radius: int) -> void:
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_right = radius
+	style.corner_radius_bottom_left = radius
 
 func _register_toggle_action() -> void:
 	if not InputMap.has_action(&"toggle_telemetry_dashboard"):
