@@ -10,6 +10,7 @@ var _source_lock_timer := 0.75
 var _pulse := 0.0
 
 func _ready() -> void:
+	add_to_group("temporary_loot")
 	collision_layer = 4
 	collision_mask = 1
 	monitoring = true
