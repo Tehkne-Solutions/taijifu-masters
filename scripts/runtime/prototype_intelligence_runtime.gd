@@ -1,6 +1,8 @@
 class_name PrototypeIntelligenceRuntime
 extends Node
 
+signal round_report_ready(report: Dictionary, saved_path: String)
+
 @onready var arena: TriplePathArena = get_node("../Arena")
 @onready var knowledge_label: Label = get_node("../HUD/KnowledgeInfo")
 
@@ -58,14 +60,7 @@ func _track_routes(delta: float) -> void:
 		if not is_instance_valid(fighter_variant):
 			continue
 		var fighter := fighter_variant as FighterController
-		_telemetry.record_route(_profile_id(fighter), _route_for_position(fighter.global_position), delta)
-
-func _route_for_position(position: Vector2) -> StringName:
-	if position.y <= 430.0:
-		return &"tai"
-	if position.y >= 610.0:
-		return &"ji"
-	return &"fu"
+		_telemetry.record_route(_profile_id(fighter), arena.route_for_position(fighter.global_position), delta)
 
 func _on_technique_started(fighter: FighterController, technique_id: StringName) -> void:
 	_telemetry.record_event(_profile_id(fighter), &"technique_started", technique_id)
@@ -167,11 +162,16 @@ func _on_fighter_defeated(defeated_fighter: FighterController) -> void:
 			winner_profile = _profile_id(fighter_variant as FighterController)
 			break
 	var saved_path := _telemetry.finish_round(winner_profile)
+	var report := _telemetry.last_round_snapshot()
+	round_report_ready.emit(report, saved_path)
 	_flash_text = "TELEMETRIA SALVA • %s" % saved_path.get_file()
 	_flash_timer = 2.0
 	await get_tree().create_timer(2.1).timeout
 	_telemetry.begin_round()
 	_round_closed = false
+
+func latest_round_report() -> Dictionary:
+	return _telemetry.last_round_snapshot()
 
 func _update_knowledge_hud() -> void:
 	if _flash_timer > 0.0:
