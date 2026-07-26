@@ -11,6 +11,8 @@ var _status_label: Label
 var _decision_timer := 0.0
 var _route_timer := 0.0
 var _reaction_timer := 0.0
+var _jump_cooldown := 0.0
+var _reaction_pending := false
 var _movement_direction := 0
 var _preferred_route: StringName = &"fu"
 var _intent := "AGUARDANDO LUTADORES"
@@ -39,6 +41,7 @@ func _process(delta: float) -> void:
 	_decision_timer = maxf(0.0, _decision_timer - delta)
 	_route_timer = maxf(0.0, _route_timer - delta)
 	_reaction_timer = maxf(0.0, _reaction_timer - delta)
+	_jump_cooldown = maxf(0.0, _jump_cooldown - delta)
 	_drive_bot()
 
 func _discover_fighters() -> void:
@@ -62,7 +65,7 @@ func _drive_bot() -> void:
 		_handle_active_grab()
 		return
 
-	_grab_throw_suffix = &""
+	_release_throw_direction()
 	if _route_timer <= 0.0:
 		_preferred_route = _choose_preferred_route()
 		_route_timer = randf_range(1.8, 3.2)
@@ -77,6 +80,7 @@ func _drive_bot() -> void:
 		_bot.facing = float(direction_to_opponent)
 
 	if _is_in_boundary_danger():
+		_reaction_pending = false
 		_set_movement(1)
 		_intent = "FU • ESCAPAR DO COLAPSO"
 		_try_route_jump()
@@ -86,9 +90,17 @@ func _drive_bot() -> void:
 		_opponent._attack_phase == FighterController.AttackPhase.STARTUP
 		or _opponent._attack_phase == FighterController.AttackPhase.ACTIVE
 	)
-	if incoming_attack and distance < 190.0 and _reaction_timer <= 0.0:
-		_react_to_attack(direction_to_opponent)
+	if incoming_attack and distance < 190.0:
+		if not _reaction_pending:
+			_reaction_pending = true
+			_reaction_timer = _reaction_delay()
+			_intent = "PERCEPÇÃO • LENDO ATAQUE"
+		if _reaction_timer <= 0.0:
+			_reaction_pending = false
+			_react_to_attack(direction_to_opponent)
 		return
+	else:
+		_reaction_pending = false
 
 	if _decision_timer > 0.0:
 		_apply_range_movement(distance, direction_to_opponent)
@@ -100,7 +112,7 @@ func _drive_bot() -> void:
 	_try_route_jump()
 
 func _react_to_attack(direction_to_opponent: int) -> void:
-	_reaction_timer = randf_range(0.32, 0.55)
+	_decision_timer = randf_range(0.28, 0.48)
 	var posture_ratio := _bot.posture / maxf(1.0, _bot.build.max_posture())
 	if posture_ratio > 0.30 and randf() < 0.62:
 		_set_movement(0)
@@ -160,6 +172,7 @@ func _apply_range_movement(distance: float, direction_to_opponent: int) -> void:
 		_set_movement(0)
 
 func _handle_grab_escape() -> void:
+	_release_throw_direction()
 	_set_movement(0)
 	if _decision_timer > 0.0:
 		return
@@ -189,6 +202,12 @@ func _handle_active_grab() -> void:
 		_tap(&"grab")
 	_intent = "JI • MANTER E PROJETAR"
 
+func _release_throw_direction() -> void:
+	if _grab_throw_suffix == &"":
+		return
+	_hold_action(_grab_throw_suffix, false)
+	_grab_throw_suffix = &""
+
 func _choose_preferred_route() -> StringName:
 	var tai := _bot.build.tai_index()
 	var ji := _bot.build.ji_index()
@@ -200,13 +219,17 @@ func _choose_preferred_route() -> StringName:
 	return &"fu"
 
 func _try_route_jump() -> void:
-	if not _bot.is_on_floor() or _bot._attack_phase != FighterController.AttackPhase.NONE:
+	if _jump_cooldown > 0.0 or not _bot.is_on_floor():
 		return
-	if _preferred_route == &"tai" and _bot.global_position.y > 470.0 and randf() < 0.045:
+	if _bot._attack_phase != FighterController.AttackPhase.NONE:
+		return
+	if _preferred_route == &"tai" and _bot.global_position.y > 470.0 and randf() < 0.16:
 		_tap(&"jump", 0.12)
+		_jump_cooldown = 0.78
 		_intent = "TAI • SUBIR PARA ESPAÇO ABERTO"
-	elif _preferred_route == &"fu" and absf(_opponent.global_position.y - _bot.global_position.y) > 115.0 and randf() < 0.032:
+	elif _preferred_route == &"fu" and absf(_opponent.global_position.y - _bot.global_position.y) > 115.0 and randf() < 0.11:
 		_tap(&"jump", 0.12)
+		_jump_cooldown = 0.72
 		_intent = "FU • TROCAR DE NÍVEL"
 
 func _desired_range() -> float:
@@ -271,12 +294,14 @@ func _release_all_actions() -> void:
 	if not is_instance_valid(_bot):
 		_tap_timers.clear()
 		_movement_direction = 0
+		_grab_throw_suffix = &""
 		return
 	for suffix in [&"left", &"right", &"down", &"jump", &"dodge", &"attack", &"push", &"grab", &"echo", &"block", &"element"]:
 		Input.action_release(_bot._action(String(suffix)))
 	_tap_timers.clear()
 	_movement_direction = 0
 	_grab_throw_suffix = &""
+	_reaction_pending = false
 
 func _register_toggle_action() -> void:
 	if not InputMap.has_action(&"toggle_bot"):
