@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/runtime/prototype_intelligence_runtime.gd" id="3_runtime"]
+[ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="4_bot"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -12,6 +13,9 @@ script = ExtResource("2_arena")
 
 [node name="PrototypeIntelligenceRuntime" type="Node" parent="."]
 script = ExtResource("3_runtime")
+
+[node name="TacticalBotRuntime" type="Node" parent="."]
+script = ExtResource("4_bot")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 430)

@@ -17,11 +17,11 @@ extends Resource
 @export var element_id: StringName = &"air"
 @export var armor_weight: float = 20.0
 
-## Técnicas preparadas antes da batalha. O protótipo usa uma por caminho,
-## mantendo a estrutura pronta para os slots 2 Tai + 2 Ji + 2 Fu.
-@export var tai_techniques: Array[StringName] = [&"tai_advancing_kick", &"tai_aerial_arc"]
-@export var ji_techniques: Array[StringName] = [&"ji_body_hook", &"ji_shove"]
-@export var fu_techniques: Array[StringName] = [&"fu_flow_strike", &"fu_reversal"]
+## Técnicas preparadas antes da batalha. Os kits resolvem o repertório pela
+## arma realmente equipada e estes slots permanecem como fallback da build.
+@export var tai_techniques: Array[StringName] = [&"staff_long_thrust", &"staff_vault_arc"]
+@export var ji_techniques: Array[StringName] = [&"staff_center_hook", &"staff_low_sweep"]
+@export var fu_techniques: Array[StringName] = [&"staff_flow_redirect", &"fu_reversal"]
 
 func tai_index() -> float:
 	return clampf(
@@ -104,7 +104,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 	match preset_id:
 		&"adaptive_staff":
 			profile.display_name = "Bastão Adaptativo"
-			profile.tactical_summary = "Fu elevado, transições rápidas e resposta equilibrada."
+			profile.tactical_summary = "Fu elevado, alcance e redirecionamento com o bastão."
 			profile.strength = 48.0
 			profile.defense = 45.0
 			profile.agility = 68.0
@@ -116,9 +116,9 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.armor_weight = 16.0
 			profile.weapon_id = &"training_staff"
 			profile.element_id = &"air"
-			profile.tai_techniques = [&"tai_advancing_kick", &"tai_aerial_arc"]
-			profile.ji_techniques = [&"ji_body_hook", &"ji_shove"]
-			profile.fu_techniques = [&"fu_flow_strike", &"fu_reversal"]
+			profile.tai_techniques = [&"staff_long_thrust", &"staff_vault_arc"]
+			profile.ji_techniques = [&"staff_center_hook", &"staff_low_sweep"]
+			profile.fu_techniques = [&"staff_flow_redirect", &"fu_reversal"]
 		&"aerial_flow":
 			profile.display_name = "Fluxo Aéreo"
 			profile.tactical_summary = "Tai ágil, domínio vertical e recuperação aérea forte."
@@ -138,7 +138,7 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.fu_techniques = [&"fu_reversal", &"fu_flow_strike"]
 		&"rock_guardian":
 			profile.display_name = "Rocha Guardiã"
-			profile.tactical_summary = "Ji defensivo, alta postura e controle de espaço fechado."
+			profile.tactical_summary = "Ji defensivo, alta postura e pressão sísmica."
 			profile.strength = 76.0
 			profile.defense = 82.0
 			profile.agility = 30.0
@@ -150,9 +150,9 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.armor_weight = 48.0
 			profile.weapon_id = &"seismic_gauntlets"
 			profile.element_id = &"earth"
-			profile.tai_techniques = [&"tai_advancing_kick", &"tai_aerial_arc"]
-			profile.ji_techniques = [&"ji_shove", &"ji_sweep"]
-			profile.fu_techniques = [&"fu_flow_strike", &"fu_reversal"]
+			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
+			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
+			profile.fu_techniques = [&"gauntlet_guard_turn", &"fu_reversal"]
 		&"foundation_breaker":
 			profile.display_name = "Quebra-Fundação"
 			profile.tactical_summary = "Força e dano de postura altos, com pouca mobilidade."
@@ -167,9 +167,9 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 			profile.armor_weight = 54.0
 			profile.weapon_id = &"breaker_gauntlets"
 			profile.element_id = &"earth"
-			profile.tai_techniques = [&"tai_advancing_kick", &"tai_aerial_arc"]
-			profile.ji_techniques = [&"ji_sweep", &"ji_shove"]
-			profile.fu_techniques = [&"fu_flow_strike", &"fu_reversal"]
+			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
+			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
+			profile.fu_techniques = [&"gauntlet_guard_turn", &"fu_reversal"]
 		_:
 			pass
 

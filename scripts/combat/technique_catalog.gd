@@ -137,6 +137,162 @@ static func get_technique(technique_id: StringName) -> TechniqueData:
 			technique.hitbox_size = Vector2(64, 48)
 			technique.hitbox_offset = Vector2(16, -26)
 			technique.disarm_pressure = 11.0
+
+		# Kit do Bastão Adaptativo.
+		&"staff_long_thrust":
+			technique.display_name = "Estocada do Horizonte"
+			technique.path = "tai"
+			technique.startup_frames = 7
+			technique.active_frames = 5
+			technique.recovery_frames = 14
+			technique.stamina_cost = 10.0
+			technique.damage = 7.2
+			technique.posture_damage = 8.5
+			technique.horizontal_force = 305.0
+			technique.vertical_force = -55.0
+			technique.hitbox_size = Vector2(94, 28)
+			technique.hitbox_offset = Vector2(61, -20)
+			technique.grounded_only = true
+			technique.disarm_pressure = 6.0
+		&"staff_vault_arc":
+			technique.display_name = "Arco de Alavanca"
+			technique.path = "tai"
+			technique.startup_frames = 6
+			technique.active_frames = 7
+			technique.recovery_frames = 15
+			technique.stamina_cost = 12.0
+			technique.damage = 7.0
+			technique.posture_damage = 9.0
+			technique.horizontal_force = 225.0
+			technique.vertical_force = -215.0
+			technique.hitbox_size = Vector2(72, 64)
+			technique.hitbox_offset = Vector2(40, -36)
+			technique.airborne_only = true
+		&"staff_low_sweep":
+			technique.display_name = "Varrida de Eixo"
+			technique.path = "ji"
+			technique.startup_frames = 8
+			technique.active_frames = 7
+			technique.recovery_frames = 16
+			technique.stamina_cost = 11.0
+			technique.damage = 5.5
+			technique.posture_damage = 14.0
+			technique.horizontal_force = 275.0
+			technique.vertical_force = 28.0
+			technique.hitbox_size = Vector2(86, 24)
+			technique.hitbox_offset = Vector2(48, 4)
+			technique.grounded_only = true
+			technique.disarm_pressure = 8.0
+		&"staff_center_hook":
+			technique.display_name = "Gancho de Haste"
+			technique.path = "ji"
+			technique.startup_frames = 5
+			technique.active_frames = 4
+			technique.recovery_frames = 11
+			technique.stamina_cost = 8.0
+			technique.damage = 7.0
+			technique.posture_damage = 11.0
+			technique.horizontal_force = 195.0
+			technique.vertical_force = -82.0
+			technique.hitbox_size = Vector2(60, 40)
+			technique.hitbox_offset = Vector2(34, -22)
+			technique.grounded_only = true
+			technique.disarm_pressure = 10.0
+		&"staff_flow_redirect":
+			technique.display_name = "Círculo de Retorno"
+			technique.path = "fu"
+			technique.startup_frames = 5
+			technique.active_frames = 5
+			technique.recovery_frames = 9
+			technique.stamina_cost = 9.0
+			technique.damage = 6.2
+			technique.posture_damage = 7.5
+			technique.horizontal_force = 215.0
+			technique.vertical_force = -112.0
+			technique.hitbox_size = Vector2(68, 46)
+			technique.hitbox_offset = Vector2(40, -24)
+			technique.can_turn_during_startup = true
+			technique.disarm_pressure = 5.0
+
+		# Kit das Manoplas Sísmicas.
+		&"gauntlet_shouldering_entry":
+			technique.display_name = "Entrada de Obsidiana"
+			technique.path = "tai"
+			technique.startup_frames = 10
+			technique.active_frames = 6
+			technique.recovery_frames = 17
+			technique.stamina_cost = 14.0
+			technique.damage = 9.0
+			technique.posture_damage = 13.0
+			technique.horizontal_force = 365.0
+			technique.vertical_force = -58.0
+			technique.hitbox_size = Vector2(66, 50)
+			technique.hitbox_offset = Vector2(39, -21)
+			technique.grounded_only = true
+			technique.causes_disarm_pressure = true
+			technique.disarm_pressure = 12.0
+		&"gauntlet_rising_break":
+			technique.display_name = "Ruptura Ascendente"
+			technique.path = "tai"
+			technique.startup_frames = 7
+			technique.active_frames = 6
+			technique.recovery_frames = 18
+			technique.stamina_cost = 15.0
+			technique.damage = 8.0
+			technique.posture_damage = 12.0
+			technique.horizontal_force = 195.0
+			technique.vertical_force = -265.0
+			technique.hitbox_size = Vector2(58, 64)
+			technique.hitbox_offset = Vector2(31, -38)
+			technique.airborne_only = true
+		&"gauntlet_quake_sweep":
+			technique.display_name = "Rasteira Sísmica"
+			technique.path = "ji"
+			technique.startup_frames = 11
+			technique.active_frames = 6
+			technique.recovery_frames = 19
+			technique.stamina_cost = 14.0
+			technique.damage = 7.0
+			technique.posture_damage = 18.0
+			technique.horizontal_force = 250.0
+			technique.vertical_force = 30.0
+			technique.hitbox_size = Vector2(74, 30)
+			technique.hitbox_offset = Vector2(40, 2)
+			technique.grounded_only = true
+			technique.causes_disarm_pressure = true
+			technique.disarm_pressure = 15.0
+		&"gauntlet_center_crush":
+			technique.display_name = "Prensa do Centro"
+			technique.path = "ji"
+			technique.startup_frames = 6
+			technique.active_frames = 5
+			technique.recovery_frames = 13
+			technique.stamina_cost = 11.0
+			technique.damage = 10.0
+			technique.posture_damage = 17.0
+			technique.horizontal_force = 180.0
+			technique.vertical_force = -52.0
+			technique.hitbox_size = Vector2(48, 46)
+			technique.hitbox_offset = Vector2(28, -22)
+			technique.grounded_only = true
+			technique.causes_disarm_pressure = true
+			technique.disarm_pressure = 14.0
+		&"gauntlet_guard_turn":
+			technique.display_name = "Giro de Fundação"
+			technique.path = "fu"
+			technique.startup_frames = 7
+			technique.active_frames = 5
+			technique.recovery_frames = 12
+			technique.stamina_cost = 12.0
+			technique.damage = 5.5
+			technique.posture_damage = 12.0
+			technique.horizontal_force = -255.0
+			technique.vertical_force = -110.0
+			technique.hitbox_size = Vector2(58, 50)
+			technique.hitbox_offset = Vector2(27, -24)
+			technique.can_turn_during_startup = true
+			technique.disarm_pressure = 10.0
+
 		&"element_fire_burst":
 			technique.display_name = "Pulso de Brasa"
 			technique.path = "fu"
