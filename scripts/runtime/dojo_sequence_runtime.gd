@@ -255,7 +255,6 @@ func _load_sequences() -> void:
 		_selected_slot = 1
 		_loop_enabled = false
 		_feedback = "SEQUÊNCIA ANTIGA MIGRADA PARA O SLOT 1"
-		_save_sequences()
 		return
 
 	_selected_slot = clampi(int(parsed.get("selected_slot", 1)), 1, SLOT_COUNT)
