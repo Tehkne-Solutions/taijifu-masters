@@ -40,8 +40,6 @@ func unlock_variant(profile_id: String, master_id: StringName, variant_id: Strin
 		unlocked.append(variant_key)
 		changed = true
 	profile["unlocked_variants"] = unlocked
-	if String(profile.get("selected_variant", "")) == "":
-		profile["selected_variant"] = variant_key
 	var completed: Dictionary = profile.get("completed_trials", {})
 	completed[String(master_id)] = {
 		"variant_id": variant_key,
@@ -131,7 +129,6 @@ func _migrate_profiles() -> void:
 	for profile_id in profiles.keys():
 		var profile: Dictionary = profiles[profile_id]
 		if not profile.has("selected_variant"):
-			var unlocked: Array = profile.get("unlocked_variants", [])
-			profile["selected_variant"] = "" if unlocked.is_empty() else String(unlocked[0])
+			profile["selected_variant"] = ""
 		profiles[profile_id] = profile
 	data["profiles"] = profiles
