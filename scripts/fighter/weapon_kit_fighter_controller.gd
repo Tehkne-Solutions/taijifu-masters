@@ -7,6 +7,11 @@ signal weapon_swapped(
 	to_weapon_id: StringName,
 	slot_id: int
 )
+signal training_variant_applied(
+	fighter: WeaponKitFighterController,
+	variant_id: StringName,
+	display_name: String
+)
 
 const SLOT_UNARMED := -1
 const SLOT_PRIMARY := 0
@@ -22,6 +27,7 @@ var active_weapon_slot := SLOT_PRIMARY
 var _primary_available := true
 var _secondary_available := true
 var _borrowed_available := false
+var _unlocked_technique_variants: Dictionary = {}
 
 func _ready() -> void:
 	super._ready()
@@ -49,6 +55,23 @@ func _try_contextual_attack() -> void:
 		build
 	)
 	_begin_technique(technique_id)
+
+func _begin_technique(technique_id: StringName) -> bool:
+	var began := super._begin_technique(technique_id)
+	if not began or not is_instance_valid(_current_technique):
+		return began
+	var variant_id := StringName(_unlocked_technique_variants.get(String(technique_id), &""))
+	if variant_id == &"":
+		return true
+	MasterTrainingCatalog.apply_variant(_current_technique, variant_id)
+	training_variant_applied.emit(self, variant_id, _current_technique.display_name)
+	return true
+
+func set_unlocked_variants(variant_mapping: Dictionary) -> void:
+	_unlocked_technique_variants = variant_mapping.duplicate(true)
+
+func unlocked_variant_for(technique_id: StringName) -> StringName:
+	return StringName(_unlocked_technique_variants.get(String(technique_id), &""))
 
 func can_swap_weapon() -> bool:
 	return (
