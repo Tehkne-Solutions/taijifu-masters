@@ -52,15 +52,9 @@ func record_event(
 	profile[technique_key] = entry
 	_profiles[profile_key] = profile
 
-	var result := {
-		"profile_id": profile_key,
-		"technique_id": technique_key,
-		"event_id": String(event_id),
-		"stage": entry["stage"],
-		"stage_label": stage_label(StringName(entry["stage"])),
-		"advanced": previous_stage != StringName(entry["stage"]),
-		"score": entry["score"]
-	}
+	var result := _result_from_entry(profile_key, technique_key, entry)
+	result["event_id"] = String(event_id)
+	result["advanced"] = previous_stage != StringName(entry["stage"])
 	_last_updates[profile_key] = result
 	_save()
 	return result
@@ -92,6 +86,17 @@ func _new_entry() -> Dictionary:
 		"updated_unix": 0
 	}
 
+func _result_from_entry(profile_key: String, technique_key: String, entry: Dictionary) -> Dictionary:
+	return {
+		"profile_id": profile_key,
+		"technique_id": technique_key,
+		"stage": entry.get("stage", "seen"),
+		"stage_label": stage_label(StringName(entry.get("stage", "seen"))),
+		"score": int(entry.get("score", 0)),
+		"updated_unix": int(entry.get("updated_unix", 0)),
+		"advanced": false
+	}
+
 func _resolve_stage(entry: Dictionary) -> StringName:
 	var score := int(entry.get("score", 0))
 	var events: Dictionary = entry.get("events", {})
@@ -103,7 +108,7 @@ func _resolve_stage(entry: Dictionary) -> StringName:
 
 	if score >= 42 and defended_count >= 4 and reproduced_count >= 3 and adapted_count >= 2:
 		return &"mastered"
-	if score >= 26 and defended_count >= 2 and reproduced_count >= 1:
+	if score >= 26 and defended_count >= 2 and reproduced_count >= 1 and adapted_count >= 1:
 		return &"adapted"
 	if reproduced_count >= 1:
 		return &"reproduced"
@@ -128,5 +133,26 @@ func _load() -> void:
 	if file == null:
 		return
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if parsed is Dictionary:
-		_profiles = (parsed as Dictionary).get("profiles", {})
+	if not (parsed is Dictionary):
+		return
+	var parsed_dictionary: Dictionary = parsed
+	_profiles = parsed_dictionary.get("profiles", {})
+	_rebuild_last_updates()
+
+func _rebuild_last_updates() -> void:
+	_last_updates.clear()
+	for profile_key_variant in _profiles:
+		var profile_key := String(profile_key_variant)
+		var profile: Dictionary = _profiles[profile_key_variant]
+		var latest_technique := ""
+		var latest_entry: Dictionary = {}
+		var latest_unix := -1
+		for technique_key_variant in profile:
+			var entry: Dictionary = profile[technique_key_variant]
+			var updated_unix := int(entry.get("updated_unix", 0))
+			if updated_unix >= latest_unix:
+				latest_unix = updated_unix
+				latest_technique = String(technique_key_variant)
+				latest_entry = entry
+		if latest_technique != "":
+			_last_updates[profile_key] = _result_from_entry(profile_key, latest_technique, latest_entry)
