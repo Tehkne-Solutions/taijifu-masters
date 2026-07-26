@@ -123,11 +123,12 @@ func _advance_playback(delta: float) -> void:
 		if float(event.get("time", 0.0)) > _play_time:
 			break
 		var suffix := StringName(event.get("action", ""))
-		var action_id := _player_action(2, suffix)
-		if bool(event.get("pressed", false)):
-			Input.action_press(action_id)
-		else:
-			Input.action_release(action_id)
+		if suffix in ACTION_SUFFIXES:
+			var action_id := _player_action(2, suffix)
+			if bool(event.get("pressed", false)):
+				Input.action_press(action_id)
+			else:
+				Input.action_release(action_id)
 		_play_index += 1
 	if _play_index >= _events.size() and _play_time >= _sequence_duration() + 0.18:
 		_stop_playback("REPETIÇÃO CONCLUÍDA")
@@ -181,8 +182,23 @@ func _load_sequence() -> void:
 	if not (parsed is Dictionary):
 		return
 	var loaded: Variant = parsed.get("events", [])
-	if loaded is Array:
-		_events.assign(loaded)
+	if not (loaded is Array):
+		return
+	_events.clear()
+	for value in loaded:
+		if not (value is Dictionary):
+			continue
+		var event: Dictionary = value
+		var suffix := StringName(event.get("action", ""))
+		if suffix not in ACTION_SUFFIXES:
+			continue
+		_events.append({
+			"time": clampf(float(event.get("time", 0.0)), 0.0, MAX_DURATION),
+			"action": String(suffix),
+			"pressed": bool(event.get("pressed", false))
+		})
+	_events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["time"]) < float(b["time"]))
+	if not _events.is_empty():
 		_feedback = "SEQUÊNCIA CARREGADA • %.2fs" % _sequence_duration()
 
 func _player_action(player_index: int, suffix: StringName) -> StringName:
@@ -204,7 +220,11 @@ func _create_status_label() -> void:
 func _update_status_label() -> void:
 	if not is_instance_valid(_status_label):
 		return
-	var mode := "GRAVANDO %.1fs" % _record_time if _recording else "REPRODUZINDO %.1fs" % _play_time if _playing else "PRONTO"
+	var mode := "PRONTO"
+	if _recording:
+		mode = "GRAVANDO %.1fs" % _record_time
+	elif _playing:
+		mode = "REPRODUZINDO %.1fs" % _play_time
 	_status_label.text = "SEQUÊNCIA DO DOJO\nF12 GRAVA • F5 REPETE • F1 APAGA\n%s • %.2fs • %d EVENTOS\n%s" % [
 		mode,
 		_sequence_duration(),
