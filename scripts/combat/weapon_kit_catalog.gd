@@ -10,7 +10,8 @@ const KITS := {
 		"neutral_ji": &"staff_center_hook",
 		"neutral_fu": &"staff_flow_redirect",
 		"damage_multiplier": 1.00,
-		"posture_multiplier": 1.00
+		"posture_multiplier": 1.00,
+		"preferred_range": 150.0
 	},
 	&"seismic_gauntlets": {
 		"label": "MANOPLAS SÍSMICAS",
@@ -20,7 +21,8 @@ const KITS := {
 		"neutral_ji": &"gauntlet_center_crush",
 		"neutral_fu": &"gauntlet_guard_turn",
 		"damage_multiplier": 1.12,
-		"posture_multiplier": 1.18
+		"posture_multiplier": 1.18,
+		"preferred_range": 78.0
 	},
 	&"breaker_gauntlets": {
 		"label": "MANOPLAS QUEBRA-FUNDAÇÃO",
@@ -30,7 +32,8 @@ const KITS := {
 		"neutral_ji": &"gauntlet_center_crush",
 		"neutral_fu": &"gauntlet_guard_turn",
 		"damage_multiplier": 1.18,
-		"posture_multiplier": 1.27
+		"posture_multiplier": 1.27,
+		"preferred_range": 72.0
 	},
 	&"wind_wraps": {
 		"label": "FAIXAS DO VENTO",
@@ -40,7 +43,8 @@ const KITS := {
 		"neutral_ji": &"ji_body_hook",
 		"neutral_fu": &"fu_reversal",
 		"damage_multiplier": 0.94,
-		"posture_multiplier": 0.90
+		"posture_multiplier": 0.90,
+		"preferred_range": 116.0
 	},
 	&"unarmed": {
 		"label": "MÃOS LIVRES",
@@ -50,7 +54,8 @@ const KITS := {
 		"neutral_ji": &"ji_body_hook",
 		"neutral_fu": &"fu_flow_strike",
 		"damage_multiplier": 0.84,
-		"posture_multiplier": 0.90
+		"posture_multiplier": 0.90,
+		"preferred_range": 86.0
 	}
 }
 
@@ -84,6 +89,9 @@ static func damage_multiplier(weapon_id: StringName) -> float:
 
 static func posture_multiplier(weapon_id: StringName) -> float:
 	return float(_kit_for(weapon_id).get("posture_multiplier", 1.0))
+
+static func preferred_range(weapon_id: StringName) -> float:
+	return float(_kit_for(weapon_id).get("preferred_range", 90.0))
 
 static func tactical_summary(weapon_id: StringName) -> String:
 	match weapon_id:
