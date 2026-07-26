@@ -20,6 +20,10 @@ extends Resource
 @export var vertical_force: float = -90.0
 @export var disarm_pressure: float = 0.0
 
+@export_group("Element")
+@export_enum("", "fire", "water", "earth", "air") var element_id: String = ""
+@export_range(0.0, 3.0, 0.05) var element_power: float = 0.0
+
 @export_group("Hitbox")
 @export var hitbox_size: Vector2 = Vector2(58, 42)
 @export var hitbox_offset: Vector2 = Vector2(34, -22)
@@ -51,3 +55,6 @@ func is_valid_for(grounded: bool) -> bool:
 
 func is_grab() -> bool:
 	return interaction_type == "grab"
+
+func has_element() -> bool:
+	return element_id != "" and element_power > 0.0
