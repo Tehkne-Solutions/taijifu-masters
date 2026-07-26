@@ -13,6 +13,7 @@
 - Confirmar ausência de erros de parser.
 - Confirmar que `main.tscn` é a cena principal.
 - Confirmar que não existem recursos ausentes.
+- Confirmar registro global de `TechniqueData`, `TechniqueCatalog`, `HurtboxRegion` e `TemporaryLoot`.
 
 ## 2. Preparação de batalha
 
@@ -40,7 +41,9 @@ Comparar:
 - vitalidade;
 - postura;
 - resistência ao empurrão;
-- técnicas contextuais.
+- técnicas contextuais;
+- arma inicial;
+- resistência ao desarmamento.
 
 ### Resultado esperado
 
@@ -105,7 +108,93 @@ Comparar:
 - Aparo perfeito anula o golpe e recua o atacante.
 - Defesa constante consome postura sob pressão.
 
-## 7. Manifestações do Fluxo
+## 7. Hurtboxes regionais
+
+Testar golpes que atinjam prioritariamente:
+
+- cabeça;
+- tronco;
+- pernas.
+
+### Resultado esperado
+
+- Cabeça recebe maior dano de vitalidade.
+- Tronco recebe pressão normal e maior pressão de desarmamento.
+- Pernas recebem menos dano de vitalidade e maior dano de postura.
+- Um único ataque não acerta múltiplas vezes o mesmo personagem.
+- O HUD registra a última região atingida apenas para diagnóstico interno quando necessário.
+
+## 8. Agarrão e projeções Ji
+
+### Controles
+
+- P1: `E`.
+- P2: `Num 4`.
+
+### Testes
+
+- Agarrar adversário parado.
+- Tentar agarrar durante esquiva.
+- Tentar agarrar adversário no ar.
+- Segurar para frente durante o controle.
+- Segurar para trás durante o controle.
+- Segurar salto durante o controle.
+- Segurar para baixo durante o controle.
+- Atingir o agarrador antes da projeção em teste futuro com terceiro agente ou chamada de debug.
+
+### Resultado esperado
+
+- Esquiva válida evita o agarrão.
+- Alvo aéreo não é agarrado pelo Laço de Centro.
+- Frente gera projeção horizontal.
+- Trás lança o alvo para o lado oposto.
+- Salto gera projeção vertical.
+- Baixo gera maior dano de postura.
+- Ambos recuperam o controle após a projeção.
+- Reiniciar a rodada durante ou após agarrão não mantém referências presas.
+
+## 9. Desarmamento
+
+- Utilizar repetidamente Empurrão de Fundação contra o tronco.
+- Combinar pressão de desarmamento com quebra de postura.
+- Observar a barra roxa abaixo do personagem.
+- Parar de atacar e confirmar redução gradual da pressão.
+
+### Resultado esperado
+
+- A pressão acumula até 100%.
+- Ao atingir o limite, a arma é removida do lutador.
+- Um objeto de arma aparece na arena.
+- O personagem desarmado causa menos dano e postura.
+- A arma não é perdida permanentemente.
+- A arma original retorna no início da próxima rodada.
+
+## 10. Espólio temporário
+
+### Arma
+
+- Desarmar um adversário.
+- Aguardar menos de 0,75 segundo e tentar recolher com o antigo dono.
+- Recolher com o adversário.
+- Recolher posteriormente com o antigo dono.
+
+### Eco de técnica
+
+- Fazer um personagem utilizar uma técnica.
+- Quebrar sua postura.
+- Coletar o eco roxo.
+- P1 usa `H`; P2 usa `Num 5`.
+
+### Resultado esperado
+
+- O antigo dono não recolhe imediatamente o próprio loot.
+- Qualquer jogador pode recolher após o bloqueio inicial.
+- Arma recolhida substitui temporariamente a arma atual.
+- Eco permite executar uma vez a técnica capturada.
+- O HUD exibe arma, pressão de desarmamento e eco disponível.
+- Loot desaparece após o tempo limite ou reinício da rodada.
+
+## 11. Manifestações do Fluxo
 
 - Aguardar surgimento.
 - Coletar Tai, Ji e Fu em rodadas diferentes.
@@ -119,7 +208,7 @@ Comparar:
 - Fu restaura parte de vida e fôlego.
 - Nova manifestação não aparece imediatamente.
 
-## 8. Arena
+## 12. Arena
 
 - Percorrer rota superior.
 - Percorrer rota inferior.
@@ -133,7 +222,7 @@ Comparar:
 - Queda elimina e reinicia a rodada.
 - A câmera mantém ambos visíveis dentro dos limites previstos.
 
-## 9. Regressão
+## 13. Regressão
 
 Após qualquer alteração, repetir:
 
@@ -143,7 +232,12 @@ Após qualquer alteração, repetir:
 - ataque;
 - defesa;
 - aparo;
-- coleta;
+- agarrão;
+- projeção;
+- desarmamento;
+- coleta de arma;
+- coleta e uso de eco;
+- manifestação;
 - queda;
 - reinício.
 
@@ -153,8 +247,14 @@ Após qualquer alteração, repetir:
 - cena principal não carrega;
 - personagem atravessa chão;
 - ataque permanece ativo indefinidamente;
+- uma hitbox acerta duas regiões no mesmo golpe;
 - defesa funciona pelas costas;
 - wall jump gera subida infinita sem risco;
+- alvo permanece agarrado após projeção ou reinício;
+- agarrador consegue atacar livremente durante controle;
+- arma some sem gerar loot;
+- loot concede item múltiplas vezes;
+- eco não é consumido após o uso;
 - rodada não reinicia;
 - build selecionada não é aplicada;
 - manifestação concede bônus aos dois jogadores;
