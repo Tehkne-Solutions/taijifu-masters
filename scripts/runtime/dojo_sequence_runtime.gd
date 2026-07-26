@@ -197,9 +197,12 @@ func _load_sequence() -> void:
 			"action": String(suffix),
 			"pressed": bool(event.get("pressed", false))
 		})
-	_events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["time"]) < float(b["time"]))
+	_events.sort_custom(_sort_events)
 	if not _events.is_empty():
 		_feedback = "SEQUÊNCIA CARREGADA • %.2fs" % _sequence_duration()
+
+func _sort_events(a: Dictionary, b: Dictionary) -> bool:
+	return float(a.get("time", 0.0)) < float(b.get("time", 0.0))
 
 func _player_action(player_index: int, suffix: StringName) -> StringName:
 	return StringName("p%d_%s" % [player_index, String(suffix)])
