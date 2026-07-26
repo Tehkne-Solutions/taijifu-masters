@@ -28,6 +28,8 @@ func _process(delta: float) -> void:
 		_update_status_label()
 
 func _process_selection_inputs() -> void:
+	if _has_active_fighters():
+		return
 	var changed := false
 	if Input.is_action_just_pressed(&"p1_variant_prev"):
 		ledger.cycle_selected_variant("p1", -1)
@@ -55,6 +57,12 @@ func _discover_fighters() -> void:
 			continue
 		var fighter := node as WeaponKitFighterController
 		_connected_fighters[fighter.get_instance_id()] = fighter
+
+func _has_active_fighters() -> bool:
+	for fighter_value in _connected_fighters.values():
+		if is_instance_valid(fighter_value):
+			return true
+	return false
 
 func _apply_selections() -> void:
 	for fighter_value in _connected_fighters.values():
@@ -93,12 +101,14 @@ func _update_status_label() -> void:
 	var p2_variant := ledger.selected_variant("p2")
 	var p1_count := ledger.unlocked_variants("p1").size()
 	var p2_count := ledger.unlocked_variants("p2").size()
+	var state_suffix := "BLOQUEADA DURANTE A LUTA" if _has_active_fighters() else "SELEÇÃO DE PREPARAÇÃO"
 	var suffix := "" if _feedback == "" else "\n%s" % _feedback
-	_status_label.text = "Z/X P1: %s (%d)   |   NUM8/NUM9 P2: %s (%d)%s" % [
+	_status_label.text = "Z/X P1: %s (%d)   |   NUM8/NUM9 P2: %s (%d)\n%s%s" % [
 		MasterTrainingCatalog.variant_label(p1_variant),
 		p1_count,
 		MasterTrainingCatalog.variant_label(p2_variant),
 		p2_count,
+		state_suffix,
 		suffix
 	]
 
