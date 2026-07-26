@@ -7,6 +7,8 @@ const WORLD_WIDTH := 2800.0
 const WORLD_HEIGHT := 1050.0
 const CLOSURE_START_SECONDS := 16.0
 
+@export var show_strategic_points := true
+
 var _platforms: Array[Dictionary] = []
 var _moving_platform: AnimatableBody2D
 var _vertical_platform: AnimatableBody2D
@@ -26,6 +28,23 @@ var _manifestation_slots := [
 ]
 var _active_manifestation := 0
 var _manifestation_timer := 0.0
+
+## Pontos de intenção para IA, telemetria e futuras missões. Eles não são
+## caminhos rígidos: cada ponto descreve onde uma estratégia tende a funcionar.
+var _strategic_points: Array[Dictionary] = [
+	{"id": &"tai_west_terrace", "route": &"tai", "role": &"high_ground", "position": Vector2(700, 345), "risk": 0.32},
+	{"id": &"tai_central_overlook", "route": &"tai", "role": &"range", "position": Vector2(1050, 225), "risk": 0.58},
+	{"id": &"tai_final_arch", "route": &"tai", "role": &"high_ground", "position": Vector2(2300, 240), "risk": 0.46},
+	{"id": &"tai_east_landing", "route": &"tai", "role": &"recovery", "position": Vector2(2630, 420), "risk": 0.62},
+	{"id": &"ji_west_corridor", "route": &"ji", "role": &"choke", "position": Vector2(650, 665), "risk": 0.20},
+	{"id": &"ji_center_wall", "route": &"ji", "role": &"control", "position": Vector2(1110, 610), "risk": 0.28},
+	{"id": &"ji_east_corridor", "route": &"ji", "role": &"choke", "position": Vector2(1780, 690), "risk": 0.34},
+	{"id": &"fu_west_transition", "route": &"fu", "role": &"transition", "position": Vector2(190, 645), "risk": 0.18},
+	{"id": &"fu_moving_crossing", "route": &"fu", "role": &"transition", "position": Vector2(1390, 445), "risk": 0.42},
+	{"id": &"fu_manifestation_lane", "route": &"fu", "role": &"resource", "position": Vector2(1960, 455), "risk": 0.36},
+	{"id": &"fu_vertical_gate", "route": &"fu", "role": &"ascent", "position": Vector2(2290, 610), "risk": 0.40},
+	{"id": &"fu_final_step", "route": &"fu", "role": &"ascent", "position": Vector2(2590, 310), "risk": 0.55}
+]
 
 func _ready() -> void:
 	_build_blockout()
@@ -133,6 +152,9 @@ func apply_sector_pressure(fighter: FighterController) -> void:
 func camera_left_limit() -> float:
 	return maxf(420.0, _left_boundary + 420.0)
 
+func closure_stage() -> int:
+	return _closure_stage
+
 func closure_stage_label() -> String:
 	match _closure_stage:
 		1:
@@ -145,6 +167,88 @@ func closure_stage_label() -> String:
 			return "PLATAFORMA LIMITE"
 		_:
 			return "ARENA ESTÁVEL"
+
+func route_for_position(position: Vector2) -> StringName:
+	if position.y <= 430.0:
+		return &"tai"
+	if position.y >= 610.0:
+		return &"ji"
+	return &"fu"
+
+func is_position_safe(position: Vector2, margin: float = 95.0) -> bool:
+	return position.x >= _left_boundary + margin and position.x <= WORLD_WIDTH - 55.0
+
+func active_manifestation_data() -> Dictionary:
+	if _active_manifestation < 0 or _active_manifestation >= _manifestation_slots.size():
+		return {}
+	var slot: Dictionary = _manifestation_slots[_active_manifestation].duplicate(true)
+	slot["global_position"] = to_global(slot["position"])
+	return slot
+
+func strategic_points(route_id: StringName = &"") -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for point in _strategic_points:
+		if route_id != &"" and StringName(point["route"]) != route_id:
+			continue
+		var global_position := to_global(point["position"])
+		if not is_position_safe(global_position, 120.0):
+			continue
+		var copy := point.duplicate(true)
+		copy["global_position"] = global_position
+		result.append(copy)
+	return result
+
+func best_strategic_point(
+	route_id: StringName,
+	origin: Vector2,
+	opponent_position: Vector2,
+	objective_id: StringName = &"control"
+) -> Dictionary:
+	var candidates := strategic_points(route_id)
+	if candidates.is_empty():
+		candidates = strategic_points()
+	if candidates.is_empty():
+		return {
+			"id": &"safe_fallback",
+			"route": &"fu",
+			"role": &"recovery",
+			"global_position": Vector2(maxf(_left_boundary + 260.0, 1800.0), 720.0),
+			"risk": 0.25
+		}
+
+	var best: Dictionary = candidates[0]
+	var best_score := INF
+	for point in candidates:
+		var point_position: Vector2 = point["global_position"]
+		var risk := float(point.get("risk", 0.5))
+		var score := origin.distance_to(point_position) * 0.0035 + risk * 1.5
+		var opponent_distance := opponent_position.distance_to(point_position)
+		var role := StringName(point.get("role", &"control"))
+
+		match objective_id:
+			&"escape":
+				score -= clampf((point_position.x - _left_boundary) * 0.0014, 0.0, 2.2)
+				if role == &"ascent" or role == &"recovery":
+					score -= 0.55
+			&"engage":
+				score += opponent_distance * 0.0018
+				if role == &"choke" or role == &"control":
+					score -= 0.48
+			&"range":
+				score -= clampf(opponent_distance * 0.0012, 0.0, 1.4)
+				if role == &"high_ground" or role == &"range":
+					score -= 0.65
+			&"transition":
+				if role == &"transition" or role == &"ascent":
+					score -= 0.72
+			_:
+				if role == &"control" or role == &"resource":
+					score -= 0.35
+
+		if score < best_score:
+			best_score = score
+			best = point
+	return best.duplicate(true)
 
 func _build_blockout() -> void:
 	_create_static_platform(Rect2(-180, 850, 3160, 120), Color(0.15, 0.17, 0.22))
@@ -275,6 +379,20 @@ func _draw() -> void:
 			Rect2(_vertical_platform.position - Vector2(67.5, 11), Vector2(135, 22)),
 			Color(0.28, 0.58, 0.72)
 		)
+
+	if show_strategic_points:
+		var route_colors := {
+			&"tai": Color(0.32, 0.72, 1.0, 0.44),
+			&"ji": Color(0.96, 0.45, 0.24, 0.44),
+			&"fu": Color(0.65, 0.38, 1.0, 0.44)
+		}
+		for point in _strategic_points:
+			var point_position: Vector2 = point["position"]
+			if not is_position_safe(to_global(point_position), 120.0):
+				continue
+			var point_color: Color = route_colors.get(StringName(point["route"]), Color(0.8, 0.8, 0.8, 0.4))
+			draw_circle(point_position, 9.0, point_color)
+			draw_arc(point_position, 14.0, 0.0, TAU, 16, point_color.lightened(0.25), 2.0)
 
 	if _active_manifestation >= 0:
 		var slot: Dictionary = _manifestation_slots[_active_manifestation]

@@ -10,12 +10,14 @@ var _round_started_msec := 0
 var _players: Dictionary = {}
 var _round_events: Array[Dictionary] = []
 var _rounds: Array[Dictionary] = []
+var _last_round: Dictionary = {}
 
 func begin_session() -> void:
 	_session_started_unix = int(Time.get_unix_time_from_system())
 	_session_id = "%d-%d" % [_session_started_unix, randi_range(1000, 9999)]
 	_round_index = 0
 	_rounds.clear()
+	_last_round.clear()
 	begin_round()
 
 func begin_round() -> void:
@@ -65,9 +67,29 @@ func finish_round(winner_profile_id: StringName = &"") -> String:
 		"players": _players.duplicate(true),
 		"events": _round_events.duplicate(true)
 	}
+	_last_round = round_data.duplicate(true)
 	_rounds.append(round_data)
-	var path := _write_session()
-	return path
+	return _write_session()
+
+func last_round_snapshot() -> Dictionary:
+	return _last_round.duplicate(true)
+
+func current_round_snapshot() -> Dictionary:
+	return {
+		"round_index": _round_index,
+		"duration_msec": Time.get_ticks_msec() - _round_started_msec,
+		"winner_profile_id": "",
+		"players": _players.duplicate(true),
+		"events": _round_events.duplicate(true)
+	}
+
+func session_snapshot() -> Dictionary:
+	return {
+		"version": 2,
+		"session_id": _session_id,
+		"started_unix": _session_started_unix,
+		"rounds": _rounds.duplicate(true)
+	}
 
 func current_route_summary(profile_id: StringName) -> String:
 	var metrics := _player_metrics(profile_id)
@@ -100,7 +122,7 @@ func _write_session() -> String:
 	if file == null:
 		return ""
 	file.store_string(JSON.stringify({
-		"version": 1,
+		"version": 2,
 		"session_id": _session_id,
 		"started_unix": _session_started_unix,
 		"updated_unix": int(Time.get_unix_time_from_system()),

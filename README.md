@@ -15,6 +15,9 @@ A implementação atual valida:
 - Manoplas Sísmicas com pressão, postura e desarmamento;
 - troca imediata de repertório ao roubar uma arma;
 - bot com decisões de aproximação, defesa, magia, agarrão e rotas Tai/Ji/Fu;
+- pontos estratégicos de alcance, controle, transição, recurso, ascensão e recuperação;
+- objetivos de navegação para engajar, controlar, disputar e escapar;
+- prevenção contra bloqueio do bot durante navegação;
 - seleção independente entre fogo, água, terra e ar;
 - técnica elemental própria para cada elemento;
 - estados de queimadura, molhado, ancoragem, lama, desequilíbrio e vapor;
@@ -31,6 +34,7 @@ A implementação atual valida:
 - ecos de técnica utilizáveis uma vez;
 - Observação Marcial persistente em sete estágios;
 - telemetria de rotas, técnicas, elementos, agarrões e resultados;
+- dashboard visual pós-rodada com diagnóstico de estilo;
 - arena horizontal e vertical com fechamento lateral;
 - Manifestações do Fluxo disputáveis;
 - câmera dinâmica e reinício completo de rodada.
@@ -51,6 +55,8 @@ A implementação atual valida:
 5. Escolha build e elemento e pressione `Enter`.
 
 O P2 começa controlado pelo bot. Pressione `Tab` para alternar entre bot e controle local.
+
+Pressione `F2` após uma rodada para abrir ou fechar o último relatório visual.
 
 ## Preparação
 
@@ -125,7 +131,9 @@ Ele observa apenas estados legíveis da luta, como:
 - fase visível do ataque;
 - postura e fôlego;
 - arma equipada;
-- rota mais compatível com sua build.
+- rota mais compatível com sua build;
+- posição da borda móvel;
+- Manifestação do Fluxo ativa.
 
 O bot possui atraso de reação influenciado por Percepção e pode:
 
@@ -136,9 +144,37 @@ O bot possui atraso de reação influenciado por Percepção e pode:
 - conjurar elemento;
 - agarrar e reforçar controle;
 - alternar direções para fugir de agarrões;
-- avançar quando a borda da arena se fecha.
+- avançar quando a borda da arena se fecha;
+- ocupar pontos estratégicos Tai, Ji e Fu;
+- disputar uma Manifestação quando o recurso é necessário;
+- abandonar um plano para responder a ameaça imediata.
 
 Ele não recebe dano reduzido, recursos infinitos ou leitura direta dos comandos do jogador.
+
+## Pontos estratégicos da arena
+
+A arena possui posições classificadas por rota, função e risco.
+
+### Tai
+
+- terreno elevado;
+- manutenção de alcance;
+- entradas e recuperação aérea.
+
+### Ji
+
+- corredores estreitos;
+- pontos de controle;
+- pressão de contato e agarrões.
+
+### Fu
+
+- transições;
+- plataformas móveis;
+- recursos;
+- ascensão final.
+
+Pontos atrás da borda móvel deixam automaticamente de ser candidatos. Os marcadores do blockout existem apenas para depuração e não possuem colisão.
 
 ## Fuga ativa de agarrões
 
@@ -171,11 +207,23 @@ O registro é salvo em:
 user://martial_observation.json
 ```
 
-## Telemetria do protótipo
+## Telemetria e relatório visual
 
 Cada rodada registra tempo nas rotas Tai/Ji/Fu, técnicas, elementos, agarrões, fugas, resultado e duração.
 
-Os relatórios são gravados em:
+Ao final, um painel mostra:
+
+- vencedor e duração;
+- barras de ocupação Tai, Ji e Fu;
+- técnicas utilizadas;
+- respostas defensivas;
+- agarrões e fugas;
+- conjurações e interações elementais;
+- diagnóstico de estilo.
+
+A exibição automática é curta e não pausa a partida. `F2` reabre ou mantém o relatório mais recente.
+
+Os relatórios completos são gravados em:
 
 ```text
 user://telemetry/taijifu_<sessão>.json
@@ -222,6 +270,7 @@ A rodada começa com todas as rotas disponíveis. Depois:
 - Atributos devem alterar comportamento, não apenas números.
 - Armas mudam repertório e risco, não apenas dano.
 - O bot respeita as mesmas regras do jogador.
+- Pontos estratégicos orientam decisões, mas não prendem a IA.
 - Elementos geram estados e decisões, não dano gratuito.
 - Conhecimento exige observação, defesa, reprodução e adaptação.
 - Espólios são temporários no núcleo competitivo.
@@ -234,12 +283,13 @@ A rodada começa com todas as rotas disponíveis. Depois:
 - [`docs/ELEMENTS-MOVING-ARENA.md`](docs/ELEMENTS-MOVING-ARENA.md)
 - [`docs/MARTIAL-OBSERVATION-GRAB-TELEMETRY.md`](docs/MARTIAL-OBSERVATION-GRAB-TELEMETRY.md)
 - [`docs/WEAPON-KITS-TACTICAL-BOT.md`](docs/WEAPON-KITS-TACTICAL-BOT.md)
+- [`docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md`](docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ## Próxima implementação
 
-- relatório visual da telemetria;
-- bot com navegação por pontos da arena;
+- níveis de dificuldade e personalidades do bot;
+- heatmap acumulado de posições, rotas e quedas;
 - integração entre Observação Marcial, mestres e treinamento;
 - equipamento secundário e troca de arma;
 - arte e animações provisórias mais expressivas.
