@@ -9,6 +9,7 @@ const ADAPTATION_WINDOW_MSEC := 2600
 var ledger := WeaponMasteryLedger.new()
 var _connected_fighters: Dictionary = {}
 var _last_technique_weapon: Dictionary = {}
+var _last_weapon_technique: Dictionary = {}
 var _recent_swap_deadline: Dictionary = {}
 var _status_label: Label
 var _status_timer := 0.0
@@ -44,21 +45,26 @@ func _discover_fighters() -> void:
 		fighter.weapon_swapped.connect(_on_weapon_swapped)
 		fighter.weapon_disarmed.connect(_on_weapon_disarmed)
 
-func _on_technique_started(fighter: FighterController, _technique_id: StringName) -> void:
-	var profile_id := _profile_id(fighter)
+func _on_technique_started(fighter: FighterController, technique_id: StringName) -> void:
 	var weapon_id := fighter.equipped_weapon_id
-	_last_technique_weapon[fighter.get_instance_id()] = weapon_id
-	ledger.record_event(profile_id, weapon_id, &"uses", 1.0)
+	if not WeaponKitCatalog.is_technique_for_weapon(weapon_id, technique_id):
+		return
+	var fighter_id := fighter.get_instance_id()
+	_last_technique_weapon[fighter_id] = weapon_id
+	_last_weapon_technique[fighter_id] = technique_id
+	ledger.record_event(_profile_id(fighter), weapon_id, &"uses", 1.0)
 
 func _on_technique_experienced(
 	_defender: FighterController,
 	attacker: FighterController,
-	_technique_id: StringName,
+	technique_id: StringName,
 	outcome_id: StringName
 ) -> void:
 	if not is_instance_valid(attacker):
 		return
 	var attacker_id := attacker.get_instance_id()
+	if StringName(_last_weapon_technique.get(attacker_id, &"")) != technique_id:
+		return
 	var weapon_id: StringName = _last_technique_weapon.get(attacker_id, attacker.equipped_weapon_id)
 	var profile_id := _profile_id(attacker)
 	match outcome_id:
@@ -118,7 +124,7 @@ func _update_status_label() -> void:
 	for node in get_tree().get_nodes_in_group("fighters"):
 		if node is WeaponKitFighterController:
 			fighters.append(node as WeaponKitFighterController)
-	fighters.sort_custom(func(a: WeaponKitFighterController, b: WeaponKitFighterController) -> bool: return a.player_index < b.player_index)
+	fighters.sort_custom(_sort_fighters)
 
 	var summaries: Array[String] = []
 	for fighter in fighters:
@@ -129,8 +135,13 @@ func _update_status_label() -> void:
 			String(progress.get("stage_label", "DESCONHECIDA")),
 			roundi(float(progress.get("xp", 0.0)))
 		])
-	var suffix := " • %s" % _saved_path.get_file() if _saved_path != "" else ""
+	var suffix := ""
+	if _saved_path != "":
+		suffix = " • %s" % _saved_path.get_file()
 	_status_label.text = "V/NUM7 TROCA • %s%s" % ["   |   ".join(summaries), suffix]
+
+func _sort_fighters(a: WeaponKitFighterController, b: WeaponKitFighterController) -> bool:
+	return a.player_index < b.player_index
 
 func _register_key_action(action_id: StringName, physical_keycode: Key) -> void:
 	if not InputMap.has_action(action_id):
