@@ -105,7 +105,7 @@ func _register_prototype_inputs() -> void:
 	_add_key_action(&"p2_push", KEY_KP_2)
 	_add_key_action(&"p2_block", KEY_KP_3)
 
-func _add_key_action(action: StringName, keycode: Key) -> void:
+func _add_key_action(action: StringName, keycode: int) -> void:
 	if not InputMap.has_action(action):
 		InputMap.add_action(action)
 
