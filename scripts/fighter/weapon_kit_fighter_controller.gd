@@ -60,10 +60,12 @@ func _begin_technique(technique_id: StringName) -> bool:
 	var began := super._begin_technique(technique_id)
 	if not began or not is_instance_valid(_current_technique):
 		return began
-	var variant_id := StringName(_unlocked_technique_variants.get(String(technique_id), &""))
+	var variant_key := "%s|%s" % [String(equipped_weapon_id), String(technique_id)]
+	var variant_id := StringName(_unlocked_technique_variants.get(variant_key, &""))
 	if variant_id == &"":
 		return true
 	MasterTrainingCatalog.apply_variant(_current_technique, variant_id)
+	_attack_phase_timer = _current_technique.startup_seconds()
 	training_variant_applied.emit(self, variant_id, _current_technique.display_name)
 	return true
 
@@ -71,7 +73,8 @@ func set_unlocked_variants(variant_mapping: Dictionary) -> void:
 	_unlocked_technique_variants = variant_mapping.duplicate(true)
 
 func unlocked_variant_for(technique_id: StringName) -> StringName:
-	return StringName(_unlocked_technique_variants.get(String(technique_id), &""))
+	var variant_key := "%s|%s" % [String(equipped_weapon_id), String(technique_id)]
+	return StringName(_unlocked_technique_variants.get(variant_key, &""))
 
 func can_swap_weapon() -> bool:
 	return (
