@@ -5,7 +5,6 @@ const SAVE_PATH := "user://variant_comparison.json"
 const CONNECT_INTERVAL := 0.35
 
 @onready var dojo_runtime: DojoTrainingRuntime = get_node("../DojoTrainingRuntime")
-@onready var hud: CanvasLayer = get_node("../HUD")
 
 var _stats: Dictionary = {}
 var _connect_timer := 0.0
@@ -32,7 +31,7 @@ func _process(delta: float) -> void:
 		_panel.visible = not _panel.visible
 		if _panel.visible:
 			_refresh_panel()
-			_save_stats()
+		_save_stats()
 	if Input.is_action_just_pressed(&"clear_variant_comparison"):
 		_clear_stats()
 
@@ -108,7 +107,7 @@ func _on_impact_resolved(
 
 func _entry_for(technique: TechniqueData, variant_id: StringName) -> Dictionary:
 	var key := _entry_key(technique.technique_id, variant_id)
-	if _stats.has(key):
+	if _stats.has(key) and _stats[key] is Dictionary:
 		return (_stats[key] as Dictionary).duplicate(true)
 	return {
 		"technique_id": String(technique.technique_id),
@@ -189,7 +188,8 @@ func _refresh_panel() -> void:
 	for value in _stats.values():
 		if not (value is Dictionary):
 			continue
-		var technique_id := String((value as Dictionary).get("technique_id", ""))
+		var dictionary := value as Dictionary
+		var technique_id := String(dictionary.get("technique_id", ""))
 		if technique_id != "" and technique_id not in technique_ids:
 			technique_ids.append(technique_id)
 	technique_ids.sort()
@@ -220,8 +220,11 @@ func _refresh_panel() -> void:
 func _entries_for_technique(technique_id: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for value in _stats.values():
-		if value is Dictionary and String((value as Dictionary).get("technique_id", "")) == technique_id:
-			result.append((value as Dictionary).duplicate(true))
+		if not (value is Dictionary):
+			continue
+		var dictionary := value as Dictionary
+		if String(dictionary.get("technique_id", "")) == technique_id:
+			result.append(dictionary.duplicate(true))
 	result.sort_custom(_sort_entries)
 	return result
 
@@ -265,13 +268,19 @@ func _delta_line(base_entry: Dictionary, variant_entry: Dictionary) -> String:
 	var damage_delta := _safe_average(float(variant_entry.get("damage_total", 0.0)), variant_contacts) - _safe_average(float(base_entry.get("damage_total", 0.0)), base_contacts)
 	var posture_delta := _safe_average(float(variant_entry.get("posture_total", 0.0)), variant_contacts) - _safe_average(float(base_entry.get("posture_total", 0.0)), base_contacts)
 	var contact_delta := float(variant_entry.get("contacts", 0)) / float(variant_exec) * 100.0 - float(base_entry.get("contacts", 0)) / float(base_exec) * 100.0
-	return "[color=#9eb8d7]Δ variante − base: custo %+.1f • startup %+.0fms • dano/contato %+.1f • postura/contato %+.1f • contato %+.0f pp[/color]" % [
-		cost_delta,
-		startup_delta,
-		damage_delta,
-		posture_delta,
-		contact_delta
+	return "[color=#9eb8d7]Δ variante − base: custo %s • startup %sms • dano/contato %s • postura/contato %s • contato %s pp[/color]" % [
+		_signed_number(cost_delta, 1),
+		_signed_number(startup_delta, 0),
+		_signed_number(damage_delta, 1),
+		_signed_number(posture_delta, 1),
+		_signed_number(contact_delta, 0)
 	]
+
+func _signed_number(value: float, decimals: int) -> String:
+	var prefix := "+" if value >= 0.0 else ""
+	if decimals <= 0:
+		return "%s%.0f" % [prefix, value]
+	return "%s%.1f" % [prefix, value]
 
 func _safe_average(total: float, count: int) -> float:
 	if count <= 0:
@@ -300,8 +309,12 @@ func _load_stats() -> void:
 	if file == null:
 		return
 	var parsed := JSON.parse_string(file.get_as_text())
-	if parsed is Dictionary and parsed.get("stats", {}) is Dictionary:
-		_stats = (parsed.get("stats", {}) as Dictionary).duplicate(true)
+	if not (parsed is Dictionary):
+		return
+	var root := parsed as Dictionary
+	var loaded: Variant = root.get("stats", {})
+	if loaded is Dictionary:
+		_stats = (loaded as Dictionary).duplicate(true)
 
 func _register_key_action(action_id: StringName, physical_keycode: Key) -> void:
 	if not InputMap.has_action(action_id):
