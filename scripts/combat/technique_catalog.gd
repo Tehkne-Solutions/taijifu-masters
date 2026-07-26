@@ -88,7 +88,7 @@ static func get_technique(technique_id: StringName) -> TechniqueData:
 			technique.startup_frames = 7
 			technique.active_frames = 5
 			technique.recovery_frames = 18
-			technique.grab_hold_seconds = 0.46
+			technique.grab_hold_seconds = 1.35
 			technique.stamina_cost = 14.0
 			technique.damage = 0.0
 			technique.posture_damage = 0.0
