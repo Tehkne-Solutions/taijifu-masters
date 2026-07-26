@@ -28,6 +28,7 @@ var _primary_available := true
 var _secondary_available := true
 var _borrowed_available := false
 var _unlocked_technique_variants: Dictionary = {}
+var _selected_training_variant: StringName = &""
 
 func _ready() -> void:
 	super._ready()
@@ -62,7 +63,7 @@ func _begin_technique(technique_id: StringName) -> bool:
 		return began
 	var variant_key := "%s|%s" % [String(equipped_weapon_id), String(technique_id)]
 	var variant_id := StringName(_unlocked_technique_variants.get(variant_key, &""))
-	if variant_id == &"":
+	if variant_id == &"" or variant_id != _selected_training_variant:
 		return true
 	MasterTrainingCatalog.apply_variant(_current_technique, variant_id)
 	_attack_phase_timer = _current_technique.startup_seconds()
@@ -71,6 +72,15 @@ func _begin_technique(technique_id: StringName) -> bool:
 
 func set_unlocked_variants(variant_mapping: Dictionary) -> void:
 	_unlocked_technique_variants = variant_mapping.duplicate(true)
+
+func set_selected_training_variant(variant_id: StringName) -> void:
+	_selected_training_variant = variant_id
+
+func selected_training_variant() -> StringName:
+	return _selected_training_variant
+
+func selected_training_variant_label() -> String:
+	return MasterTrainingCatalog.variant_label(_selected_training_variant)
 
 func unlocked_variant_for(technique_id: StringName) -> StringName:
 	var variant_key := "%s|%s" % [String(equipped_weapon_id), String(technique_id)]

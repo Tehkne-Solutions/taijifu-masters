@@ -15,7 +15,8 @@ const MASTERS := {
 		"requirements": {"uses": 3, "hits": 2, "adaptive_hits": 1},
 		"base_technique_id": &"staff_flow_redirect",
 		"variant_id": &"han_three_currents",
-		"reward_name": "CÍRCULO DAS TRÊS CORRENTES"
+		"reward_name": "CÍRCULO DAS TRÊS CORRENTES",
+		"variant_summary": "Alcance e redirecionamento maiores; preparação, custo e recuperação também aumentam."
 	},
 	&"orra": {
 		"name": "MESTRA ORRA",
@@ -28,7 +29,8 @@ const MASTERS := {
 		"requirements": {"uses": 3, "hits": 2, "parries": 1},
 		"base_technique_id": &"gauntlet_guard_turn",
 		"variant_id": &"orra_inverted_foundation",
-		"reward_name": "FUNDAÇÃO INVERTIDA"
+		"reward_name": "FUNDAÇÃO INVERTIDA",
+		"variant_summary": "Mais postura e desarmamento; menos deslocamento, dano direto e velocidade de recuperação."
 	},
 	&"lyenne": {
 		"name": "MESTRA LYENNE",
@@ -41,7 +43,8 @@ const MASTERS := {
 		"requirements": {"uses": 3, "hits": 2, "swaps": 1},
 		"base_technique_id": &"tai_aerial_arc",
 		"variant_id": &"lyenne_crossing_wing",
-		"reward_name": "ASA CRUZADA"
+		"reward_name": "ASA CRUZADA",
+		"variant_summary": "Entrada aérea mais rápida e móvel; dano menor, custo e recuperação maiores."
 	}
 }
 
@@ -60,6 +63,29 @@ static func available_masters() -> Array[StringName]:
 static func master(master_id: StringName) -> Dictionary:
 	var data: Dictionary = MASTERS.get(master_id, {})
 	return data.duplicate(true)
+
+static func master_for_variant(variant_id: StringName) -> Dictionary:
+	for master_id in MASTER_ORDER:
+		var data := master(master_id)
+		if StringName(data.get("variant_id", &"")) == variant_id:
+			return data
+	return {}
+
+static func variant_label(variant_id: StringName) -> String:
+	if variant_id == &"":
+		return "SEM VARIANTE"
+	var data := master_for_variant(variant_id)
+	return String(data.get("reward_name", String(variant_id).to_upper()))
+
+static func variant_summary(variant_id: StringName) -> String:
+	if variant_id == &"":
+		return "Técnicas-base sem modificação de mestre."
+	var data := master_for_variant(variant_id)
+	return String(data.get("variant_summary", "Variação técnica especializada."))
+
+static func variant_path(variant_id: StringName) -> StringName:
+	var data := master_for_variant(variant_id)
+	return StringName(String(data.get("path", "fu")).to_lower())
 
 static func stage_meets(current_stage: StringName, required_stage: StringName) -> bool:
 	return int(STAGE_RANKS.get(current_stage, 0)) >= int(STAGE_RANKS.get(required_stage, 0))
