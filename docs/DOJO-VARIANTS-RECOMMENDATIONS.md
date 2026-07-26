@@ -28,7 +28,8 @@ O arquivo passou para a versão 2 e mantém compatibilidade com perfis anteriore
 ### Regras
 
 - apenas variantes já desbloqueadas podem ser escolhidas;
-- o primeiro desbloqueio é selecionado automaticamente quando o perfil ainda não possui escolha;
+- liberar uma variante não a equipa automaticamente;
+- a seleção só pode mudar antes da criação dos lutadores;
 - a variante continua vinculada à arma e à técnica-base;
 - selecionar uma variante não altera atributos;
 - trocar de arma não transfere a variante para um kit incompatível.
@@ -126,14 +127,15 @@ MasterRecommendationRuntime
 2. `Z/X` e `Num 8/Num 9` percorrem apenas opções válidas;
 3. `SEM VARIANTE` executa a técnica-base;
 4. a variante selecionada persiste após reiniciar;
-5. somente a combinação arma + técnica correta recebe modificação;
-6. `F8` suspende colapso e bot normal;
-7. defesa contínua não cria aparo a cada frame;
-8. aparo, esquiva e contra-ataque respeitam cooldowns;
-9. `F11` restaura posições sem remover a seleção de variante;
-10. `F6` apresenta recomendações diferentes conforme os dados;
-11. o Dojo não concede domínio ou variantes sem executar ações reais;
-12. sair do Dojo restaura o estado anterior do bot e reinicia o fluxo da arena.
+5. a seleção não muda durante a batalha;
+6. somente a combinação arma + técnica correta recebe modificação;
+7. `F8` suspende colapso e bot normal;
+8. defesa contínua não cria aparo a cada frame;
+9. aparo, esquiva e contra-ataque respeitam cooldowns;
+10. `F11` restaura posições sem remover a seleção de variante;
+11. `F6` apresenta recomendações diferentes conforme os dados;
+12. o Dojo não concede domínio ou variantes sem executar ações reais;
+13. sair do Dojo restaura o estado anterior do bot e reinicia o fluxo da arena.
 
 ---
 
