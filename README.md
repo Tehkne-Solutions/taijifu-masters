@@ -15,6 +15,8 @@ A implementação atual valida:
 - terceiro slot temporário para arma roubada;
 - kits técnicos definidos pela arma realmente equipada;
 - domínio persistente separado por arma;
+- três mestres com provas de combate;
+- variantes técnicas persistentes por perfil;
 - Bastão Adaptativo, Faixas do Vento e Manoplas Sísmicas;
 - quatro dificuldades de IA;
 - quatro personalidades de IA;
@@ -57,7 +59,11 @@ O P2 começa controlado pelo bot.
 - `F2`: abrir ou fixar o relatório da última rodada;
 - `F3`: mostrar ou ocultar o heatmap;
 - `F4`: avançar o nível de dificuldade do bot;
-- `F7`: avançar a personalidade do bot.
+- `F7`: avançar a personalidade do bot;
+- `T`: abrir ou fechar o painel dos mestres;
+- `Y`: alternar o perfil P1/P2 no painel;
+- `U`: alternar o mestre selecionado;
+- `I`: iniciar ou reiniciar a prova selecionada.
 
 ## Preparação
 
@@ -148,7 +154,46 @@ O registro é salvo em:
 user://weapon_mastery.json
 ```
 
-Nesta etapa, domínio não concede bônus oculto de dano, vida ou defesa. Ele prepara a integração futura com mestres, treinamentos e variações técnicas.
+Domínio não concede bônus oculto de dano, vida ou defesa. Ele comprova experiência suficiente para acessar provas de mestres.
+
+## Mestres, provas e variantes
+
+O painel de mestres é aberto com `T` e não pausa a batalha.
+
+### Mestre Han — Fu
+
+- arma: Bastão Adaptativo;
+- requisito: Treinada;
+- prova: usar três técnicas, acertar duas e realizar um acerto adaptativo após troca;
+- recompensa: **Círculo das Três Correntes**.
+
+A variação ganha alcance, atividade e redirecionamento, mas custa mais fôlego, exige mais preparação e possui recuperação maior.
+
+### Mestra Orra — Ji
+
+- armas: Manoplas Sísmicas ou Quebra-Fundação;
+- requisito: Treinada;
+- prova: usar três técnicas, acertar duas e realizar um aparo;
+- recompensa: **Fundação Invertida**.
+
+A variação aumenta postura e pressão de desarmamento, reduzindo deslocamento e dano direto.
+
+### Mestra Lyenne — Tai
+
+- arma: Faixas do Vento;
+- requisito: Treinada;
+- prova: usar três técnicas, acertar duas e trocar para as faixas;
+- recompensa: **Asa Cruzada**.
+
+A variação melhora velocidade e mobilidade aérea, com maior custo e recuperação.
+
+As variantes são vinculadas à combinação arma + técnica-base. Uma técnica aprendida com as Faixas não é aplicada ao mesmo movimento quando o personagem está desarmado.
+
+Os desbloqueios são salvos em:
+
+```text
+user://master_training.json
+```
 
 ## Kits técnicos
 
@@ -264,6 +309,8 @@ user://telemetry/heatmap_<sessão>.json
 - armas mudam repertório, distância e risco;
 - troca de arma cria vulnerabilidade real;
 - domínio registra experiência, não poder oculto;
+- mestres exigem provas executadas em combate;
+- variantes ampliam decisões e mantêm contrapartidas;
 - dificuldade altera consistência, não regras;
 - personalidade altera prioridades, não vantagens;
 - elementos geram estados e decisões;
@@ -280,12 +327,14 @@ user://telemetry/heatmap_<sessão>.json
 - [`docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md`](docs/TELEMETRY-DASHBOARD-STRATEGIC-NAVIGATION.md)
 - [`docs/BOT-DIFFICULTY-PERSONALITY-HEATMAP.md`](docs/BOT-DIFFICULTY-PERSONALITY-HEATMAP.md)
 - [`docs/SECONDARY-WEAPON-MASTERY.md`](docs/SECONDARY-WEAPON-MASTERY.md)
+- [`docs/MASTERS-TRAINING-VARIANTS.md`](docs/MASTERS-TRAINING-VARIANTS.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ## Próxima implementação
 
-- integração entre domínio, mestres e treinamento;
-- técnicas variantes liberadas por domínio;
+- dojo dedicado com bonecos e exercícios configuráveis;
+- seleção de variantes na preparação de batalha;
+- integração entre Observação Marcial e recomendações dos mestres;
 - comparação de heatmaps entre sessões;
 - exportação visual para playtests;
 - arte e animações provisórias mais expressivas.
