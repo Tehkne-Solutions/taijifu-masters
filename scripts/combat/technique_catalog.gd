@@ -137,6 +137,68 @@ static func get_technique(technique_id: StringName) -> TechniqueData:
 			technique.hitbox_size = Vector2(64, 48)
 			technique.hitbox_offset = Vector2(16, -26)
 			technique.disarm_pressure = 11.0
+		&"element_fire_burst":
+			technique.display_name = "Pulso de Brasa"
+			technique.path = "fu"
+			technique.startup_frames = 9
+			technique.active_frames = 5
+			technique.recovery_frames = 17
+			technique.stamina_cost = 16.0
+			technique.damage = 5.5
+			technique.posture_damage = 5.0
+			technique.horizontal_force = 225.0
+			technique.vertical_force = -70.0
+			technique.hitbox_size = Vector2(72, 48)
+			technique.hitbox_offset = Vector2(45, -24)
+			technique.element_id = "fire"
+			technique.element_power = 1.0
+		&"element_water_wave":
+			technique.display_name = "Onda de Fluxo"
+			technique.path = "fu"
+			technique.startup_frames = 8
+			technique.active_frames = 7
+			technique.recovery_frames = 16
+			technique.stamina_cost = 15.0
+			technique.damage = 3.0
+			technique.posture_damage = 6.0
+			technique.horizontal_force = 345.0
+			technique.vertical_force = -35.0
+			technique.hitbox_size = Vector2(82, 50)
+			technique.hitbox_offset = Vector2(48, -20)
+			technique.element_id = "water"
+			technique.element_power = 1.0
+		&"element_earth_anchor":
+			technique.display_name = "Impacto de Fundação"
+			technique.path = "fu"
+			technique.startup_frames = 12
+			technique.active_frames = 6
+			technique.recovery_frames = 19
+			technique.stamina_cost = 18.0
+			technique.damage = 4.5
+			technique.posture_damage = 16.0
+			technique.horizontal_force = 190.0
+			technique.vertical_force = 20.0
+			technique.hitbox_size = Vector2(70, 42)
+			technique.hitbox_offset = Vector2(41, -2)
+			technique.grounded_only = true
+			technique.element_id = "earth"
+			technique.element_power = 1.0
+		&"element_air_gust":
+			technique.display_name = "Rajada de Desvio"
+			technique.path = "fu"
+			technique.startup_frames = 6
+			technique.active_frames = 6
+			technique.recovery_frames = 13
+			technique.stamina_cost = 14.0
+			technique.damage = 3.5
+			technique.posture_damage = 5.0
+			technique.horizontal_force = 430.0
+			technique.vertical_force = -125.0
+			technique.hitbox_size = Vector2(88, 54)
+			technique.hitbox_offset = Vector2(52, -24)
+			technique.can_turn_during_startup = true
+			technique.element_id = "air"
+			technique.element_power = 1.0
 		_:
 			technique.display_name = "Técnica não catalogada"
 
