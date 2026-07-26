@@ -12,13 +12,19 @@ var _decision_timer := 0.0
 var _route_timer := 0.0
 var _reaction_timer := 0.0
 var _jump_cooldown := 0.0
+var _navigation_timer := 0.0
 var _reaction_pending := false
 var _movement_direction := 0
 var _preferred_route: StringName = &"fu"
+var _objective: StringName = &"control"
+var _strategic_target := Vector2.ZERO
+var _strategic_point_id: StringName = &"none"
 var _intent := "AGUARDANDO LUTADORES"
 var _tap_timers: Dictionary = {}
 var _grab_escape_side := -1
 var _grab_throw_suffix: StringName = &""
+var _last_bot_position := Vector2.ZERO
+var _stuck_timer := 0.0
 
 func _ready() -> void:
 	_register_toggle_action()
@@ -42,6 +48,8 @@ func _process(delta: float) -> void:
 	_route_timer = maxf(0.0, _route_timer - delta)
 	_reaction_timer = maxf(0.0, _reaction_timer - delta)
 	_jump_cooldown = maxf(0.0, _jump_cooldown - delta)
+	_navigation_timer = maxf(0.0, _navigation_timer - delta)
+	_update_stuck_state(delta)
 	_drive_bot()
 
 func _discover_fighters() -> void:
@@ -55,6 +63,9 @@ func _discover_fighters() -> void:
 			_opponent = fighter
 		elif fighter.player_index == 2:
 			_bot = fighter
+	if is_instance_valid(_bot):
+		_last_bot_position = _bot.global_position
+		_navigation_timer = 0.0
 
 func _drive_bot() -> void:
 	if is_instance_valid(_bot._grabbed_by):
@@ -72,6 +83,7 @@ func _drive_bot() -> void:
 
 	var delta_position := _opponent.global_position - _bot.global_position
 	var distance := absf(delta_position.x)
+	var vertical_distance := absf(delta_position.y)
 	var direction_to_opponent := int(signf(delta_position.x))
 	if direction_to_opponent == 0:
 		direction_to_opponent = 1
@@ -81,9 +93,8 @@ func _drive_bot() -> void:
 
 	if _is_in_boundary_danger():
 		_reaction_pending = false
-		_set_movement(1)
-		_intent = "FU • ESCAPAR DO COLAPSO"
-		_try_route_jump()
+		_select_navigation_target(&"escape")
+		_navigate_to_target(true)
 		return
 
 	var incoming_attack := (
@@ -102,14 +113,108 @@ func _drive_bot() -> void:
 	else:
 		_reaction_pending = false
 
+	if _navigation_timer <= 0.0:
+		_refresh_navigation_target(distance, vertical_distance)
+
+	if _should_navigate(distance, vertical_distance):
+		_navigate_to_target(false)
+		return
+
 	if _decision_timer > 0.0:
 		_apply_range_movement(distance, direction_to_opponent)
-		_try_route_jump()
 		return
 
 	_decision_timer = _reaction_delay()
 	_choose_combat_action(distance, direction_to_opponent)
-	_try_route_jump()
+
+func _refresh_navigation_target(distance: float, vertical_distance: float) -> void:
+	_objective = _choose_objective(distance, vertical_distance)
+	if _objective == &"contest":
+		var manifestation := arena.active_manifestation_data()
+		if not manifestation.is_empty():
+			_strategic_target = manifestation["global_position"]
+			_strategic_point_id = StringName("manifestation_%s" % String(manifestation["type"]))
+			_navigation_timer = randf_range(0.55, 0.85)
+			return
+
+	_select_navigation_target(_objective)
+
+func _select_navigation_target(objective_id: StringName) -> void:
+	_objective = objective_id
+	var point := arena.best_strategic_point(
+		_preferred_route,
+		_bot.global_position,
+		_opponent.global_position,
+		objective_id
+	)
+	_strategic_target = point.get("global_position", _opponent.global_position)
+	_strategic_point_id = StringName(point.get("id", &"fallback"))
+	_navigation_timer = randf_range(0.85, 1.35)
+
+func _choose_objective(distance: float, vertical_distance: float) -> StringName:
+	var posture_ratio := _bot.posture / maxf(1.0, _bot.build.max_posture())
+	if posture_ratio < 0.26:
+		return &"escape"
+
+	var manifestation := arena.active_manifestation_data()
+	if not manifestation.is_empty():
+		var manifestation_position: Vector2 = manifestation["global_position"]
+		var manifestation_type := StringName(manifestation["type"])
+		var needs_resource := (
+			manifestation_type == &"tai" and _bot.stamina < 72.0
+			or manifestation_type == &"ji" and posture_ratio < 0.72
+			or manifestation_type == &"fu" and (_bot.health < _bot.build.max_health() * 0.84 or _bot.stamina < 68.0)
+		)
+		if _bot.global_position.distance_to(manifestation_position) < 610.0 and (
+			needs_resource or manifestation_type == _preferred_route
+		):
+			return &"contest"
+
+	if vertical_distance > 145.0:
+		return &"transition"
+	if _preferred_route == &"tai" and distance > 180.0:
+		return &"range"
+	if _preferred_route == &"ji":
+		return &"engage"
+	return &"control"
+
+func _should_navigate(distance: float, vertical_distance: float) -> bool:
+	if _strategic_target == Vector2.ZERO:
+		return false
+	if _objective == &"escape" or _objective == &"contest":
+		return _bot.global_position.distance_to(_strategic_target) > 48.0
+	if distance < 205.0 and vertical_distance < 105.0:
+		return false
+	return _bot.global_position.distance_to(_strategic_target) > 78.0
+
+func _navigate_to_target(force_forward: bool) -> void:
+	var delta_target := _strategic_target - _bot.global_position
+	var direction := int(signf(delta_target.x))
+	if force_forward:
+		direction = 1
+	_set_movement(direction)
+
+	if absf(delta_target.x) <= 55.0:
+		_set_movement(0)
+
+	if delta_target.y < -68.0 and _bot.is_on_floor() and _jump_cooldown <= 0.0:
+		_tap(&"jump", 0.12)
+		_jump_cooldown = 0.68
+	elif _stuck_timer >= 0.72 and _bot.is_on_floor() and _jump_cooldown <= 0.0:
+		_tap(&"jump", 0.12)
+		_jump_cooldown = 0.82
+		_stuck_timer = 0.0
+
+	_intent = "%s • NAVEGAR %s" % [_objective.to_upper(), String(_strategic_point_id).to_upper()]
+
+func _update_stuck_state(delta: float) -> void:
+	if not is_instance_valid(_bot):
+		return
+	if _movement_direction != 0 and _bot.global_position.distance_to(_last_bot_position) < 3.0:
+		_stuck_timer += delta
+	else:
+		_stuck_timer = maxf(0.0, _stuck_timer - delta * 2.0)
+	_last_bot_position = _bot.global_position
 
 func _react_to_attack(direction_to_opponent: int) -> void:
 	_decision_timer = randf_range(0.28, 0.48)
@@ -218,20 +323,6 @@ func _choose_preferred_route() -> StringName:
 		return &"ji"
 	return &"fu"
 
-func _try_route_jump() -> void:
-	if _jump_cooldown > 0.0 or not _bot.is_on_floor():
-		return
-	if _bot._attack_phase != FighterController.AttackPhase.NONE:
-		return
-	if _preferred_route == &"tai" and _bot.global_position.y > 470.0 and randf() < 0.16:
-		_tap(&"jump", 0.12)
-		_jump_cooldown = 0.78
-		_intent = "TAI • SUBIR PARA ESPAÇO ABERTO"
-	elif _preferred_route == &"fu" and absf(_opponent.global_position.y - _bot.global_position.y) > 115.0 and randf() < 0.11:
-		_tap(&"jump", 0.12)
-		_jump_cooldown = 0.72
-		_intent = "FU • TROCAR DE NÍVEL"
-
 func _desired_range() -> float:
 	match _bot.equipped_weapon_id:
 		&"training_staff":
@@ -302,6 +393,7 @@ func _release_all_actions() -> void:
 	_movement_direction = 0
 	_grab_throw_suffix = &""
 	_reaction_pending = false
+	_strategic_target = Vector2.ZERO
 
 func _register_toggle_action() -> void:
 	if not InputMap.has_action(&"toggle_bot"):
@@ -315,13 +407,13 @@ func _register_toggle_action() -> void:
 
 func _create_status_label() -> void:
 	_status_label = Label.new()
-	_status_label.offset_left = 350.0
-	_status_label.offset_top = 606.0
-	_status_label.offset_right = 930.0
+	_status_label.offset_left = 300.0
+	_status_label.offset_top = 600.0
+	_status_label.offset_right = 980.0
 	_status_label.offset_bottom = 642.0
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_status_label.add_theme_font_size_override("font_size", 12)
+	_status_label.add_theme_font_size_override("font_size", 11)
 	_status_label.add_theme_color_override("font_color", Color(0.82, 0.90, 1.0, 0.96))
 	hud.add_child(_status_label)
 
@@ -329,6 +421,10 @@ func _update_status_label() -> void:
 	if not is_instance_valid(_status_label):
 		return
 	if enabled:
-		_status_label.text = "TAB: BOT P2 ATIVO • %s • ROTA %s" % [_intent, _preferred_route.to_upper()]
+		_status_label.text = "TAB: BOT P2 • %s • ROTA %s • PONTO %s" % [
+			_intent,
+			_preferred_route.to_upper(),
+			String(_strategic_point_id).to_upper()
+		]
 	else:
-		_status_label.text = "TAB: P2 LOCAL • CONTROLES NUMÉRICOS LIBERADOS"
+		_status_label.text = "TAB: P2 LOCAL • F2: RELATÓRIO DO ÚLTIMO ROUND"
