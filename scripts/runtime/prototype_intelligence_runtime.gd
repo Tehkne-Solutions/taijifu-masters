@@ -69,6 +69,14 @@ func _route_for_position(position: Vector2) -> StringName:
 
 func _on_technique_started(fighter: FighterController, technique_id: StringName) -> void:
 	_telemetry.record_event(_profile_id(fighter), &"technique_started", technique_id)
+	var technique := TechniqueCatalog.get_technique(technique_id)
+	if technique.has_element():
+		_telemetry.record_event(
+			_profile_id(fighter),
+			&"element_cast",
+			StringName(technique.element_id)
+		)
+
 	for observer_variant in _connected_fighters.values():
 		if not is_instance_valid(observer_variant):
 			continue
@@ -92,8 +100,12 @@ func _on_technique_experienced(
 	_telemetry.record_event(_profile_id(fighter), &"technique_experienced", outcome_id)
 
 func _on_technique_reproduced(fighter: FighterController, technique_id: StringName) -> void:
+	var profile_id := _profile_id(fighter)
+	var previous_stage := _ledger.stage_for(profile_id, technique_id)
 	_record_observation(fighter, technique_id, &"reproduced")
-	_telemetry.record_event(_profile_id(fighter), &"technique_reproduced", technique_id)
+	if previous_stage in [&"defended", &"reproduced", &"adapted", &"mastered"]:
+		_record_observation(fighter, technique_id, &"adapted")
+	_telemetry.record_event(profile_id, &"technique_reproduced", technique_id)
 
 func _record_observation(
 	fighter: FighterController,
@@ -105,7 +117,7 @@ func _record_observation(
 		return
 	var technique := TechniqueCatalog.get_technique(technique_id)
 	_flash_text = "%s • %s: %s" % [
-		_profile_id(fighter).to_upper(),
+		String(_profile_id(fighter)).to_upper(),
 		technique.display_name.to_upper(),
 		update.get("stage_label", "VISTA")
 	]
@@ -134,7 +146,7 @@ func _on_grab_escape_progress(
 func _on_grab_escaped(fighter: FighterController, attacker: FighterController) -> void:
 	_telemetry.record_event(_profile_id(fighter), &"grab_escaped")
 	_telemetry.record_event(_profile_id(attacker), &"grab_lost")
-	_flash_text = "%s • FUGA FU CONCLUÍDA" % _profile_id(fighter).to_upper()
+	_flash_text = "%s • FUGA FU CONCLUÍDA" % String(_profile_id(fighter)).to_upper()
 	_flash_timer = 1.15
 
 func _on_elemental_interaction(
