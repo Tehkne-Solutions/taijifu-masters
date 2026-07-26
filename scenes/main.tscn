@@ -1,0 +1,63 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Arena" type="Node2D" parent="."]
+script = ExtResource("2_arena")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(640, 430)
+enabled = true
+position_smoothing_enabled = false
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopShade" type="ColorRect" parent="HUD"]
+offset_right = 1280.0
+offset_bottom = 112.0
+mouse_filter = 2
+color = Color(0.018, 0.023, 0.035, 0.84)
+
+[node name="PlayerOne" type="Label" parent="HUD"]
+offset_left = 22.0
+offset_top = 16.0
+offset_right = 410.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.66, 0.87, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "P1"
+
+[node name="PlayerTwo" type="Label" parent="HUD"]
+offset_left = 870.0
+offset_top = 16.0
+offset_right = 1258.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(1, 0.72, 0.62, 1)
+theme_override_font_sizes/font_size = 17
+text = "P2"
+horizontal_alignment = 2
+
+[node name="CenterInfo" type="Label" parent="HUD"]
+offset_left = 430.0
+offset_top = 20.0
+offset_right = 850.0
+offset_bottom = 92.0
+theme_override_colors/font_color = Color(0.95, 0.87, 0.53, 1)
+theme_override_font_sizes/font_size = 21
+text = "TAIJIFU MASTERS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Controls" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 665.0
+offset_right = 1260.0
+offset_bottom = 708.0
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 0.9)
+theme_override_font_sizes/font_size = 14
+text = "P1: A/D mover • W saltar • S queda • Q esquiva • F golpe • G empurrão • R defesa     |     P2: Setas • Num0 esquiva • Num1 golpe • Num2 empurrão • Num3 defesa"
+horizontal_alignment = 1
