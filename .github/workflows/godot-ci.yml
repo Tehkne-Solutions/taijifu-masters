@@ -1,0 +1,62 @@
+name: Godot CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-godot-project:
+    name: Parser, importação e smoke test
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências do runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            unzip \
+            libfontconfig1 \
+            libgl1 \
+            libxcursor1 \
+            libxinerama1 \
+            libxrandr2 \
+            libxi6
+
+      - name: Baixar Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Importar projeto e validar parser
+        run: |
+          set -o pipefail
+          ./godot --headless --editor --path . --quit 2>&1 | tee godot-import.log
+
+      - name: Instanciar cena principal e validar recursos
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/smoke_test.gd 2>&1 | tee godot-smoke.log
+
+      - name: Publicar logs quando houver falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-ci-logs
+          path: |
+            godot-import.log
+            godot-smoke.log
+          if-no-files-found: ignore
