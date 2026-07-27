@@ -1,6 +1,8 @@
 class_name TournamentRuntime
 extends Node
 
+const GUEST_PRESETS: Array[StringName] = [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"]
+
 @onready var preparation_runtime: BattlePreparationRuntime = get_node("../BattlePreparationRuntime")
 @onready var preset_runtime: LoadoutPresetRuntime = get_node("../LoadoutPresetRuntime")
 
@@ -9,7 +11,7 @@ var _sources: Array[Dictionary] = []
 var _slot_sources: Array[int] = [0, 1, 2, 3]
 var _selected_slot := 0
 var _active_panel := false
-var _feedback := "F10 abre • setas configuram • ENTER inicia • DEL reinicia"
+var _feedback := "F10 abre • Page Up/Down seleciona • Home/End troca • ENTER inicia"
 var _canvas: CanvasLayer
 var _panel: PanelContainer
 var _title: Label
@@ -78,8 +80,12 @@ func prepare_current_match() -> bool:
 		return false
 	var p1: Dictionary = pair[0]
 	var p2: Dictionary = pair[1]
-	preparation_runtime.set_loadout_for_test(1, p1.get("loadout", {}) as Dictionary)
-	preparation_runtime.set_loadout_for_test(2, p2.get("loadout", {}) as Dictionary)
+	var p1_loadout: Variant = p1.get("loadout", {})
+	var p2_loadout: Variant = p2.get("loadout", {})
+	if not (p1_loadout is Dictionary) or not (p2_loadout is Dictionary):
+		return false
+	preparation_runtime.set_loadout_for_test(1, p1_loadout as Dictionary)
+	preparation_runtime.set_loadout_for_test(2, p2_loadout as Dictionary)
 	preparation_runtime.set_ready_for_test(1, false)
 	preparation_runtime.set_ready_for_test(2, false)
 	_feedback = "%s • %s VS %s" % [ledger.stage_label(), String(p1.get("name", "P1")), String(p2.get("name", "P2"))]
@@ -90,7 +96,8 @@ func record_series_winner(winner_index: int) -> Dictionary:
 	var result := ledger.record_winner(winner_index)
 	if not bool(result.get("ok", false)):
 		return result
-	var winner: Dictionary = result.get("winner", {})
+	var winner_source: Variant = result.get("winner", {})
+	var winner: Dictionary = winner_source as Dictionary if winner_source is Dictionary else {}
 	if bool(result.get("finished", false)):
 		_feedback = "CAMPEÃO: %s" % String(winner.get("name", "CAMPEÃO"))
 	else:
@@ -166,9 +173,9 @@ func _refresh_sources() -> void:
 				String(preset.get("preset_id", "preset_%d" % _sources.size()))
 			))
 	while _sources.size() < 4:
-		var fallback_id := [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"][_sources.size() % 4]
-		var fallback := BattleLoadoutCatalog.default_loadout(1)
-		fallback["preset_id"] = fallback_id
+		var guest_index := _sources.size() % GUEST_PRESETS.size()
+		var fallback_id: StringName = GUEST_PRESETS[guest_index]
+		var fallback := BattleLoadoutCatalog.loadout_from_preset(fallback_id)
 		_sources.append(_source_from_loadout("CONVIDADO %d" % (_sources.size() + 1), fallback, "guest_%d" % _sources.size()))
 	for slot in range(4):
 		_slot_sources[slot] = clampi(_slot_sources[slot], 0, _sources.size() - 1)
@@ -205,16 +212,22 @@ func _build_interface() -> void:
 	style.corner_radius_bottom_right = 14
 	_panel.add_theme_stylebox_override("panel", style)
 	_canvas.add_child(_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	_panel.add_child(margin)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
-	_panel.add_child(column)
+	margin.add_child(column)
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.add_theme_font_size_override("font_size", 25)
 	_title.add_theme_color_override("font_color", Color(1.0, 0.80, 0.42))
 	column.add_child(_title)
 	_bracket = RichTextLabel.new()
-	_bracket.custom_minimum_size = Vector2(900.0, 420.0)
+	_bracket.custom_minimum_size = Vector2(860.0, 420.0)
 	_bracket.bbcode_enabled = true
 	_bracket.fit_content = false
 	_bracket.scroll_active = false
@@ -253,7 +266,7 @@ func _refresh() -> void:
 				String(source.get("character_name", "")), String(source.get("build_name", ""))
 			])
 	_bracket.text = "\n\n".join(lines)
-	_details.text = "F10 fecha • ↑/↓ competidor • ←/→ fonte • ENTER inicia • DEL reinicia\n%s" % _feedback
+	_details.text = "F10 fecha • Page Up/Down competidor • Home/End fonte • ENTER inicia • DEL reinicia\n%s" % _feedback
 
 func _name_at(source: Array, index: int) -> String:
 	if index < 0 or index >= source.size() or not (source[index] is Dictionary):
