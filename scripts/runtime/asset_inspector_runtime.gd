@@ -4,6 +4,7 @@ extends Node
 var _canvas: CanvasLayer
 var _panel: PanelContainer
 var _preview: TextureRect
+var _anchor_overlay: AttachmentPreviewOverlay
 var _title: Label
 var _details: Label
 var _status: Label
@@ -62,6 +63,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_step_frame(-1)
 		KEY_PERIOD:
 			_step_frame(1)
+		KEY_A:
+			_anchor_overlay.set_guides_visible(not _anchor_overlay.guides_visible())
+			_update_labels()
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -71,7 +75,6 @@ func _build_interface() -> void:
 	_canvas.layer = 240
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_canvas)
-
 	_panel = PanelContainer.new()
 	_panel.offset_left = 330.0
 	_panel.offset_top = 46.0
@@ -89,45 +92,40 @@ func _build_interface() -> void:
 	panel_style.corner_radius_bottom_right = 12
 	_panel.add_theme_stylebox_override("panel", panel_style)
 	_canvas.add_child(_panel)
-
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_right", 24)
 	margin.add_theme_constant_override("margin_top", 18)
 	margin.add_theme_constant_override("margin_bottom", 18)
 	_panel.add_child(margin)
-
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 9)
 	margin.add_child(column)
-
 	_title = Label.new()
 	_title.add_theme_font_size_override("font_size", 25)
 	_title.add_theme_color_override("font_color", Color(0.74, 0.92, 1.0))
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_title)
-
 	_status = Label.new()
 	_status.add_theme_font_size_override("font_size", 13)
 	_status.add_theme_color_override("font_color", Color(1.0, 0.80, 0.42))
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_status)
-
 	_preview = TextureRect.new()
 	_preview.custom_minimum_size = Vector2(420.0, 420.0)
 	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	column.add_child(_preview)
-
+	_anchor_overlay = AttachmentPreviewOverlay.new()
+	_preview.add_child(_anchor_overlay)
 	_details = Label.new()
 	_details.add_theme_font_size_override("font_size", 14)
 	_details.add_theme_color_override("font_color", Color(0.86, 0.88, 0.94))
 	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_details)
-
 	var help := Label.new()
-	help.text = "O fecha • ←/→ personagem • ↑/↓ estado • ESPAÇO autoplay • ,/. quadro"
+	help.text = "O fecha • ←/→ personagem • ↑/↓ estado • ESPAÇO autoplay • ,/. quadro • A encaixes"
 	help.add_theme_font_size_override("font_size", 12)
 	help.add_theme_color_override("font_color", Color(0.58, 0.66, 0.78))
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -185,7 +183,7 @@ func _load_selection() -> void:
 	_atlas_texture = AtlasTexture.new()
 	_atlas_texture.atlas = texture
 	_preview.texture = _atlas_texture
-	_status.text = "ATLAS VÁLIDO • %d × %d QUADROS" % [
+	_status.text = "ATLAS VÁLIDO • %d × %d QUADROS • ENCAIXES VÁLIDOS" % [
 		CharacterVisualCatalog.columns(character_id),
 		CharacterVisualCatalog.rows(character_id)
 	]
@@ -195,11 +193,13 @@ func _update_region() -> void:
 	if not is_instance_valid(_atlas_texture) or _character_ids.is_empty():
 		_update_labels()
 		return
+	var character_id := _character_ids[_character_index]
 	var state_id := CharacterVisualCatalog.STATE_ORDER[_state_index]
 	_atlas_texture.region = Rect2(
 		Vector2(_frame_index * CharacterVisualCatalog.FRAME_SIZE.x, CharacterVisualCatalog.state_row(state_id) * CharacterVisualCatalog.FRAME_SIZE.y),
 		CharacterVisualCatalog.FRAME_SIZE
 	)
+	_anchor_overlay.configure(character_id, state_id, _frame_index)
 	_update_labels()
 
 func _update_labels() -> void:
@@ -207,13 +207,22 @@ func _update_labels() -> void:
 		return
 	var character_id := _character_ids[_character_index]
 	var state_id := CharacterVisualCatalog.STATE_ORDER[_state_index]
+	var attachment := CharacterAttachmentCatalog.attachment(character_id, state_id, _frame_index, 1.0)
+	var hand: Vector2 = attachment.get("hand", Vector2.ZERO)
+	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2.ZERO)
 	_title.text = "%s — %s" % [CharacterVisualCatalog.display_name(character_id), CharacterVisualCatalog.role(character_id)]
-	_details.text = "%s • QUADRO %d/%d • %.1f FPS • %s\n%s" % [
+	_details.text = "%s • QUADRO %d/%d • %.1f FPS • %s • GUIAS %s\nMÃO (%.1f, %.1f) • APOIO (%.1f, %.1f) • ÂNGULO %.2f\n%s" % [
 		CharacterVisualCatalog.state_label(state_id),
 		_frame_index + 1,
 		CharacterVisualCatalog.columns(character_id),
 		CharacterVisualCatalog.fps_for(character_id, state_id),
 		"AUTOPLAY" if _autoplay else "MANUAL",
+		"ON" if _anchor_overlay.guides_visible() else "OFF",
+		hand.x,
+		hand.y,
+		rear_hand.x,
+		rear_hand.y,
+		float(attachment.get("angle", 0.0)),
 		CharacterVisualCatalog.sheet_path(character_id)
 	]
 

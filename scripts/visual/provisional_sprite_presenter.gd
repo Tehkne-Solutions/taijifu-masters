@@ -52,6 +52,9 @@ func current_state_id() -> StringName:
 func current_frame_index() -> int:
 	return _frame_index
 
+func current_phase_id() -> StringName:
+	return TechniqueVisualTimeline.phase_id(_fighter)
+
 func _resolve_character() -> void:
 	if not is_instance_valid(_fighter):
 		return
@@ -112,10 +115,18 @@ func _update_state(force: bool) -> void:
 	_state_id = next_state
 	_frame_index = 0
 	_frame_timer = 0.0
+	if _state_id == &"attack":
+		_frame_index = TechniqueVisualTimeline.frame_for_fighter(_fighter)
 	_set_frame(_frame_index)
 
 func _advance_animation(delta: float) -> void:
 	if not has_active_sprite():
+		return
+	if _state_id == &"attack":
+		var technique_frame := TechniqueVisualTimeline.frame_for_fighter(_fighter)
+		if technique_frame != _frame_index:
+			_frame_index = technique_frame
+			_set_frame(_frame_index)
 		return
 	var fps := CharacterVisualCatalog.fps_for(_character_id, _state_id)
 	_frame_timer += delta

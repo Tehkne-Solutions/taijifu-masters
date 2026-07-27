@@ -16,12 +16,17 @@ signal impact_resolved(
 	intensity: float,
 	world_position: Vector2
 )
+signal regional_hit_received(
+	fighter: MasteredWeaponFighterController,
+	region_id: StringName,
+	result_id: StringName,
+	intensity: float
+)
 
 func _begin_technique(technique_id: StringName) -> bool:
 	var variant_id := unlocked_variant_for(technique_id)
 	if variant_id != selected_training_variant():
 		variant_id = &""
-
 	var additional_cost := 0.0
 	if variant_id != &"":
 		var base_technique := TechniqueCatalog.get_technique(technique_id)
@@ -30,7 +35,6 @@ func _begin_technique(technique_id: StringName) -> bool:
 		if stamina < preview.stamina_cost:
 			return false
 		additional_cost = maxf(0.0, preview.stamina_cost - base_technique.stamina_cost)
-
 	var began := super._begin_technique(technique_id)
 	if not began or not is_instance_valid(_current_technique):
 		return began
@@ -57,7 +61,6 @@ func receive_hit(
 	var guarding_front := _is_blocking and attacker_direction == facing and not bypass_guard
 	var was_evading := _dodge_timer > 0.06 and not bypass_guard
 	var was_parrying := guarding_front and _parry_timer > 0.0
-
 	var accepted := super.receive_hit(
 		damage,
 		posture_damage,
@@ -69,10 +72,8 @@ func receive_hit(
 		bypass_guard,
 		disarm_multiplier
 	)
-
 	if not is_instance_valid(attacker) or not is_instance_valid(technique):
 		return accepted
-
 	var damage_applied := maxf(0.0, health_before - health)
 	var posture_applied := maxf(0.0, posture_before - posture)
 	var result_id := &"hit"
@@ -85,7 +86,6 @@ func receive_hit(
 	elif posture > posture_before and posture_before <= build.max_posture() * 0.40:
 		result_id = &"posture_break"
 		posture_applied = posture_before
-
 	var intensity := clampf(damage_applied / 18.0 + posture_applied / 28.0, 0.16, 1.0)
 	match result_id:
 		&"evaded":
@@ -96,7 +96,7 @@ func receive_hit(
 			intensity = 0.88
 		&"posture_break":
 			intensity = 1.0
-
+	regional_hit_received.emit(self, region_id, result_id, intensity)
 	impact_resolved.emit(
 		self,
 		attacker,
@@ -105,9 +105,18 @@ func receive_hit(
 		damage_applied,
 		posture_applied,
 		intensity,
-		global_position + Vector2(0.0, -24.0)
+		_region_world_position(region_id)
 	)
 	return accepted
+
+func _region_world_position(region_id: StringName) -> Vector2:
+	var local_offset := Vector2(0.0, -17.0)
+	match region_id:
+		&"head":
+			local_offset = Vector2(0.0, -49.0)
+		&"legs":
+			local_offset = Vector2(0.0, 20.0)
+	return global_position + local_offset
 
 func _draw() -> void:
 	var presenter := get_node_or_null("SpritePresenter") as ProvisionalSpritePresenter
