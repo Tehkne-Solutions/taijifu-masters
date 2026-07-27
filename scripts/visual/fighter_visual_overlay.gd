@@ -17,7 +17,6 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if not is_instance_valid(_fighter):
 		return
-
 	var technique := _fighter._current_technique
 	var path_id := &"neutral"
 	if is_instance_valid(technique):
@@ -25,17 +24,18 @@ func _draw() -> void:
 	var path_color := CombatVisualCatalog.path_color(path_id)
 	var weapon_color := CombatVisualCatalog.weapon_color(_fighter.equipped_weapon_id)
 	var facing := _fighter.facing
-	var attack_strength := 0.45
-	if _fighter._attack_phase == FighterController.AttackPhase.ACTIVE:
-		attack_strength = 1.0
-	elif _fighter._attack_phase == FighterController.AttackPhase.STARTUP:
-		attack_strength = 0.72
-	elif _fighter._attack_phase == FighterController.AttackPhase.RECOVERY:
-		attack_strength = 0.34
-
-	if not is_instance_valid(_sprite_presenter) or not _sprite_presenter.has_active_sprite():
+	var attack_strength := TechniqueVisualTimeline.phase_energy(_fighter)
+	var character_id := &"kael"
+	var state_id := &"idle"
+	var frame_index := 0
+	if is_instance_valid(_sprite_presenter) and _sprite_presenter.has_active_sprite():
+		character_id = _sprite_presenter.character_id()
+		state_id = _sprite_presenter.current_state_id()
+		frame_index = _sprite_presenter.current_frame_index()
+	else:
 		_draw_face_expression(path_color)
-	_draw_weapon_pose(weapon_color, path_id, facing, attack_strength)
+	var attachment := CharacterAttachmentCatalog.attachment(character_id, state_id, frame_index, facing)
+	_draw_weapon_pose(weapon_color, path_id, facing, attack_strength, attachment)
 	_draw_path_feedback(path_id, path_color, facing, attack_strength)
 	_draw_state_feedback(path_color, facing)
 
@@ -55,39 +55,50 @@ func _draw_face_expression(path_color: Color) -> void:
 	draw_circle(Vector2(-4.3, eye_y), 1.5, path_color)
 	draw_circle(Vector2(4.3, eye_y), 1.5, path_color)
 
-func _draw_weapon_pose(color: Color, path_id: StringName, facing: float, strength: float) -> void:
+func _draw_weapon_pose(
+	color: Color,
+	path_id: StringName,
+	facing: float,
+	strength: float,
+	attachment: Dictionary
+) -> void:
 	match _fighter.equipped_weapon_id:
 		&"training_staff":
-			_draw_staff(color, path_id, facing, strength)
+			_draw_staff(color, path_id, facing, strength, attachment)
 		&"wind_wraps":
-			_draw_wind_wraps(color, path_id, facing, strength)
+			_draw_wind_wraps(color, path_id, facing, strength, attachment)
 		&"seismic_gauntlets", &"breaker_gauntlets":
-			_draw_gauntlets(color, path_id, facing, strength)
+			_draw_gauntlets(color, path_id, facing, strength, attachment)
 		_:
-			_draw_unarmed(color, path_id, facing, strength)
+			_draw_unarmed(color, path_id, facing, strength, attachment)
 
-func _draw_staff(color: Color, path_id: StringName, facing: float, strength: float) -> void:
-	var hand := Vector2(11.0 * facing, -21.0)
-	var angle := -0.55
-	if path_id == &"tai":
-		angle = -0.12
-	elif path_id == &"ji":
-		angle = 0.48
-	elif path_id == &"fu":
-		angle = -0.88 + sin(_time * 8.0) * 0.08
-	if _fighter._attack_phase == FighterController.AttackPhase.ACTIVE:
-		angle += 0.52 * facing
+func _draw_staff(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
+	var hand: Vector2 = attachment.get("hand", Vector2(11.0 * facing, -21.0))
+	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2(-12.0 * facing, -25.0))
+	var angle := float(attachment.get("angle", -0.56))
+	var reach_scale := float(attachment.get("reach", 1.0))
+	match path_id:
+		&"tai":
+			angle += 0.34
+		&"ji":
+			angle += 0.72
+		&"fu":
+			angle -= 0.22 + sin(_time * 8.0) * 0.06
+	angle += TechniqueVisualTimeline.weapon_angle_offset(_fighter)
 	var direction := Vector2(cos(angle) * facing, sin(angle))
-	var tip := hand + direction * (72.0 + strength * 18.0)
-	var back := hand - direction * 35.0
+	var tip := hand + direction * (68.0 + strength * 19.0) * reach_scale
+	var back := rear_hand - direction * (20.0 + strength * 12.0)
 	draw_line(back, tip, Color(0.07, 0.045, 0.03, 0.9), 8.0)
 	draw_line(back, tip, color, 4.6)
+	draw_circle(hand, 3.0, color.darkened(0.18))
 	draw_circle(tip, 3.5, color.lightened(0.25))
 
-func _draw_wind_wraps(color: Color, path_id: StringName, facing: float, strength: float) -> void:
+func _draw_wind_wraps(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
 	var phase := _time * 6.0
-	var origin := Vector2(16.0 * facing, -18.0)
-	var reach := 45.0 + strength * 24.0
+	var origin: Vector2 = attachment.get("hand", Vector2(16.0 * facing, -18.0))
+	var rear_origin: Vector2 = attachment.get("rear_hand", Vector2(-13.0 * facing, -24.0))
+	var reach_scale := float(attachment.get("reach", 1.0))
+	var reach := (45.0 + strength * 24.0) * reach_scale
 	if path_id == &"tai":
 		reach += 16.0
 	var ribbon_a := PackedVector2Array([
@@ -97,30 +108,36 @@ func _draw_wind_wraps(color: Color, path_id: StringName, facing: float, strength
 		origin + Vector2((reach + 18.0) * facing, cos(phase) * 8.0)
 	])
 	var ribbon_b := PackedVector2Array([
-		Vector2(-13.0 * facing, -24.0),
-		Vector2(-28.0 * facing, -4.0),
-		Vector2((-42.0 - strength * 10.0) * facing, sin(phase + 1.4) * 15.0)
+		rear_origin,
+		rear_origin + Vector2(-15.0 * facing, 20.0),
+		rear_origin + Vector2((-42.0 - strength * 10.0) * facing, sin(phase + 1.4) * 15.0)
 	])
 	draw_polyline(ribbon_a, color, 5.0, true)
 	draw_polyline(ribbon_b, Color(color, 0.68), 3.2, true)
 
-func _draw_gauntlets(color: Color, path_id: StringName, facing: float, strength: float) -> void:
-	var lead := Vector2((24.0 + strength * 14.0) * facing, -15.0)
-	var rear := Vector2(-14.0 * facing, -24.0)
+func _draw_gauntlets(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
+	var hand: Vector2 = attachment.get("hand", Vector2(24.0 * facing, -15.0))
+	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2(-14.0 * facing, -24.0))
+	var extension := Vector2((strength * 13.0 + 6.0) * facing, 0.0)
+	if _fighter._attack_phase == FighterController.AttackPhase.RECOVERY:
+		extension *= 0.25
+	var lead := hand + extension
 	var radius := 9.0 if path_id != &"ji" else 12.0
 	if _fighter._attack_phase == FighterController.AttackPhase.ACTIVE:
 		radius += 3.0
 	draw_circle(lead, radius + 3.0, Color(0.04, 0.045, 0.06, 0.9))
 	draw_circle(lead, radius, color)
-	draw_circle(rear, radius * 0.82, color.darkened(0.12))
+	draw_circle(rear_hand, radius * 0.82, color.darkened(0.12))
 	if path_id == &"ji":
 		draw_rect(Rect2(lead.x - 9.0, lead.y + 8.0, 18.0, 6.0), color.lightened(0.18))
 
-func _draw_unarmed(color: Color, path_id: StringName, facing: float, strength: float) -> void:
-	var lead := Vector2((24.0 + strength * 10.0) * facing, -15.0)
+func _draw_unarmed(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
+	var hand: Vector2 = attachment.get("hand", Vector2(24.0 * facing, -15.0))
+	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2(-18.0 * facing, -21.0))
+	var lead := hand + Vector2((strength * 10.0) * facing, 0.0)
 	draw_circle(lead, 5.5, color)
 	if path_id == &"fu":
-		draw_circle(Vector2(-18.0 * facing, -21.0), 4.0, Color(color, 0.72))
+		draw_circle(rear_hand, 4.0, Color(color, 0.72))
 
 func _draw_path_feedback(path_id: StringName, color: Color, facing: float, strength: float) -> void:
 	if _fighter._attack_phase == FighterController.AttackPhase.NONE or path_id == &"neutral":
