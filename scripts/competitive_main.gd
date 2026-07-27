@@ -5,6 +5,7 @@ extends "res://scripts/main.gd"
 @onready var vs_analysis_runtime: VsAnalysisRuntime = $VsAnalysisRuntime
 @onready var statistics_runtime: SeriesStatisticsRuntime = $SeriesStatisticsRuntime
 @onready var history_runtime: MatchHistoryRuntime = $MatchHistoryRuntime
+@onready var tournament_runtime: TournamentRuntime = $TournamentRuntime
 
 func _ready() -> void:
 	super._ready()
@@ -88,6 +89,9 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 			int(result.get("score_p2", 0)),
 			winner_index
 		)
+		var tournament_result: Dictionary = {}
+		if tournament_runtime.is_tournament_active():
+			tournament_result = tournament_runtime.record_series_winner(winner_index)
 		history_runtime.play_result(series_record)
 		await history_runtime.result_finished
 		_cleanup_temporary_loot()
@@ -97,7 +101,14 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 		competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 		_resetting_round = false
 		_enter_preparation()
-		controls_label.text = "Configure loadouts • F2 presets • F3 histórico • confirme os dois jogadores."
+		if bool(tournament_result.get("ok", false)):
+			if bool(tournament_result.get("finished", false)):
+				controls_label.text = "TORNEIO CONCLUÍDO • CAMPEÃO: %s • F10 abre o chaveamento." % tournament_runtime.champion_name()
+			else:
+				tournament_runtime.prepare_current_match()
+				controls_label.text = "%s • confirme os dois competidores para iniciar." % tournament_runtime.ledger.stage_label()
+		else:
+			controls_label.text = "Configure loadouts • F2 presets • F3 histórico • F10 torneio • confirme os dois jogadores."
 		return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
