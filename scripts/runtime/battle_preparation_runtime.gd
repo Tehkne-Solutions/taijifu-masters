@@ -9,21 +9,24 @@ var _battle_ledger := BattleLoadoutLedger.new()
 var _cosmetic_ledger := CosmeticLoadoutLedger.new()
 var _loadouts: Array[Dictionary] = [{}, {}]
 var _field_indices: Array[int] = [0, 0]
+var _ready_states: Array[bool] = [false, false]
 var _active := false
+var _start_emitted := false
 var _canvas: CanvasLayer
 var _background: ColorRect
 var _title: Label
 var _footer: Label
 var _player_titles: Array[Label] = []
 var _player_roles: Array[Label] = []
-var _player_previews: Array[TextureRect] = []
+var _player_ready_labels: Array[Label] = []
+var _player_previews: Array[PreparationAvatarPreview] = []
 var _player_stats: Array[Label] = []
 var _player_fields: Array[RichTextLabel] = []
 var _player_summaries: Array[Label] = []
-var _preview_atlases: Array[AtlasTexture] = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_register_preparation_inputs()
 	_cosmetic_ledger.load_from_disk()
 	var unlocked := _unlocked_by_profile()
 	_battle_ledger.load_from_disk(unlocked)
@@ -33,8 +36,16 @@ func _ready() -> void:
 	_sync_all_ledgers()
 	_refresh()
 
+func _process(_delta: float) -> void:
+	if not _active:
+		return
+	_process_player_inputs(1)
+	_process_player_inputs(2)
+
 func open() -> void:
 	_active = true
+	_start_emitted = false
+	_ready_states = [false, false]
 	_canvas.visible = true
 	_refresh()
 
@@ -48,43 +59,73 @@ func is_active() -> bool:
 
 func loadout_for_player(player_index: int) -> Dictionary:
 	var slot := clampi(player_index, 1, 2) - 1
-	var unlocked := _unlocked_for(player_index)
-	return BattleLoadoutCatalog.sanitize(_loadouts[slot], unlocked)
+	return BattleLoadoutCatalog.sanitize(_loadouts[slot], _unlocked_for(player_index))
 
 func set_loadout_for_test(player_index: int, loadout: Dictionary) -> void:
 	var slot := clampi(player_index, 1, 2) - 1
 	_loadouts[slot] = BattleLoadoutCatalog.sanitize(loadout, _unlocked_for(player_index))
+	_ready_states[slot] = false
 	_persist_player(player_index)
 	_refresh()
 
 func selected_field_for_player(player_index: int) -> StringName:
 	return BattleLoadoutCatalog.FIELD_ORDER[_field_indices[clampi(player_index, 1, 2) - 1]]
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not _active or event is not InputEventKey:
+func is_player_ready(player_index: int) -> bool:
+	return _ready_states[clampi(player_index, 1, 2) - 1]
+
+func all_players_ready() -> bool:
+	return _ready_states[0] and _ready_states[1]
+
+func set_ready_for_test(player_index: int, ready: bool) -> void:
+	_ready_states[clampi(player_index, 1, 2) - 1] = ready
+	_refresh_player(player_index)
+	_refresh_header()
+
+func registered_gamepad_actions_valid() -> bool:
+	for player_index in [1, 2]:
+		for suffix in ["up", "down", "prev", "next", "ready", "reset"]:
+			if not InputMap.has_action(_prep_action(player_index, suffix)):
+				return false
+	return true
+
+func _process_player_inputs(player_index: int) -> void:
+	if Input.is_action_just_pressed(_prep_action(player_index, "ready")):
+		_toggle_ready(player_index)
 		return
-	var key := event as InputEventKey
-	if not key.pressed or key.echo:
+	if Input.is_action_just_pressed(_prep_action(player_index, "reset")):
+		if not is_player_ready(player_index):
+			_reset_player(player_index)
 		return
-	var handled := true
-	match key.keycode:
-		KEY_W: _cycle_field(1, -1)
-		KEY_S: _cycle_field(1, 1)
-		KEY_A: _cycle_value(1, -1)
-		KEY_D: _cycle_value(1, 1)
-		KEY_UP: _cycle_field(2, -1)
-		KEY_DOWN: _cycle_field(2, 1)
-		KEY_LEFT: _cycle_value(2, -1)
-		KEY_RIGHT: _cycle_value(2, 1)
-		KEY_1: _reset_player(1)
-		KEY_2: _reset_player(2)
-		KEY_ENTER, KEY_KP_ENTER:
-			_sync_all_ledgers()
-			start_requested.emit()
-		_:
-			handled = false
-	if handled:
-		get_viewport().set_input_as_handled()
+	if is_player_ready(player_index):
+		return
+	if Input.is_action_just_pressed(_prep_action(player_index, "up")):
+		_cycle_field(player_index, -1)
+	elif Input.is_action_just_pressed(_prep_action(player_index, "down")):
+		_cycle_field(player_index, 1)
+	if Input.is_action_just_pressed(_prep_action(player_index, "prev")):
+		_cycle_value(player_index, -1)
+	elif Input.is_action_just_pressed(_prep_action(player_index, "next")):
+		_cycle_value(player_index, 1)
+
+func _toggle_ready(player_index: int) -> void:
+	var slot := player_index - 1
+	_ready_states[slot] = not _ready_states[slot]
+	if _ready_states[slot]:
+		_persist_player(player_index)
+	else:
+		_start_emitted = false
+	_refresh_player(player_index)
+	_refresh_header()
+	if all_players_ready() and not _start_emitted:
+		_start_emitted = true
+		call_deferred("_emit_start_after_lock")
+
+func _emit_start_after_lock() -> void:
+	await get_tree().create_timer(0.42, true, false, true).timeout
+	if _active and all_players_ready() and _start_emitted:
+		_sync_all_ledgers()
+		start_requested.emit()
 
 func _cycle_field(player_index: int, direction: int) -> void:
 	var slot := player_index - 1
@@ -104,22 +145,25 @@ func _cycle_value(player_index: int, direction: int) -> void:
 		index = 0
 	var next_id := options[wrapi(index + direction, 0, options.size())]
 	_loadouts[slot] = BattleLoadoutCatalog.set_field(_loadouts[slot], field_id, next_id, unlocked)
+	_ready_states[slot] = false
 	_persist_player(player_index)
 	_refresh_player(player_index)
+	_refresh_header()
 
 func _reset_player(player_index: int) -> void:
 	_loadouts[player_index - 1] = BattleLoadoutCatalog.default_loadout(player_index)
 	_field_indices[player_index - 1] = 0
+	_ready_states[player_index - 1] = false
 	_persist_player(player_index)
 	_refresh_player(player_index)
+	_refresh_header()
 
 func _persist_player(player_index: int) -> void:
 	var slot := player_index - 1
 	var profile_id := "p%d" % player_index
 	var unlocked := _unlocked_for(player_index)
 	_loadouts[slot] = _battle_ledger.set_loadout(player_index, _loadouts[slot], unlocked)
-	var variant_id := StringName(_loadouts[slot].get("variant_id", &""))
-	master_training_runtime.ledger.set_selected_variant(profile_id, variant_id)
+	master_training_runtime.ledger.set_selected_variant(profile_id, StringName(_loadouts[slot].get("variant_id", &"")))
 	var cosmetic_loadout := {}
 	for socket_id in CosmeticSocketCatalog.SOCKET_IDS:
 		cosmetic_loadout[String(socket_id)] = String(_loadouts[slot].get(String(socket_id), &"none"))
@@ -161,7 +205,6 @@ func _build_interface() -> void:
 	_title.offset_top = 12.0
 	_title.offset_right = 1260.0
 	_title.offset_bottom = 72.0
-	_title.text = "PREPARAÇÃO COMPLETA • TAIJIFU MASTERS\nMONTE SUA ESTRATÉGIA ANTES DO PRIMEIRO GOLPE"
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.add_theme_font_size_override("font_size", 20)
@@ -174,7 +217,7 @@ func _build_interface() -> void:
 	_footer.offset_top = 672.0
 	_footer.offset_right = 1260.0
 	_footer.offset_bottom = 716.0
-	_footer.text = "P1: W/S categoria • A/D opção • 1 restaurar    |    P2: ↑/↓ categoria • ←/→ opção • 2 restaurar    |    ENTER iniciar"
+	_footer.text = "P1: W/S + A/D • F ou A confirma • 1 ou Y restaura    |    P2: setas • Num1 ou A confirma • 2 ou Y restaura"
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_footer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_footer.add_theme_font_size_override("font_size", 13)
@@ -201,11 +244,11 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 18)
 	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
 	panel.add_child(margin)
 	var root_column := VBoxContainer.new()
-	root_column.add_theme_constant_override("separation", 5)
+	root_column.add_theme_constant_override("separation", 3)
 	margin.add_child(root_column)
 	var title := Label.new()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -215,21 +258,22 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	_player_titles.append(title)
 	var role := Label.new()
 	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	role.add_theme_font_size_override("font_size", 13)
+	role.add_theme_font_size_override("font_size", 12)
 	role.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
 	root_column.add_child(role)
 	_player_roles.append(role)
+	var ready_label := Label.new()
+	ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ready_label.add_theme_font_size_override("font_size", 14)
+	root_column.add_child(ready_label)
+	_player_ready_labels.append(ready_label)
 	var middle := HBoxContainer.new()
 	middle.add_theme_constant_override("separation", 12)
 	root_column.add_child(middle)
-	var preview := TextureRect.new()
-	preview.custom_minimum_size = Vector2(218.0, 218.0)
-	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var preview := PreparationAvatarPreview.new()
+	preview.set_player_index(player_index)
 	middle.add_child(preview)
 	_player_previews.append(preview)
-	_preview_atlases.append(AtlasTexture.new())
 	var fields := RichTextLabel.new()
 	fields.custom_minimum_size = Vector2(320.0, 218.0)
 	fields.bbcode_enabled = true
@@ -246,11 +290,11 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	root_column.add_child(stats)
 	_player_stats.append(stats)
 	var summary := Label.new()
-	summary.custom_minimum_size = Vector2(0.0, 62.0)
+	summary.custom_minimum_size = Vector2(0.0, 60.0)
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.add_theme_font_size_override("font_size", 12)
+	summary.add_theme_font_size_override("font_size", 11)
 	summary.add_theme_color_override("font_color", Color(0.75, 0.80, 0.89))
 	root_column.add_child(summary)
 	_player_summaries.append(summary)
@@ -258,6 +302,15 @@ func _build_player_panel(player_index: int, left: float) -> void:
 func _refresh() -> void:
 	_refresh_player(1)
 	_refresh_player(2)
+	_refresh_header()
+
+func _refresh_header() -> void:
+	if all_players_ready():
+		_title.text = "AMBOS PRONTOS • ENTRADA NA ARENA\nOS LOADOUTS FORAM BLOQUEADOS"
+		_title.add_theme_color_override("font_color", Color(0.58, 1.0, 0.68))
+	else:
+		_title.text = "PREPARAÇÃO COMPLETA • TAIJIFU MASTERS\nCADA JOGADOR DEVE CONFIRMAR SEU LOADOUT"
+		_title.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0))
 
 func _refresh_player(player_index: int) -> void:
 	if _player_titles.size() < player_index:
@@ -270,6 +323,11 @@ func _refresh_player(player_index: int) -> void:
 	var build := BuildProfile.prototype_preset(preset_id)
 	_player_titles[slot].text = "P%d — %s" % [player_index, build.character_name.to_upper()]
 	_player_roles[slot].text = CharacterVisualCatalog.role(character_id).to_upper()
+	_player_ready_labels[slot].text = "✓ PRONTO — CONFIRME NOVAMENTE PARA EDITAR" if _ready_states[slot] else "AGUARDANDO CONFIRMAÇÃO"
+	_player_ready_labels[slot].add_theme_color_override(
+		"font_color",
+		Color(0.48, 1.0, 0.58) if _ready_states[slot] else Color(0.92, 0.72, 0.30)
+	)
 	_player_stats[slot].text = "TAI %d   JI %d   FU %d   •   VIDA %d   POSTURA %d" % [
 		roundi(build.tai_index()), roundi(build.ji_index()), roundi(build.fu_index()),
 		roundi(build.max_health()), roundi(build.max_posture())
@@ -280,22 +338,8 @@ func _refresh_player(player_index: int) -> void:
 		WeaponKitCatalog.label_for(StringName(loadout.get("secondary_weapon_id", &"unarmed"))),
 		MasterTrainingCatalog.variant_summary(StringName(loadout.get("variant_id", &"")))
 	]
-	_update_preview(slot, character_id)
+	_player_previews[slot].apply_loadout(loadout)
 	_update_fields(slot, player_index)
-
-func _update_preview(slot: int, character_id: StringName) -> void:
-	var path := CharacterVisualCatalog.sheet_path(character_id)
-	if path == "" or not ResourceLoader.exists(path):
-		_player_previews[slot].texture = null
-		return
-	var texture := load(path) as Texture2D
-	if not is_instance_valid(texture):
-		_player_previews[slot].texture = null
-		return
-	var atlas := _preview_atlases[slot]
-	atlas.atlas = texture
-	atlas.region = Rect2(Vector2.ZERO, CharacterVisualCatalog.FRAME_SIZE)
-	_player_previews[slot].texture = atlas
 
 func _update_fields(slot: int, player_index: int) -> void:
 	var lines: Array[String] = []
@@ -306,11 +350,79 @@ func _update_fields(slot: int, player_index: int) -> void:
 		var value_id := BattleLoadoutCatalog.value_for_field(field_id, loadout)
 		var label := BattleLoadoutCatalog.field_label(field_id)
 		var value := BattleLoadoutCatalog.value_label(field_id, value_id)
-		if index == _field_indices[slot]:
+		if index == _field_indices[slot] and not _ready_states[slot]:
 			lines.append("[color=%s][b]▶ %s: ◀ %s ▶[/b][/color]" % [color, label, value])
 		else:
 			lines.append("  [b]%s:[/b] %s" % [label, value])
 	_player_fields[slot].text = "\n".join(lines)
+
+func _register_preparation_inputs() -> void:
+	_register_player_prep_inputs(1, KEY_W, KEY_S, KEY_A, KEY_D, KEY_F, KEY_1, 0)
+	_register_player_prep_inputs(2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_KP_1, KEY_2, 1)
+
+func _register_player_prep_inputs(
+	player_index: int,
+	up_key: Key,
+	down_key: Key,
+	prev_key: Key,
+	next_key: Key,
+	ready_key: Key,
+	reset_key: Key,
+	device: int
+) -> void:
+	_add_key_event(_prep_action(player_index, "up"), up_key)
+	_add_key_event(_prep_action(player_index, "down"), down_key)
+	_add_key_event(_prep_action(player_index, "prev"), prev_key)
+	_add_key_event(_prep_action(player_index, "next"), next_key)
+	_add_key_event(_prep_action(player_index, "ready"), ready_key)
+	_add_key_event(_prep_action(player_index, "reset"), reset_key)
+	_add_joy_button(_prep_action(player_index, "up"), JOY_BUTTON_DPAD_UP, device)
+	_add_joy_button(_prep_action(player_index, "down"), JOY_BUTTON_DPAD_DOWN, device)
+	_add_joy_button(_prep_action(player_index, "prev"), JOY_BUTTON_DPAD_LEFT, device)
+	_add_joy_button(_prep_action(player_index, "next"), JOY_BUTTON_DPAD_RIGHT, device)
+	_add_joy_button(_prep_action(player_index, "ready"), JOY_BUTTON_A, device)
+	_add_joy_button(_prep_action(player_index, "reset"), JOY_BUTTON_Y, device)
+	_add_joy_axis(_prep_action(player_index, "up"), JOY_AXIS_LEFT_Y, -1.0, device)
+	_add_joy_axis(_prep_action(player_index, "down"), JOY_AXIS_LEFT_Y, 1.0, device)
+	_add_joy_axis(_prep_action(player_index, "prev"), JOY_AXIS_LEFT_X, -1.0, device)
+	_add_joy_axis(_prep_action(player_index, "next"), JOY_AXIS_LEFT_X, 1.0, device)
+
+func _prep_action(player_index: int, suffix: String) -> StringName:
+	return StringName("prep_p%d_%s" % [player_index, suffix])
+
+func _ensure_action(action_id: StringName) -> void:
+	if not InputMap.has_action(action_id):
+		InputMap.add_action(action_id, 0.55)
+
+func _add_key_event(action_id: StringName, keycode: Key) -> void:
+	_ensure_action(action_id)
+	for existing in InputMap.action_get_events(action_id):
+		if existing is InputEventKey and existing.physical_keycode == keycode:
+			return
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	InputMap.action_add_event(action_id, event)
+
+func _add_joy_button(action_id: StringName, button_index: JoyButton, device: int) -> void:
+	_ensure_action(action_id)
+	for existing in InputMap.action_get_events(action_id):
+		if existing is InputEventJoypadButton and existing.button_index == button_index and existing.device == device:
+			return
+	var event := InputEventJoypadButton.new()
+	event.button_index = button_index
+	event.device = device
+	InputMap.action_add_event(action_id, event)
+
+func _add_joy_axis(action_id: StringName, axis: JoyAxis, axis_value: float, device: int) -> void:
+	_ensure_action(action_id)
+	for existing in InputMap.action_get_events(action_id):
+		if existing is InputEventJoypadMotion and existing.axis == axis and is_equal_approx(existing.axis_value, axis_value) and existing.device == device:
+			return
+	var event := InputEventJoypadMotion.new()
+	event.axis = axis
+	event.axis_value = axis_value
+	event.device = device
+	InputMap.action_add_event(action_id, event)
 
 func _exit_tree() -> void:
 	_sync_all_ledgers()
