@@ -4,27 +4,67 @@ extends Node2D
 var _fighter: FighterController
 var _sprite_presenter: ProvisionalSpritePresenter
 var _time := 0.0
+var _current_weapon_tip_local := Vector2.ZERO
+var _current_trail_profile: Dictionary = {"enabled": false}
+var _current_context: Dictionary = {}
+var _current_attachment: Dictionary = {}
+var _current_path_id: StringName = &"neutral"
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
 	_sprite_presenter = get_node_or_null("../SpritePresenter") as ProvisionalSpritePresenter
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	z_index = 5
 
 func _process(delta: float) -> void:
 	_time += delta
 	queue_redraw()
 
+func current_weapon_tip_global() -> Vector2:
+	return to_global(_current_weapon_tip_local)
+
+func current_trail_profile() -> Dictionary:
+	return _current_trail_profile.duplicate(true)
+
+func current_trail_color() -> Color:
+	return CombatVisualCatalog.weapon_color(_fighter.equipped_weapon_id).lightened(0.14)
+
+func current_visual_context() -> Dictionary:
+	return _current_context.duplicate(true)
+
+func current_attachment() -> Dictionary:
+	return _current_attachment.duplicate(true)
+
 func _draw() -> void:
 	if not is_instance_valid(_fighter):
 		return
-	var technique := _fighter._current_technique
-	var path_id := &"neutral"
-	if is_instance_valid(technique):
-		path_id = StringName(technique.path)
-	var path_color := CombatVisualCatalog.path_color(path_id)
+	_resolve_visual_state()
+	var path_color := CombatVisualCatalog.path_color(_current_path_id)
 	var weapon_color := CombatVisualCatalog.weapon_color(_fighter.equipped_weapon_id)
 	var facing := _fighter.facing
-	var attack_strength := TechniqueVisualTimeline.phase_energy(_fighter)
+	var strength := TechniqueVisualTimeline.energy_for_context(
+		StringName(_current_context.get("phase_id", &"none")),
+		float(_current_context.get("progress", 0.0))
+	)
+	if not is_instance_valid(_sprite_presenter) or not _sprite_presenter.has_active_sprite():
+		_draw_face_expression(path_color)
+	_draw_weapon_pose(weapon_color, _current_path_id, facing, strength, _current_attachment)
+	_draw_path_feedback(_current_path_id, path_color, facing, strength)
+	_draw_state_feedback(path_color, facing)
+
+func _resolve_visual_state() -> void:
+	_current_context = TechniqueVisualTimeline.context(_fighter)
+	var editor := get_tree().get_first_node_in_group("attachment_editor")
+	if is_instance_valid(editor) and editor.has_method("visual_context_for"):
+		_current_context = editor.call("visual_context_for", _fighter, _current_context)
+	var technique_id := StringName(_current_context.get("technique_id", &""))
+	var phase_id := StringName(_current_context.get("phase_id", &"none"))
+	var progress := float(_current_context.get("progress", 0.0))
+	_current_path_id = StringName(_current_context.get("path_id", &"neutral"))
+	if technique_id != &"":
+		var technique := TechniqueCatalog.get_technique(technique_id)
+		_current_path_id = StringName(technique.path)
+		_current_context["path_id"] = _current_path_id
 	var character_id := &"kael"
 	var state_id := &"idle"
 	var frame_index := 0
@@ -32,12 +72,19 @@ func _draw() -> void:
 		character_id = _sprite_presenter.character_id()
 		state_id = _sprite_presenter.current_state_id()
 		frame_index = _sprite_presenter.current_frame_index()
-	else:
-		_draw_face_expression(path_color)
-	var attachment := CharacterAttachmentCatalog.attachment(character_id, state_id, frame_index, facing)
-	_draw_weapon_pose(weapon_color, path_id, facing, attack_strength, attachment)
-	_draw_path_feedback(path_id, path_color, facing, attack_strength)
-	_draw_state_feedback(path_color, facing)
+	var base := CharacterAttachmentCatalog.attachment(character_id, state_id, frame_index, _fighter.facing)
+	var user_override: Dictionary = {}
+	if is_instance_valid(editor) and editor.has_method("override_for"):
+		var value: Variant = editor.call("override_for", character_id, technique_id, phase_id, progress)
+		if value is Dictionary:
+			user_override = value
+	_current_attachment = TechniqueAttachmentCatalog.resolve(
+		base, technique_id, phase_id, progress, _fighter.facing, user_override
+	)
+	_current_trail_profile = _current_attachment.get("trail", {"enabled": false})
+	_current_context["character_id"] = character_id
+	_current_context["state_id"] = state_id
+	_current_context["frame_index"] = frame_index
 
 func _draw_face_expression(path_color: Color) -> void:
 	var brow_y := -55.0
@@ -55,22 +102,12 @@ func _draw_face_expression(path_color: Color) -> void:
 	draw_circle(Vector2(-4.3, eye_y), 1.5, path_color)
 	draw_circle(Vector2(4.3, eye_y), 1.5, path_color)
 
-func _draw_weapon_pose(
-	color: Color,
-	path_id: StringName,
-	facing: float,
-	strength: float,
-	attachment: Dictionary
-) -> void:
+func _draw_weapon_pose(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
 	match _fighter.equipped_weapon_id:
-		&"training_staff":
-			_draw_staff(color, path_id, facing, strength, attachment)
-		&"wind_wraps":
-			_draw_wind_wraps(color, path_id, facing, strength, attachment)
-		&"seismic_gauntlets", &"breaker_gauntlets":
-			_draw_gauntlets(color, path_id, facing, strength, attachment)
-		_:
-			_draw_unarmed(color, path_id, facing, strength, attachment)
+		&"training_staff": _draw_staff(color, path_id, facing, strength, attachment)
+		&"wind_wraps": _draw_wind_wraps(color, path_id, facing, strength, attachment)
+		&"seismic_gauntlets", &"breaker_gauntlets": _draw_gauntlets(color, path_id, facing, strength, attachment)
+		_: _draw_unarmed(color, path_id, facing, strength, attachment)
 
 func _draw_staff(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
 	var hand: Vector2 = attachment.get("hand", Vector2(11.0 * facing, -21.0))
@@ -78,16 +115,18 @@ func _draw_staff(color: Color, path_id: StringName, facing: float, strength: flo
 	var angle := float(attachment.get("angle", -0.56))
 	var reach_scale := float(attachment.get("reach", 1.0))
 	match path_id:
-		&"tai":
-			angle += 0.34
-		&"ji":
-			angle += 0.72
-		&"fu":
-			angle -= 0.22 + sin(_time * 8.0) * 0.06
-	angle += TechniqueVisualTimeline.weapon_angle_offset(_fighter)
+		&"tai": angle += 0.34
+		&"ji": angle += 0.72
+		&"fu": angle -= 0.22 + sin(_time * 8.0) * 0.06
+	angle += TechniqueVisualTimeline.angle_offset_for_context(
+		path_id,
+		StringName(_current_context.get("phase_id", &"none")),
+		float(_current_context.get("progress", 0.0))
+	)
 	var direction := Vector2(cos(angle) * facing, sin(angle))
 	var tip := hand + direction * (68.0 + strength * 19.0) * reach_scale
 	var back := rear_hand - direction * (20.0 + strength * 12.0)
+	_current_weapon_tip_local = tip
 	draw_line(back, tip, Color(0.07, 0.045, 0.03, 0.9), 8.0)
 	draw_line(back, tip, color, 4.6)
 	draw_circle(hand, 3.0, color.darkened(0.18))
@@ -98,70 +137,61 @@ func _draw_wind_wraps(color: Color, path_id: StringName, facing: float, strength
 	var origin: Vector2 = attachment.get("hand", Vector2(16.0 * facing, -18.0))
 	var rear_origin: Vector2 = attachment.get("rear_hand", Vector2(-13.0 * facing, -24.0))
 	var reach_scale := float(attachment.get("reach", 1.0))
-	var reach := (45.0 + strength * 24.0) * reach_scale
-	if path_id == &"tai":
-		reach += 16.0
-	var ribbon_a := PackedVector2Array([
-		origin,
-		origin + Vector2(18.0 * facing, -18.0),
-		origin + Vector2(reach * facing, sin(phase) * 13.0 - 5.0),
-		origin + Vector2((reach + 18.0) * facing, cos(phase) * 8.0)
-	])
-	var ribbon_b := PackedVector2Array([
-		rear_origin,
-		rear_origin + Vector2(-15.0 * facing, 20.0),
-		rear_origin + Vector2((-42.0 - strength * 10.0) * facing, sin(phase + 1.4) * 15.0)
-	])
+	var angle := float(attachment.get("angle", -0.56))
+	angle += TechniqueVisualTimeline.angle_offset_for_context(
+		path_id,
+		StringName(_current_context.get("phase_id", &"none")),
+		float(_current_context.get("progress", 0.0))
+	)
+	var reach := (48.0 + strength * 31.0) * reach_scale
+	if path_id == &"tai": reach += 16.0
+	var direction := Vector2(cos(angle) * facing, sin(angle))
+	var tip := origin + direction * reach + Vector2(0.0, sin(phase) * 8.0)
+	var ribbon_a := PackedVector2Array([origin, origin.lerp(tip, 0.35) + Vector2(0, -14), origin.lerp(tip, 0.72) + Vector2(0, 10), tip])
+	var ribbon_b := PackedVector2Array([rear_origin, rear_origin + Vector2(-15.0 * facing, 20.0), rear_origin + Vector2(-42.0 * facing, sin(phase + 1.4) * 15.0)])
+	_current_weapon_tip_local = tip
 	draw_polyline(ribbon_a, color, 5.0, true)
 	draw_polyline(ribbon_b, Color(color, 0.68), 3.2, true)
 
 func _draw_gauntlets(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
 	var hand: Vector2 = attachment.get("hand", Vector2(24.0 * facing, -15.0))
 	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2(-14.0 * facing, -24.0))
-	var extension := Vector2((strength * 13.0 + 6.0) * facing, 0.0)
-	if _fighter._attack_phase == FighterController.AttackPhase.RECOVERY:
-		extension *= 0.25
+	var reach_scale := float(attachment.get("reach", 1.0))
+	var extension := Vector2((strength * 13.0 + 6.0) * facing * reach_scale, 0.0)
+	if StringName(_current_context.get("phase_id", &"none")) == &"recovery": extension *= 0.25
 	var lead := hand + extension
 	var radius := 9.0 if path_id != &"ji" else 12.0
-	if _fighter._attack_phase == FighterController.AttackPhase.ACTIVE:
-		radius += 3.0
+	if StringName(_current_context.get("phase_id", &"none")) == &"active": radius += 3.0
+	_current_weapon_tip_local = lead
 	draw_circle(lead, radius + 3.0, Color(0.04, 0.045, 0.06, 0.9))
 	draw_circle(lead, radius, color)
 	draw_circle(rear_hand, radius * 0.82, color.darkened(0.12))
-	if path_id == &"ji":
-		draw_rect(Rect2(lead.x - 9.0, lead.y + 8.0, 18.0, 6.0), color.lightened(0.18))
+	if path_id == &"ji": draw_rect(Rect2(lead.x - 9.0, lead.y + 8.0, 18.0, 6.0), color.lightened(0.18))
 
 func _draw_unarmed(color: Color, path_id: StringName, facing: float, strength: float, attachment: Dictionary) -> void:
 	var hand: Vector2 = attachment.get("hand", Vector2(24.0 * facing, -15.0))
 	var rear_hand: Vector2 = attachment.get("rear_hand", Vector2(-18.0 * facing, -21.0))
-	var lead := hand + Vector2((strength * 10.0) * facing, 0.0)
+	var reach_scale := float(attachment.get("reach", 1.0))
+	var lead := hand + Vector2(strength * 10.0 * facing * reach_scale, 0.0)
+	_current_weapon_tip_local = lead
 	draw_circle(lead, 5.5, color)
-	if path_id == &"fu":
-		draw_circle(rear_hand, 4.0, Color(color, 0.72))
+	if path_id == &"fu": draw_circle(rear_hand, 4.0, Color(color, 0.72))
 
 func _draw_path_feedback(path_id: StringName, color: Color, facing: float, strength: float) -> void:
-	if _fighter._attack_phase == FighterController.AttackPhase.NONE or path_id == &"neutral":
-		return
+	var phase_id := StringName(_current_context.get("phase_id", &"none"))
+	if phase_id == &"none" or path_id == &"neutral": return
 	var effect_color := Color(color, 0.28 + strength * 0.52)
 	match path_id:
 		&"tai":
 			for index in range(3):
 				var y := -42.0 + index * 18.0
 				draw_line(Vector2(-44.0 * facing, y), Vector2((-10.0 + strength * 18.0) * facing, y - 4.0), effect_color, 2.0 + index)
-			draw_colored_polygon(PackedVector2Array([
-				Vector2(18.0 * facing, -34.0),
-				Vector2((55.0 + strength * 22.0) * facing, -18.0),
-				Vector2(18.0 * facing, -2.0)
-			]), Color(color, 0.18 + strength * 0.18))
 		&"ji":
-			var ground_y := 35.0
 			for offset in [-24.0, -8.0, 10.0, 25.0]:
-				draw_line(Vector2(offset, ground_y), Vector2(offset + facing * 8.0, ground_y - 8.0 - absf(offset) * 0.08), effect_color, 3.0)
-			draw_arc(Vector2(18.0 * facing, -8.0), 28.0 + strength * 10.0, -1.2, 1.2, 12, effect_color, 6.0)
+				draw_line(Vector2(offset, 35.0), Vector2(offset + facing * 8.0, 27.0 - absf(offset) * 0.08), effect_color, 3.0)
 		&"fu":
 			var pulse := 4.0 + sin(_time * 10.0) * 3.0
 			draw_arc(Vector2.ZERO, 34.0 + pulse, -2.5, 1.8, 18, effect_color, 3.5)
-			draw_arc(Vector2(8.0 * facing, -18.0), 48.0 - pulse, -0.6, 3.8, 20, Color(color, effect_color.a * 0.62), 2.4)
 
 func _draw_state_feedback(color: Color, facing: float) -> void:
 	if _fighter._is_blocking:
