@@ -1,17 +1,20 @@
 class_name TournamentRuntime
 extends Node
 
-const GUEST_PRESETS: Array[StringName] = [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"]
+const GUEST_PRESETS: Array[StringName] = [
+	&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger",
+	&"aerial_flow", &"foundation_breaker", &"adaptive_staff", &"rock_guardian"
+]
 
 @onready var preparation_runtime: BattlePreparationRuntime = get_node("../BattlePreparationRuntime")
 @onready var preset_runtime: LoadoutPresetRuntime = get_node("../LoadoutPresetRuntime")
 
 var ledger := TournamentLedger.new()
 var _sources: Array[Dictionary] = []
-var _slot_sources: Array[int] = [0, 1, 2, 3]
+var _slot_sources: Array[int] = []
 var _selected_slot := 0
 var _active_panel := false
-var _feedback := "F10 abre • Page Up/Down seleciona • Home/End troca • ENTER inicia"
+var _feedback := "F10 abre • T alterna 4/8 • ENTER inicia"
 var _canvas: CanvasLayer
 var _panel: PanelContainer
 var _title: Label
@@ -22,6 +25,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_register_inputs()
 	ledger.load_from_disk()
+	_resize_slots(ledger.current_bracket_size())
 	_build_interface()
 	_refresh_sources()
 	_refresh()
@@ -34,11 +38,13 @@ func _process(_delta: float) -> void:
 	if not preparation_runtime.is_active():
 		close()
 		return
+	if Input.is_action_just_pressed(&"tournament_format"):
+		_toggle_format()
 	if Input.is_action_just_pressed(&"tournament_up"):
-		_selected_slot = wrapi(_selected_slot - 1, 0, 4)
+		_selected_slot = wrapi(_selected_slot - 1, 0, _slot_sources.size())
 		_refresh()
 	elif Input.is_action_just_pressed(&"tournament_down"):
-		_selected_slot = wrapi(_selected_slot + 1, 0, 4)
+		_selected_slot = wrapi(_selected_slot + 1, 0, _slot_sources.size())
 		_refresh()
 	if Input.is_action_just_pressed(&"tournament_prev"):
 		_cycle_source(-1)
@@ -55,6 +61,7 @@ func open() -> void:
 		return
 	_active_panel = true
 	_canvas.visible = true
+	_resize_slots(ledger.current_bracket_size())
 	_refresh_sources()
 	_refresh()
 
@@ -73,6 +80,9 @@ func current_pair() -> Array[Dictionary]:
 
 func champion_name() -> String:
 	return String(ledger.champion().get("name", ""))
+
+func bracket_size() -> int:
+	return ledger.current_bracket_size()
 
 func prepare_current_match() -> bool:
 	var pair := ledger.current_pair()
@@ -106,12 +116,18 @@ func record_series_winner(winner_index: int) -> Dictionary:
 	return result
 
 func reset_tournament() -> void:
-	ledger.reset()
-	_slot_sources = [0, 1, 2, 3]
+	var size := ledger.current_bracket_size()
+	ledger.reset(size)
+	_resize_slots(size)
 	_selected_slot = 0
-	_feedback = "TORNEIO REINICIADO"
+	_feedback = "TORNEIO REINICIADO • %d COMPETIDORES" % size
 	_refresh_sources()
 	_refresh()
+
+func set_format_for_test(size: int) -> int:
+	var clean := ledger.set_bracket_size(size)
+	_resize_slots(clean)
+	return clean
 
 func set_participants_for_test(participants: Array[Dictionary]) -> bool:
 	return ledger.set_participants(participants)
@@ -123,7 +139,7 @@ func record_winner_for_test(winner_index: int) -> Dictionary:
 	return ledger.record_winner(winner_index)
 
 func bracket_snapshot() -> Dictionary:
-	return ledger.data.duplicate(true)
+	return ledger.bracket_snapshot()
 
 func _toggle_panel() -> void:
 	if _active_panel:
@@ -131,25 +147,47 @@ func _toggle_panel() -> void:
 	else:
 		open()
 
+func _toggle_format() -> void:
+	if is_tournament_active():
+		_feedback = "FORMATO BLOQUEADO DURANTE O TORNEIO"
+		_refresh()
+		return
+	var next_size := 8 if ledger.current_bracket_size() == 4 else 4
+	ledger.set_bracket_size(next_size)
+	_resize_slots(next_size)
+	_selected_slot = 0
+	_refresh_sources()
+	_feedback = "FORMATO ALTERADO PARA %d COMPETIDORES" % next_size
+	_refresh()
+
+func _resize_slots(size: int) -> void:
+	var old := _slot_sources.duplicate()
+	_slot_sources.clear()
+	for index in range(size):
+		_slot_sources.append(int(old[index]) if index < old.size() else index)
+	_selected_slot = clampi(_selected_slot, 0, maxi(0, size - 1))
+
 func _cycle_source(direction: int) -> void:
-	if _sources.is_empty():
+	if _sources.is_empty() or _slot_sources.is_empty():
 		return
 	_slot_sources[_selected_slot] = wrapi(_slot_sources[_selected_slot] + direction, 0, _sources.size())
-	_feedback = "COMPETIDOR %d ATUALIZADO" % (_selected_slot + 1)
+	_feedback = "SEED %d ATUALIZADO" % (_selected_slot + 1)
 	_refresh()
 
 func _start_tournament() -> void:
 	_refresh_sources()
-	if _sources.is_empty():
-		_feedback = "NENHUMA FONTE DE LOADOUT DISPONÍVEL"
+	var size := ledger.current_bracket_size()
+	if _sources.is_empty() or _slot_sources.size() != size:
+		_feedback = "FONTES INSUFICIENTES PARA O CHAVEAMENTO"
 		_refresh()
 		return
 	var participants: Array[Dictionary] = []
-	for slot in range(4):
+	for slot in range(size):
 		var source_index := clampi(_slot_sources[slot], 0, _sources.size() - 1)
 		var source: Dictionary = _sources[source_index]
 		var participant := source.duplicate(true)
-		participant["participant_id"] = "slot_%d_%s" % [slot + 1, String(source.get("participant_id", source_index))]
+		participant["participant_id"] = "seed_%d_%s" % [slot + 1, String(source.get("participant_id", source_index))]
+		participant["seed"] = slot + 1
 		participants.append(participant)
 	if not ledger.set_participants(participants) or not ledger.start():
 		_feedback = "NÃO FOI POSSÍVEL INICIAR O TORNEIO"
@@ -172,12 +210,13 @@ func _refresh_sources() -> void:
 				loadout_source as Dictionary,
 				String(preset.get("preset_id", "preset_%d" % _sources.size()))
 			))
-	while _sources.size() < 4:
+	var required := ledger.current_bracket_size()
+	while _sources.size() < required:
 		var guest_index := _sources.size() % GUEST_PRESETS.size()
 		var fallback_id: StringName = GUEST_PRESETS[guest_index]
 		var fallback := BattleLoadoutCatalog.loadout_from_preset(fallback_id)
 		_sources.append(_source_from_loadout("CONVIDADO %d" % (_sources.size() + 1), fallback, "guest_%d" % _sources.size()))
-	for slot in range(4):
+	for slot in range(_slot_sources.size()):
 		_slot_sources[slot] = clampi(_slot_sources[slot], 0, _sources.size() - 1)
 
 func _source_from_loadout(name: String, loadout: Dictionary, source_id: String) -> Dictionary:
@@ -198,10 +237,10 @@ func _build_interface() -> void:
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_canvas)
 	_panel = PanelContainer.new()
-	_panel.offset_left = 170.0
-	_panel.offset_top = 64.0
-	_panel.offset_right = 1110.0
-	_panel.offset_bottom = 656.0
+	_panel.offset_left = 115.0
+	_panel.offset_top = 38.0
+	_panel.offset_right = 1165.0
+	_panel.offset_bottom = 686.0
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.014, 0.020, 0.036, 0.988)
 	style.border_color = Color(0.94, 0.64, 0.24, 0.94)
@@ -215,28 +254,28 @@ func _build_interface() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
 	_panel.add_child(margin)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 25)
+	_title.add_theme_font_size_override("font_size", 24)
 	_title.add_theme_color_override("font_color", Color(1.0, 0.80, 0.42))
 	column.add_child(_title)
 	_bracket = RichTextLabel.new()
-	_bracket.custom_minimum_size = Vector2(860.0, 420.0)
+	_bracket.custom_minimum_size = Vector2(980.0, 500.0)
 	_bracket.bbcode_enabled = true
 	_bracket.fit_content = false
-	_bracket.scroll_active = false
-	_bracket.add_theme_font_size_override("normal_font_size", 16)
+	_bracket.scroll_active = true
+	_bracket.add_theme_font_size_override("normal_font_size", 14)
 	column.add_child(_bracket)
 	_details = Label.new()
 	_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_details.add_theme_font_size_override("font_size", 13)
+	_details.add_theme_font_size_override("font_size", 12)
 	_details.add_theme_color_override("font_color", Color(0.76, 0.84, 0.94))
 	column.add_child(_details)
 	_canvas.visible = false
@@ -244,37 +283,63 @@ func _build_interface() -> void:
 func _refresh() -> void:
 	if not is_instance_valid(_title):
 		return
-	_title.text = "TORNEIO LOCAL • %s" % ledger.stage_label()
+	_title.text = "TORNEIO LOCAL • %d COMPETIDORES • %s" % [ledger.current_bracket_size(), ledger.stage_label()]
 	var lines: Array[String] = []
-	if bool(ledger.data.get("active", false)) or bool(ledger.data.get("finished", false)):
-		var participants: Array = ledger.data.get("participants", [])
-		var winners: Array = ledger.data.get("semifinal_winners", [])
-		lines.append("[center][b]SEMIFINAL A[/b]  %s  VS  %s[/center]" % [_name_at(participants, 0), _name_at(participants, 1)])
-		lines.append("[center][b]SEMIFINAL B[/b]  %s  VS  %s[/center]" % [_name_at(participants, 2), _name_at(participants, 3)])
-		lines.append("\n[center][b]FINAL[/b]  %s  VS  %s[/center]" % [_name_at(winners, 0), _name_at(winners, 1)])
-		var champion := champion_name()
-		if champion != "":
-			lines.append("\n[center][color=#ffd36b][font_size=24][b]CAMPEÃO: %s[/b][/font_size][/color][/center]" % champion)
+	if is_tournament_active() or is_tournament_finished():
+		lines = _active_bracket_lines()
 	else:
-		for slot in range(4):
+		for slot in range(_slot_sources.size()):
 			var source_index := clampi(_slot_sources[slot], 0, maxi(0, _sources.size() - 1))
 			var source: Dictionary = _sources[source_index] if not _sources.is_empty() else {}
 			var prefix := "▶" if slot == _selected_slot else " "
-			lines.append("[color=%s]%s COMPETIDOR %d  •  [b]%s[/b]  •  %s  •  %s[/color]" % [
+			lines.append("[color=%s]%s SEED %d  •  [b]%s[/b]  •  %s  •  %s[/color]" % [
 				"#ffd36b" if slot == _selected_slot else "#d7deeb",
 				prefix, slot + 1, String(source.get("name", "VAZIO")),
 				String(source.get("character_name", "")), String(source.get("build_name", ""))
 			])
-	_bracket.text = "\n\n".join(lines)
-	_details.text = "F10 fecha • Page Up/Down competidor • Home/End fonte • ENTER inicia • DEL reinicia\n%s" % _feedback
+	_bracket.text = "\n".join(lines)
+	_details.text = "F10 fecha • T alterna 4/8 • Page Up/Down seed • Home/End fonte • ENTER inicia • DEL reinicia\n%s" % _feedback
 
-func _name_at(source: Array, index: int) -> String:
-	if index < 0 or index >= source.size() or not (source[index] is Dictionary):
+func _active_bracket_lines() -> Array[String]:
+	var lines: Array[String] = []
+	var rounds: Array = ledger.data.get("rounds", [])
+	for round_index in range(rounds.size()):
+		if not (rounds[round_index] is Array):
+			continue
+		var round_matches: Array = rounds[round_index]
+		lines.append("[color=#f4d477][b]%s[/b][/color]" % _round_title(round_index, rounds.size()))
+		for match_index in range(round_matches.size()):
+			if not (round_matches[match_index] is Dictionary):
+				continue
+			var match_data: Dictionary = round_matches[match_index]
+			var p1 := _participant_name(match_data.get("p1", {}))
+			var p2 := _participant_name(match_data.get("p2", {}))
+			var winner := _participant_name(match_data.get("winner", {}))
+			var marker := "▶" if round_index == int(ledger.data.get("round_index", 0)) and match_index == int(ledger.data.get("match_index", 0)) and is_tournament_active() else " "
+			var suffix := " • vencedor %s" % winner if winner != "A DEFINIR" else ""
+			lines.append("%s %d. %s  VS  %s%s" % [marker, match_index + 1, p1, p2, suffix])
+		lines.append("")
+	var champion := champion_name()
+	if champion != "":
+		lines.append("[center][color=#ffd36b][font_size=24][b]CAMPEÃO: %s[/b][/font_size][/color][/center]" % champion)
+	return lines
+
+func _round_title(round_index: int, round_count: int) -> String:
+	if round_count >= 3:
+		return ["QUARTAS DE FINAL", "SEMIFINAIS", "FINAL"][clampi(round_index, 0, 2)]
+	return ["SEMIFINAIS", "FINAL"][clampi(round_index, 0, 1)]
+
+func _participant_name(source: Variant) -> String:
+	if not (source is Dictionary) or (source as Dictionary).is_empty():
 		return "A DEFINIR"
-	return String((source[index] as Dictionary).get("name", "A DEFINIR"))
+	var participant: Dictionary = source
+	var seed := int(participant.get("seed", 0))
+	var seed_label := "#%d " % seed if seed > 0 else ""
+	return "%s%s" % [seed_label, String(participant.get("name", "A DEFINIR"))]
 
 func _register_inputs() -> void:
 	_add_key_action(&"tournament_toggle", KEY_F10)
+	_add_key_action(&"tournament_format", KEY_T)
 	_add_key_action(&"tournament_up", KEY_PAGEUP)
 	_add_key_action(&"tournament_down", KEY_PAGEDOWN)
 	_add_key_action(&"tournament_prev", KEY_HOME)
