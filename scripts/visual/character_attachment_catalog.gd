@@ -33,15 +33,17 @@ const STATE_ANGLE_OFFSETS := {
 
 static func attachment(character_id: StringName, state_id: StringName, frame_index: int, facing: float = 1.0) -> Dictionary:
 	var data: Dictionary = CHARACTER_BASE.get(character_id, CHARACTER_BASE[&"kael"])
-	var safe_state := state_id if STATE_HAND_OFFSETS.has(state_id) else &"idle"
+	var safe_state: StringName = state_id if STATE_HAND_OFFSETS.has(state_id) else &"idle"
 	var safe_frame := clampi(frame_index, 0, FRAME_COUNT - 1)
 	var hand_offsets: Array = STATE_HAND_OFFSETS[safe_state]
 	var rear_offsets: Array = STATE_REAR_OFFSETS[safe_state]
 	var angle_offsets: Array = STATE_ANGLE_OFFSETS[safe_state]
 	var hand: Vector2 = data.get("hand", Vector2(11.0, -21.0))
 	var rear_hand: Vector2 = data.get("rear_hand", Vector2(-12.0, -25.0))
-	hand += hand_offsets[safe_frame] as Vector2
-	rear_hand += rear_offsets[safe_frame] as Vector2
+	var hand_offset: Vector2 = hand_offsets[safe_frame]
+	var rear_offset: Vector2 = rear_offsets[safe_frame]
+	hand += hand_offset
+	rear_hand += rear_offset
 	hand.x *= facing
 	rear_hand.x *= facing
 	return {
