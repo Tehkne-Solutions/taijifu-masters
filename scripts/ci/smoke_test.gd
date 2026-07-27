@@ -1,12 +1,14 @@
 extends SceneTree
 
 const REQUIRED_RESOURCES := [
-	"res://scenes/main.tscn",
-	"res://scenes/fighter/fighter.tscn",
+	"res://scenes/main.tscn", "res://scenes/fighter/fighter.tscn",
 	"res://assets/characters/kael/kael_animated_sheet.svg",
 	"res://assets/characters/nara/nara_animated_sheet.svg",
 	"res://assets/characters/lyra/lyra_animated_sheet.svg",
 	"res://assets/characters/rin/rin_animated_sheet.svg",
+	"res://scripts/preparation/battle_loadout_catalog.gd",
+	"res://scripts/preparation/battle_loadout_ledger.gd",
+	"res://scripts/runtime/battle_preparation_runtime.gd",
 	"res://scripts/visual/character_visual_catalog.gd",
 	"res://scripts/visual/character_attachment_catalog.gd",
 	"res://scripts/visual/technique_attachment_catalog.gd",
@@ -43,26 +45,51 @@ func _run_validation() -> void:
 	failures.append_array(TechniqueAttachmentCatalog.validate())
 	failures.append_array(TechniqueVisualTimeline.validate())
 	failures.append_array(CosmeticSocketCatalog.validate())
+	failures.append_array(BattleLoadoutCatalog.validate())
 	_validate_technique_profiles(failures)
 	_validate_cosmetic_ledger(failures)
+	_validate_battle_loadouts(failures)
 	var presets := BuildProfile.available_prototype_presets()
 	if presets.size() != 6:
 		failures.append("O protótipo deveria expor seis builds, mas encontrou %d" % presets.size())
 	for preset_id in presets:
 		var profile := BuildProfile.prototype_preset(preset_id)
 		if not CharacterVisualCatalog.has_character(profile.character_id):
-			failures.append("Build %s referencia personagem inválido: %s" % [String(preset_id), String(profile.character_id)])
+			failures.append("Build %s referencia personagem inválido" % String(preset_id))
 		if profile.character_name.strip_edges() == "":
 			failures.append("Build %s não possui nome de personagem" % String(preset_id))
 	await _validate_fighters(presets, failures)
 	await _validate_main_scene(failures)
 	if failures.is_empty():
-		print("TAIJIFU CI: cosméticos, expressões, resultados, técnicas e cena principal válidos.")
+		print("TAIJIFU CI: preparação completa, loadouts, cosméticos, técnicas e cena principal válidos.")
 		quit(0)
 		return
 	for failure in failures:
 		push_error("TAIJIFU CI: %s" % failure)
 	quit(1)
+
+func _validate_battle_loadouts(failures: Array[String]) -> void:
+	if BattleLoadoutCatalog.FIELD_ORDER.size() != 10:
+		failures.append("Preparação deveria possuir dez categorias")
+	var unlocked: Array = [&"han_three_currents", &"orra_inverted_foundation", &"lyenne_crossing_wing"]
+	var staff_variants := BattleLoadoutCatalog.variants_for_weapon(&"training_staff", unlocked)
+	if &"han_three_currents" not in staff_variants or &"orra_inverted_foundation" in staff_variants:
+		failures.append("Filtro de variantes por arma está incorreto")
+	var source := BattleLoadoutCatalog.loadout_from_preset(&"rin_challenger")
+	source["primary_weapon_id"] = &"breaker_gauntlets"
+	source["secondary_weapon_id"] = &"training_staff"
+	source["element_id"] = &"water"
+	source["head"] = &"moon_halo"
+	var sanitized := BattleLoadoutCatalog.sanitize(source, unlocked)
+	if StringName(sanitized.get("character_id", &"")) != &"rin":
+		failures.append("Loadout não preservou personagem")
+	if StringName(sanitized.get("primary_weapon_id", &"")) != &"breaker_gauntlets":
+		failures.append("Loadout não preservou arma principal")
+	var ledger := BattleLoadoutLedger.new()
+	ledger.set_loadout(1, sanitized, unlocked)
+	var restored := ledger.loadout_for(1, unlocked)
+	if StringName(restored.get("element_id", &"")) != &"water":
+		failures.append("Ledger de preparação não restaurou elemento")
 
 func _validate_technique_profiles(failures: Array[String]) -> void:
 	var base := CharacterAttachmentCatalog.attachment(&"kael", &"attack", 1, 1.0)
@@ -134,8 +161,7 @@ func _validate_fighters(presets: Array[StringName], failures: Array[String]) -> 
 		if not is_instance_valid(outcome) or not is_instance_valid(cosmetics) or not is_instance_valid(expression):
 			failures.append("Apresentação final incompleta para %s" % String(preset_id))
 		else:
-			var loadout := CosmeticSocketCatalog.default_loadout(expected)
-			cosmetics.apply_loadout(loadout)
+			cosmetics.apply_loadout(CosmeticSocketCatalog.default_loadout(expected))
 			if cosmetics.current_loadout().size() != 4:
 				failures.append("Cosméticos não aceitaram quatro sockets para %s" % String(preset_id))
 			expression.preview_expression(&"victory")
@@ -193,7 +219,7 @@ func _validate_main_scene(failures: Array[String]) -> void:
 	await process_frame
 	for node_path in [
 		"ImpactDirector", "DojoTrainingRuntime", "AssetInspectorRuntime", "AttachmentEditorRuntime",
-		"CosmeticLoadoutRuntime", "MatchOutcomeRuntime", "RosterHudRuntime"
+		"CosmeticLoadoutRuntime", "MatchOutcomeRuntime", "RosterHudRuntime", "BattlePreparationRuntime"
 	]:
 		if not is_instance_valid(instance.get_node_or_null(node_path)):
 			failures.append("%s não foi integrado à cena principal" % node_path)
@@ -204,5 +230,24 @@ func _validate_main_scene(failures: Array[String]) -> void:
 		var loaded := editor.override_for(&"kael", &"staff_long_thrust", &"startup", 0.5)
 		if float(loaded.get("hand_x", 0.0)) != 3.0 or editor.override_count() < 1:
 			failures.append("Editor não aplicou override em memória")
+	var preparation := instance.get_node_or_null("BattlePreparationRuntime") as BattlePreparationRuntime
+	if is_instance_valid(preparation):
+		var test_loadout := BattleLoadoutCatalog.loadout_from_preset(&"rin_challenger")
+		test_loadout["element_id"] = &"water"
+		test_loadout["primary_weapon_id"] = &"breaker_gauntlets"
+		test_loadout["secondary_weapon_id"] = &"training_staff"
+		test_loadout["head"] = &"moon_halo"
+		preparation.set_loadout_for_test(1, test_loadout)
+		instance.call("_start_battle")
+		await process_frame
+		await process_frame
+		var fighter: WeaponKitFighterController = instance.get("player_one") as WeaponKitFighterController
+		if not is_instance_valid(fighter):
+			failures.append("Preparação não iniciou o P1")
+		else:
+			if fighter.build.character_id != &"rin" or fighter.build.element_id != &"water":
+				failures.append("Loadout não aplicou personagem ou elemento ao P1")
+			if fighter.primary_weapon_id != &"breaker_gauntlets" or fighter.secondary_weapon_id != &"training_staff":
+				failures.append("Loadout não aplicou kit de armas ao P1")
 	instance.queue_free()
 	await process_frame
