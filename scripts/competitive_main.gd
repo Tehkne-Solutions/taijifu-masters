@@ -7,6 +7,7 @@ extends "res://scripts/main.gd"
 @onready var history_runtime: MatchHistoryRuntime = $MatchHistoryRuntime
 @onready var tournament_runtime: TournamentRuntime = $TournamentRuntime
 @onready var group_stage_runtime: GroupStageRuntime = $GroupStageRuntime
+@onready var double_elimination_runtime: DoubleEliminationRuntime = $DoubleEliminationRuntime
 @onready var player_profile_runtime: PlayerProfileRuntime = $PlayerProfileRuntime
 @onready var season_runtime: CompetitiveSeasonRuntime = $CompetitiveSeasonRuntime
 
@@ -97,9 +98,12 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 		var score_p1 := int(result.get("score_p1", 0))
 		var score_p2 := int(result.get("score_p2", 0))
 		var series_record := statistics_runtime.complete_series(score_p1, score_p2, winner_index)
+		var double_result: Dictionary = {}
 		var group_result: Dictionary = {}
 		var tournament_result: Dictionary = {}
-		if group_stage_runtime.is_group_stage_active():
+		if double_elimination_runtime.is_double_elimination_active():
+			double_result = double_elimination_runtime.record_series_result(winner_index, score_p1, score_p2)
+		elif group_stage_runtime.is_group_stage_active():
 			group_result = group_stage_runtime.record_series_result(winner_index, score_p1, score_p2)
 		elif tournament_runtime.is_tournament_active():
 			tournament_result = tournament_runtime.record_series_winner(winner_index)
@@ -112,7 +116,14 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 		competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 		_resetting_round = false
 		_enter_preparation()
-		if bool(group_result.get("ok", false)):
+		if bool(double_result.get("ok", false)):
+			if bool(double_result.get("finished", false)):
+				controls_label.text = "DUPLA ELIMINAÇÃO CONCLUÍDA • CAMPEÃO: %s • F12 abre o chaveamento." % double_elimination_runtime.champion_name()
+			else:
+				double_elimination_runtime.prepare_current_match()
+				var reset_label := " • RESET DA FINAL" if bool(double_result.get("reset_required", false)) else ""
+				controls_label.text = "%s%s • confirme os dois competidores para iniciar." % [double_elimination_runtime.ledger.stage_label(), reset_label]
+		elif bool(group_result.get("ok", false)):
 			if bool(group_result.get("finished", false)):
 				if bool(group_result.get("knockout_started", false)):
 					controls_label.text = "FASE DE GRUPOS CONCLUÍDA • SEMIFINAIS PREPARADAS • F10 abre o chaveamento."
@@ -128,7 +139,7 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 				tournament_runtime.prepare_current_match()
 				controls_label.text = "%s • confirme os dois competidores para iniciar." % tournament_runtime.ledger.stage_label()
 		else:
-			controls_label.text = "F6 perfis • F7 temporadas • F8 ranking • F9 perfis locais • F10 torneio • F11 grupos."
+			controls_label.text = "F6 perfis • F7 temporadas • F8 ranking • F9 perfis locais • F10 torneio • F11 grupos • F12 dupla eliminação."
 		return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
@@ -140,6 +151,10 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	await _play_round_entrance()
 
 func _profile_context_for_series(player_index: int) -> Dictionary:
+	if double_elimination_runtime.is_double_elimination_active():
+		var double_context := double_elimination_runtime.current_profile_context(player_index)
+		if not double_context.is_empty():
+			return double_context
 	if group_stage_runtime.is_group_stage_active():
 		var group_context := group_stage_runtime.current_profile_context(player_index)
 		if not group_context.is_empty():
