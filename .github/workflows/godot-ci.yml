@@ -13,7 +13,7 @@ jobs:
   validate-godot-project:
     name: Parser, importação e smoke test
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 12
 
     steps:
       - name: Checkout
@@ -76,6 +76,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/tournament_curation_ranking_smoke_test.gd 2>&1 | tee godot-tournament-curation-ranking.log
 
+      - name: Validar perfis, busca, comparação e PNG
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/profiles_search_compare_png_smoke_test.gd 2>&1 | tee godot-profiles-search-compare-png.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -89,4 +94,5 @@ jobs:
             godot-arena-share-tournament.log
             godot-tournament-replay-history.log
             godot-tournament-curation-ranking.log
+            godot-profiles-search-compare-png.log
           if-no-files-found: ignore
