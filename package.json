@@ -1,0 +1,10 @@
+{
+  "name": "taijifu-masters",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Taijifu Masters — build Web do Godot.",
+  "scripts": {
+    "build:web": "bash scripts/build-web.sh",
+    "serve:web": "python3 -m http.server 4173 --directory web-build"
+  }
+}
