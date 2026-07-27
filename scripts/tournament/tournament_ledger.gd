@@ -2,18 +2,22 @@ class_name TournamentLedger
 extends RefCounted
 
 const SAVE_PATH := "user://tournament_state.json"
-const VERSION := 1
+const VERSION := 2
+const VALID_SIZES: Array[int] = [4, 8]
 
 var data: Dictionary = default_state()
 
-static func default_state() -> Dictionary:
+static func default_state(bracket_size: int = 4) -> Dictionary:
+	var clean_size := bracket_size if bracket_size in VALID_SIZES else 4
 	return {
 		"version": VERSION,
+		"bracket_size": clean_size,
 		"active": false,
 		"finished": false,
-		"stage_index": 0,
 		"participants": [],
-		"semifinal_winners": [],
+		"rounds": [],
+		"round_index": 0,
+		"match_index": 0,
 		"champion": {},
 		"updated_unix": 0
 	}
@@ -38,49 +42,74 @@ func save_to_disk() -> String:
 	file.store_string(JSON.stringify(data, "\t"))
 	return SAVE_PATH
 
-func reset() -> void:
-	data = default_state()
+func reset(bracket_size: int = -1) -> void:
+	var size := current_bracket_size() if bracket_size < 0 else bracket_size
+	data = default_state(size)
 	save_to_disk()
 
+func set_bracket_size(bracket_size: int) -> int:
+	var clean_size := bracket_size if bracket_size in VALID_SIZES else 4
+	if bool(data.get("active", false)):
+		return current_bracket_size()
+	if clean_size != current_bracket_size():
+		data = default_state(clean_size)
+		save_to_disk()
+	return clean_size
+
+func current_bracket_size() -> int:
+	var size := int(data.get("bracket_size", 4))
+	return size if size in VALID_SIZES else 4
+
 func set_participants(participants: Array[Dictionary]) -> bool:
-	if participants.size() != 4:
+	var size := participants.size()
+	if size not in VALID_SIZES:
 		return false
 	var clean: Array[Dictionary] = []
-	for index in range(4):
+	for index in range(size):
 		var participant := sanitize_participant(participants[index], index)
 		if participant.is_empty():
 			return false
+		participant["seed"] = index + 1
 		clean.append(participant)
-	data = default_state()
+	data = default_state(size)
 	data["participants"] = clean
 	save_to_disk()
 	return true
 
 func start() -> bool:
 	var participants: Array = data.get("participants", [])
-	if participants.size() != 4:
+	var size := current_bracket_size()
+	if participants.size() != size:
+		return false
+	var first_round := _build_seeded_round(participants, size)
+	if first_round.is_empty():
 		return false
 	data["active"] = true
 	data["finished"] = false
-	data["stage_index"] = 0
-	data["semifinal_winners"] = []
+	data["rounds"] = [first_round]
+	data["round_index"] = 0
+	data["match_index"] = 0
 	data["champion"] = {}
 	save_to_disk()
 	return true
 
 func current_pair() -> Array[Dictionary]:
-	var participants: Array = data.get("participants", [])
-	if participants.size() != 4 or bool(data.get("finished", false)):
+	if bool(data.get("finished", false)):
 		return []
-	var stage := int(data.get("stage_index", 0))
-	if stage == 0:
-		return [_participant_at(participants, 0), _participant_at(participants, 1)]
-	if stage == 1:
-		return [_participant_at(participants, 2), _participant_at(participants, 3)]
-	var winners: Array = data.get("semifinal_winners", [])
-	if stage == 2 and winners.size() == 2:
-		return [_participant_at(winners, 0), _participant_at(winners, 1)]
-	return []
+	var rounds: Array = data.get("rounds", [])
+	var round_index := int(data.get("round_index", 0))
+	var match_index := int(data.get("match_index", 0))
+	if round_index < 0 or round_index >= rounds.size() or not (rounds[round_index] is Array):
+		return []
+	var round_matches: Array = rounds[round_index]
+	if match_index < 0 or match_index >= round_matches.size() or not (round_matches[match_index] is Dictionary):
+		return []
+	var match_data: Dictionary = round_matches[match_index]
+	var p1_source: Variant = match_data.get("p1", {})
+	var p2_source: Variant = match_data.get("p2", {})
+	if not (p1_source is Dictionary) or not (p2_source is Dictionary):
+		return []
+	return [(p1_source as Dictionary).duplicate(true), (p2_source as Dictionary).duplicate(true)]
 
 func record_winner(winner_index: int) -> Dictionary:
 	if not bool(data.get("active", false)) or bool(data.get("finished", false)):
@@ -90,67 +119,127 @@ func record_winner(winner_index: int) -> Dictionary:
 		return {"ok": false, "error": "Confronto atual inválido"}
 	var clean_index := clampi(winner_index, 1, 2)
 	var winner: Dictionary = pair[clean_index - 1].duplicate(true)
-	var stage := int(data.get("stage_index", 0))
-	if stage < 2:
-		var winners: Array = data.get("semifinal_winners", [])
-		winners.append(winner)
-		data["semifinal_winners"] = winners
-		data["stage_index"] = stage + 1
-		data["active"] = true
-		data["finished"] = false
+	var rounds: Array = data.get("rounds", [])
+	var round_index := int(data.get("round_index", 0))
+	var match_index := int(data.get("match_index", 0))
+	var round_matches: Array = rounds[round_index]
+	var match_data: Dictionary = round_matches[match_index]
+	match_data["winner"] = winner
+	match_data["winner_index"] = clean_index
+	round_matches[match_index] = match_data
+	rounds[round_index] = round_matches
+	data["rounds"] = rounds
+	if match_index + 1 < round_matches.size():
+		data["match_index"] = match_index + 1
 		save_to_disk()
 		return {
 			"ok": true,
 			"finished": false,
 			"winner": winner,
-			"next_stage_index": stage + 1,
-			"next_pair": current_pair()
+			"round_completed": false,
+			"next_pair": current_pair(),
+			"stage_label": stage_label()
 		}
-	data["champion"] = winner
-	data["finished"] = true
-	data["active"] = false
-	data["stage_index"] = 3
+	var winners := _winners_from_round(round_matches)
+	if winners.size() == 1:
+		data["champion"] = winners[0]
+		data["finished"] = true
+		data["active"] = false
+		data["round_index"] = round_index + 1
+		data["match_index"] = 0
+		save_to_disk()
+		return {"ok": true, "finished": true, "winner": winner, "champion": winners[0]}
+	var next_round := _build_adjacent_round(winners)
+	rounds.append(next_round)
+	data["rounds"] = rounds
+	data["round_index"] = round_index + 1
+	data["match_index"] = 0
+	data["active"] = true
+	data["finished"] = false
 	save_to_disk()
-	return {"ok": true, "finished": true, "winner": winner, "champion": winner}
+	return {
+		"ok": true,
+		"finished": false,
+		"winner": winner,
+		"round_completed": true,
+		"next_pair": current_pair(),
+		"stage_label": stage_label()
+	}
 
 func stage_label() -> String:
-	match int(data.get("stage_index", 0)):
-		0: return "SEMIFINAL A"
-		1: return "SEMIFINAL B"
-		2: return "FINAL"
-		3: return "TORNEIO CONCLUÍDO"
-		_: return "TORNEIO"
+	if bool(data.get("finished", false)):
+		return "TORNEIO CONCLUÍDO"
+	var round_index := int(data.get("round_index", 0))
+	var match_number := int(data.get("match_index", 0)) + 1
+	var size := current_bracket_size()
+	if size == 8:
+		match round_index:
+			0: return "QUARTAS DE FINAL %d/4" % match_number
+			1: return "SEMIFINAL %d/2" % match_number
+			2: return "FINAL"
+			_: return "TORNEIO DE 8"
+	match round_index:
+		0: return "SEMIFINAL %d/2" % match_number
+		1: return "FINAL"
+		_: return "TORNEIO DE 4"
 
 func champion() -> Dictionary:
 	var source: Variant = data.get("champion", {})
 	return (source as Dictionary).duplicate(true) if source is Dictionary else {}
 
+func bracket_snapshot() -> Dictionary:
+	return data.duplicate(true)
+
+func all_matches() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for round_value in data.get("rounds", []):
+		if not (round_value is Array):
+			continue
+		for match_value in round_value:
+			if match_value is Dictionary:
+				result.append((match_value as Dictionary).duplicate(true))
+	return result
+
 func sanitize_state(source: Dictionary) -> Dictionary:
-	var result := default_state()
+	var size := int(source.get("bracket_size", 4))
+	if size not in VALID_SIZES:
+		size = 4
+	var result := default_state(size)
 	var participants_source: Variant = source.get("participants", [])
 	var participants: Array[Dictionary] = []
 	if participants_source is Array:
-		for index in range(mini(4, participants_source.size())):
+		for index in range(mini(size, participants_source.size())):
 			if participants_source[index] is Dictionary:
 				var clean := sanitize_participant(participants_source[index] as Dictionary, index)
 				if not clean.is_empty():
+					clean["seed"] = clampi(int(clean.get("seed", index + 1)), 1, size)
 					participants.append(clean)
 	result["participants"] = participants
-	var winners_source: Variant = source.get("semifinal_winners", [])
-	var winners: Array[Dictionary] = []
-	if winners_source is Array:
-		for index in range(mini(2, winners_source.size())):
-			if winners_source[index] is Dictionary:
-				var clean := sanitize_participant(winners_source[index] as Dictionary, index)
-				if not clean.is_empty():
-					winners.append(clean)
-	result["semifinal_winners"] = winners
+	var rounds_source: Variant = source.get("rounds", [])
+	var rounds: Array = []
+	if rounds_source is Array:
+		for round_value in rounds_source:
+			if not (round_value is Array):
+				continue
+			var clean_round: Array = []
+			for match_value in round_value:
+				if match_value is Dictionary:
+					var clean_match := _sanitize_match(match_value as Dictionary)
+					if not clean_match.is_empty():
+						clean_round.append(clean_match)
+			if not clean_round.is_empty():
+				rounds.append(clean_round)
+	result["rounds"] = rounds
 	var champion_source: Variant = source.get("champion", {})
 	if champion_source is Dictionary and not (champion_source as Dictionary).is_empty():
 		result["champion"] = sanitize_participant(champion_source as Dictionary, 0)
-	result["stage_index"] = clampi(int(source.get("stage_index", 0)), 0, 3)
+	result["round_index"] = clampi(int(source.get("round_index", 0)), 0, maxi(0, rounds.size()))
+	var current_round_matches := 1
+	if not rounds.is_empty() and int(result["round_index"]) < rounds.size() and rounds[int(result["round_index"])] is Array:
+		current_round_matches = maxi(1, (rounds[int(result["round_index"])] as Array).size())
+	result["match_index"] = clampi(int(source.get("match_index", 0)), 0, current_round_matches - 1)
 	result["finished"] = bool(source.get("finished", false))
-	result["active"] = bool(source.get("active", false)) and participants.size() == 4 and not bool(result["finished"])
+	result["active"] = bool(source.get("active", false)) and participants.size() == size and not bool(result["finished"])
 	result["updated_unix"] = int(source.get("updated_unix", 0))
 	return result
 
@@ -166,11 +255,75 @@ func sanitize_participant(source: Dictionary, ordinal: int = 0) -> Dictionary:
 	return {
 		"participant_id": String(source.get("participant_id", "slot_%d" % ordinal)),
 		"name": name.left(36),
+		"seed": maxi(1, int(source.get("seed", ordinal + 1))),
 		"loadout": loadout,
 		"source": String(source.get("source", "local"))
 	}
 
-func _participant_at(source: Array, index: int) -> Dictionary:
-	if index < 0 or index >= source.size() or not (source[index] is Dictionary):
+func _build_seeded_round(participants: Array, size: int) -> Array:
+	var order := _seed_order(size)
+	var matches: Array = []
+	for index in range(0, order.size(), 2):
+		var first_seed := order[index]
+		var second_seed := order[index + 1]
+		matches.append(_match_record(_participant_by_seed(participants, first_seed), _participant_by_seed(participants, second_seed), 0, matches.size()))
+	return matches
+
+func _build_adjacent_round(participants: Array[Dictionary]) -> Array:
+	var matches: Array = []
+	for index in range(0, participants.size(), 2):
+		matches.append(_match_record(participants[index], participants[index + 1], int(data.get("round_index", 0)) + 1, matches.size()))
+	return matches
+
+func _match_record(p1: Dictionary, p2: Dictionary, round_index: int, match_index: int) -> Dictionary:
+	if p1.is_empty() or p2.is_empty():
 		return {}
-	return (source[index] as Dictionary).duplicate(true)
+	return {
+		"round_index": round_index,
+		"match_index": match_index,
+		"p1": p1.duplicate(true),
+		"p2": p2.duplicate(true),
+		"winner_index": 0,
+		"winner": {}
+	}
+
+func _sanitize_match(source: Dictionary) -> Dictionary:
+	var p1_source: Variant = source.get("p1", {})
+	var p2_source: Variant = source.get("p2", {})
+	if not (p1_source is Dictionary) or not (p2_source is Dictionary):
+		return {}
+	var p1 := sanitize_participant(p1_source as Dictionary, 0)
+	var p2 := sanitize_participant(p2_source as Dictionary, 1)
+	if p1.is_empty() or p2.is_empty():
+		return {}
+	var result := {
+		"round_index": maxi(0, int(source.get("round_index", 0))),
+		"match_index": maxi(0, int(source.get("match_index", 0))),
+		"p1": p1,
+		"p2": p2,
+		"winner_index": clampi(int(source.get("winner_index", 0)), 0, 2),
+		"winner": {}
+	}
+	var winner_source: Variant = source.get("winner", {})
+	if winner_source is Dictionary and not (winner_source as Dictionary).is_empty():
+		result["winner"] = sanitize_participant(winner_source as Dictionary, 0)
+	return result
+
+func _winners_from_round(round_matches: Array) -> Array[Dictionary]:
+	var winners: Array[Dictionary] = []
+	for match_value in round_matches:
+		if not (match_value is Dictionary):
+			continue
+		var winner_source: Variant = (match_value as Dictionary).get("winner", {})
+		if winner_source is Dictionary and not (winner_source as Dictionary).is_empty():
+			winners.append((winner_source as Dictionary).duplicate(true))
+	return winners
+
+func _participant_by_seed(participants: Array, seed: int) -> Dictionary:
+	for value in participants:
+		if value is Dictionary and int((value as Dictionary).get("seed", 0)) == seed:
+			return (value as Dictionary).duplicate(true)
+	return {}
+
+func _seed_order(size: int) -> Array[int]:
+	return [1, 8, 4, 5, 2, 7, 3, 6] if size == 8 else [1, 4, 2, 3]
