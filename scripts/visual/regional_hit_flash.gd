@@ -94,8 +94,12 @@ func _draw_torso_flash(color: Color, pulse: float) -> void:
 		center + Vector2(0.0, 23.0),
 		center + Vector2(-16.0, height - 2.0)
 	])
+	var outline := PackedVector2Array()
+	for point in burst:
+		outline.append(point)
+	outline.append(burst[0])
 	draw_colored_polygon(burst, Color(color, color.a * 0.25))
-	draw_polyline(PackedVector2Array(Array(burst) + [burst[0]]), color, 2.8)
+	draw_polyline(outline, color, 2.8)
 
 func _draw_legs_flash(color: Color, pulse: float) -> void:
 	var center := Vector2(0.0, 20.0)
