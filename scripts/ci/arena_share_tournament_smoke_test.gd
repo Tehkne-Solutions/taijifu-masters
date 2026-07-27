@@ -17,8 +17,7 @@ func _run_validation() -> void:
 	quit(1)
 
 func _validate_share_codes(failures: Array[String]) -> void:
-	var loadout := BattleLoadoutCatalog.default_loadout(1)
-	loadout["preset_id"] = &"lyra_elementalist"
+	var loadout := BattleLoadoutCatalog.loadout_from_preset(&"lyra_elementalist")
 	loadout["element_id"] = &"water"
 	var preset := {
 		"name": "LYRA TESTE",
@@ -52,14 +51,12 @@ func _validate_tournament_ledger(failures: Array[String]) -> void:
 	var ledger := TournamentLedger.new()
 	ledger.reset()
 	var participants: Array[Dictionary] = []
-	var presets := [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"]
+	var presets: Array[StringName] = [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"]
 	for index in range(4):
-		var loadout := BattleLoadoutCatalog.default_loadout(1)
-		loadout["preset_id"] = presets[index]
 		participants.append({
 			"participant_id": "p%d" % (index + 1),
 			"name": "COMPETIDOR %d" % (index + 1),
-			"loadout": loadout,
+			"loadout": BattleLoadoutCatalog.loadout_from_preset(presets[index]),
 			"source": "ci"
 		})
 	if not ledger.set_participants(participants) or not ledger.start():
@@ -108,7 +105,7 @@ func _validate_scene_runtime(failures: Array[String]) -> void:
 			ids.append(StringName(signature.get("arena_id", &"")))
 			if bool(signature.get("competitive_collision_changes", true)):
 				failures.append("Arte de arena declarou mudança competitiva")
-		for expected in [&"triple_path", &"silent_sanctuary", &"ember_crucible"]:
+		for expected in [&"triple_ruins", &"silent_sanctuary", &"ember_crucible"]:
 			if expected not in ids:
 				failures.append("Assinatura de arena ausente: %s" % String(expected))
 		arena_runtime.configure(CompetitiveMatchCatalog.resolved_arena_rules({"arena_id": &"silent_sanctuary"}))
