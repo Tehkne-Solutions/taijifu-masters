@@ -1,0 +1,40 @@
+{
+  "id": "PACK_01",
+  "name": "Terrain Core",
+  "version": "0.1.0",
+  "status": "PLANNED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00"],
+  "asset_count_planned": 96,
+  "families": [
+    "grass",
+    "dirt",
+    "stone",
+    "sand",
+    "mud",
+    "snow",
+    "ice",
+    "water",
+    "corrupted",
+    "transitions",
+    "overlays"
+  ],
+  "runtime_rules": {
+    "individual_files": true,
+    "tileable_four_sides": true,
+    "external_borders": false,
+    "external_shadows": false,
+    "side_walls": false,
+    "padding": 0,
+    "master_size": 1024,
+    "hd_size": 512,
+    "mobile_size": 256
+  },
+  "paths": {
+    "inventory": "res://assets/packs/pack_01_terrain_core/inventory.json",
+    "masters": "res://assets/packs/pack_01_terrain_core/master",
+    "runtime_hd": "res://assets/packs/pack_01_terrain_core/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_01_terrain_core/runtime/mobile",
+    "previews": "res://assets/packs/pack_01_terrain_core/previews"
+  }
+}
