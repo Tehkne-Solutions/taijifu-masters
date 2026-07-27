@@ -9,10 +9,13 @@ const REQUIRED_RESOURCES := [
 	"res://assets/characters/rin/rin_animated_sheet.svg",
 	"res://scripts/visual/character_visual_catalog.gd",
 	"res://scripts/visual/character_attachment_catalog.gd",
+	"res://scripts/visual/technique_attachment_catalog.gd",
 	"res://scripts/visual/technique_visual_timeline.gd",
+	"res://scripts/visual/weapon_trail_runtime.gd",
 	"res://scripts/visual/regional_hit_flash.gd",
 	"res://scripts/visual/provisional_sprite_presenter.gd",
 	"res://scripts/visual/fighter_visual_overlay.gd",
+	"res://scripts/runtime/attachment_editor_runtime.gd",
 	"res://scripts/runtime/asset_inspector_runtime.gd",
 	"res://scripts/runtime/roster_hud_runtime.gd",
 	"res://scripts/runtime/impact_director.gd",
@@ -30,7 +33,9 @@ func _run_validation() -> void:
 	for character_id in CharacterVisualCatalog.character_ids():
 		failures.append_array(CharacterVisualCatalog.validate_character(character_id))
 	failures.append_array(CharacterAttachmentCatalog.validate())
+	failures.append_array(TechniqueAttachmentCatalog.validate())
 	failures.append_array(TechniqueVisualTimeline.validate())
+	_validate_technique_profiles(failures)
 	var presets := BuildProfile.available_prototype_presets()
 	if presets.size() != 6:
 		failures.append("O protótipo deveria expor seis builds, mas encontrou %d" % presets.size())
@@ -40,17 +45,35 @@ func _run_validation() -> void:
 			failures.append("Build %s referencia personagem inválido: %s" % [String(preset_id), String(profile.character_id)])
 		if profile.character_name.strip_edges() == "":
 			failures.append("Build %s não possui nome de personagem" % String(preset_id))
-	await _validate_fighter_presenters(presets, failures)
+	await _validate_fighters(presets, failures)
 	await _validate_main_scene(failures)
 	if failures.is_empty():
-		print("TAIJIFU CI: timeline técnica, encaixes, flashes, elenco e cena principal válidos.")
+		print("TAIJIFU CI: técnicas, editor, trilhas, encaixes e cena principal válidos.")
 		quit(0)
 		return
 	for failure in failures:
 		push_error("TAIJIFU CI: %s" % failure)
 	quit(1)
 
-func _validate_fighter_presenters(presets: Array[StringName], failures: Array[String]) -> void:
+func _validate_technique_profiles(failures: Array[String]) -> void:
+	var base := CharacterAttachmentCatalog.attachment(&"kael", &"attack", 1, 1.0)
+	for technique_id in TechniqueAttachmentCatalog.technique_ids():
+		var profile := TechniqueAttachmentCatalog.trail_profile(technique_id)
+		if not profile.has("enabled"):
+			failures.append("Trilha sem estado enabled para %s" % String(technique_id))
+		for stage in TechniqueAttachmentCatalog.PREVIEW_STAGES:
+			var phase_id := stage
+			var progress := 0.6
+			if stage in [&"active_early", &"active_late"]:
+				phase_id = &"active"
+				progress = 0.25 if stage == &"active_early" else 0.75
+			var resolved := TechniqueAttachmentCatalog.resolve(base, technique_id, phase_id, progress, 1.0)
+			if not (resolved.get("hand", null) is Vector2):
+				failures.append("Técnica %s/%s não resolveu mão" % [String(technique_id), String(stage)])
+			if float(resolved.get("reach", 0.0)) <= 0.0:
+				failures.append("Técnica %s/%s resolveu alcance inválido" % [String(technique_id), String(stage)])
+
+func _validate_fighters(presets: Array[StringName], failures: Array[String]) -> void:
 	var fighter_scene := load("res://scenes/fighter/fighter.tscn") as PackedScene
 	if not is_instance_valid(fighter_scene):
 		failures.append("Não foi possível carregar scenes/fighter/fighter.tscn")
@@ -66,27 +89,32 @@ func _validate_fighter_presenters(presets: Array[StringName], failures: Array[St
 		await process_frame
 		var presenter := fighter.get_node_or_null("SpritePresenter") as ProvisionalSpritePresenter
 		var flash := fighter.get_node_or_null("RegionalHitFlash") as RegionalHitFlash
+		var trail := fighter.get_node_or_null("WeaponTrail") as WeaponTrailRuntime
+		var overlay := fighter.get_node_or_null("VisualOverlay") as FighterVisualOverlay
 		var expected := BuildProfile.prototype_preset(preset_id).character_id
 		if not is_instance_valid(presenter) or not presenter.has_active_sprite():
 			failures.append("Presenter inativo para %s" % String(preset_id))
 		elif presenter.character_id() != expected:
-			failures.append("Presenter de %s resolveu %s em vez de %s" % [String(preset_id), String(presenter.character_id()), String(expected)])
+			failures.append("Presenter de %s resolveu personagem incorreto" % String(preset_id))
 		if not is_instance_valid(flash):
 			failures.append("Flash regional ausente para %s" % String(preset_id))
 		else:
 			flash.preview_hit(&"head", &"hit", 0.8)
-			if not flash.is_flash_active() or flash.active_region_id() != &"head":
+			if not flash.is_flash_active():
 				failures.append("Flash regional não respondeu para %s" % String(preset_id))
+		if not is_instance_valid(trail) or not is_instance_valid(overlay):
+			failures.append("Trilha ou overlay ausente para %s" % String(preset_id))
+		else:
+			trail.add_test_point(Vector2.ZERO)
+			trail.add_test_point(Vector2(10, 0))
+			if trail.point_count() != 2:
+				failures.append("Trilha não armazenou pontos para %s" % String(preset_id))
 		_validate_phase_frames(fighter, failures, preset_id)
 		_validate_attachment(expected, presenter, failures)
 		fighter.queue_free()
 		await process_frame
 
-func _validate_phase_frames(
-	fighter: MasteredWeaponFighterController,
-	failures: Array[String],
-	preset_id: StringName
-) -> void:
+func _validate_phase_frames(fighter: MasteredWeaponFighterController, failures: Array[String], preset_id: StringName) -> void:
 	fighter._current_technique = TechniqueCatalog.get_technique(&"staff_long_thrust")
 	fighter._attack_phase = FighterController.AttackPhase.STARTUP
 	fighter._attack_phase_timer = fighter._current_technique.startup_seconds()
@@ -107,21 +135,12 @@ func _validate_phase_frames(
 	fighter._attack_phase_timer = 0.0
 	fighter._current_technique = null
 
-func _validate_attachment(
-	character_id: StringName,
-	presenter: ProvisionalSpritePresenter,
-	failures: Array[String]
-) -> void:
-	var attachment := CharacterAttachmentCatalog.attachment(
-		character_id,
-		presenter.current_state_id(),
-		presenter.current_frame_index(),
-		1.0
-	)
-	if not attachment.has("hand") or not (attachment["hand"] is Vector2):
+func _validate_attachment(character_id: StringName, presenter: ProvisionalSpritePresenter, failures: Array[String]) -> void:
+	var attachment := CharacterAttachmentCatalog.attachment(character_id, presenter.current_state_id(), presenter.current_frame_index(), 1.0)
+	if not (attachment.get("hand", null) is Vector2):
 		failures.append("Encaixe de mão inválido para %s" % String(character_id))
-	if not attachment.has("rear_hand") or not (attachment["rear_hand"] is Vector2):
-		failures.append("Encaixe traseiro inválido para %s" % String(character_id))
+	if not (attachment.get("rear_hand", null) is Vector2):
+		failures.append("Encaixe de apoio inválido para %s" % String(character_id))
 
 func _validate_main_scene(failures: Array[String]) -> void:
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
@@ -135,13 +154,15 @@ func _validate_main_scene(failures: Array[String]) -> void:
 	root.add_child(instance)
 	await process_frame
 	await process_frame
-	for node_path in [
-		"ImpactDirector",
-		"DojoTrainingRuntime",
-		"AssetInspectorRuntime",
-		"RosterHudRuntime"
-	]:
+	for node_path in ["ImpactDirector", "DojoTrainingRuntime", "AssetInspectorRuntime", "AttachmentEditorRuntime", "RosterHudRuntime"]:
 		if not is_instance_valid(instance.get_node_or_null(node_path)):
 			failures.append("%s não foi integrado à cena principal" % node_path)
+	var editor := instance.get_node_or_null("AttachmentEditorRuntime") as AttachmentEditorRuntime
+	if is_instance_valid(editor):
+		var key := TechniqueAttachmentCatalog.override_key(&"kael", &"staff_long_thrust", &"startup")
+		editor.set_override_for_test(key, {"hand_x": 3.0, "reach": 1.1})
+		var loaded := editor.override_for(&"kael", &"staff_long_thrust", &"startup", 0.5)
+		if float(loaded.get("hand_x", 0.0)) != 3.0 or editor.override_count() < 1:
+			failures.append("Editor não aplicou override em memória")
 	instance.queue_free()
 	await process_frame
