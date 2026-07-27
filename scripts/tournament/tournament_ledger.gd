@@ -326,4 +326,9 @@ func _participant_by_seed(participants: Array, seed: int) -> Dictionary:
 	return {}
 
 func _seed_order(size: int) -> Array[int]:
-	return [1, 8, 4, 5, 2, 7, 3, 6] if size == 8 else [1, 4, 2, 3]
+	var order: Array[int] = []
+	if size == 8:
+		order.assign([1, 8, 4, 5, 2, 7, 3, 6])
+	else:
+		order.assign([1, 4, 2, 3])
+	return order
