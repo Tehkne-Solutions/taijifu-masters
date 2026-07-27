@@ -1,23 +1,13 @@
 class_name ProvisionalSpritePresenter
 extends Node2D
 
-const FRAME_SIZE := Vector2(128.0, 128.0)
-const CHARACTER_SHEETS := {
-	&"kael": "res://assets/characters/kael/kael_provisional_sheet.svg",
-	&"nara": "res://assets/characters/nara/nara_provisional_sheet.svg"
-}
-const STATE_FRAMES := {
-	&"idle": 0,
-	&"move": 1,
-	&"attack": 2,
-	&"guard": 3
-}
-
 var _fighter: FighterController
 var _sprite: Sprite2D
 var _atlas_texture: AtlasTexture
 var _character_id: StringName = &"kael"
 var _state_id: StringName = &"idle"
+var _frame_index := 0
+var _frame_timer := 0.0
 var _hurt_timer := 0.0
 var _last_health := -1.0
 var _active := false
@@ -28,7 +18,6 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = true
 	_sprite.position = Vector2(0.0, -17.0)
-	_sprite.scale = Vector2(0.78, 0.78)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	add_child(_sprite)
 	_resolve_character()
@@ -49,6 +38,7 @@ func _process(delta: float) -> void:
 		alpha *= 0.72
 	_sprite.modulate = Color(1.0, 1.0, 1.0, alpha)
 	_update_state(false)
+	_advance_animation(delta)
 
 func has_active_sprite() -> bool:
 	return _active and is_instance_valid(_sprite) and is_instance_valid(_sprite.texture)
@@ -59,33 +49,45 @@ func character_id() -> StringName:
 func current_state_id() -> StringName:
 	return _state_id
 
+func current_frame_index() -> int:
+	return _frame_index
+
 func _resolve_character() -> void:
 	if not is_instance_valid(_fighter):
+		return
+	if is_instance_valid(_fighter.build) and _fighter.build.character_id != &"":
+		_character_id = _fighter.build.character_id
 		return
 	match _fighter.build_preset:
 		&"rock_guardian", &"foundation_breaker":
 			_character_id = &"nara"
+		&"lyra_elementalist":
+			_character_id = &"lyra"
+		&"rin_challenger":
+			_character_id = &"rin"
 		_:
 			_character_id = &"kael"
 
 func _load_sheet() -> void:
-	var path := String(CHARACTER_SHEETS.get(_character_id, ""))
+	var path := CharacterVisualCatalog.sheet_path(_character_id)
 	if path == "" or not ResourceLoader.exists(path):
 		_active = false
 		_sprite.visible = false
-		push_warning("Spritesheet provisório ausente para %s; usando fallback procedural." % String(_character_id))
+		push_warning("Atlas animado ausente para %s; usando fallback procedural." % String(_character_id))
 		return
 	var texture := load(path) as Texture2D
 	if not is_instance_valid(texture):
 		_active = false
 		_sprite.visible = false
-		push_warning("Falha ao carregar spritesheet provisório: %s" % path)
+		push_warning("Falha ao carregar atlas animado: %s" % path)
 		return
 	_atlas_texture = AtlasTexture.new()
 	_atlas_texture.atlas = texture
 	_sprite.texture = _atlas_texture
+	_sprite.scale = Vector2.ONE * CharacterVisualCatalog.scale_for(_character_id)
 	_sprite.visible = true
 	_active = true
+	_set_frame(0)
 
 func _on_combat_state_changed(_changed_fighter: FighterController) -> void:
 	if not is_instance_valid(_fighter):
@@ -108,5 +110,26 @@ func _update_state(force: bool) -> void:
 	if not force and next_state == _state_id:
 		return
 	_state_id = next_state
-	var frame := int(STATE_FRAMES.get(_state_id, 0))
-	_atlas_texture.region = Rect2(Vector2(frame * FRAME_SIZE.x, 0.0), FRAME_SIZE)
+	_frame_index = 0
+	_frame_timer = 0.0
+	_set_frame(_frame_index)
+
+func _advance_animation(delta: float) -> void:
+	if not has_active_sprite():
+		return
+	var fps := CharacterVisualCatalog.fps_for(_character_id, _state_id)
+	_frame_timer += delta
+	var frame_duration := 1.0 / fps
+	while _frame_timer >= frame_duration:
+		_frame_timer -= frame_duration
+		_frame_index = wrapi(_frame_index + 1, 0, CharacterVisualCatalog.columns(_character_id))
+		_set_frame(_frame_index)
+
+func _set_frame(frame_index: int) -> void:
+	if not is_instance_valid(_atlas_texture):
+		return
+	var row := CharacterVisualCatalog.state_row(_state_id)
+	_atlas_texture.region = Rect2(
+		Vector2(frame_index * CharacterVisualCatalog.FRAME_SIZE.x, row * CharacterVisualCatalog.FRAME_SIZE.y),
+		CharacterVisualCatalog.FRAME_SIZE
+	)

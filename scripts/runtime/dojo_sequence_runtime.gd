@@ -182,11 +182,7 @@ func _select_slot(direction: int) -> void:
 		_feedback = "PARE A GRAVAÇÃO OU REPETIÇÃO PARA TROCAR"
 		return
 	_sync_selected_slot()
-	_selected_slot += direction
-	if _selected_slot < 1:
-		_selected_slot = SLOT_COUNT
-	elif _selected_slot > SLOT_COUNT:
-		_selected_slot = 1
+	_selected_slot = wrapi(_selected_slot - 1 + direction, 0, SLOT_COUNT) + 1
 	_load_selected_slot()
 	_save_sequences()
 	_feedback = "SLOT %d SELECIONADO" % _selected_slot
@@ -206,15 +202,16 @@ func _clear_selected_sequence() -> void:
 	_feedback = "SLOT %d APAGADO" % _selected_slot
 
 func _sync_selected_slot() -> void:
-	_slots[String(_selected_slot)] = _events.duplicate(true)
+	_slots[str(_selected_slot)] = _events.duplicate(true)
 
 func _load_selected_slot() -> void:
 	_events.clear()
-	var loaded: Variant = _slots.get(String(_selected_slot), [])
+	var loaded: Variant = _slots.get(str(_selected_slot), [])
 	if loaded is Array:
 		for value in loaded:
 			if value is Dictionary:
-				_events.append((value as Dictionary).duplicate(true))
+				var event: Dictionary = value
+				_events.append(event.duplicate(true))
 	_events.sort_custom(_sort_events)
 
 func _release_playback_actions() -> void:
@@ -245,31 +242,32 @@ func _load_sequences() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
 		return
-	var parsed := JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if not (parsed is Dictionary):
 		return
-
-	var version := int(parsed.get("version", 1))
+	var parsed_data: Dictionary = parsed
+	var version := int(parsed_data.get("version", 1))
 	if version <= 1:
-		_slots["1"] = _sanitize_events(parsed.get("events", []))
+		_slots["1"] = _sanitize_events(parsed_data.get("events", []))
 		_selected_slot = 1
 		_loop_enabled = false
 		_feedback = "SEQUÊNCIA ANTIGA MIGRADA PARA O SLOT 1"
 		return
-
-	_selected_slot = clampi(int(parsed.get("selected_slot", 1)), 1, SLOT_COUNT)
-	_loop_enabled = bool(parsed.get("loop_enabled", false))
-	var loaded_slots: Variant = parsed.get("slots", {})
+	_selected_slot = clampi(int(parsed_data.get("selected_slot", 1)), 1, SLOT_COUNT)
+	_loop_enabled = bool(parsed_data.get("loop_enabled", false))
+	var loaded_slots: Variant = parsed_data.get("slots", {})
 	if loaded_slots is Dictionary:
+		var loaded_dictionary: Dictionary = loaded_slots
 		for slot_id in range(1, SLOT_COUNT + 1):
-			_slots[String(slot_id)] = _sanitize_events(loaded_slots.get(String(slot_id), []))
+			_slots[str(slot_id)] = _sanitize_events(loaded_dictionary.get(str(slot_id), []))
 	_feedback = "3 SLOTS CARREGADOS"
 
 func _sanitize_events(source: Variant) -> Array[Dictionary]:
 	var sanitized: Array[Dictionary] = []
 	if not (source is Array):
 		return sanitized
-	for value in source:
+	var source_array: Array = source
+	for value in source_array:
 		if not (value is Dictionary):
 			continue
 		var event: Dictionary = value
