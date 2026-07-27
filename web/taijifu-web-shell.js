@@ -18,21 +18,6 @@
     return;
   }
 
-  const keyMap = {
-    KeyA: { key: 'a', keyCode: 65 },
-    KeyD: { key: 'd', keyCode: 68 },
-    KeyW: { key: 'w', keyCode: 87 },
-    KeyS: { key: 's', keyCode: 83 },
-    KeyQ: { key: 'q', keyCode: 81 },
-    KeyF: { key: 'f', keyCode: 70 },
-    KeyG: { key: 'g', keyCode: 71 },
-    KeyE: { key: 'e', keyCode: 69 },
-    KeyC: { key: 'c', keyCode: 67 },
-    KeyH: { key: 'h', keyCode: 72 },
-    KeyR: { key: 'r', keyCode: 82 },
-    KeyV: { key: 'v', keyCode: 86 }
-  };
-
   const state = {
     ready: false,
     entered: false,
@@ -42,6 +27,37 @@
   };
 
   window.__taijifuTouchEvents = window.__taijifuTouchEvents || [];
+
+  function keyDefinition(code) {
+    if (/^Key[A-Z]$/.test(code)) {
+      const letter = code.slice(-1);
+      return { key: letter.toLowerCase(), keyCode: letter.charCodeAt(0) };
+    }
+    if (/^Digit[0-9]$/.test(code)) {
+      const digit = code.slice(-1);
+      return { key: digit, keyCode: digit.charCodeAt(0) };
+    }
+    if (/^Numpad[0-9]$/.test(code)) {
+      const digit = Number(code.slice(-1));
+      return { key: String(digit), keyCode: 96 + digit };
+    }
+    const fixed = {
+      ArrowLeft: { key: 'ArrowLeft', keyCode: 37 },
+      ArrowUp: { key: 'ArrowUp', keyCode: 38 },
+      ArrowRight: { key: 'ArrowRight', keyCode: 39 },
+      ArrowDown: { key: 'ArrowDown', keyCode: 40 },
+      Space: { key: ' ', keyCode: 32 },
+      Enter: { key: 'Enter', keyCode: 13 },
+      Tab: { key: 'Tab', keyCode: 9 },
+      ShiftLeft: { key: 'Shift', keyCode: 16 },
+      ShiftRight: { key: 'Shift', keyCode: 16 },
+      ControlLeft: { key: 'Control', keyCode: 17 },
+      ControlRight: { key: 'Control', keyCode: 17 },
+      AltLeft: { key: 'Alt', keyCode: 18 },
+      AltRight: { key: 'Alt', keyCode: 18 }
+    };
+    return fixed[code] || null;
+  }
 
   function updateProgress(value, message) {
     const clean = Math.max(3, Math.min(100, Math.round(value)));
@@ -86,7 +102,7 @@
   }
 
   function createKeyboardEvent(type, code) {
-    const definition = keyMap[code];
+    const definition = keyDefinition(code);
     if (!definition) return null;
     const event = new KeyboardEvent(type, {
       key: definition.key,
@@ -105,8 +121,17 @@
     return event;
   }
 
-  function dispatchKey(code, pressed) {
-    if (!keyMap[code]) return;
+  function emitInputEvent(type, code, source = 'touch') {
+    const detail = { type, code, source, at: Date.now() };
+    window.__taijifuTouchEvents.push(detail);
+    if (window.__taijifuTouchEvents.length > 100) {
+      window.__taijifuTouchEvents.splice(0, window.__taijifuTouchEvents.length - 100);
+    }
+    window.dispatchEvent(new CustomEvent('taijifu:input', { detail }));
+  }
+
+  function dispatchKey(code, pressed, source = 'touch') {
+    if (!keyDefinition(code)) return;
     if (pressed && state.pressedKeys.has(code)) return;
     if (!pressed && !state.pressedKeys.has(code)) return;
 
@@ -116,43 +141,38 @@
     const type = pressed ? 'keydown' : 'keyup';
     const event = createKeyboardEvent(type, code);
     if (event) canvas.dispatchEvent(event);
-
-    window.__taijifuTouchEvents.push({
-      type,
-      code,
-      at: Date.now()
-    });
-    if (window.__taijifuTouchEvents.length > 80) {
-      window.__taijifuTouchEvents.splice(0, window.__taijifuTouchEvents.length - 80);
-    }
+    emitInputEvent(type, code, source);
   }
 
   function releaseAllKeys() {
     for (const code of Array.from(state.pressedKeys)) {
-      dispatchKey(code, false);
+      dispatchKey(code, false, 'system');
     }
   }
 
   function bindTouchButton(button) {
-    const code = button.dataset.key;
-    if (!code || !keyMap[code]) return;
-
     const press = (event) => {
+      const code = button.dataset.key;
+      if (!code || !keyDefinition(code)) return;
       event.preventDefault();
       focusCanvas();
+      button.dataset.activeCode = code;
       button.classList.add('is-pressed');
       try {
         button.setPointerCapture(event.pointerId);
       } catch (_error) {
         // Nem todos os navegadores expõem captura de ponteiro em botões.
       }
-      dispatchKey(code, true);
+      dispatchKey(code, true, 'touch');
     };
 
     const release = (event) => {
+      const code = button.dataset.activeCode || button.dataset.key;
+      if (!code) return;
       event.preventDefault();
       button.classList.remove('is-pressed');
-      dispatchKey(code, false);
+      dispatchKey(code, false, 'touch');
+      delete button.dataset.activeCode;
       try {
         button.releasePointerCapture(event.pointerId);
       } catch (_error) {
@@ -164,8 +184,10 @@
     button.addEventListener('pointerup', release, { passive: false });
     button.addEventListener('pointercancel', release, { passive: false });
     button.addEventListener('lostpointercapture', () => {
+      const code = button.dataset.activeCode || button.dataset.key;
       button.classList.remove('is-pressed');
-      dispatchKey(code, false);
+      if (code) dispatchKey(code, false, 'touch');
+      delete button.dataset.activeCode;
     });
     button.addEventListener('contextmenu', (event) => event.preventDefault());
   }
@@ -275,7 +297,9 @@
     get entered() { return state.entered; },
     enter: enterArena,
     sendKey: dispatchKey,
-    releaseAllKeys
+    releaseAllKeys,
+    focus: focusCanvas,
+    keyDefinition
   };
 
   watchGodotLoader();
