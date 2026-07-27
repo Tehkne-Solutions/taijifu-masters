@@ -2,8 +2,9 @@ class_name MatchHistoryLedger
 extends RefCounted
 
 const SAVE_PATH := "user://match_history.json"
-const VERSION := 1
+const VERSION := 2
 const MAX_SERIES := 100
+const RESULT_FILTERS: Array[StringName] = [&"all", &"p1_win", &"p2_win", &"ko", &"time", &"sudden_death"]
 
 var data: Dictionary = {"version": VERSION, "matches": []}
 
@@ -41,22 +42,38 @@ func append_series(record: Dictionary) -> Dictionary:
 	return clean.duplicate(true)
 
 func recent(limit: int = 10) -> Array[Dictionary]:
+	return filtered({}, limit)
+
+func filtered(filters: Dictionary, limit: int = 20) -> Array[Dictionary]:
 	var matches: Array = data.get("matches", [])
 	var result: Array[Dictionary] = []
-	var start := maxi(0, matches.size() - maxi(0, limit))
-	for index in range(matches.size() - 1, start - 1, -1):
-		if matches[index] is Dictionary:
-			result.append((matches[index] as Dictionary).duplicate(true))
+	for index in range(matches.size() - 1, -1, -1):
+		if not (matches[index] is Dictionary):
+			continue
+		var record: Dictionary = matches[index]
+		if not _matches_filters(record, filters):
+			continue
+		result.append(record.duplicate(true))
+		if limit > 0 and result.size() >= limit:
+			break
 	return result
 
-func match_count() -> int:
-	return (data.get("matches", []) as Array).size()
+func match_by_id(match_id: String) -> Dictionary:
+	for value in data.get("matches", []):
+		if value is Dictionary and String((value as Dictionary).get("match_id", "")) == match_id:
+			return (value as Dictionary).duplicate(true)
+	return {}
+
+func match_count(filters: Dictionary = {}) -> int:
+	if filters.is_empty():
+		return (data.get("matches", []) as Array).size()
+	return filtered(filters, 0).size()
 
 func clear() -> void:
 	data = {"version": VERSION, "matches": []}
 	save_to_disk()
 
-func aggregate() -> Dictionary:
+func aggregate(filters: Dictionary = {}) -> Dictionary:
 	var result := {
 		"series": 0,
 		"rounds": 0,
@@ -71,12 +88,11 @@ func aggregate() -> Dictionary:
 		"damage_p1": 0.0,
 		"damage_p2": 0.0,
 		"parries_p1": 0,
-		"parries_p2": 0
+		"parries_p2": 0,
+		"highlights": 0
 	}
-	for value in data.get("matches", []):
-		if not (value is Dictionary):
-			continue
-		var record: Dictionary = value
+	var source := filtered(filters, 0) if not filters.is_empty() else _all_matches()
+	for record in source:
 		result["series"] = int(result["series"]) + 1
 		var winner := int(record.get("winner_index", 0))
 		if winner == 1:
@@ -84,7 +100,7 @@ func aggregate() -> Dictionary:
 		elif winner == 2:
 			result["p2_wins"] = int(result["p2_wins"]) + 1
 		var config: Dictionary = record.get("config", {})
-		var arena_id := String(config.get("arena_id", "triple_path"))
+		var arena_id := String(config.get("arena_id", "triple_ruins"))
 		var arena_counts: Dictionary = result["arena_counts"]
 		arena_counts[arena_id] = int(arena_counts.get(arena_id, 0)) + 1
 		result["arena_counts"] = arena_counts
@@ -101,6 +117,7 @@ func aggregate() -> Dictionary:
 			var round_data: Dictionary = round_value
 			result["rounds"] = int(result["rounds"]) + 1
 			result["total_duration"] = float(result["total_duration"]) + float(round_data.get("duration_seconds", 0.0))
+			result["highlights"] = int(result["highlights"]) + (round_data.get("highlights", []) as Array).size()
 			var reason := String(round_data.get("reason", ""))
 			if reason == "KO":
 				result["ko_rounds"] = int(result["ko_rounds"]) + 1
@@ -122,6 +139,58 @@ func aggregate() -> Dictionary:
 	result["average_round_seconds"] = float(result["total_duration"]) / float(round_count) if round_count > 0 else 0.0
 	return result
 
+func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
+	var character_id := StringName(filters.get("character_id", &"all"))
+	if character_id != &"all":
+		var found := false
+		for player_value in record.get("players", []):
+			if player_value is Dictionary and StringName((player_value as Dictionary).get("character_id", &"")) == character_id:
+				found = true
+				break
+		if not found:
+			return false
+	var arena_id := StringName(filters.get("arena_id", &"all"))
+	if arena_id != &"all":
+		var config: Dictionary = record.get("config", {})
+		if StringName(config.get("arena_id", &"triple_ruins")) != arena_id:
+			return false
+	var result_id := StringName(filters.get("result_id", &"all"))
+	if result_id not in RESULT_FILTERS:
+		result_id = &"all"
+	match result_id:
+		&"p1_win":
+			if int(record.get("winner_index", 0)) != 1: return false
+		&"p2_win":
+			if int(record.get("winner_index", 0)) != 2: return false
+		&"ko":
+			if not _has_reason(record, "KO"): return false
+		&"time":
+			if not _has_reason(record, "TEMPO"): return false
+		&"sudden_death":
+			if not _has_reason_fragment(record, "PRORROGAÇÃO"): return false
+		_:
+			pass
+	return true
+
+func _has_reason(record: Dictionary, expected: String) -> bool:
+	for value in record.get("rounds", []):
+		if value is Dictionary and String((value as Dictionary).get("reason", "")) == expected:
+			return true
+	return false
+
+func _has_reason_fragment(record: Dictionary, expected: String) -> bool:
+	for value in record.get("rounds", []):
+		if value is Dictionary and String((value as Dictionary).get("reason", "")).contains(expected):
+			return true
+	return false
+
+func _all_matches() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for value in data.get("matches", []):
+		if value is Dictionary:
+			result.append((value as Dictionary).duplicate(true))
+	return result
+
 func _sanitize() -> void:
 	var clean: Array = []
 	for value in data.get("matches", []):
@@ -135,6 +204,7 @@ func _sanitize_record(source: Dictionary) -> Dictionary:
 	var config_source: Variant = source.get("config", {})
 	var players_source: Variant = source.get("players", [])
 	var rounds_source: Variant = source.get("rounds", [])
+	var totals_source: Variant = source.get("totals", [])
 	return {
 		"match_id": String(source.get("match_id", "match_%d" % int(Time.get_unix_time_from_system()))),
 		"started_unix": int(source.get("started_unix", 0)),
@@ -145,5 +215,5 @@ func _sanitize_record(source: Dictionary) -> Dictionary:
 		"config": CompetitiveMatchCatalog.sanitize(config_source as Dictionary if config_source is Dictionary else {}),
 		"players": (players_source as Array).duplicate(true) if players_source is Array else [],
 		"rounds": (rounds_source as Array).duplicate(true) if rounds_source is Array else [],
-		"totals": (source.get("totals", {}) as Dictionary).duplicate(true) if source.get("totals", {}) is Dictionary else {}
+		"totals": (totals_source as Array).duplicate(true) if totals_source is Array else []
 	}
