@@ -15,6 +15,7 @@ var _p1_start := Vector2.ZERO
 var _p2_start := Vector2.ZERO
 var _p1_target := Vector2.ZERO
 var _p2_target := Vector2.ZERO
+var _collision_states: Dictionary = {}
 var _canvas: CanvasLayer
 var _shade: ColorRect
 var _names: Label
@@ -97,14 +98,28 @@ func _finish_entrance() -> void:
 		_freeze_fighter(_player_two, false)
 	_active = false
 	_elapsed = ENTRANCE_DURATION
+	_command.scale = Vector2.ONE
+	_versus.modulate.a = 1.0
 	_canvas.visible = false
 	entrance_finished.emit()
 
 func _freeze_fighter(fighter: FighterController, frozen: bool) -> void:
-	fighter.set_physics_process(not frozen)
+	var key := fighter.get_instance_id()
+	if frozen:
+		_collision_states[key] = {
+			"layer": fighter.collision_layer,
+			"mask": fighter.collision_mask
+		}
+		fighter.set_physics_process(false)
+		fighter.collision_layer = 0
+		fighter.collision_mask = 0
+	else:
+		var stored: Dictionary = _collision_states.get(key, {"layer": 1, "mask": 1})
+		fighter.collision_layer = int(stored.get("layer", 1))
+		fighter.collision_mask = int(stored.get("mask", 1))
+		fighter.set_physics_process(true)
+		_collision_states.erase(key)
 	fighter.velocity = Vector2.ZERO
-	fighter.set_collision_layer_value(1, not frozen)
-	fighter.set_collision_mask_value(1, not frozen)
 	if is_instance_valid(fighter.attack_shape):
 		fighter.attack_shape.set_deferred("disabled", true)
 
@@ -158,10 +173,12 @@ func _refresh_overlay(progress: float) -> void:
 	if is_instance_valid(_player_two) and is_instance_valid(_player_two.build):
 		p2_name = _player_two.build.character_name.to_upper()
 	_names.text = "%s    •    %s" % [p1_name, p2_name]
+	_command.scale = Vector2.ONE
+	_command.pivot_offset = _command.size * 0.5
+	_versus.modulate.a = 1.0 if progress >= MOVE_END else clampf(progress / MOVE_END, 0.0, 1.0)
 	if progress < MOVE_END:
 		_command.text = "ENTRADA DOS MESTRES"
 		_command.add_theme_color_override("font_color", Color(0.62, 0.84, 1.0))
-		_versus.modulate.a = clampf(progress / MOVE_END, 0.0, 1.0)
 	elif progress < FACE_END:
 		_command.text = "LEIAM O FLUXO"
 		_command.add_theme_color_override("font_color", Color(0.86, 0.72, 1.0))
@@ -173,4 +190,3 @@ func _refresh_overlay(progress: float) -> void:
 		_command.add_theme_color_override("font_color", Color(0.58, 1.0, 0.68))
 		var pulse := 1.0 + sin(_elapsed * 24.0) * 0.06
 		_command.scale = Vector2.ONE * pulse
-		_command.pivot_offset = _command.size * 0.5
