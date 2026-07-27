@@ -1,0 +1,12 @@
+{
+  "name": "taijifu-web-smoke",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Smoke test do build Web do Taijifu Masters.",
+  "devDependencies": {
+    "@playwright/test": "1.55.0"
+  },
+  "scripts": {
+    "test": "playwright test"
+  }
+}
