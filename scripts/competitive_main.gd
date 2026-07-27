@@ -6,6 +6,7 @@ extends "res://scripts/main.gd"
 @onready var statistics_runtime: SeriesStatisticsRuntime = $SeriesStatisticsRuntime
 @onready var history_runtime: MatchHistoryRuntime = $MatchHistoryRuntime
 @onready var tournament_runtime: TournamentRuntime = $TournamentRuntime
+@onready var player_profile_runtime: PlayerProfileRuntime = $PlayerProfileRuntime
 
 func _ready() -> void:
 	super._ready()
@@ -19,7 +20,13 @@ func _start_battle() -> void:
 	var p2_loadout := preparation_runtime.loadout_for_player(2)
 	preparation_runtime.close()
 	competitive_runtime.begin_series(p1_loadout, p2_loadout)
-	statistics_runtime.begin_series(competitive_runtime.current_config(), p1_loadout, p2_loadout)
+	statistics_runtime.begin_series(
+		competitive_runtime.current_config(),
+		p1_loadout,
+		p2_loadout,
+		player_profile_runtime.profile_context_for_player(1),
+		player_profile_runtime.profile_context_for_player(2)
+	)
 	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
 	competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 	_state = MatchState.ENTRANCE
@@ -108,7 +115,7 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 				tournament_runtime.prepare_current_match()
 				controls_label.text = "%s • confirme os dois competidores para iniciar." % tournament_runtime.ledger.stage_label()
 		else:
-			controls_label.text = "Configure loadouts • F2 presets • F3 histórico • F10 torneio • confirme os dois jogadores."
+			controls_label.text = "Configure loadouts • F2 presets • F3 histórico • F8 ranking • F9 perfis • F10 torneio."
 		return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()

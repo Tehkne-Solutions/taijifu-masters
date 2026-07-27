@@ -49,8 +49,14 @@ func ranking_entries() -> Array[Dictionary]:
 				continue
 			var player: Dictionary = players[index]
 			var character_id := StringName(player.get("character_id", &"unknown"))
-			var entry: Dictionary = table.get(character_id, _empty_entry(character_id, player))
+			var profile_id := String(player.get("profile_id", ""))
+			if profile_id == "":
+				profile_id = "legacy_%s" % String(character_id)
+			var entry: Dictionary = table.get(profile_id, _empty_entry(profile_id, player))
 			entry["series"] = int(entry.get("series", 0)) + 1
+			var character_counts: Dictionary = entry.get("character_counts", {})
+			character_counts[String(character_id)] = int(character_counts.get(String(character_id), 0)) + 1
+			entry["character_counts"] = character_counts
 			if winner_index == index + 1:
 				entry["wins"] = int(entry.get("wins", 0)) + 1
 			else:
@@ -70,7 +76,7 @@ func ranking_entries() -> Array[Dictionary]:
 				entry["parries"] = int(entry.get("parries", 0)) + int(player_totals.get("parries", 0))
 				entry["posture_breaks"] = int(entry.get("posture_breaks", 0)) + int(player_totals.get("posture_breaks", 0))
 				entry["disarms"] = int(entry.get("disarms", 0)) + int(player_totals.get("disarms", 0))
-			table[character_id] = entry
+			table[profile_id] = entry
 	var result: Array[Dictionary] = []
 	for value in table.values():
 		if value is Dictionary:
@@ -78,6 +84,9 @@ func ranking_entries() -> Array[Dictionary]:
 			var series := maxi(1, int(entry.get("series", 0)))
 			entry["win_rate"] = float(entry.get("wins", 0)) / float(series)
 			entry["rating"] = _rating(entry)
+			entry["main_character_id"] = _main_character(entry.get("character_counts", {}) as Dictionary)
+			entry["character_id"] = entry["main_character_id"]
+			entry["character_name"] = CharacterVisualCatalog.display_name(StringName(entry["main_character_id"]))
 			result.append(entry)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var rating_a := float(a.get("rating", 0.0))
@@ -93,22 +102,24 @@ func ranking_entries() -> Array[Dictionary]:
 func build_report() -> String:
 	var entries := ranking_entries()
 	var lines: Array[String] = []
-	lines.append("[center][color=#f4d477][font_size=27][b]RANKING LOCAL[/b][/font_size][/color][/center]")
+	lines.append("[center][color=#f4d477][font_size=27][b]RANKING LOCAL POR PERFIL[/b][/font_size][/color][/center]")
 	lines.append("[center]Pontuação baseada em séries, rounds, KOs, aparos, quebras de postura e desarmes.[/center]\n")
 	if entries.is_empty():
 		lines.append("[center][color=#8b99ad]Conclua séries competitivas para formar o ranking.[/color][/center]")
 		return "\n".join(lines)
-	lines.append("[table=9][cell][b]#[/b][/cell][cell][b]LUTADOR[/b][/cell][cell][b]RATING[/b][/cell][cell][b]SÉRIES[/b][/cell][cell][b]V[/b][/cell][cell][b]%[/b][/cell][cell][b]ROUNDS[/b][/cell][cell][b]KO[/b][/cell][cell][b]TÉCNICA[/b][/cell]")
+	lines.append("[table=10][cell][b]#[/b][/cell][cell][b]PERFIL[/b][/cell][cell][b]PERSONAGEM[/b][/cell][cell][b]RATING[/b][/cell][cell][b]SÉRIES[/b][/cell][cell][b]V[/b][/cell][cell][b]%[/b][/cell][cell][b]ROUNDS[/b][/cell][cell][b]KO[/b][/cell][cell][b]TÉCNICA[/b][/cell]")
 	for entry in entries:
-		lines.append("[cell]%d[/cell][cell]%s[/cell][cell]%.0f[/cell][cell]%d[/cell][cell]%d[/cell][cell]%.0f%%[/cell][cell]%d/%d[/cell][cell]%d[/cell][cell]%dA • %dQP • %dD[/cell]" % [
-			int(entry.get("position", 0)), String(entry.get("character_name", "DESCONHECIDO")).to_upper(),
-			float(entry.get("rating", 1000.0)), int(entry.get("series", 0)), int(entry.get("wins", 0)),
-			float(entry.get("win_rate", 0.0)) * 100.0, int(entry.get("round_wins", 0)), int(entry.get("rounds", 0)),
-			int(entry.get("ko_wins", 0)), int(entry.get("parries", 0)), int(entry.get("posture_breaks", 0)), int(entry.get("disarms", 0))
+		var main_character := StringName(entry.get("main_character_id", &"unknown"))
+		lines.append("[cell]%d[/cell][cell]%s[/cell][cell]%s[/cell][cell]%.0f[/cell][cell]%d[/cell][cell]%d[/cell][cell]%.0f%%[/cell][cell]%d/%d[/cell][cell]%d[/cell][cell]%dA • %dQP • %dD[/cell]" % [
+			int(entry.get("position", 0)), String(entry.get("profile_name", "JOGADOR")).to_upper(),
+			CharacterVisualCatalog.display_name(main_character).to_upper(), float(entry.get("rating", 1000.0)),
+			int(entry.get("series", 0)), int(entry.get("wins", 0)), float(entry.get("win_rate", 0.0)) * 100.0,
+			int(entry.get("round_wins", 0)), int(entry.get("rounds", 0)), int(entry.get("ko_wins", 0)),
+			int(entry.get("parries", 0)), int(entry.get("posture_breaks", 0)), int(entry.get("disarms", 0))
 		])
 	lines.append("[/table]\n")
 	var leader: Dictionary = entries[0]
-	lines.append("[center][color=#70e0a0][b]LÍDER ATUAL: %s • %.0f pontos[/b][/color][/center]" % [String(leader.get("character_name", "")).to_upper(), float(leader.get("rating", 0.0))])
+	lines.append("[center][color=#70e0a0][b]LÍDER ATUAL: %s • %.0f pontos[/b][/color][/center]" % [String(leader.get("profile_name", "")).to_upper(), float(leader.get("rating", 0.0))])
 	return "\n".join(lines)
 
 func _rating(entry: Dictionary) -> float:
@@ -126,10 +137,10 @@ func _rating(entry: Dictionary) -> float:
 		+ int(entry.get("posture_breaks", 0)) * 1.8 \
 		+ int(entry.get("disarms", 0)) * 2.5
 
-func _empty_entry(character_id: StringName, player: Dictionary) -> Dictionary:
+func _empty_entry(profile_id: String, player: Dictionary) -> Dictionary:
 	return {
-		"character_id": character_id,
-		"character_name": String(player.get("character_name", CharacterVisualCatalog.display_name(character_id))),
+		"profile_id": profile_id,
+		"profile_name": String(player.get("profile_name", player.get("character_name", "JOGADOR"))),
 		"series": 0,
 		"wins": 0,
 		"losses": 0,
@@ -139,8 +150,19 @@ func _empty_entry(character_id: StringName, player: Dictionary) -> Dictionary:
 		"damage": 0.0,
 		"parries": 0,
 		"posture_breaks": 0,
-		"disarms": 0
+		"disarms": 0,
+		"character_counts": {}
 	}
+
+func _main_character(counts: Dictionary) -> StringName:
+	var selected := &"unknown"
+	var best := -1
+	for key in counts.keys():
+		var count := int(counts[key])
+		if count > best:
+			best = count
+			selected = StringName(key)
+	return selected
 
 func _build_interface() -> void:
 	_canvas = CanvasLayer.new()
@@ -148,9 +170,9 @@ func _build_interface() -> void:
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_canvas)
 	_panel = PanelContainer.new()
-	_panel.offset_left = 95.0
+	_panel.offset_left = 70.0
 	_panel.offset_top = 48.0
-	_panel.offset_right = 1185.0
+	_panel.offset_right = 1210.0
 	_panel.offset_bottom = 678.0
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.010, 0.017, 0.030, 0.992)
@@ -177,13 +199,13 @@ func _build_interface() -> void:
 	_title.add_theme_color_override("font_color", Color(0.66, 1.0, 0.82))
 	column.add_child(_title)
 	_report = RichTextLabel.new()
-	_report.custom_minimum_size = Vector2(1020.0, 500.0)
+	_report.custom_minimum_size = Vector2(1070.0, 500.0)
 	_report.bbcode_enabled = true
 	_report.scroll_active = true
-	_report.add_theme_font_size_override("normal_font_size", 14)
+	_report.add_theme_font_size_override("normal_font_size", 13)
 	column.add_child(_report)
 	_footer = Label.new()
-	_footer.text = "F8 fecha • ranking recalculado a partir de user://match_history.json • Tehkné Solutions"
+	_footer.text = "F8 fecha • ranking recalculado a partir de user://match_history.json • F9 gerencia perfis • Tehkné Solutions"
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_footer.add_theme_font_size_override("font_size", 12)
 	_footer.add_theme_color_override("font_color", Color(0.70, 0.82, 0.92))
