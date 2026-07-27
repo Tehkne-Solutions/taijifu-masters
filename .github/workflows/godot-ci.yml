@@ -51,6 +51,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/smoke_test.gd 2>&1 | tee godot-smoke.log
 
+      - name: Validar sistema competitivo
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/competitive_smoke_test.gd 2>&1 | tee godot-competitive.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -59,4 +64,5 @@ jobs:
           path: |
             godot-import.log
             godot-smoke.log
+            godot-competitive.log
           if-no-files-found: ignore
