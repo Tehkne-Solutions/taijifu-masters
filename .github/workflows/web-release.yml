@@ -1,0 +1,97 @@
+name: Web Release
+
+on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - "web/**"
+      - "web-tests/**"
+      - "vercel.json"
+      - ".github/workflows/web-release.yml"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test-web:
+    name: Exportar Godot Web e validar Chromium
+    runs-on: ubuntu-22.04
+    timeout-minutes: 22
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restaurar cache do Godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/godot
+            ~/.local/share/godot/export_templates/4.3.stable
+          key: godot-web-4.3-stable-${{ runner.os }}
+
+      - name: Exportar build Web
+        env:
+          GODOT_VERSION: "4.3"
+          GODOT_CHANNEL: stable
+        run: bash scripts/build-web.sh
+
+      - name: Instalar Chromium do Playwright
+        working-directory: web-tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Servir e validar o jogo no navegador
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: |
+          set -Eeuo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory web-build > web-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill ${SERVER_PID} 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/index.html > /dev/null; then
+              break
+            fi
+            if [[ "${attempt}" == "30" ]]; then
+              cat web-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          npm --prefix web-tests test -- --reporter=line
+
+      - name: Publicar build Web
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-masters-web-${{ github.sha }}
+          path: web-build/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publicar evidências do navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-web-smoke-${{ github.sha }}
+          path: |
+            web-server.log
+            web-tests/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
