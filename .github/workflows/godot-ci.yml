@@ -13,7 +13,7 @@ jobs:
   validate-godot-project:
     name: Parser, importação e smoke test
     runs-on: ubuntu-22.04
-    timeout-minutes: 16
+    timeout-minutes: 18
 
     steps:
       - name: Checkout
@@ -91,6 +91,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/double_elimination_smoke_test.gd 2>&1 | tee godot-double-elimination.log
 
+      - name: Validar ponte Web, pausa e remapeamento
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/web_platform_bridge_smoke_test.gd 2>&1 | tee godot-web-platform-bridge.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -107,4 +112,5 @@ jobs:
             godot-profiles-search-compare-png.log
             godot-seasons-profiles-groups.log
             godot-double-elimination.log
+            godot-web-platform-bridge.log
           if-no-files-found: ignore

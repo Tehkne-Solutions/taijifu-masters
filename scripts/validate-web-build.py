@@ -72,12 +72,12 @@ def main() -> None:
         fail(f"arquivo PCK anormalmente pequeno: {pack.stat().st_size} bytes")
     if shell_css.stat().st_size < 2_000:
         fail("folha de estilos responsiva está incompleta")
-    if shell_js.stat().st_size < 2_000:
+    if shell_js.stat().st_size < 4_000:
         fail("runtime do shell Web está incompleto")
     if menu_css.stat().st_size < 3_000:
         fail("folha de estilos do menu Web está incompleta")
-    if menu_js.stat().st_size < 5_000:
-        fail("runtime do menu Web está incompleto")
+    if menu_js.stat().st_size < 12_000:
+        fail("runtime avançado do menu Web está incompleto")
 
     html = index.read_text(encoding="utf-8", errors="replace")
     for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js):
@@ -108,6 +108,24 @@ def main() -> None:
         if marker not in html:
             fail(f"index.html não contém o marcador Web obrigatório: {marker}")
 
+    shell_source = shell_js.read_text(encoding="utf-8", errors="replace")
+    for marker in ("keyDefinition", "taijifu:input", "dataset.activeCode", "releaseAllKeys"):
+        if marker not in shell_source:
+            fail(f"runtime touch não contém o contrato obrigatório: {marker}")
+
+    menu_source = menu_js.read_text(encoding="utf-8", errors="replace")
+    for marker in (
+        "taijifuGodotSetPaused",
+        "taijifuGodotApplyBindings",
+        "keyboardBindings",
+        "taijifu-remap-grid",
+        "taijifu-practice",
+        "practiceCompleted",
+        "p1_swap: 'KeyT'",
+    ):
+        if marker not in menu_source:
+            fail(f"menu Web não contém o contrato avançado: {marker}")
+
     manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
     if manifest_data.get("display") != "standalone":
         fail("manifesto PWA não está em modo standalone")
@@ -133,6 +151,10 @@ def main() -> None:
             "adaptive_tutorial": True,
             "accessibility_preferences": True,
             "persistent_control_settings": True,
+            "godot_pause_bridge": True,
+            "keyboard_remapping": True,
+            "dynamic_touch_bindings": True,
+            "in_arena_practice": True,
         },
         "files": {
             "index": index.name,
@@ -165,7 +187,7 @@ def main() -> None:
     for label, path in required.items():
         assert path is not None
         print(f"  - {label}: {path.name} ({path.stat().st_size} bytes)")
-    print("[taijifu-web] UX Web: shell, menu, tutorial, acessibilidade, orientação e touch aprovados estruturalmente")
+    print("[taijifu-web] UX Web: pausa Godot, remapeamento, prática, acessibilidade e touch aprovados estruturalmente")
 
 
 if __name__ == "__main__":
