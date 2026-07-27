@@ -13,7 +13,7 @@ jobs:
   validate-godot-project:
     name: Parser, importação e smoke test
     runs-on: ubuntu-22.04
-    timeout-minutes: 14
+    timeout-minutes: 16
 
     steps:
       - name: Checkout
@@ -86,6 +86,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/seasons_profiles_groups_smoke_test.gd 2>&1 | tee godot-seasons-profiles-groups.log
 
+      - name: Validar dupla eliminação e reset da final
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/double_elimination_smoke_test.gd 2>&1 | tee godot-double-elimination.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -101,4 +106,5 @@ jobs:
             godot-tournament-curation-ranking.log
             godot-profiles-search-compare-png.log
             godot-seasons-profiles-groups.log
+            godot-double-elimination.log
           if-no-files-found: ignore
