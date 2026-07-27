@@ -84,26 +84,31 @@ func current_profile_context(player_index: int) -> Dictionary:
 	if pair.size() != 2:
 		return {}
 	var participant: Dictionary = pair[clampi(player_index, 1, 2) - 1]
+	var source_id := String(participant.get("source", participant.get("participant_id", player_index)))
+	for source in _sources:
+		if String(source.get("participant_id", "")) == source_id:
+			return {
+				"profile_id": String(source.get("profile_id", "group_%s" % source_id)),
+				"profile_name": String(source.get("profile_name", participant.get("name", "COMPETIDOR")))
+			}
 	return {
-		"profile_id": String(participant.get("profile_id", "group_%s" % String(participant.get("participant_id", player_index)))),
-		"profile_name": String(participant.get("profile_name", participant.get("name", "COMPETIDOR")))
+		"profile_id": "group_%s" % String(participant.get("participant_id", player_index)),
+		"profile_name": String(participant.get("name", "COMPETIDOR"))
 	}
 
 func prepare_current_match() -> bool:
 	var pair := ledger.current_pair()
 	if pair.size() != 2:
 		return false
-	var p1: Dictionary = pair[0]
-	var p2: Dictionary = pair[1]
-	var p1_loadout: Variant = p1.get("loadout", {})
-	var p2_loadout: Variant = p2.get("loadout", {})
+	var p1_loadout: Variant = pair[0].get("loadout", {})
+	var p2_loadout: Variant = pair[1].get("loadout", {})
 	if not (p1_loadout is Dictionary) or not (p2_loadout is Dictionary):
 		return false
 	preparation_runtime.set_loadout_for_test(1, p1_loadout as Dictionary)
 	preparation_runtime.set_loadout_for_test(2, p2_loadout as Dictionary)
 	preparation_runtime.set_ready_for_test(1, false)
 	preparation_runtime.set_ready_for_test(2, false)
-	_feedback = "%s • %s VS %s" % [ledger.stage_label(), String(p1.get("name", "P1")), String(p2.get("name", "P2"))]
+	_feedback = "%s • %s VS %s" % [ledger.stage_label(), String(pair[0].get("name", "P1")), String(pair[1].get("name", "P2"))]
 	_refresh()
 	return true
 
@@ -114,7 +119,7 @@ func record_series_result(winner_index: int, score_p1: int, score_p2: int) -> Di
 	if bool(result.get("finished", false)):
 		var knockout_started := _start_knockout_from_qualifiers()
 		result["knockout_started"] = knockout_started
-		_feedback = "GRUPOS CONCLUÍDOS • CLASSIFICADOS ENVIADOS ÀS SEMIFINAIS" if knockout_started else "GRUPOS CONCLUÍDOS"
+		_feedback = "GRUPOS CONCLUÍDOS • SEMIFINAIS PREPARADAS" if knockout_started else "GRUPOS CONCLUÍDOS"
 	else:
 		var winner_source: Variant = result.get("winner", {})
 		var winner: Dictionary = winner_source as Dictionary if winner_source is Dictionary else {}
@@ -171,8 +176,7 @@ func _start_group_stage() -> void:
 		_refresh()
 		return
 	_refresh_sources()
-	var participants := _participants_from_slots()
-	if not ledger.set_participants(participants) or not ledger.start():
+	if not ledger.set_participants(_participants_from_slots()) or not ledger.start():
 		_feedback = "NÃO FOI POSSÍVEL INICIAR A FASE DE GRUPOS"
 		_refresh()
 		return
@@ -183,7 +187,10 @@ func _start_knockout_from_qualifiers() -> bool:
 	var participants := ledger.semifinal_participants()
 	if participants.size() != 4:
 		return false
-	if not tournament_runtime.start_with_participants(participants):
+	tournament_runtime.ledger.reset(4)
+	if not tournament_runtime.ledger.set_participants(participants):
+		return false
+	if not tournament_runtime.ledger.start():
 		return false
 	return tournament_runtime.prepare_current_match()
 
@@ -213,26 +220,18 @@ func _participants_from_slots() -> Array[Dictionary]:
 
 func _refresh_sources() -> void:
 	_sources.clear()
-	_sources.append(_source_from_loadout("P1 ATUAL", preparation_runtime.loadout_for_player(1), "current_p1", profile_runtime.profile_context_for_player(1)))
-	_sources.append(_source_from_loadout("P2 ATUAL", preparation_runtime.loadout_for_player(2), "current_p2", profile_runtime.profile_context_for_player(2)))
+	_sources.append(_source_from_loadout(preparation_runtime.loadout_for_player(1), "current_p1", profile_runtime.profile_context_for_player(1)))
+	_sources.append(_source_from_loadout(preparation_runtime.loadout_for_player(2), "current_p2", profile_runtime.profile_context_for_player(2)))
 	for player_index in [1, 2]:
 		var context := profile_runtime.profile_context_for_player(player_index)
 		for preset in preset_runtime.presets_for_player(player_index):
 			var loadout_source: Variant = preset.get("loadout", {})
-			if not (loadout_source is Dictionary):
-				continue
-			_sources.append(_source_from_loadout(
-				String(preset.get("name", "PRESET P%d" % player_index)),
-				loadout_source as Dictionary,
-				String(preset.get("preset_id", "preset_%d" % _sources.size())),
-				context
-			))
+			if loadout_source is Dictionary:
+				_sources.append(_source_from_loadout(loadout_source as Dictionary, String(preset.get("preset_id", "preset_%d" % _sources.size())), context))
 	while _sources.size() < GroupStageLedger.PARTICIPANT_COUNT:
-		var guest_index := _sources.size() % GUEST_PRESETS.size()
-		var preset_id: StringName = GUEST_PRESETS[guest_index]
 		var guest_number := _sources.size() + 1
+		var preset_id: StringName = GUEST_PRESETS[_sources.size() % GUEST_PRESETS.size()]
 		_sources.append(_source_from_loadout(
-			"CONVIDADO %d" % guest_number,
 			BattleLoadoutCatalog.loadout_from_preset(preset_id),
 			"group_guest_%d" % guest_number,
 			{"profile_id": "group_guest_%d" % guest_number, "profile_name": "CONVIDADO %d" % guest_number}
@@ -240,14 +239,15 @@ func _refresh_sources() -> void:
 	for slot in range(_slot_sources.size()):
 		_slot_sources[slot] = clampi(_slot_sources[slot], 0, _sources.size() - 1)
 
-func _source_from_loadout(name: String, loadout: Dictionary, source_id: String, profile_context: Dictionary) -> Dictionary:
+func _source_from_loadout(loadout: Dictionary, source_id: String, profile_context: Dictionary) -> Dictionary:
 	var clean := BattleLoadoutCatalog.sanitize(loadout)
 	var build := BuildProfile.prototype_preset(StringName(clean.get("preset_id", &"adaptive_staff")))
+	var profile_name := String(profile_context.get("profile_name", build.character_name)).left(36)
 	return {
 		"participant_id": source_id,
-		"name": String(profile_context.get("profile_name", name)).left(36),
+		"name": profile_name,
 		"profile_id": String(profile_context.get("profile_id", source_id)),
-		"profile_name": String(profile_context.get("profile_name", name)).left(36),
+		"profile_name": profile_name,
 		"character_name": build.character_name,
 		"build_name": build.display_name,
 		"loadout": clean,
@@ -258,35 +258,26 @@ func _refresh() -> void:
 	if not is_instance_valid(_report):
 		return
 	_title.text = "TAIJIFU MASTERS • FASE DE GRUPOS"
-	if ledger.is_active() or ledger.is_finished():
-		_report.text = _standings_report()
-	else:
-		var lines: Array[String] = []
-		lines.append("[center][color=#f4d477][font_size=20][b]DISTRIBUIÇÃO DOS OITO COMPETIDORES[/b][/font_size][/color][/center]\n")
-		for slot in range(_slot_sources.size()):
-			var source_index := clampi(_slot_sources[slot], 0, maxi(0, _sources.size() - 1))
-			var source: Dictionary = _sources[source_index] if not _sources.is_empty() else {}
-			var group_id := "A" if slot + 1 in GroupStageLedger.GROUP_SEEDS["A"] else "B"
-			var cursor := "[color=#ffd36b]▶[/color]" if slot == _selected_slot else " "
-			lines.append("%s SEED %d • GRUPO %s • [b]%s[/b] • %s • %s" % [
-				cursor, slot + 1, group_id, String(source.get("name", "COMPETIDOR")),
-				String(source.get("character_name", "")), String(source.get("build_name", ""))
-			])
-		_report.text = "\n".join(lines)
+	_report.text = _standings_report() if ledger.is_active() or ledger.is_finished() else _setup_report()
 	_footer.text = "F11 fecha • Page Up/Down seed • Home/End fonte • Ctrl+S sorteia • Enter inicia • Delete reinicia\n%s • Tehkné Solutions" % _feedback
 
+func _setup_report() -> String:
+	var lines: Array[String] = ["[center][color=#f4d477][font_size=20][b]DISTRIBUIÇÃO DOS OITO COMPETIDORES[/b][/font_size][/color][/center]\n"]
+	for slot in range(_slot_sources.size()):
+		var source_index := clampi(_slot_sources[slot], 0, maxi(0, _sources.size() - 1))
+		var source: Dictionary = _sources[source_index] if not _sources.is_empty() else {}
+		var group_id := "A" if slot + 1 in GroupStageLedger.GROUP_SEEDS["A"] else "B"
+		var cursor := "[color=#ffd36b]▶[/color]" if slot == _selected_slot else " "
+		lines.append("%s SEED %d • GRUPO %s • [b]%s[/b] • %s • %s" % [cursor, slot + 1, group_id, String(source.get("name", "COMPETIDOR")), String(source.get("character_name", "")), String(source.get("build_name", ""))])
+	return "\n".join(lines)
+
 func _standings_report() -> String:
-	var lines: Array[String] = []
-	lines.append("[center][color=#f4d477][font_size=22][b]%s[/b][/font_size][/color][/center]\n" % ledger.stage_label())
+	var lines: Array[String] = ["[center][color=#f4d477][font_size=22][b]%s[/b][/font_size][/color][/center]\n" % ledger.stage_label()]
 	for group_id in ["A", "B"]:
 		lines.append("[color=#8ecff0][font_size=18][b]GRUPO %s[/b][/font_size][/color]" % group_id)
 		lines.append("[table=8][cell][b]#[/b][/cell][cell][b]COMPETIDOR[/b][/cell][cell][b]PTS[/b][/cell][cell][b]J[/b][/cell][cell][b]V[/b][/cell][cell][b]D[/b][/cell][cell][b]R+/R−[/b][/cell][cell][b]SALDO[/b][/cell]")
 		for entry in ledger.standings(group_id):
-			lines.append("[cell]%d[/cell][cell]%s[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d/%d[/cell][cell]%+d[/cell]" % [
-				int(entry.get("position", 0)), String(entry.get("name", "COMPETIDOR")).to_upper(), int(entry.get("points", 0)),
-				int(entry.get("played", 0)), int(entry.get("wins", 0)), int(entry.get("losses", 0)),
-				int(entry.get("rounds_for", 0)), int(entry.get("rounds_against", 0)), int(entry.get("round_diff", 0))
-			])
+			lines.append("[cell]%d[/cell][cell]%s[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d[/cell][cell]%d/%d[/cell][cell]%+d[/cell]" % [int(entry.get("position", 0)), String(entry.get("name", "COMPETIDOR")).to_upper(), int(entry.get("points", 0)), int(entry.get("played", 0)), int(entry.get("wins", 0)), int(entry.get("losses", 0)), int(entry.get("rounds_for", 0)), int(entry.get("rounds_against", 0)), int(entry.get("round_diff", 0))])
 		lines.append("[/table]\n")
 	if ledger.is_finished():
 		var labels: Array[String] = []
