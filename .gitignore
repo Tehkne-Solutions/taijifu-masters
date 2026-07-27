@@ -9,6 +9,12 @@ dist/
 web-build/
 .cache/
 
+# Node / browser smoke tests
+node_modules/
+web-tests/node_modules/
+web-tests/test-results/
+web-tests/playwright-report/
+
 # Vercel local
 .vercel/
 
