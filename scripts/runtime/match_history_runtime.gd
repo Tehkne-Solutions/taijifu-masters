@@ -4,7 +4,7 @@ extends Node
 signal result_finished
 
 const RESULT_SECONDS := 3.4
-const FILTER_FIELDS: Array[StringName] = [&"character_id", &"arena_id", &"result_id"]
+const FILTER_FIELDS: Array[StringName] = [&"character_id", &"arena_id", &"result_id", &"curation_id"]
 const RESULT_OPTIONS: Array[StringName] = [&"all", &"p1_win", &"p2_win", &"ko", &"time", &"sudden_death"]
 
 @onready var preparation_runtime: BattlePreparationRuntime = get_node("../BattlePreparationRuntime")
@@ -15,7 +15,7 @@ var _active := false
 var _result_mode := false
 var _token := 0
 var _filter_field_index := 0
-var _filters: Dictionary = {"character_id": &"all", "arena_id": &"all", "result_id": &"all"}
+var _filters: Dictionary = {"character_id": &"all", "arena_id": &"all", "result_id": &"all", "curation_id": &"all"}
 var _selected_index := 0
 var _visible_records: Array[Dictionary] = []
 var _canvas: CanvasLayer
@@ -54,9 +54,14 @@ func _process(_delta: float) -> void:
 		_selected_index = wrapi(_selected_index + 1, 0, maxi(1, _visible_records.size()))
 		_refresh_history()
 	if Input.is_action_just_pressed(&"history_reset_filters"):
-		_filters = {"character_id": &"all", "arena_id": &"all", "result_id": &"all"}
+		_filters = {"character_id": &"all", "arena_id": &"all", "result_id": &"all", "curation_id": &"all"}
 		_selected_index = 0
 		_refresh_history()
+	if Input.is_action_just_pressed(&"history_favorite"):
+		_toggle_selected_favorite()
+	for index in range(MatchHistoryLedger.TAG_OPTIONS.size()):
+		if Input.is_action_just_pressed(StringName("history_tag_%d" % (index + 1))):
+			_toggle_selected_tag(MatchHistoryLedger.TAG_OPTIONS[index])
 	if Input.is_action_just_pressed(&"history_replay") and not _visible_records.is_empty():
 		var selected := _visible_records[clampi(_selected_index, 0, _visible_records.size() - 1)].duplicate(true)
 		close()
@@ -87,7 +92,7 @@ func play_result(record: Dictionary) -> void:
 	_canvas.visible = true
 	_title.text = "RELATÓRIO DA SÉRIE"
 	_report.text = build_result_report(record)
-	_footer.text = "Histórico salvo • abra F3 e pressione Enter para rever os momentos decisivos."
+	_footer.text = "Histórico salvo • abra F3 para rever, favoritar e classificar a série."
 	var running_headless := DisplayServer.get_name() == "headless" or OS.has_feature("server")
 	if running_headless:
 		call_deferred("_finish_result", token)
@@ -103,7 +108,8 @@ func set_filters_for_test(filters: Dictionary) -> void:
 	_filters = {
 		"character_id": StringName(filters.get("character_id", &"all")),
 		"arena_id": StringName(filters.get("arena_id", &"all")),
-		"result_id": StringName(filters.get("result_id", &"all"))
+		"result_id": StringName(filters.get("result_id", &"all")),
+		"curation_id": StringName(filters.get("curation_id", &"all"))
 	}
 	_selected_index = 0
 	_refresh_history()
@@ -119,6 +125,12 @@ func selected_record() -> Dictionary:
 		return {}
 	return _visible_records[clampi(_selected_index, 0, _visible_records.size() - 1)].duplicate(true)
 
+func toggle_favorite_for_test(match_id: String) -> bool:
+	return statistics_runtime.history.toggle_favorite(match_id)
+
+func toggle_tag_for_test(match_id: String, tag_id: StringName) -> Array[StringName]:
+	return statistics_runtime.history.toggle_tag(match_id, tag_id)
+
 func build_history_report() -> String:
 	var aggregate := statistics_runtime.aggregate_history(_filters)
 	_visible_records = statistics_runtime.filtered_matches(_filters, 12)
@@ -127,10 +139,10 @@ func build_history_report() -> String:
 	lines.append("[center][font_size=18][b]FILTROS[/b][/font_size][/center]")
 	lines.append("[center]%s[/center]" % _filter_summary())
 	lines.append("[center][font_size=20][b]RESUMO FILTRADO[/b][/font_size][/center]")
-	lines.append("[center]Séries %d • Rounds %d • Média %.1f rounds • %.1fs por round • %d destaques[/center]" % [
+	lines.append("[center]Séries %d • Rounds %d • Média %.1f rounds • %.1fs por round • %d destaques • %d favoritas[/center]" % [
 		int(aggregate.get("series", 0)), int(aggregate.get("rounds", 0)),
 		float(aggregate.get("average_rounds", 0.0)), float(aggregate.get("average_round_seconds", 0.0)),
-		int(aggregate.get("highlights", 0))
+		int(aggregate.get("highlights", 0)), int(aggregate.get("favorites", 0))
 	])
 	lines.append("[center]P1 %d vitórias • P2 %d vitórias • KO %d • Tempo %d • Prorrogação %d[/center]" % [
 		int(aggregate.get("p1_wins", 0)), int(aggregate.get("p2_wins", 0)),
@@ -188,7 +200,7 @@ func _refresh_history() -> void:
 	if not is_instance_valid(_report):
 		return
 	_report.text = build_history_report()
-	_footer.text = "F3 fecha • Tab filtro • H/Y valor • Page Up/Down série • Enter replay • Backspace limpa • %s" % MatchHistoryLedger.SAVE_PATH
+	_footer.text = "F3 fecha • Tab filtro • H/Y valor • Page Up/Down série • Enter replay • B favorita • Ctrl+1 Técnica • Ctrl+2 Revanche • Ctrl+3 Torneio • Ctrl+4 Destaque • Backspace limpa"
 
 func _cycle_filter_value(direction: int) -> void:
 	var field_id := FILTER_FIELDS[_filter_field_index]
@@ -212,6 +224,7 @@ func _filter_options(field_id: StringName) -> Array[StringName]:
 			arenas.append_array(CompetitiveMatchCatalog.ARENA_ORDER)
 			return arenas
 		&"result_id": return RESULT_OPTIONS.duplicate()
+		&"curation_id": return MatchHistoryLedger.CURATION_FILTERS.duplicate()
 		_: return [&"all"]
 
 func _filter_summary() -> String:
@@ -227,6 +240,7 @@ func _filter_field_label(field_id: StringName) -> String:
 		&"character_id": return "PERSONAGEM"
 		&"arena_id": return "ARENA"
 		&"result_id": return "RESULTADO"
+		&"curation_id": return "CURADORIA"
 		_: return String(field_id).to_upper()
 
 func _filter_value_label(field_id: StringName, value_id: StringName) -> String:
@@ -240,7 +254,22 @@ func _filter_value_label(field_id: StringName, value_id: StringName) -> String:
 				&"p1_win": "VITÓRIA P1", &"p2_win": "VITÓRIA P2", &"ko": "COM KO",
 				&"time": "COM TEMPO", &"sudden_death": "COM PRORROGAÇÃO"
 			}.get(value_id, String(value_id).to_upper())
+		&"curation_id": return _tag_label(value_id) if value_id != &"favorites" else "FAVORITAS"
 		_: return String(value_id).to_upper()
+
+func _toggle_selected_favorite() -> void:
+	var selected := selected_record()
+	if selected.is_empty():
+		return
+	statistics_runtime.history.toggle_favorite(String(selected.get("match_id", "")))
+	_refresh_history()
+
+func _toggle_selected_tag(tag_id: StringName) -> void:
+	var selected := selected_record()
+	if selected.is_empty():
+		return
+	statistics_runtime.history.toggle_tag(String(selected.get("match_id", "")), tag_id)
+	_refresh_history()
 
 func _history_line(record: Dictionary) -> String:
 	var players: Array = record.get("players", [])
@@ -256,11 +285,21 @@ func _history_line(record: Dictionary) -> String:
 	for round_value in record.get("rounds", []):
 		if round_value is Dictionary:
 			highlight_count += ((round_value as Dictionary).get("highlights", []) as Array).size()
-	return "%s %d — %d %s • vencedor P%d • %s • %d rounds • %d destaques" % [
-		p1, int(record.get("score_p1", 0)), int(record.get("score_p2", 0)), p2,
+	var favorite := "★ " if bool(record.get("favorite", false)) else ""
+	var tags: Array[String] = []
+	for value in record.get("tags", []):
+		tags.append(_tag_label(StringName(value)))
+	var tag_suffix := " • [%s]" % ", ".join(tags) if not tags.is_empty() else ""
+	return "%s%s %d — %d %s • vencedor P%d • %s • %d rounds • %d destaques%s" % [
+		favorite, p1, int(record.get("score_p1", 0)), int(record.get("score_p2", 0)), p2,
 		int(record.get("winner_index", 0)), CompetitiveMatchCatalog.arena_label(config),
-		(record.get("rounds", []) as Array).size(), highlight_count
+		(record.get("rounds", []) as Array).size(), highlight_count, tag_suffix
 	]
+
+func _tag_label(tag_id: StringName) -> String:
+	return {
+		&"technical": "TÉCNICA", &"rematch": "REVANCHE", &"tournament": "TORNEIO", &"highlight": "DESTAQUE"
+	}.get(tag_id, String(tag_id).to_upper())
 
 func _finish_result(token: int) -> void:
 	if token != _token:
@@ -276,10 +315,10 @@ func _build_interface() -> void:
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_canvas)
 	_panel = PanelContainer.new()
-	_panel.offset_left = 90.0
-	_panel.offset_top = 36.0
-	_panel.offset_right = 1190.0
-	_panel.offset_bottom = 690.0
+	_panel.offset_left = 70.0
+	_panel.offset_top = 30.0
+	_panel.offset_right = 1210.0
+	_panel.offset_bottom = 696.0
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.010, 0.016, 0.030, 0.99)
 	style.border_color = Color(0.92, 0.72, 0.28, 0.94)
@@ -291,30 +330,31 @@ func _build_interface() -> void:
 	_panel.add_theme_stylebox_override("panel", style)
 	_canvas.add_child(_panel)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
 	_panel.add_child(margin)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 24)
+	_title.add_theme_font_size_override("font_size", 23)
 	_title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.44))
 	column.add_child(_title)
 	_report = RichTextLabel.new()
-	_report.custom_minimum_size = Vector2(1030.0, 520.0)
+	_report.custom_minimum_size = Vector2(1080.0, 540.0)
 	_report.bbcode_enabled = true
 	_report.fit_content = false
 	_report.scroll_active = true
-	_report.add_theme_font_size_override("normal_font_size", 14)
-	_report.add_theme_font_size_override("bold_font_size", 15)
+	_report.add_theme_font_size_override("normal_font_size", 13)
+	_report.add_theme_font_size_override("bold_font_size", 14)
 	column.add_child(_report)
 	_footer = Label.new()
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_footer.add_theme_font_size_override("font_size", 12)
+	_footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_footer.add_theme_font_size_override("font_size", 11)
 	_footer.add_theme_color_override("font_color", Color(0.70, 0.80, 0.92))
 	column.add_child(_footer)
 	_canvas.visible = false
@@ -328,13 +368,17 @@ func _register_inputs() -> void:
 	_add_key_action(&"history_next_record", KEY_PAGEDOWN)
 	_add_key_action(&"history_replay", KEY_ENTER)
 	_add_key_action(&"history_reset_filters", KEY_BACKSPACE)
+	_add_key_action(&"history_favorite", KEY_B)
+	for index in range(4):
+		_add_key_action(StringName("history_tag_%d" % (index + 1)), KEY_1 + index, true)
 
-func _add_key_action(action_id: StringName, keycode: Key) -> void:
+func _add_key_action(action_id: StringName, keycode: Key, ctrl_pressed: bool = false) -> void:
 	if not InputMap.has_action(action_id):
 		InputMap.add_action(action_id, 0.5)
 	for existing in InputMap.action_get_events(action_id):
-		if existing is InputEventKey and existing.physical_keycode == keycode:
+		if existing is InputEventKey and existing.physical_keycode == keycode and existing.ctrl_pressed == ctrl_pressed:
 			return
 	var event := InputEventKey.new()
 	event.physical_keycode = keycode
+	event.ctrl_pressed = ctrl_pressed
 	InputMap.action_add_event(action_id, event)
