@@ -71,6 +71,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/tournament_replay_history_smoke_test.gd 2>&1 | tee godot-tournament-replay-history.log
 
+      - name: Validar nomes, exportação, ranking e curadoria
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/tournament_curation_ranking_smoke_test.gd 2>&1 | tee godot-tournament-curation-ranking.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -83,4 +88,5 @@ jobs:
             godot-presets-history.log
             godot-arena-share-tournament.log
             godot-tournament-replay-history.log
+            godot-tournament-curation-ranking.log
           if-no-files-found: ignore

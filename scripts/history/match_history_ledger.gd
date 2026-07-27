@@ -2,9 +2,11 @@ class_name MatchHistoryLedger
 extends RefCounted
 
 const SAVE_PATH := "user://match_history.json"
-const VERSION := 2
+const VERSION := 3
 const MAX_SERIES := 100
 const RESULT_FILTERS: Array[StringName] = [&"all", &"p1_win", &"p2_win", &"ko", &"time", &"sudden_death"]
+const TAG_OPTIONS: Array[StringName] = [&"technical", &"rematch", &"tournament", &"highlight"]
+const CURATION_FILTERS: Array[StringName] = [&"all", &"favorites", &"technical", &"rematch", &"tournament", &"highlight"]
 
 var data: Dictionary = {"version": VERSION, "matches": []}
 
@@ -64,6 +66,52 @@ func match_by_id(match_id: String) -> Dictionary:
 			return (value as Dictionary).duplicate(true)
 	return {}
 
+func toggle_favorite(match_id: String) -> bool:
+	var matches: Array = data.get("matches", [])
+	for index in range(matches.size()):
+		if not (matches[index] is Dictionary):
+			continue
+		var record: Dictionary = matches[index]
+		if String(record.get("match_id", "")) != match_id:
+			continue
+		record["favorite"] = not bool(record.get("favorite", false))
+		matches[index] = record
+		data["matches"] = matches
+		save_to_disk()
+		return bool(record["favorite"])
+	return false
+
+func toggle_tag(match_id: String, tag_id: StringName) -> Array[StringName]:
+	if tag_id not in TAG_OPTIONS:
+		return []
+	var matches: Array = data.get("matches", [])
+	for index in range(matches.size()):
+		if not (matches[index] is Dictionary):
+			continue
+		var record: Dictionary = matches[index]
+		if String(record.get("match_id", "")) != match_id:
+			continue
+		var tags := _sanitize_tags(record.get("tags", []))
+		if tag_id in tags:
+			tags.erase(tag_id)
+		else:
+			tags.append(tag_id)
+		record["tags"] = tags.duplicate()
+		matches[index] = record
+		data["matches"] = matches
+		save_to_disk()
+		return tags
+	return []
+
+func metadata(match_id: String) -> Dictionary:
+	var record := match_by_id(match_id)
+	if record.is_empty():
+		return {"favorite": false, "tags": []}
+	return {
+		"favorite": bool(record.get("favorite", false)),
+		"tags": _sanitize_tags(record.get("tags", []))
+	}
+
 func match_count(filters: Dictionary = {}) -> int:
 	if filters.is_empty():
 		return (data.get("matches", []) as Array).size()
@@ -89,11 +137,19 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 		"damage_p2": 0.0,
 		"parries_p1": 0,
 		"parries_p2": 0,
-		"highlights": 0
+		"highlights": 0,
+		"favorites": 0,
+		"tag_counts": {}
 	}
 	var source := filtered(filters, 0) if not filters.is_empty() else _all_matches()
 	for record in source:
 		result["series"] = int(result["series"]) + 1
+		if bool(record.get("favorite", false)):
+			result["favorites"] = int(result["favorites"]) + 1
+		var tag_counts: Dictionary = result["tag_counts"]
+		for tag_id in _sanitize_tags(record.get("tags", [])):
+			tag_counts[String(tag_id)] = int(tag_counts.get(String(tag_id), 0)) + 1
+		result["tag_counts"] = tag_counts
 		var winner := int(record.get("winner_index", 0))
 		if winner == 1:
 			result["p1_wins"] = int(result["p1_wins"]) + 1
@@ -170,6 +226,13 @@ func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
 			if not _has_reason_fragment(record, "PRORROGAÇÃO"): return false
 		_:
 			pass
+	var curation_id := StringName(filters.get("curation_id", &"all"))
+	if curation_id not in CURATION_FILTERS:
+		curation_id = &"all"
+	if curation_id == &"favorites" and not bool(record.get("favorite", false)):
+		return false
+	if curation_id in TAG_OPTIONS and curation_id not in _sanitize_tags(record.get("tags", [])):
+		return false
 	return true
 
 func _has_reason(record: Dictionary, expected: String) -> bool:
@@ -215,5 +278,17 @@ func _sanitize_record(source: Dictionary) -> Dictionary:
 		"config": CompetitiveMatchCatalog.sanitize(config_source as Dictionary if config_source is Dictionary else {}),
 		"players": (players_source as Array).duplicate(true) if players_source is Array else [],
 		"rounds": (rounds_source as Array).duplicate(true) if rounds_source is Array else [],
-		"totals": (totals_source as Array).duplicate(true) if totals_source is Array else []
+		"totals": (totals_source as Array).duplicate(true) if totals_source is Array else [],
+		"favorite": bool(source.get("favorite", false)),
+		"tags": _sanitize_tags(source.get("tags", []))
 	}
+
+func _sanitize_tags(source: Variant) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if not (source is Array):
+		return result
+	for value in source:
+		var tag_id := StringName(value)
+		if tag_id in TAG_OPTIONS and tag_id not in result:
+			result.append(tag_id)
+	return result

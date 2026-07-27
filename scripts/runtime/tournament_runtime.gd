@@ -12,14 +12,17 @@ const GUEST_PRESETS: Array[StringName] = [
 var ledger := TournamentLedger.new()
 var _sources: Array[Dictionary] = []
 var _slot_sources: Array[int] = []
+var _slot_names: Array[String] = []
 var _selected_slot := 0
 var _active_panel := false
-var _feedback := "F10 abre • T alterna 4/8 • ENTER inicia"
+var _editing_name := false
+var _feedback := "F10 abre • T alterna 4/8 • N nome • Ctrl+S sorteia • Ctrl+E exporta"
 var _canvas: CanvasLayer
 var _panel: PanelContainer
 var _title: Label
 var _bracket: RichTextLabel
 var _details: Label
+var _name_editor: LineEdit
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -31,12 +34,14 @@ func _ready() -> void:
 	_refresh()
 
 func _process(_delta: float) -> void:
-	if Input.is_action_just_pressed(&"tournament_toggle"):
+	if Input.is_action_just_pressed(&"tournament_toggle") and not _editing_name:
 		_toggle_panel()
 	if not _active_panel:
 		return
 	if not preparation_runtime.is_active():
 		close()
+		return
+	if _editing_name:
 		return
 	if Input.is_action_just_pressed(&"tournament_format"):
 		_toggle_format()
@@ -50,6 +55,12 @@ func _process(_delta: float) -> void:
 		_cycle_source(-1)
 	elif Input.is_action_just_pressed(&"tournament_next"):
 		_cycle_source(1)
+	if Input.is_action_just_pressed(&"tournament_edit_name"):
+		_begin_name_edit()
+	if Input.is_action_just_pressed(&"tournament_shuffle"):
+		shuffle_slots()
+	if Input.is_action_just_pressed(&"tournament_export"):
+		export_bracket()
 	if Input.is_action_just_pressed(&"tournament_start"):
 		_start_tournament()
 	if Input.is_action_just_pressed(&"tournament_reset"):
@@ -66,6 +77,7 @@ func open() -> void:
 	_refresh()
 
 func close() -> void:
+	_cancel_name_edit()
 	_active_panel = false
 	_canvas.visible = false
 
@@ -141,6 +153,44 @@ func record_winner_for_test(winner_index: int) -> Dictionary:
 func bracket_snapshot() -> Dictionary:
 	return ledger.bracket_snapshot()
 
+func set_name_for_test(slot_index: int, value: String) -> String:
+	_resize_slots(ledger.current_bracket_size())
+	var index := clampi(slot_index, 0, _slot_names.size() - 1)
+	_slot_names[index] = _sanitize_name(value)
+	return _slot_names[index]
+
+func shuffle_for_test(seed_value: int) -> Array[int]:
+	shuffle_slots(seed_value)
+	return _slot_sources.duplicate()
+
+func export_for_test() -> Dictionary:
+	return TournamentBracketExporter.export_snapshot(_snapshot_for_export())
+
+func shuffle_slots(seed_value: int = 0) -> void:
+	if is_tournament_active():
+		_feedback = "SORTEIO BLOQUEADO DURANTE O TORNEIO"
+		_refresh()
+		return
+	_refresh_sources()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value if seed_value != 0 else int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
+	for index in range(_slot_sources.size() - 1, 0, -1):
+		var other := rng.randi_range(0, index)
+		var temporary := _slot_sources[index]
+		_slot_sources[index] = _slot_sources[other]
+		_slot_sources[other] = temporary
+	_feedback = "SORTEIO CONCLUÍDO • SEED ALEATÓRIA %d" % rng.seed
+	_refresh()
+
+func export_bracket() -> Dictionary:
+	var result := TournamentBracketExporter.export_snapshot(_snapshot_for_export())
+	if bool(result.get("ok", false)):
+		_feedback = "CHAVEAMENTO EXPORTADO • SVG + JSON EM user://exports"
+	else:
+		_feedback = "FALHA AO EXPORTAR: %s" % String(result.get("error", "erro desconhecido"))
+	_refresh()
+	return result
+
 func _toggle_panel() -> void:
 	if _active_panel:
 		close()
@@ -161,10 +211,13 @@ func _toggle_format() -> void:
 	_refresh()
 
 func _resize_slots(size: int) -> void:
-	var old := _slot_sources.duplicate()
+	var old_sources := _slot_sources.duplicate()
+	var old_names := _slot_names.duplicate()
 	_slot_sources.clear()
+	_slot_names.clear()
 	for index in range(size):
-		_slot_sources.append(int(old[index]) if index < old.size() else index)
+		_slot_sources.append(int(old_sources[index]) if index < old_sources.size() else index)
+		_slot_names.append(String(old_names[index]) if index < old_names.size() else "")
 	_selected_slot = clampi(_selected_slot, 0, maxi(0, size - 1))
 
 func _cycle_source(direction: int) -> void:
@@ -174,6 +227,44 @@ func _cycle_source(direction: int) -> void:
 	_feedback = "SEED %d ATUALIZADO" % (_selected_slot + 1)
 	_refresh()
 
+func _begin_name_edit() -> void:
+	if is_tournament_active() or _slot_names.is_empty():
+		_feedback = "NOMES BLOQUEADOS DURANTE O TORNEIO"
+		_refresh()
+		return
+	var source_index := clampi(_slot_sources[_selected_slot], 0, maxi(0, _sources.size() - 1))
+	var fallback := String(_sources[source_index].get("name", "COMPETIDOR %d" % (_selected_slot + 1))) if not _sources.is_empty() else "COMPETIDOR %d" % (_selected_slot + 1)
+	_name_editor.text = _slot_names[_selected_slot] if _slot_names[_selected_slot] != "" else fallback
+	_name_editor.visible = true
+	_name_editor.grab_focus()
+	_name_editor.select_all()
+	_editing_name = true
+	_feedback = "DIGITE O NOME DO SEED %d E PRESSIONE ENTER" % (_selected_slot + 1)
+	_refresh()
+
+func _commit_name(value: String) -> void:
+	if not _editing_name:
+		return
+	_slot_names[_selected_slot] = _sanitize_name(value)
+	_editing_name = false
+	_name_editor.visible = false
+	_name_editor.release_focus()
+	_feedback = "SEED %d RENOMEADO PARA %s" % [_selected_slot + 1, _display_name_for_slot(_selected_slot)]
+	_refresh()
+
+func _cancel_name_edit() -> void:
+	if not is_instance_valid(_name_editor):
+		return
+	_editing_name = false
+	_name_editor.visible = false
+	_name_editor.release_focus()
+
+func _sanitize_name(value: String) -> String:
+	var clean := value.strip_edges().replace("\n", " ").replace("\r", " ")
+	while clean.contains("  "):
+		clean = clean.replace("  ", " ")
+	return clean.left(36)
+
 func _start_tournament() -> void:
 	_refresh_sources()
 	var size := ledger.current_bracket_size()
@@ -181,20 +272,34 @@ func _start_tournament() -> void:
 		_feedback = "FONTES INSUFICIENTES PARA O CHAVEAMENTO"
 		_refresh()
 		return
-	var participants: Array[Dictionary] = []
-	for slot in range(size):
-		var source_index := clampi(_slot_sources[slot], 0, _sources.size() - 1)
-		var source: Dictionary = _sources[source_index]
-		var participant := source.duplicate(true)
-		participant["participant_id"] = "seed_%d_%s" % [slot + 1, String(source.get("participant_id", source_index))]
-		participant["seed"] = slot + 1
-		participants.append(participant)
+	var participants := _participants_from_slots()
 	if not ledger.set_participants(participants) or not ledger.start():
 		_feedback = "NÃO FOI POSSÍVEL INICIAR O TORNEIO"
 		_refresh()
 		return
 	prepare_current_match()
 	close()
+
+func _participants_from_slots() -> Array[Dictionary]:
+	var participants: Array[Dictionary] = []
+	for slot in range(_slot_sources.size()):
+		var source_index := clampi(_slot_sources[slot], 0, _sources.size() - 1)
+		var source: Dictionary = _sources[source_index]
+		var participant := source.duplicate(true)
+		participant["participant_id"] = "seed_%d_%s" % [slot + 1, String(source.get("participant_id", source_index))]
+		participant["seed"] = slot + 1
+		participant["name"] = _display_name_for_slot(slot)
+		participants.append(participant)
+	return participants
+
+func _snapshot_for_export() -> Dictionary:
+	if is_tournament_active() or is_tournament_finished():
+		return ledger.bracket_snapshot()
+	_refresh_sources()
+	var preview := TournamentLedger.new()
+	preview.set_participants(_participants_from_slots())
+	preview.start()
+	return preview.bracket_snapshot()
 
 func _refresh_sources() -> void:
 	_sources.clear()
@@ -231,6 +336,14 @@ func _source_from_loadout(name: String, loadout: Dictionary, source_id: String) 
 		"source": source_id
 	}
 
+func _display_name_for_slot(slot: int) -> String:
+	if slot >= 0 and slot < _slot_names.size() and _slot_names[slot] != "":
+		return _slot_names[slot]
+	if _sources.is_empty() or slot < 0 or slot >= _slot_sources.size():
+		return "COMPETIDOR %d" % (slot + 1)
+	var source_index := clampi(_slot_sources[slot], 0, _sources.size() - 1)
+	return String(_sources[source_index].get("name", "COMPETIDOR %d" % (slot + 1)))
+
 func _build_interface() -> void:
 	_canvas = CanvasLayer.new()
 	_canvas.layer = 238
@@ -265,8 +378,14 @@ func _build_interface() -> void:
 	_title.add_theme_font_size_override("font_size", 24)
 	_title.add_theme_color_override("font_color", Color(1.0, 0.80, 0.42))
 	column.add_child(_title)
+	_name_editor = LineEdit.new()
+	_name_editor.placeholder_text = "Nome do competidor"
+	_name_editor.max_length = 36
+	_name_editor.visible = false
+	_name_editor.text_submitted.connect(_commit_name)
+	column.add_child(_name_editor)
 	_bracket = RichTextLabel.new()
-	_bracket.custom_minimum_size = Vector2(980.0, 500.0)
+	_bracket.custom_minimum_size = Vector2(980.0, 470.0)
 	_bracket.bbcode_enabled = true
 	_bracket.fit_content = false
 	_bracket.scroll_active = true
@@ -294,11 +413,11 @@ func _refresh() -> void:
 			var prefix := "▶" if slot == _selected_slot else " "
 			lines.append("[color=%s]%s SEED %d  •  [b]%s[/b]  •  %s  •  %s[/color]" % [
 				"#ffd36b" if slot == _selected_slot else "#d7deeb",
-				prefix, slot + 1, String(source.get("name", "VAZIO")),
+				prefix, slot + 1, _display_name_for_slot(slot),
 				String(source.get("character_name", "")), String(source.get("build_name", ""))
 			])
 	_bracket.text = "\n".join(lines)
-	_details.text = "F10 fecha • T alterna 4/8 • Page Up/Down seed • Home/End fonte • ENTER inicia • DEL reinicia\n%s" % _feedback
+	_details.text = "F10 fecha • T 4/8 • Page Up/Down seed • Home/End fonte • N nome • Ctrl+S sorteio • Ctrl+E exporta • Enter inicia • Del reinicia\n%s" % _feedback
 
 func _active_bracket_lines() -> Array[String]:
 	var lines: Array[String] = []
@@ -344,15 +463,19 @@ func _register_inputs() -> void:
 	_add_key_action(&"tournament_down", KEY_PAGEDOWN)
 	_add_key_action(&"tournament_prev", KEY_HOME)
 	_add_key_action(&"tournament_next", KEY_END)
+	_add_key_action(&"tournament_edit_name", KEY_N)
+	_add_key_action(&"tournament_shuffle", KEY_S, true)
+	_add_key_action(&"tournament_export", KEY_E, true)
 	_add_key_action(&"tournament_start", KEY_ENTER)
 	_add_key_action(&"tournament_reset", KEY_DELETE)
 
-func _add_key_action(action_id: StringName, keycode: Key) -> void:
+func _add_key_action(action_id: StringName, keycode: Key, ctrl_pressed: bool = false) -> void:
 	if not InputMap.has_action(action_id):
 		InputMap.add_action(action_id, 0.5)
 	for existing in InputMap.action_get_events(action_id):
-		if existing is InputEventKey and existing.physical_keycode == keycode:
+		if existing is InputEventKey and existing.physical_keycode == keycode and existing.ctrl_pressed == ctrl_pressed:
 			return
 	var event := InputEventKey.new()
 	event.physical_keycode = keycode
+	event.ctrl_pressed = ctrl_pressed
 	InputMap.action_add_event(action_id, event)
