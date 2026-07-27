@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://scripts/competitive_main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -35,6 +35,8 @@
 [ext_resource type="Script" path="res://scripts/runtime/tournament_runtime.gd" id="33_tournament"]
 [ext_resource type="Script" path="res://scripts/runtime/series_replay_runtime.gd" id="34_replay"]
 [ext_resource type="Script" path="res://scripts/runtime/local_ranking_runtime.gd" id="35_ranking"]
+[ext_resource type="Script" path="res://scripts/runtime/player_profile_runtime.gd" id="36_profiles"]
+[ext_resource type="Script" path="res://scripts/runtime/series_comparison_runtime.gd" id="37_series_compare"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -69,6 +71,9 @@ script = ExtResource("9_training")
 [node name="BattlePreparationRuntime" type="Node" parent="."]
 script = ExtResource("21_preparation")
 
+[node name="PlayerProfileRuntime" type="Node" parent="."]
+script = ExtResource("36_profiles")
+
 [node name="CompetitiveMatchRuntime" type="Node" parent="."]
 script = ExtResource("23_competitive")
 
@@ -92,6 +97,9 @@ script = ExtResource("33_tournament")
 
 [node name="SeriesReplayRuntime" type="Node" parent="."]
 script = ExtResource("34_replay")
+
+[node name="SeriesComparisonRuntime" type="Node" parent="."]
+script = ExtResource("37_series_compare")
 
 [node name="MatchHistoryRuntime" type="Node" parent="."]
 script = ExtResource("29_history")
