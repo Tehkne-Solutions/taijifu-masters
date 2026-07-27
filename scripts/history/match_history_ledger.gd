@@ -196,6 +196,9 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 	return result
 
 func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
+	var query := normalize_search(String(filters.get("text_query", "")))
+	if query != "" and not search_blob(record).contains(query):
+		return false
 	var character_id := StringName(filters.get("character_id", &"all"))
 	if character_id != &"all":
 		var found := false
@@ -223,7 +226,7 @@ func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
 		&"time":
 			if not _has_reason(record, "TEMPO"): return false
 		&"sudden_death":
-			if not _has_reason_fragment(record, "PRORROGAÇÃO"): return false
+			if not _has_reason_fragment(record, "PRORGAÇÃO") and not _has_reason_fragment(record, "PRORROGAÇÃO"): return false
 		_:
 			pass
 	var curation_id := StringName(filters.get("curation_id", &"all"))
@@ -234,6 +237,42 @@ func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
 	if curation_id in TAG_OPTIONS and curation_id not in _sanitize_tags(record.get("tags", [])):
 		return false
 	return true
+
+static func normalize_search(value: String) -> String:
+	var clean := value.to_lower().strip_edges()
+	clean = clean.replace("á", "a").replace("à", "a").replace("ã", "a").replace("â", "a")
+	clean = clean.replace("é", "e").replace("ê", "e").replace("í", "i")
+	clean = clean.replace("ó", "o").replace("ô", "o").replace("õ", "o")
+	clean = clean.replace("ú", "u").replace("ç", "c")
+	while clean.contains("  "):
+		clean = clean.replace("  ", " ")
+	return clean
+
+static func search_blob(record: Dictionary) -> String:
+	var parts: Array[String] = [String(record.get("match_id", ""))]
+	var config_source: Variant = record.get("config", {})
+	if config_source is Dictionary:
+		var config: Dictionary = config_source
+		parts.append(CompetitiveMatchCatalog.arena_label(config))
+		parts.append(CompetitiveMatchCatalog.config_summary(config))
+	for player_value in record.get("players", []):
+		if player_value is Dictionary:
+			var player: Dictionary = player_value
+			parts.append(String(player.get("profile_name", "")))
+			parts.append(String(player.get("character_name", "")))
+			parts.append(String(player.get("build_name", "")))
+	for tag_value in record.get("tags", []):
+		parts.append(String(tag_value))
+	for round_value in record.get("rounds", []):
+		if not (round_value is Dictionary):
+			continue
+		var round_data: Dictionary = round_value
+		parts.append(String(round_data.get("reason", "")))
+		for highlight_value in round_data.get("highlights", []):
+			if highlight_value is Dictionary:
+				parts.append(String((highlight_value as Dictionary).get("label", "")))
+				parts.append(String((highlight_value as Dictionary).get("event_id", "")))
+	return normalize_search(" ".join(parts))
 
 func _has_reason(record: Dictionary, expected: String) -> bool:
 	for value in record.get("rounds", []):
