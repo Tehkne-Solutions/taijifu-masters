@@ -50,7 +50,8 @@ static func has_character(character_id: StringName) -> bool:
 	return CHARACTERS.has(character_id)
 
 static func profile(character_id: StringName) -> Dictionary:
-	return (CHARACTERS.get(character_id, CHARACTERS[&"kael"]) as Dictionary).duplicate(true)
+	var data: Dictionary = CHARACTERS.get(character_id, CHARACTERS[&"kael"])
+	return data.duplicate(true)
 
 static func display_name(character_id: StringName) -> String:
 	return String(profile(character_id).get("display_name", String(character_id).capitalize()))
@@ -71,7 +72,8 @@ static func scale_for(character_id: StringName) -> float:
 	return float(profile(character_id).get("scale", 0.78))
 
 static func fps_for(character_id: StringName, state_id: StringName) -> float:
-	var fps_map: Dictionary = profile(character_id).get("fps", {})
+	var data := profile(character_id)
+	var fps_map: Dictionary = data.get("fps", {})
 	return maxf(1.0, float(fps_map.get(state_id, 6.0)))
 
 static func state_row(state_id: StringName) -> int:
@@ -90,10 +92,23 @@ static func validate_character(character_id: StringName) -> Array[String]:
 	var failures: Array[String] = []
 	var data := profile(character_id)
 	var path := String(data.get("sheet", ""))
+	var column_count := int(data.get("columns", 0))
+	var row_count := int(data.get("rows", 0))
 	if path == "":
 		failures.append("%s não possui caminho de atlas" % String(character_id))
 	elif not ResourceLoader.exists(path):
 		failures.append("Atlas ausente ou não importável: %s" % path)
-	if int(data.get("columns", 0)) <= 0 or int(data.get("rows", 0)) < STATE_ORDER.size():
+	else:
+		var texture := load(path) as Texture2D
+		if not is_instance_valid(texture):
+			failures.append("Falha ao carregar atlas: %s" % path)
+		else:
+			var expected_width := int(FRAME_SIZE.x) * column_count
+			var expected_height := int(FRAME_SIZE.y) * row_count
+			if texture.get_width() != expected_width or texture.get_height() != expected_height:
+				failures.append("Atlas %s possui %dx%d, esperado %dx%d" % [
+					String(character_id), texture.get_width(), texture.get_height(), expected_width, expected_height
+				])
+	if column_count <= 0 or row_count < STATE_ORDER.size():
 		failures.append("Grade inválida para %s" % String(character_id))
 	return failures
