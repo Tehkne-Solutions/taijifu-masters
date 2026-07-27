@@ -2,7 +2,7 @@ class_name MatchHistoryLedger
 extends RefCounted
 
 const SAVE_PATH := "user://match_history.json"
-const VERSION := 3
+const VERSION := 4
 const MAX_SERIES := 100
 const RESULT_FILTERS: Array[StringName] = [&"all", &"p1_win", &"p2_win", &"ko", &"time", &"sudden_death"]
 const TAG_OPTIONS: Array[StringName] = [&"technical", &"rematch", &"tournament", &"highlight"]
@@ -132,6 +132,7 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 		"sudden_death_rounds": 0,
 		"total_duration": 0.0,
 		"arena_counts": {},
+		"season_counts": {},
 		"character_wins": {},
 		"damage_p1": 0.0,
 		"damage_p2": 0.0,
@@ -150,6 +151,10 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 		for tag_id in _sanitize_tags(record.get("tags", [])):
 			tag_counts[String(tag_id)] = int(tag_counts.get(String(tag_id), 0)) + 1
 		result["tag_counts"] = tag_counts
+		var season_id := String(record.get("season_id", "season_legacy"))
+		var season_counts: Dictionary = result["season_counts"]
+		season_counts[season_id] = int(season_counts.get(season_id, 0)) + 1
+		result["season_counts"] = season_counts
 		var winner := int(record.get("winner_index", 0))
 		if winner == 1:
 			result["p1_wins"] = int(result["p1_wins"]) + 1
@@ -179,7 +184,7 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 				result["ko_rounds"] = int(result["ko_rounds"]) + 1
 			elif reason == "TEMPO":
 				result["time_rounds"] = int(result["time_rounds"]) + 1
-			elif reason.contains("PRORROGAÇÃO"):
+			elif reason.contains("PRORROGAÇÃO") or reason.contains("PRORGAÇÃO"):
 				result["sudden_death_rounds"] = int(result["sudden_death_rounds"]) + 1
 			var stats: Array = round_data.get("stats", [])
 			if stats.size() >= 2:
@@ -196,6 +201,9 @@ func aggregate(filters: Dictionary = {}) -> Dictionary:
 	return result
 
 func _matches_filters(record: Dictionary, filters: Dictionary) -> bool:
+	var season_id := String(filters.get("season_id", ""))
+	if season_id != "" and season_id != "all" and String(record.get("season_id", "season_legacy")) != season_id:
+		return false
 	var query := normalize_search(String(filters.get("text_query", "")))
 	if query != "" and not search_blob(record).contains(query):
 		return false
@@ -249,7 +257,11 @@ static func normalize_search(value: String) -> String:
 	return clean
 
 static func search_blob(record: Dictionary) -> String:
-	var parts: Array[String] = [String(record.get("match_id", ""))]
+	var parts: Array[String] = [
+		String(record.get("match_id", "")),
+		String(record.get("season_id", "season_legacy")),
+		String(record.get("season_name", "HISTÓRICO ANTERIOR"))
+	]
 	var config_source: Variant = record.get("config", {})
 	if config_source is Dictionary:
 		var config: Dictionary = config_source
@@ -307,10 +319,15 @@ func _sanitize_record(source: Dictionary) -> Dictionary:
 	var players_source: Variant = source.get("players", [])
 	var rounds_source: Variant = source.get("rounds", [])
 	var totals_source: Variant = source.get("totals", [])
+	var season_id := String(source.get("season_id", "season_legacy")).strip_edges().left(64)
+	if season_id == "":
+		season_id = "season_legacy"
 	return {
 		"match_id": String(source.get("match_id", "match_%d" % int(Time.get_unix_time_from_system()))),
 		"started_unix": int(source.get("started_unix", 0)),
 		"completed_unix": int(source.get("completed_unix", Time.get_unix_time_from_system())),
+		"season_id": season_id,
+		"season_name": CompetitiveSeasonLedger.sanitize_name(String(source.get("season_name", "HISTÓRICO ANTERIOR")), "HISTÓRICO ANTERIOR"),
 		"winner_index": clampi(int(source.get("winner_index", 0)), 0, 2),
 		"score_p1": maxi(0, int(source.get("score_p1", 0))),
 		"score_p2": maxi(0, int(source.get("score_p2", 0))),

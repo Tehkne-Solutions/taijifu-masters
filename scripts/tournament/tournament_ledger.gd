@@ -252,13 +252,24 @@ func sanitize_participant(source: Dictionary, ordinal: int = 0) -> Dictionary:
 	var name := String(source.get("name", build.character_name)).strip_edges()
 	if name == "":
 		name = "COMPETIDOR %d" % (ordinal + 1)
-	return {
-		"participant_id": String(source.get("participant_id", "slot_%d" % ordinal)),
+	var participant_id := String(source.get("participant_id", "slot_%d" % ordinal)).strip_edges().left(96)
+	var profile_id := String(source.get("profile_id", "")).strip_edges().left(96)
+	var profile_name := String(source.get("profile_name", name)).strip_edges().left(36)
+	var result := {
+		"participant_id": participant_id if participant_id != "" else "slot_%d" % ordinal,
 		"name": name.left(36),
 		"seed": maxi(1, int(source.get("seed", ordinal + 1))),
 		"loadout": loadout,
 		"source": String(source.get("source", "local"))
 	}
+	if profile_id != "":
+		result["profile_id"] = profile_id
+		result["profile_name"] = profile_name if profile_name != "" else name.left(36)
+	if source.has("qualification"):
+		result["qualification"] = String(source.get("qualification", "")).left(8)
+	if source.has("group_id"):
+		result["group_id"] = String(source.get("group_id", "")).left(8)
+	return result
 
 func _build_seeded_round(participants: Array, size: int) -> Array:
 	var order := _seed_order(size)

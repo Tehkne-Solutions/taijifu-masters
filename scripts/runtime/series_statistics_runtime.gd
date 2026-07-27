@@ -17,12 +17,19 @@ func begin_series(
 	player_one_loadout: Dictionary,
 	player_two_loadout: Dictionary,
 	player_one_profile: Dictionary = {},
-	player_two_profile: Dictionary = {}
+	player_two_profile: Dictionary = {},
+	season_context: Dictionary = {}
 ) -> void:
 	var now := int(Time.get_unix_time_from_system())
+	var season_id := String(season_context.get("season_id", "season_1")).strip_edges().left(64)
+	if season_id == "":
+		season_id = "season_1"
+	var season_name := CompetitiveSeasonLedger.sanitize_name(String(season_context.get("season_name", "TEMPORADA 1")), "TEMPORADA 1")
 	_series = {
 		"match_id": "match_%d_%d" % [now, Time.get_ticks_msec() % 100000],
 		"started_unix": now,
+		"season_id": season_id,
+		"season_name": season_name,
 		"config": CompetitiveMatchCatalog.sanitize(config),
 		"players": [
 			_player_record(1, player_one_loadout, player_one_profile),
