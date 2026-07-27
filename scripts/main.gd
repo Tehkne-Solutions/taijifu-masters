@@ -3,7 +3,7 @@ extends Node2D
 const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const ELEMENT_IDS: Array[StringName] = [&"fire", &"water", &"earth", &"air"]
 
-enum MatchState { PREPARATION, BATTLE }
+enum MatchState { PREPARATION, ENTRANCE, BATTLE }
 
 @onready var arena: TriplePathArena = $Arena
 @onready var camera: Camera2D = $Camera2D
@@ -12,6 +12,7 @@ enum MatchState { PREPARATION, BATTLE }
 @onready var center_label: Label = $HUD/CenterInfo
 @onready var controls_label: Label = $HUD/Controls
 @onready var preparation_runtime: BattlePreparationRuntime = $BattlePreparationRuntime
+@onready var entrance_runtime: ArenaEntranceRuntime = $ArenaEntranceRuntime
 @onready var master_training_runtime: MasterTrainingRuntime = $MasterTrainingRuntime
 
 var player_one: FighterController
@@ -37,6 +38,8 @@ func _process(delta: float) -> void:
 		return
 	_update_camera(delta)
 	_update_hud()
+	if _state == MatchState.ENTRANCE:
+		return
 	_check_world_limits()
 
 func _enter_preparation() -> void:
@@ -44,7 +47,7 @@ func _enter_preparation() -> void:
 	camera.global_position = arena.world_center()
 	camera.zoom = Vector2(0.72, 0.72)
 	center_label.text = "PREPARAÇÃO COMPLETA"
-	controls_label.text = "Configure personagem, build, elemento, armas, variante e cosméticos."
+	controls_label.text = "Configure os dois loadouts e confirme individualmente."
 	_sync_legacy_preparation_state()
 	preparation_runtime.open()
 
@@ -61,16 +64,24 @@ func _sync_legacy_preparation_state() -> void:
 			_selected_element_indices[player_index - 1] = element_index
 
 func _start_battle() -> void:
-	if _state != MatchState.PREPARATION:
+	if _state != MatchState.PREPARATION or not preparation_runtime.all_players_ready():
 		return
 	_sync_legacy_preparation_state()
 	preparation_runtime.close()
-	_state = MatchState.BATTLE
+	_state = MatchState.ENTRANCE
 	_cleanup_temporary_loot()
-	arena.start_battle_flow()
+	arena.reset_battle_flow()
 	_spawn_fighters()
+	center_label.text = "ENTRADA NA ARENA"
+	controls_label.text = "Controles bloqueados até o comando LUTEM."
+	entrance_runtime.play(player_one, player_two)
+	await entrance_runtime.entrance_finished
+	if _state != MatchState.ENTRANCE:
+		return
+	arena.start_battle_flow()
+	_state = MatchState.BATTLE
 	center_label.text = "RUÍNAS DO CAMINHO TRIPLO\nTAI • JI • FU"
-	controls_label.text = "P1: A/D • W salto • S queda • Q esquiva • F técnica • G empurrão • E agarrão • C elemento • H eco • R defesa\nP2: Setas • Num0 esquiva • Num1 técnica • Num2 empurrão • Num4 agarrão • Num6 elemento • Num5 eco • Num3 defesa"
+	controls_label.text = "P1: A/D • W salto • S queda • Q esquiva • F técnica • G empurrão • E agarrão • C elemento • H eco • R defesa\nP2: Setas • Num0 esquiva • Num1 técnica • Num2 empurrão • Num4 agarrão • Num6 elemento • Num5 eco • Num3 defesa\nGamepads: analógico move • A salto • B esquiva • X técnica • Y empurrão • LB agarrão • RB defesa"
 
 func _spawn_fighters() -> void:
 	player_one = _spawn_fighter(1, preparation_runtime.loadout_for_player(1), Color(0.25, 0.70, 1.0))
@@ -218,6 +229,7 @@ func _register_prototype_inputs() -> void:
 	_add_key_action(&"p1_echo", KEY_H)
 	_add_key_action(&"p1_block", KEY_R)
 	_add_key_action(&"p1_element", KEY_C)
+	_add_key_action(&"p1_swap", KEY_T)
 	_add_key_action(&"p2_left", KEY_LEFT)
 	_add_key_action(&"p2_right", KEY_RIGHT)
 	_add_key_action(&"p2_down", KEY_DOWN)
@@ -229,14 +241,57 @@ func _register_prototype_inputs() -> void:
 	_add_key_action(&"p2_grab", KEY_KP_4)
 	_add_key_action(&"p2_echo", KEY_KP_5)
 	_add_key_action(&"p2_element", KEY_KP_6)
+	_add_key_action(&"p2_swap", KEY_KP_7)
 	_add_key_action(&"start_match", KEY_ENTER)
+	_register_gamepad_controls(1, 0)
+	_register_gamepad_controls(2, 1)
 
-func _add_key_action(action: StringName, keycode: int) -> void:
+func _register_gamepad_controls(player_index: int, device: int) -> void:
+	_add_joy_axis(_player_action(player_index, "left"), JOY_AXIS_LEFT_X, -1.0, device)
+	_add_joy_axis(_player_action(player_index, "right"), JOY_AXIS_LEFT_X, 1.0, device)
+	_add_joy_axis(_player_action(player_index, "down"), JOY_AXIS_LEFT_Y, 1.0, device)
+	_add_joy_button(_player_action(player_index, "jump"), JOY_BUTTON_A, device)
+	_add_joy_button(_player_action(player_index, "dodge"), JOY_BUTTON_B, device)
+	_add_joy_button(_player_action(player_index, "attack"), JOY_BUTTON_X, device)
+	_add_joy_button(_player_action(player_index, "push"), JOY_BUTTON_Y, device)
+	_add_joy_button(_player_action(player_index, "grab"), JOY_BUTTON_LEFT_SHOULDER, device)
+	_add_joy_button(_player_action(player_index, "block"), JOY_BUTTON_RIGHT_SHOULDER, device)
+	_add_joy_button(_player_action(player_index, "element"), JOY_BUTTON_LEFT_STICK, device)
+	_add_joy_button(_player_action(player_index, "echo"), JOY_BUTTON_RIGHT_STICK, device)
+	_add_joy_button(_player_action(player_index, "swap"), JOY_BUTTON_BACK, device)
+
+func _player_action(player_index: int, suffix: String) -> StringName:
+	return StringName("p%d_%s" % [player_index, suffix])
+
+func _add_key_action(action: StringName, keycode: Key) -> void:
 	if not InputMap.has_action(action):
-		InputMap.add_action(action)
+		InputMap.add_action(action, 0.5)
 	for existing_event in InputMap.action_get_events(action):
 		if existing_event is InputEventKey and existing_event.physical_keycode == keycode:
 			return
 	var event := InputEventKey.new()
 	event.physical_keycode = keycode
+	InputMap.action_add_event(action, event)
+
+func _add_joy_button(action: StringName, button_index: JoyButton, device: int) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action, 0.5)
+	for existing in InputMap.action_get_events(action):
+		if existing is InputEventJoypadButton and existing.button_index == button_index and existing.device == device:
+			return
+	var event := InputEventJoypadButton.new()
+	event.button_index = button_index
+	event.device = device
+	InputMap.action_add_event(action, event)
+
+func _add_joy_axis(action: StringName, axis: JoyAxis, axis_value: float, device: int) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action, 0.5)
+	for existing in InputMap.action_get_events(action):
+		if existing is InputEventJoypadMotion and existing.axis == axis and is_equal_approx(existing.axis_value, axis_value) and existing.device == device:
+			return
+	var event := InputEventJoypadMotion.new()
+	event.axis = axis
+	event.axis_value = axis_value
+	event.device = device
 	InputMap.action_add_event(action, event)
