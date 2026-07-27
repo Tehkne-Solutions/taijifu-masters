@@ -1,0 +1,491 @@
+:root {
+  --taijifu-touch-scale: 1;
+  --taijifu-touch-opacity: 0.88;
+  --taijifu-ui-scale: 1;
+  --taijifu-focus: #ffe08a;
+}
+
+.taijifu-menu-actions {
+  display: grid;
+  gap: 10px;
+  width: min(420px, 100%);
+  margin: 0 auto;
+}
+
+.taijifu-menu-actions .taijifu-enter {
+  width: 100%;
+}
+
+.taijifu-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.taijifu-secondary-button {
+  min-height: 44px;
+  border: 1px solid rgba(142, 215, 255, 0.3);
+  border-radius: 13px;
+  color: #eaf5ff;
+  background: rgba(8, 18, 34, 0.72);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.taijifu-secondary-button:hover {
+  border-color: rgba(245, 215, 122, 0.56);
+  color: var(--taijifu-gold);
+  transform: translateY(-1px);
+}
+
+body.taijifu-entered.taijifu-menu-open .taijifu-shell {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  background: rgba(3, 7, 15, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+body.taijifu-menu-open #canvas {
+  filter: brightness(0.58) saturate(0.78);
+}
+
+.taijifu-shell[data-mode="menu"] .taijifu-loader {
+  display: none;
+}
+
+.taijifu-shell[data-mode="menu"] .taijifu-subtitle {
+  max-width: 520px;
+}
+
+.taijifu-web-dialog[hidden] {
+  display: none !important;
+}
+
+.taijifu-web-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: grid;
+  place-items: center;
+  padding: max(18px, var(--safe-top)) max(18px, var(--safe-right)) max(18px, var(--safe-bottom)) max(18px, var(--safe-left));
+  color: #edf7ff;
+  background: rgba(2, 5, 11, 0.86);
+  backdrop-filter: blur(16px);
+}
+
+.taijifu-dialog-panel {
+  width: min(780px, 96vw);
+  max-height: min(680px, 92vh);
+  overflow: auto;
+  border: 1px solid rgba(142, 215, 255, 0.34);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(72, 126, 171, 0.2), transparent 36%),
+    linear-gradient(145deg, rgba(13, 25, 44, 0.98), rgba(4, 9, 18, 0.99));
+  box-shadow: 0 28px 100px rgba(0, 0, 0, 0.62);
+}
+
+.taijifu-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(142, 215, 255, 0.14);
+  background: rgba(6, 12, 23, 0.94);
+  backdrop-filter: blur(14px);
+}
+
+.taijifu-dialog-kicker {
+  margin: 0 0 5px;
+  color: var(--taijifu-cyan);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.taijifu-dialog-title {
+  margin: 0;
+  font-size: clamp(25px, 4vw, 38px);
+  line-height: 1.05;
+}
+
+.taijifu-dialog-close {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(142, 215, 255, 0.28);
+  border-radius: 12px;
+  color: #eaf5ff;
+  background: rgba(7, 14, 26, 0.8);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.taijifu-dialog-content {
+  padding: 24px;
+}
+
+.taijifu-dialog-view[hidden] {
+  display: none !important;
+}
+
+.taijifu-tutorial-device {
+  margin: 0 0 20px;
+  color: rgba(217, 232, 248, 0.74);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.taijifu-tutorial-step[hidden] {
+  display: none !important;
+}
+
+.taijifu-tutorial-step {
+  min-height: 270px;
+}
+
+.taijifu-tutorial-step h3 {
+  margin: 0 0 8px;
+  color: var(--taijifu-gold);
+  font-size: clamp(23px, 4vw, 34px);
+}
+
+.taijifu-tutorial-step > p {
+  max-width: 650px;
+  margin: 0 0 22px;
+  color: rgba(220, 234, 249, 0.72);
+  line-height: 1.58;
+}
+
+.taijifu-binding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.taijifu-binding-card {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) 1fr;
+  gap: 13px;
+  align-items: center;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid rgba(142, 215, 255, 0.18);
+  border-radius: 15px;
+  background: rgba(6, 15, 29, 0.66);
+}
+
+.taijifu-binding {
+  display: inline-grid;
+  place-items: center;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid rgba(245, 215, 122, 0.38);
+  border-radius: 10px;
+  color: var(--taijifu-gold);
+  background: rgba(39, 31, 12, 0.44);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.taijifu-binding-card strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+.taijifu-binding-card small {
+  color: rgba(202, 220, 239, 0.62);
+  line-height: 1.35;
+}
+
+.taijifu-tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.taijifu-tutorial-status {
+  color: rgba(198, 216, 236, 0.66);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.taijifu-dialog-action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(142, 215, 255, 0.3);
+  border-radius: 12px;
+  color: #eaf5ff;
+  background: rgba(8, 18, 34, 0.82);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.taijifu-dialog-action[data-role="primary"] {
+  border-color: rgba(245, 215, 122, 0.5);
+  color: #07101b;
+  background: linear-gradient(135deg, #f8e39b, #e7bd58);
+}
+
+.taijifu-dialog-action:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.taijifu-settings-intro {
+  margin: 0 0 18px;
+  color: rgba(217, 232, 248, 0.7);
+  line-height: 1.55;
+}
+
+.taijifu-settings-group {
+  margin: 0 0 22px;
+  padding: 18px;
+  border: 1px solid rgba(142, 215, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(5, 13, 25, 0.55);
+}
+
+.taijifu-settings-group legend {
+  padding: 0 8px;
+  color: var(--taijifu-gold);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.taijifu-setting-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(142, 215, 255, 0.09);
+}
+
+.taijifu-setting-row:last-child {
+  border-bottom: 0;
+}
+
+.taijifu-setting-copy strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+.taijifu-setting-copy small {
+  color: rgba(199, 218, 238, 0.6);
+  line-height: 1.4;
+}
+
+.taijifu-setting-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.taijifu-setting-control input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: #e9c65e;
+}
+
+.taijifu-setting-control input[type="range"] {
+  width: min(210px, 34vw);
+  accent-color: #e9c65e;
+}
+
+.taijifu-setting-control select {
+  min-height: 38px;
+  border: 1px solid rgba(142, 215, 255, 0.26);
+  border-radius: 10px;
+  color: #eaf5ff;
+  background: #091426;
+  padding: 0 10px;
+  font: inherit;
+}
+
+.taijifu-setting-value {
+  min-width: 48px;
+  color: var(--taijifu-cyan);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.taijifu-settings-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.taijifu-screen-reader {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+body.taijifu-high-contrast {
+  --taijifu-line: rgba(255, 255, 255, 0.78);
+  --taijifu-cyan: #b9ebff;
+  --taijifu-gold: #ffe993;
+  --taijifu-green: #9dffd0;
+}
+
+body.taijifu-high-contrast #canvas {
+  filter: contrast(1.16) saturate(1.08);
+}
+
+body.taijifu-high-contrast.taijifu-menu-open #canvas {
+  filter: brightness(0.5) contrast(1.18) saturate(1.06);
+}
+
+body.taijifu-large-ui {
+  font-size: calc(16px * var(--taijifu-ui-scale));
+}
+
+body.taijifu-large-ui .taijifu-tool-button {
+  min-height: 48px;
+  font-size: 13px;
+}
+
+body.taijifu-reduced-motion *,
+body.taijifu-reduced-motion *::before,
+body.taijifu-reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+body.taijifu-touch-hidden .taijifu-touch-controls {
+  display: none !important;
+}
+
+body.taijifu-entered.taijifu-touch-always .taijifu-touch-controls {
+  display: block;
+}
+
+.taijifu-touch-movement,
+.taijifu-touch-actions,
+.taijifu-touch-secondary {
+  opacity: var(--taijifu-touch-opacity);
+}
+
+.taijifu-touch-movement {
+  transform: scale(var(--taijifu-touch-scale));
+  transform-origin: left bottom;
+}
+
+.taijifu-touch-actions,
+.taijifu-touch-secondary {
+  transform-origin: right bottom;
+}
+
+.taijifu-touch-actions {
+  transform: scale(var(--taijifu-touch-scale));
+}
+
+.taijifu-touch-secondary {
+  transform: translateY(10px) scale(var(--taijifu-touch-scale));
+}
+
+.taijifu-touch-controls.taijifu-more-open .taijifu-touch-secondary {
+  transform: translateY(0) scale(var(--taijifu-touch-scale));
+}
+
+body.taijifu-left-handed .taijifu-touch-movement {
+  left: auto;
+  right: max(14px, var(--safe-right));
+  transform-origin: right bottom;
+}
+
+body.taijifu-left-handed .taijifu-touch-actions {
+  right: auto;
+  left: max(14px, var(--safe-left));
+  transform-origin: left bottom;
+}
+
+body.taijifu-left-handed .taijifu-touch-secondary {
+  right: auto;
+  left: max(14px, var(--safe-left));
+  transform-origin: left bottom;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+#canvas:focus-visible {
+  outline: 3px solid var(--taijifu-focus) !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 680px) {
+  .taijifu-binding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .taijifu-dialog-content,
+  .taijifu-dialog-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .taijifu-setting-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .taijifu-setting-control {
+    justify-content: space-between;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .taijifu-secondary-actions {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .taijifu-menu-actions {
+    width: min(500px, 100%);
+  }
+
+  .taijifu-dialog-panel {
+    max-height: 96vh;
+  }
+
+  .taijifu-tutorial-step {
+    min-height: 190px;
+  }
+
+  .taijifu-binding-card {
+    min-height: 58px;
+  }
+}
