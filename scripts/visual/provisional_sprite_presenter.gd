@@ -11,6 +11,9 @@ var _frame_timer := 0.0
 var _hurt_timer := 0.0
 var _last_health := -1.0
 var _active := false
+var _preview_enabled := false
+var _preview_state: StringName = &"attack"
+var _preview_frame := 0
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -37,6 +40,11 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_fighter._grabbed_by):
 		alpha *= 0.72
 	_sprite.modulate = Color(1.0, 1.0, 1.0, alpha)
+	if _preview_enabled:
+		_state_id = _preview_state
+		_frame_index = _preview_frame
+		_set_frame(_frame_index)
+		return
 	_update_state(false)
 	_advance_animation(delta)
 
@@ -54,6 +62,23 @@ func current_frame_index() -> int:
 
 func current_phase_id() -> StringName:
 	return TechniqueVisualTimeline.phase_id(_fighter)
+
+func set_visual_preview(state_id: StringName, frame_index: int) -> void:
+	_preview_enabled = true
+	_preview_state = state_id
+	_preview_frame = clampi(frame_index, 0, CharacterVisualCatalog.columns(_character_id) - 1)
+	_state_id = _preview_state
+	_frame_index = _preview_frame
+	_set_frame(_frame_index)
+
+func clear_visual_preview() -> void:
+	if not _preview_enabled:
+		return
+	_preview_enabled = false
+	_update_state(true)
+
+func is_visual_preview_active() -> bool:
+	return _preview_enabled
 
 func _resolve_character() -> void:
 	if not is_instance_valid(_fighter):
@@ -98,10 +123,11 @@ func _on_combat_state_changed(_changed_fighter: FighterController) -> void:
 	if _last_health >= 0.0 and _fighter.health < _last_health - 0.01:
 		_hurt_timer = 0.26
 	_last_health = _fighter.health
-	_update_state(false)
+	if not _preview_enabled:
+		_update_state(false)
 
 func _update_state(force: bool) -> void:
-	if not has_active_sprite() or not is_instance_valid(_fighter):
+	if _preview_enabled or not has_active_sprite() or not is_instance_valid(_fighter):
 		return
 	var next_state := &"idle"
 	if _hurt_timer > 0.0 or is_instance_valid(_fighter._grabbed_by) or _fighter._is_blocking:
@@ -120,7 +146,7 @@ func _update_state(force: bool) -> void:
 	_set_frame(_frame_index)
 
 func _advance_animation(delta: float) -> void:
-	if not has_active_sprite():
+	if _preview_enabled or not has_active_sprite():
 		return
 	if _state_id == &"attack":
 		var technique_frame := TechniqueVisualTimeline.frame_for_fighter(_fighter)
