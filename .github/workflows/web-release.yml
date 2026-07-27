@@ -77,7 +77,7 @@ jobs:
             sleep 1
           done
 
-          npm --prefix web-tests test -- --reporter=line
+          npm --prefix web-tests test -- --reporter=line 2>&1 | tee web-test.log
 
       - name: Publicar build Web
         if: success()
@@ -96,6 +96,7 @@ jobs:
           path: |
             web-build.log
             web-server.log
+            web-test.log
             web-tests/test-results/
           if-no-files-found: ignore
           retention-days: 14
