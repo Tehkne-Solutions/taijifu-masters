@@ -1,10 +1,11 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/fighter/mastered_weapon_fighter_controller.gd" id="1_fighter"]
 [ext_resource type="Script" path="res://scripts/combat/hurtbox_region.gd" id="2_hurtbox"]
 [ext_resource type="Script" path="res://scripts/visual/fighter_visual_overlay.gd" id="3_visual"]
 [ext_resource type="Script" path="res://scripts/visual/provisional_sprite_presenter.gd" id="4_sprite"]
 [ext_resource type="Script" path="res://scripts/visual/regional_hit_flash.gd" id="5_hit_flash"]
+[ext_resource type="Script" path="res://scripts/visual/weapon_trail_runtime.gd" id="6_trail"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape_fighter"]
 radius = 16.0
@@ -33,6 +34,9 @@ script = ExtResource("1_fighter")
 
 [node name="SpritePresenter" type="Node2D" parent="."]
 script = ExtResource("4_sprite")
+
+[node name="WeaponTrail" type="Node2D" parent="."]
+script = ExtResource("6_trail")
 
 [node name="VisualOverlay" type="Node2D" parent="."]
 script = ExtResource("3_visual")
