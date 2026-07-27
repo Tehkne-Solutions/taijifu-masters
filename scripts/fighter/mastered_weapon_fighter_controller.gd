@@ -108,3 +108,23 @@ func receive_hit(
 		global_position + Vector2(0.0, -24.0)
 	)
 	return accepted
+
+func _draw() -> void:
+	var presenter := get_node_or_null("SpritePresenter") as ProvisionalSpritePresenter
+	if not is_instance_valid(presenter) or not presenter.has_active_sprite():
+		super._draw()
+		return
+	_draw_resource_bars()
+
+func _draw_resource_bars() -> void:
+	if not is_instance_valid(build):
+		return
+	var health_ratio := clampf(health / build.max_health(), 0.0, 1.0)
+	var posture_ratio := clampf(posture / build.max_posture(), 0.0, 1.0)
+	var disarm_ratio := clampf(disarm_pressure / DISARM_THRESHOLD, 0.0, 1.0)
+	draw_rect(Rect2(-30, -83, 60, 5), Color(0.08, 0.08, 0.1, 0.9))
+	draw_rect(Rect2(-30, -83, 60 * health_ratio, 5), Color(0.92, 0.24, 0.25, 0.95))
+	draw_rect(Rect2(-30, -75, 60, 3), Color(0.08, 0.08, 0.1, 0.9))
+	draw_rect(Rect2(-30, -75, 60 * posture_ratio, 3), Color(0.95, 0.72, 0.22, 0.95))
+	draw_rect(Rect2(-30, -69, 60, 2), Color(0.08, 0.08, 0.1, 0.9))
+	draw_rect(Rect2(-30, -69, 60 * disarm_ratio, 2), Color(0.70, 0.42, 1.0, 0.95))
