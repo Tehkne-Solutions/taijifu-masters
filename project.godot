@@ -12,6 +12,10 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://web/taijifu-web-icon.svg"
 
+[autoload]
+
+AssetPackRegistry="*res://scripts/runtime/asset_pack_registry.gd"
+
 [display]
 
 window/size/viewport_width=1280
