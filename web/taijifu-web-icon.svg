@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Taijifu Masters</title>
+  <desc id="desc">Símbolo circular Tai, Ji e Fu com pinceladas manga.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="68%">
+      <stop offset="0" stop-color="#203b58"/>
+      <stop offset="0.58" stop-color="#101a2d"/>
+      <stop offset="1" stop-color="#070b14"/>
+    </radialGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#78d8ff"/>
+      <stop offset="0.5" stop-color="#f4d477"/>
+      <stop offset="1" stop-color="#ff725f"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="174" fill="none" stroke="#f4d477" stroke-opacity=".22" stroke-width="8"/>
+  <circle cx="256" cy="256" r="143" fill="#0a1020" stroke="url(#flow)" stroke-width="16" filter="url(#glow)"/>
+  <path d="M256 112c78 0 142 64 142 144-24-36-65-58-112-58-74 0-134 54-134 121 0 36 18 69 47 91-52-22-87-73-87-132 0-92 64-166 144-166Z" fill="#78d8ff" fill-opacity=".92"/>
+  <path d="M256 400c-78 0-142-64-142-144 24 36 65 58 112 58 74 0 134-54 134-121 0-36-18-69-47-91 52 22 87 73 87 132 0 92-64 166-144 166Z" fill="#ff725f" fill-opacity=".9"/>
+  <circle cx="212" cy="205" r="24" fill="#0a1020"/>
+  <circle cx="300" cy="307" r="24" fill="#0a1020"/>
+  <path d="M152 381c44 25 87 37 130 35M364 102c-39-17-78-23-118-18M105 268c-20-8-38-20-53-36M407 245c20 8 38 20 53 36" fill="none" stroke="#f4d477" stroke-linecap="round" stroke-width="11" stroke-opacity=".8"/>
+  <text x="256" y="474" text-anchor="middle" fill="#f4d477" font-family="sans-serif" font-size="34" font-weight="800" letter-spacing="8">TJF</text>
+</svg>
