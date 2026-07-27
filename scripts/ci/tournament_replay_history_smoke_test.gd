@@ -7,7 +7,7 @@ func _run_validation() -> void:
 	var failures: Array[String] = []
 	_validate_tournament_eight(failures)
 	_validate_history_filters(failures)
-	_validate_replay_cards(failures)
+	await _validate_replay_cards(failures)
 	await _validate_scene(failures)
 	if failures.is_empty():
 		print("TAIJIFU CI: torneio de oito, replay e filtros válidos.")
