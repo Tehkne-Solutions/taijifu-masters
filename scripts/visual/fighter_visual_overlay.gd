@@ -2,10 +2,12 @@ class_name FighterVisualOverlay
 extends Node2D
 
 var _fighter: FighterController
+var _sprite_presenter: ProvisionalSpritePresenter
 var _time := 0.0
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
+	_sprite_presenter = get_node_or_null("../SpritePresenter") as ProvisionalSpritePresenter
 	z_index = 5
 
 func _process(delta: float) -> void:
@@ -31,7 +33,8 @@ func _draw() -> void:
 	elif _fighter._attack_phase == FighterController.AttackPhase.RECOVERY:
 		attack_strength = 0.34
 
-	_draw_face_expression(path_color)
+	if not is_instance_valid(_sprite_presenter) or not _sprite_presenter.has_active_sprite():
+		_draw_face_expression(path_color)
 	_draw_weapon_pose(weapon_color, path_id, facing, attack_strength)
 	_draw_path_feedback(path_id, path_color, facing, attack_strength)
 	_draw_state_feedback(path_color, facing)
