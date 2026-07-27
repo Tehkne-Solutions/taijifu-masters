@@ -1,0 +1,23 @@
+{
+  "id": "PACK_00",
+  "name": "Foundation",
+  "version": "1.0.0",
+  "status": "IMPLEMENTED",
+  "signature": "Tehkné Solutions",
+  "engine": "Godot 4.3",
+  "perspective": "isometric_2_5d",
+  "paths": {
+    "asset_schema": "res://assets/packs/pack_00_foundation/asset.schema.json",
+    "documentation": "res://assets/packs/pack_00_foundation/README.md"
+  },
+  "rules": {
+    "tile_master_size": 1024,
+    "tile_runtime_hd_size": 512,
+    "tile_runtime_mobile_size": 256,
+    "tile_padding": 0,
+    "terrain_external_borders": false,
+    "terrain_external_shadows": false,
+    "individual_runtime_files": true,
+    "manifest_required": true
+  }
+}

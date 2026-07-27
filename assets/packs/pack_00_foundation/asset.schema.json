@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "res://assets/packs/pack_00_foundation/asset.schema.json",
+  "title": "Taijifu Masters Asset Record",
+  "type": "object",
+  "required": ["id", "pack", "category", "type", "status", "source", "runtime", "pivot"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^TM_[A-Z0-9_]+_[0-9]{3}$"},
+    "pack": {"type": "string", "pattern": "^PACK_[0-9]{2}$"},
+    "category": {"type": "string"},
+    "type": {"type": "string"},
+    "family": {"type": "string"},
+    "variant": {"type": "string"},
+    "status": {"enum": ["PLANNED", "GENERATING", "REVIEW", "REVISION_REQUIRED", "APPROVED", "PACKAGED", "IMPLEMENTING", "IMPLEMENTED", "VALIDATED", "REJECTED", "DEPRECATED"]},
+    "perspective": {"enum": ["isometric_2_5d", "ui_flat", "portrait"]},
+    "tileable": {"type": "boolean"},
+    "source": {"type": "string"},
+    "runtime": {
+      "type": "object",
+      "required": ["hd", "mobile"],
+      "properties": {
+        "hd": {"type": "string"},
+        "mobile": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "pivot": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "tags": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}
