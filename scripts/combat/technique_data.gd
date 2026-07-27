@@ -21,7 +21,7 @@ extends Resource
 @export var disarm_pressure: float = 0.0
 
 @export_group("Element")
-@export_enum("", "fire", "water", "earth", "air") var element_id: String = ""
+@export var element_id: String = ""
 @export_range(0.0, 3.0, 0.05) var element_power: float = 0.0
 
 @export_group("Hitbox")
