@@ -6,6 +6,7 @@
   const statusLabel = document.getElementById('taijifu-load-status');
   const progressLabel = document.getElementById('taijifu-load-percent');
   const progressFill = document.getElementById('taijifu-load-fill');
+  const progressTrack = progressFill?.parentElement || null;
   const fullscreenButton = document.getElementById('taijifu-fullscreen');
   const installButton = document.getElementById('taijifu-install');
   const touchControls = document.getElementById('taijifu-touch-controls');
@@ -47,6 +48,7 @@
     state.progress = clean;
     if (progressFill) progressFill.style.width = `${clean}%`;
     if (progressLabel) progressLabel.textContent = `${clean}%`;
+    if (progressTrack) progressTrack.setAttribute('aria-valuenow', String(clean));
     if (statusLabel && message) statusLabel.textContent = message;
   }
 
@@ -112,10 +114,8 @@
     else state.pressedKeys.delete(code);
 
     const type = pressed ? 'keydown' : 'keyup';
-    for (const target of [canvas, window]) {
-      const event = createKeyboardEvent(type, code);
-      if (event) target.dispatchEvent(event);
-    }
+    const event = createKeyboardEvent(type, code);
+    if (event) canvas.dispatchEvent(event);
 
     window.__taijifuTouchEvents.push({
       type,
