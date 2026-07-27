@@ -112,8 +112,10 @@ func _validate_persistence_contract(failures: Array[String]) -> void:
 		return
 	if String(pair[0].get("profile_id", "")) == "" or String(pair[1].get("profile_id", "")) == "":
 		failures.append("Perfis foram perdidos na restauração do chaveamento")
-	if restored.loss_count("double_profile_4") != 1:
-		failures.append("Contagem de derrotas não foi preservada no snapshot")
+	if String(restored.match_by_id("U1").get("loser", {}).get("profile_id", "")) != "double_profile_4":
+		failures.append("Perfil do perdedor não foi preservado no snapshot")
+	if restored.loss_count("double_p4") != 1:
+		failures.append("Contagem de derrotas não foi preservada pelo participant_id")
 
 func _validate_scene_runtime(failures: Array[String]) -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
