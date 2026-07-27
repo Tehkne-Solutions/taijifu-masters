@@ -10,6 +10,8 @@ func _process(_delta: float) -> void:
 	_sync_character_headings()
 	if not controls_label.text.contains("O inspetor"):
 		controls_label.text += "\nO inspetor visual de assets"
+	if not controls_label.text.contains("F6 editor"):
+		controls_label.text += " • F6 editor de encaixes"
 
 func _sync_character_headings() -> void:
 	var player_one: FighterController = main.get("player_one") as FighterController
@@ -18,7 +20,6 @@ func _sync_character_headings() -> void:
 		player_one_label.text = _replace_first_line(player_one_label.text, "P1 — %s" % player_one.build.character_name.to_upper())
 		player_two_label.text = _replace_first_line(player_two_label.text, "P2 — %s" % player_two.build.character_name.to_upper())
 		return
-
 	var preset_ids: Array = main.get("_preset_ids")
 	var selected_indices: Array = main.get("_selected_preset_indices")
 	if preset_ids.size() < 1 or selected_indices.size() < 2:
