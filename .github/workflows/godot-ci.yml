@@ -61,6 +61,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/presets_history_smoke_test.gd 2>&1 | tee godot-presets-history.log
 
+      - name: Validar arenas, códigos compactos e torneio
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/arena_share_tournament_smoke_test.gd 2>&1 | tee godot-arena-share-tournament.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -71,4 +76,5 @@ jobs:
             godot-smoke.log
             godot-competitive.log
             godot-presets-history.log
+            godot-arena-share-tournament.log
           if-no-files-found: ignore
