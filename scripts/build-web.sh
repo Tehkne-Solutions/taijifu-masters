@@ -77,7 +77,10 @@ log "Importando recursos"
 log "Exportando preset Web para ${OUTPUT_DIR}"
 rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
-"${GODOT_BIN}" --headless --path "${ROOT_DIR}" --export-release "Web" "${OUTPUT_DIR}/index.html"
+"${GODOT_BIN}" --headless --verbose --path "${ROOT_DIR}" --export-release "Web" "${OUTPUT_DIR}/index.html"
+
+log "Preparando manifesto, service worker e modo offline"
+python3 "${ROOT_DIR}/scripts/prepare-web-pwa.py" "${OUTPUT_DIR}"
 
 log "Validando artefatos gerados"
 python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
