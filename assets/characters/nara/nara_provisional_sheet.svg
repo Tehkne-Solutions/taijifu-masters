@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="128" viewBox="0 0 512 128">
+  <defs>
+    <linearGradient id="naraArmor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d88c50"/><stop offset="1" stop-color="#7e3e2c"/></linearGradient>
+    <linearGradient id="naraStone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b7a58b"/><stop offset="1" stop-color="#6f665c"/></linearGradient>
+    <style>.ink{stroke:#1a1520;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.thin{stroke:#1a1520;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}</style>
+  </defs>
+  <!-- IDLE -->
+  <g>
+    <ellipse cx="64" cy="116" rx="35" ry="6" fill="#120f18" opacity=".32"/>
+    <path d="M44 43 L84 43 L91 91 L84 112 L66 112 L61 86 L57 112 L37 112 L34 91Z" fill="url(#naraArmor)" class="ink"/>
+    <path d="M45 52 L25 73 M82 52 L104 71" fill="none" class="ink"/>
+    <circle cx="23" cy="76" r="12" fill="url(#naraStone)" class="ink"/><circle cx="106" cy="74" r="12" fill="url(#naraStone)" class="ink"/>
+    <circle cx="64" cy="28" r="17" fill="#c89172" class="ink"/>
+    <path d="M47 28 Q48 8 64 7 Q83 8 82 31 L75 23 L69 29 L60 19 L52 30Z" fill="#3b2635" class="ink"/>
+    <path d="M53 30 L60 29 M69 29 L76 30" fill="none" class="thin"/>
+    <path d="M57 38 Q64 40 71 38" fill="none" class="thin"/>
+    <path d="M45 67 L83 67" stroke="#e9ba67" stroke-width="4"/>
+  </g>
+  <!-- MOVE -->
+  <g transform="translate(128 0)">
+    <ellipse cx="64" cy="116" rx="40" ry="6" fill="#120f18" opacity=".28"/>
+    <path d="M45 43 L83 43 L87 86 L104 108 L83 113 L65 88 L48 113 L26 107 L40 86Z" fill="url(#naraArmor)" class="ink"/>
+    <path d="M46 54 L23 58 M81 52 L101 43" fill="none" class="ink"/>
+    <circle cx="20" cy="60" r="12" fill="url(#naraStone)" class="ink"/><circle cx="105" cy="41" r="12" fill="url(#naraStone)" class="ink"/>
+    <circle cx="64" cy="28" r="17" fill="#c89172" class="ink"/>
+    <path d="M47 28 Q49 7 64 7 Q82 8 82 31 L74 22 L68 28 L60 19 L52 30Z" fill="#3b2635" class="ink"/>
+    <path d="M53 30 L60 28 M69 28 L77 30" fill="none" class="thin"/>
+    <path d="M57 38 L71 37" fill="none" class="thin"/>
+    <path d="M16 88 L2 93 M23 101 L8 109" stroke="#dca06b" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  </g>
+  <!-- ATTACK -->
+  <g transform="translate(256 0)">
+    <ellipse cx="67" cy="116" rx="42" ry="6" fill="#120f18" opacity=".34"/>
+    <path d="M45 43 L82 43 L88 88 L100 110 L78 113 L65 88 L51 113 L29 109 L39 86Z" fill="url(#naraArmor)" class="ink"/>
+    <path d="M45 54 L74 65 M78 51 L111 57" fill="none" class="ink"/>
+    <circle cx="74" cy="66" r="13" fill="url(#naraStone)" class="ink"/><circle cx="115" cy="58" r="15" fill="url(#naraStone)" class="ink"/>
+    <circle cx="63" cy="28" r="17" fill="#c89172" class="ink"/>
+    <path d="M46 28 Q48 7 63 7 Q82 8 81 31 L74 22 L67 28 L59 19 L51 30Z" fill="#3b2635" class="ink"/>
+    <path d="M51 30 L60 27 M67 27 L77 30" fill="none" class="thin"/>
+    <path d="M57 38 L72 35" fill="none" class="thin"/>
+    <path d="M104 84 L121 92 M96 92 L112 105 M85 98 L91 116" stroke="#e6b56c" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <!-- GUARD / HURT -->
+  <g transform="translate(384 0)">
+    <ellipse cx="64" cy="116" rx="35" ry="6" fill="#120f18" opacity=".34"/>
+    <path d="M44 43 L84 43 L89 90 L84 112 L66 112 L61 87 L56 112 L37 112 L34 91Z" fill="url(#naraArmor)" class="ink"/>
+    <path d="M46 55 L76 72 M81 54 L53 73" fill="none" class="ink"/>
+    <circle cx="78" cy="74" r="13" fill="url(#naraStone)" class="ink"/><circle cx="51" cy="75" r="13" fill="url(#naraStone)" class="ink"/>
+    <circle cx="64" cy="28" r="17" fill="#c89172" class="ink"/>
+    <path d="M47 28 Q49 8 64 7 Q83 8 82 31 L75 23 L68 29 L60 19 L52 30Z" fill="#3b2635" class="ink"/>
+    <path d="M52 30 L60 33 M68 33 L77 30" fill="none" class="thin"/>
+    <path d="M57 39 Q64 35 71 39" fill="none" class="thin"/>
+    <path d="M94 47 Q112 66 96 87" fill="none" stroke="#f1c47a" stroke-width="6" stroke-linecap="round" opacity=".82"/>
+  </g>
+</svg>
