@@ -18,7 +18,8 @@ func _start_battle() -> void:
 	competitive_runtime.begin_series(p1_loadout, p2_loadout)
 	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
 	_state = MatchState.ENTRANCE
-	if not OS.has_feature("headless"):
+	var running_headless := DisplayServer.get_name() == "headless" or OS.has_feature("server")
+	if not running_headless:
 		center_label.text = "LEITURA DO CONFRONTO"
 		controls_label.text = "Compare vantagens e riscos antes da entrada."
 		vs_analysis_runtime.play(p1_loadout, p2_loadout, competitive_runtime.current_config())
@@ -84,8 +85,10 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	await _play_round_entrance()
 
 func _cleanup_fighters() -> void:
-	if is_instance_valid(player_one): player_one.queue_free()
-	if is_instance_valid(player_two): player_two.queue_free()
+	if is_instance_valid(player_one):
+		player_one.queue_free()
+	if is_instance_valid(player_two):
+		player_two.queue_free()
 	player_one = null
 	player_two = null
 
