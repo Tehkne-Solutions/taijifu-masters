@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/competitive_main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -25,12 +25,19 @@
 [ext_resource type="Script" path="res://scripts/runtime/competitive_match_runtime.gd" id="23_competitive"]
 [ext_resource type="Script" path="res://scripts/runtime/competitive_arena_runtime.gd" id="24_arena_rules"]
 [ext_resource type="Script" path="res://scripts/runtime/vs_analysis_runtime.gd" id="25_vs"]
+[ext_resource type="Script" path="res://scripts/arena/triple_path_environment_art.gd" id="26_environment"]
+[ext_resource type="Script" path="res://scripts/runtime/loadout_preset_runtime.gd" id="27_presets"]
+[ext_resource type="Script" path="res://scripts/runtime/series_statistics_runtime.gd" id="28_statistics"]
+[ext_resource type="Script" path="res://scripts/runtime/match_history_runtime.gd" id="29_history"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
 [node name="Arena" type="Node2D" parent="."]
 script = ExtResource("2_arena")
+
+[node name="TriplePathEnvironmentArt" type="Node2D" parent="."]
+script = ExtResource("26_environment")
 
 [node name="PrototypeIntelligenceRuntime" type="Node" parent="."]
 script = ExtResource("3_runtime")
@@ -58,6 +65,15 @@ script = ExtResource("24_arena_rules")
 
 [node name="VsAnalysisRuntime" type="Node" parent="."]
 script = ExtResource("25_vs")
+
+[node name="SeriesStatisticsRuntime" type="Node" parent="."]
+script = ExtResource("28_statistics")
+
+[node name="LoadoutPresetRuntime" type="Node" parent="."]
+script = ExtResource("27_presets")
+
+[node name="MatchHistoryRuntime" type="Node" parent="."]
+script = ExtResource("29_history")
 
 [node name="ArenaEntranceRuntime" type="Node" parent="."]
 script = ExtResource("22_entrance")
