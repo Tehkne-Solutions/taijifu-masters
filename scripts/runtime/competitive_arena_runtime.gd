@@ -2,9 +2,13 @@ class_name CompetitiveArenaRuntime
 extends Node
 
 @onready var arena: TriplePathArena = get_node("../Arena")
+@onready var environment_art: TriplePathEnvironmentArt = get_node("../TriplePathEnvironmentArt")
 
 var _rules: Dictionary = CompetitiveMatchCatalog.resolved_arena_rules(CompetitiveMatchCatalog.default_config())
 var _round_active := false
+
+func _ready() -> void:
+	_apply_environment_art()
 
 func _physics_process(delta: float) -> void:
 	if not _round_active or not is_instance_valid(arena):
@@ -32,6 +36,7 @@ func _physics_process(delta: float) -> void:
 
 func configure(rules: Dictionary) -> void:
 	_rules = rules.duplicate(true)
+	_apply_environment_art()
 
 func prepare_round() -> void:
 	arena.reset_battle_flow()
@@ -42,6 +47,8 @@ func prepare_round() -> void:
 	arena._manifestation_timer = 0.0
 	arena._active_manifestation = 0 if bool(_rules.get("manifestations_enabled", true)) else -1
 	_round_active = false
+	if is_instance_valid(environment_art):
+		environment_art.set_round_active(false)
 	arena.queue_redraw()
 
 func start_round() -> void:
@@ -49,13 +56,26 @@ func start_round() -> void:
 	if not bool(_rules.get("manifestations_enabled", true)):
 		arena._active_manifestation = -1
 	_round_active = true
+	if is_instance_valid(environment_art):
+		environment_art.set_round_active(true)
 
 func stop_round() -> void:
 	_round_active = false
 	arena._battle_active = false
+	if is_instance_valid(environment_art):
+		environment_art.set_round_active(false)
+
+func update_score_visual(snapshot: Dictionary) -> void:
+	if is_instance_valid(environment_art):
+		environment_art.set_score_snapshot(snapshot)
 
 func current_rules() -> Dictionary:
 	return _rules.duplicate(true)
 
 func is_round_active() -> bool:
 	return _round_active
+
+func _apply_environment_art() -> void:
+	if not is_instance_valid(environment_art):
+		return
+	environment_art.configure({"arena_id": StringName(_rules.get("arena_id", &"triple_ruins"))}, _rules)
