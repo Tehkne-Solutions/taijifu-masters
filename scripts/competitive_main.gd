@@ -1,0 +1,107 @@
+extends "res://scripts/main.gd"
+
+@onready var competitive_runtime: CompetitiveMatchRuntime = $CompetitiveMatchRuntime
+@onready var competitive_arena_runtime: CompetitiveArenaRuntime = $CompetitiveArenaRuntime
+@onready var vs_analysis_runtime: VsAnalysisRuntime = $VsAnalysisRuntime
+
+func _ready() -> void:
+	super._ready()
+	competitive_runtime.round_timeout.connect(_on_round_timeout)
+
+func _start_battle() -> void:
+	if _state != MatchState.PREPARATION or not preparation_runtime.all_players_ready():
+		return
+	_sync_legacy_preparation_state()
+	var p1_loadout := preparation_runtime.loadout_for_player(1)
+	var p2_loadout := preparation_runtime.loadout_for_player(2)
+	preparation_runtime.close()
+	competitive_runtime.begin_series(p1_loadout, p2_loadout)
+	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
+	_state = MatchState.ENTRANCE
+	center_label.text = "LEITURA DO CONFRONTO"
+	controls_label.text = "Compare vantagens e riscos antes da entrada."
+	vs_analysis_runtime.play(p1_loadout, p2_loadout, competitive_runtime.current_config())
+	await vs_analysis_runtime.analysis_finished
+	if _state != MatchState.ENTRANCE:
+		return
+	_cleanup_temporary_loot()
+	competitive_arena_runtime.prepare_round()
+	_spawn_fighters()
+	await _play_round_entrance()
+
+func _play_round_entrance() -> void:
+	_state = MatchState.ENTRANCE
+	center_label.text = "ENTRADA NA ARENA"
+	controls_label.text = "Controles bloqueados até o comando LUTEM."
+	entrance_runtime.play(player_one, player_two)
+	await entrance_runtime.entrance_finished
+	if _state != MatchState.ENTRANCE:
+		return
+	competitive_arena_runtime.start_round()
+	competitive_runtime.start_round(player_one, player_two)
+	_state = MatchState.BATTLE
+	center_label.text = _arena_header()
+	controls_label.text = "P1: A/D • W salto • S queda • Q esquiva • F técnica • G empurrão • E agarrão • C elemento • H eco • R defesa\nP2: Setas • Num0 esquiva • Num1 técnica • Num2 empurrão • Num4 agarrão • Num6 elemento • Num5 eco • Num3 defesa\nGamepads: analógico move • A salto • B esquiva • X técnica • Y empurrão • LB agarrão • RB defesa"
+
+func _on_fighter_defeated(defeated_fighter: FighterController) -> void:
+	if _resetting_round or _state != MatchState.BATTLE:
+		return
+	var winner_index := 2 if defeated_fighter.player_index == 1 else 1
+	_resolve_competitive_round(winner_index, "KO")
+
+func _on_round_timeout(winner_index: int, reason: String) -> void:
+	if _resetting_round or _state != MatchState.BATTLE:
+		return
+	_resolve_competitive_round(winner_index, reason)
+
+func _resolve_competitive_round(winner_index: int, reason: String) -> void:
+	_resetting_round = true
+	_message_sequence += 1
+	competitive_runtime.stop_round()
+	competitive_arena_runtime.stop_round()
+	var winner_name := player_one.build.character_name.to_upper() if winner_index == 1 else player_two.build.character_name.to_upper()
+	center_label.text = "%s VENCE O ROUND • %s" % [winner_name, reason]
+	await get_tree().create_timer(1.15).timeout
+	var result := competitive_runtime.record_round(winner_index, reason)
+	if bool(result.get("match_over", false)):
+		center_label.text = "%s VENCE A SÉRIE\n%d — %d" % [
+			String(result.get("winner_name", winner_name)),
+			int(result.get("score_p1", 0)),
+			int(result.get("score_p2", 0))
+		]
+		await get_tree().create_timer(2.15).timeout
+		_cleanup_temporary_loot()
+		competitive_arena_runtime.prepare_round()
+		_cleanup_fighters()
+		competitive_runtime.reset_series()
+		_resetting_round = false
+		_enter_preparation()
+		return
+
+	_cleanup_temporary_loot()
+	competitive_arena_runtime.prepare_round()
+	player_one.reset_fighter(arena.respawn_point(1))
+	player_two.reset_fighter(arena.respawn_point(2))
+	center_label.text = "ROUND %d\nADAPTE-SE" % int(competitive_runtime.score_snapshot().get("round_number", 2))
+	await get_tree().create_timer(0.65).timeout
+	_resetting_round = false
+	await _play_round_entrance()
+
+func _cleanup_fighters() -> void:
+	if is_instance_valid(player_one):
+		player_one.queue_free()
+	if is_instance_valid(player_two):
+		player_two.queue_free()
+	player_one = null
+	player_two = null
+
+func _show_combat_event(message: String, duration: float) -> void:
+	_message_sequence += 1
+	var sequence := _message_sequence
+	center_label.text = message
+	await get_tree().create_timer(duration).timeout
+	if sequence == _message_sequence and not _resetting_round:
+		center_label.text = _arena_header()
+
+func _arena_header() -> String:
+	return "%s\nTAI • JI • FU" % competitive_runtime.arena_title()
