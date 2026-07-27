@@ -3,6 +3,8 @@ extends "res://scripts/main.gd"
 @onready var competitive_runtime: CompetitiveMatchRuntime = $CompetitiveMatchRuntime
 @onready var competitive_arena_runtime: CompetitiveArenaRuntime = $CompetitiveArenaRuntime
 @onready var vs_analysis_runtime: VsAnalysisRuntime = $VsAnalysisRuntime
+@onready var statistics_runtime: SeriesStatisticsRuntime = $SeriesStatisticsRuntime
+@onready var history_runtime: MatchHistoryRuntime = $MatchHistoryRuntime
 
 func _ready() -> void:
 	super._ready()
@@ -16,7 +18,9 @@ func _start_battle() -> void:
 	var p2_loadout := preparation_runtime.loadout_for_player(2)
 	preparation_runtime.close()
 	competitive_runtime.begin_series(p1_loadout, p2_loadout)
+	statistics_runtime.begin_series(competitive_runtime.current_config(), p1_loadout, p2_loadout)
 	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
+	competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 	_state = MatchState.ENTRANCE
 	var running_headless := DisplayServer.get_name() == "headless" or OS.has_feature("server")
 	if not running_headless:
@@ -41,6 +45,12 @@ func _play_round_entrance() -> void:
 		return
 	competitive_arena_runtime.start_round()
 	competitive_runtime.start_round(player_one, player_two)
+	statistics_runtime.begin_round(
+		player_one,
+		player_two,
+		int(competitive_runtime.score_snapshot().get("round_number", 1))
+	)
+	competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 	_state = MatchState.BATTLE
 	center_label.text = _arena_header()
 	controls_label.text = "P1: A/D • W salto • S queda • Q esquiva • F técnica • G empurrão • E agarrão • C elemento • H eco • R defesa\nP2: Setas • Num0 esquiva • Num1 técnica • Num2 empurrão • Num4 agarrão • Num6 elemento • Num5 eco • Num3 defesa\nGamepads: analógico move • A salto • B esquiva • X técnica • Y empurrão • LB agarrão • RB defesa"
@@ -61,19 +71,33 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	_message_sequence += 1
 	competitive_runtime.stop_round()
 	competitive_arena_runtime.stop_round()
+	statistics_runtime.complete_round(winner_index, reason, player_one, player_two)
 	var winner_name := player_one.build.character_name.to_upper() if winner_index == 1 else player_two.build.character_name.to_upper()
 	center_label.text = "%s VENCE O ROUND • %s" % [winner_name, reason]
 	await get_tree().create_timer(1.15).timeout
 	var result := competitive_runtime.record_round(winner_index, reason)
+	competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 	if bool(result.get("match_over", false)):
-		center_label.text = "%s VENCE A SÉRIE\n%d — %d" % [String(result.get("winner_name", winner_name)), int(result.get("score_p1", 0)), int(result.get("score_p2", 0))]
-		await get_tree().create_timer(2.15).timeout
+		center_label.text = "%s VENCE A SÉRIE\n%d — %d" % [
+			String(result.get("winner_name", winner_name)),
+			int(result.get("score_p1", 0)),
+			int(result.get("score_p2", 0))
+		]
+		var series_record := statistics_runtime.complete_series(
+			int(result.get("score_p1", 0)),
+			int(result.get("score_p2", 0)),
+			winner_index
+		)
+		history_runtime.play_result(series_record)
+		await history_runtime.result_finished
 		_cleanup_temporary_loot()
 		competitive_arena_runtime.prepare_round()
 		_cleanup_fighters()
 		competitive_runtime.reset_series()
+		competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 		_resetting_round = false
 		_enter_preparation()
+		controls_label.text = "Configure loadouts • F2 presets • F3 histórico • confirme os dois jogadores."
 		return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
