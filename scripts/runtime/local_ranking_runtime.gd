@@ -85,6 +85,8 @@ func ranking_entries() -> Array[Dictionary]:
 			entry["win_rate"] = float(entry.get("wins", 0)) / float(series)
 			entry["rating"] = _rating(entry)
 			entry["main_character_id"] = _main_character(entry.get("character_counts", {}) as Dictionary)
+			entry["character_id"] = entry["main_character_id"]
+			entry["character_name"] = CharacterVisualCatalog.display_name(StringName(entry["main_character_id"]))
 			result.append(entry)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var rating_a := float(a.get("rating", 0.0))
