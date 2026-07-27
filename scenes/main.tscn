@@ -1,6 +1,6 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=26 format=3]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/competitive_main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/runtime/prototype_intelligence_runtime.gd" id="3_runtime"]
 [ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="4_bot"]
@@ -22,6 +22,9 @@
 [ext_resource type="Script" path="res://scripts/runtime/match_outcome_runtime.gd" id="20_outcome"]
 [ext_resource type="Script" path="res://scripts/runtime/battle_preparation_runtime.gd" id="21_preparation"]
 [ext_resource type="Script" path="res://scripts/runtime/arena_entrance_runtime.gd" id="22_entrance"]
+[ext_resource type="Script" path="res://scripts/runtime/competitive_match_runtime.gd" id="23_competitive"]
+[ext_resource type="Script" path="res://scripts/runtime/competitive_arena_runtime.gd" id="24_arena_rules"]
+[ext_resource type="Script" path="res://scripts/runtime/vs_analysis_runtime.gd" id="25_vs"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -46,6 +49,15 @@ script = ExtResource("9_training")
 
 [node name="BattlePreparationRuntime" type="Node" parent="."]
 script = ExtResource("21_preparation")
+
+[node name="CompetitiveMatchRuntime" type="Node" parent="."]
+script = ExtResource("23_competitive")
+
+[node name="CompetitiveArenaRuntime" type="Node" parent="."]
+script = ExtResource("24_arena_rules")
+
+[node name="VsAnalysisRuntime" type="Node" parent="."]
+script = ExtResource("25_vs")
 
 [node name="ArenaEntranceRuntime" type="Node" parent="."]
 script = ExtResource("22_entrance")
