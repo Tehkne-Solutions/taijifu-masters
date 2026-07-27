@@ -12,10 +12,17 @@ const REQUIRED_RESOURCES := [
 	"res://scripts/visual/technique_attachment_catalog.gd",
 	"res://scripts/visual/technique_visual_timeline.gd",
 	"res://scripts/visual/weapon_trail_runtime.gd",
+	"res://scripts/visual/cosmetic_socket_catalog.gd",
+	"res://scripts/visual/cosmetic_loadout_ledger.gd",
+	"res://scripts/visual/cosmetic_socket_presenter.gd",
+	"res://scripts/visual/fighter_expression_overlay.gd",
+	"res://scripts/visual/fighter_outcome_runtime.gd",
 	"res://scripts/visual/regional_hit_flash.gd",
 	"res://scripts/visual/provisional_sprite_presenter.gd",
 	"res://scripts/visual/fighter_visual_overlay.gd",
 	"res://scripts/runtime/attachment_editor_runtime.gd",
+	"res://scripts/runtime/cosmetic_loadout_runtime.gd",
+	"res://scripts/runtime/match_outcome_runtime.gd",
 	"res://scripts/runtime/asset_inspector_runtime.gd",
 	"res://scripts/runtime/roster_hud_runtime.gd",
 	"res://scripts/runtime/impact_director.gd",
@@ -35,7 +42,9 @@ func _run_validation() -> void:
 	failures.append_array(CharacterAttachmentCatalog.validate())
 	failures.append_array(TechniqueAttachmentCatalog.validate())
 	failures.append_array(TechniqueVisualTimeline.validate())
+	failures.append_array(CosmeticSocketCatalog.validate())
 	_validate_technique_profiles(failures)
+	_validate_cosmetic_ledger(failures)
 	var presets := BuildProfile.available_prototype_presets()
 	if presets.size() != 6:
 		failures.append("O protótipo deveria expor seis builds, mas encontrou %d" % presets.size())
@@ -48,7 +57,7 @@ func _run_validation() -> void:
 	await _validate_fighters(presets, failures)
 	await _validate_main_scene(failures)
 	if failures.is_empty():
-		print("TAIJIFU CI: técnicas, editor, trilhas, encaixes e cena principal válidos.")
+		print("TAIJIFU CI: cosméticos, expressões, resultados, técnicas e cena principal válidos.")
 		quit(0)
 		return
 	for failure in failures:
@@ -73,6 +82,16 @@ func _validate_technique_profiles(failures: Array[String]) -> void:
 			if float(resolved.get("reach", 0.0)) <= 0.0:
 				failures.append("Técnica %s/%s resolveu alcance inválido" % [String(technique_id), String(stage)])
 
+func _validate_cosmetic_ledger(failures: Array[String]) -> void:
+	var ledger := CosmeticLoadoutLedger.new()
+	var default_loadout := ledger.loadout_for("ci_profile", &"kael")
+	if default_loadout.size() != CosmeticSocketCatalog.SOCKET_IDS.size():
+		failures.append("Loadout cosmético padrão incompleto")
+	ledger.set_loadout("ci_profile", {"head": "invalid", "back": "flow_scarf", "chest": "jade_amulet", "pet": "fox_spirit"})
+	var sanitized := ledger.loadout_for("ci_profile", &"kael")
+	if StringName(sanitized.get("head", "")) != &"none":
+		failures.append("Ledger cosmético não sanitizou item inválido")
+
 func _validate_fighters(presets: Array[StringName], failures: Array[String]) -> void:
 	var fighter_scene := load("res://scenes/fighter/fighter.tscn") as PackedScene
 	if not is_instance_valid(fighter_scene):
@@ -91,6 +110,9 @@ func _validate_fighters(presets: Array[StringName], failures: Array[String]) -> 
 		var flash := fighter.get_node_or_null("RegionalHitFlash") as RegionalHitFlash
 		var trail := fighter.get_node_or_null("WeaponTrail") as WeaponTrailRuntime
 		var overlay := fighter.get_node_or_null("VisualOverlay") as FighterVisualOverlay
+		var outcome := fighter.get_node_or_null("OutcomeRuntime") as FighterOutcomeRuntime
+		var cosmetics := fighter.get_node_or_null("CosmeticSockets") as CosmeticSocketPresenter
+		var expression := fighter.get_node_or_null("ExpressionOverlay") as FighterExpressionOverlay
 		var expected := BuildProfile.prototype_preset(preset_id).character_id
 		if not is_instance_valid(presenter) or not presenter.has_active_sprite():
 			failures.append("Presenter inativo para %s" % String(preset_id))
@@ -109,6 +131,21 @@ func _validate_fighters(presets: Array[StringName], failures: Array[String]) -> 
 			trail.add_test_point(Vector2(10, 0))
 			if trail.point_count() != 2:
 				failures.append("Trilha não armazenou pontos para %s" % String(preset_id))
+		if not is_instance_valid(outcome) or not is_instance_valid(cosmetics) or not is_instance_valid(expression):
+			failures.append("Apresentação final incompleta para %s" % String(preset_id))
+		else:
+			var loadout := CosmeticSocketCatalog.default_loadout(expected)
+			cosmetics.apply_loadout(loadout)
+			if cosmetics.current_loadout().size() != 4:
+				failures.append("Cosméticos não aceitaram quatro sockets para %s" % String(preset_id))
+			expression.preview_expression(&"victory")
+			if expression.current_expression_id() != &"victory":
+				failures.append("Expressão não respondeu para %s" % String(preset_id))
+			expression.clear_expression_preview()
+			outcome.preview_outcome(&"fall", 0.21)
+			if absf(float(outcome.visual_transform().get("rotation", 0.0))) <= 0.01:
+				failures.append("Queda não gerou rotação para %s" % String(preset_id))
+			outcome.reset_outcome()
 		_validate_phase_frames(fighter, failures, preset_id)
 		_validate_attachment(expected, presenter, failures)
 		fighter.queue_free()
@@ -154,7 +191,10 @@ func _validate_main_scene(failures: Array[String]) -> void:
 	root.add_child(instance)
 	await process_frame
 	await process_frame
-	for node_path in ["ImpactDirector", "DojoTrainingRuntime", "AssetInspectorRuntime", "AttachmentEditorRuntime", "RosterHudRuntime"]:
+	for node_path in [
+		"ImpactDirector", "DojoTrainingRuntime", "AssetInspectorRuntime", "AttachmentEditorRuntime",
+		"CosmeticLoadoutRuntime", "MatchOutcomeRuntime", "RosterHudRuntime"
+	]:
 		if not is_instance_valid(instance.get_node_or_null(node_path)):
 			failures.append("%s não foi integrado à cena principal" % node_path)
 	var editor := instance.get_node_or_null("AttachmentEditorRuntime") as AttachmentEditorRuntime
