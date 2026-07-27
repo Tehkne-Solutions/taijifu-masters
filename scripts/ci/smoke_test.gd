@@ -8,7 +8,9 @@ const REQUIRED_RESOURCES := [
 	"res://assets/characters/rin/rin_animated_sheet.svg",
 	"res://scripts/preparation/battle_loadout_catalog.gd",
 	"res://scripts/preparation/battle_loadout_ledger.gd",
+	"res://scripts/preparation/preparation_avatar_preview.gd",
 	"res://scripts/runtime/battle_preparation_runtime.gd",
+	"res://scripts/runtime/arena_entrance_runtime.gd",
 	"res://scripts/visual/character_visual_catalog.gd",
 	"res://scripts/visual/character_attachment_catalog.gd",
 	"res://scripts/visual/technique_attachment_catalog.gd",
@@ -49,6 +51,7 @@ func _run_validation() -> void:
 	_validate_technique_profiles(failures)
 	_validate_cosmetic_ledger(failures)
 	_validate_battle_loadouts(failures)
+	await _validate_preparation_preview(failures)
 	var presets := BuildProfile.available_prototype_presets()
 	if presets.size() != 6:
 		failures.append("O protótipo deveria expor seis builds, mas encontrou %d" % presets.size())
@@ -61,7 +64,7 @@ func _run_validation() -> void:
 	await _validate_fighters(presets, failures)
 	await _validate_main_scene(failures)
 	if failures.is_empty():
-		print("TAIJIFU CI: preparação completa, loadouts, cosméticos, técnicas e cena principal válidos.")
+		print("TAIJIFU CI: prontidão, gamepads, prévia cosmética, entrada, loadouts e combate válidos.")
 		quit(0)
 		return
 	for failure in failures:
@@ -90,6 +93,24 @@ func _validate_battle_loadouts(failures: Array[String]) -> void:
 	var restored := ledger.loadout_for(1, unlocked)
 	if StringName(restored.get("element_id", &"")) != &"water":
 		failures.append("Ledger de preparação não restaurou elemento")
+
+func _validate_preparation_preview(failures: Array[String]) -> void:
+	var preview := PreparationAvatarPreview.new()
+	root.add_child(preview)
+	var loadout := BattleLoadoutCatalog.loadout_from_preset(&"rin_challenger")
+	loadout["head"] = &"moon_halo"
+	loadout["back"] = &"tide_ribbons"
+	loadout["chest"] = &"tide_amulet"
+	loadout["pet"] = &"cloud_wisp"
+	preview.apply_loadout(loadout)
+	await process_frame
+	if StringName(preview.current_loadout().get("character_id", &"")) != &"rin":
+		failures.append("Prévia não recebeu o personagem do loadout")
+	for socket_id in CosmeticSocketCatalog.SOCKET_IDS:
+		if preview.displayed_item(socket_id) == &"none":
+			failures.append("Prévia não exibiu o socket %s" % String(socket_id))
+	preview.queue_free()
+	await process_frame
 
 func _validate_technique_profiles(failures: Array[String]) -> void:
 	var base := CharacterAttachmentCatalog.attachment(&"kael", &"attack", 1, 1.0)
@@ -219,7 +240,8 @@ func _validate_main_scene(failures: Array[String]) -> void:
 	await process_frame
 	for node_path in [
 		"ImpactDirector", "DojoTrainingRuntime", "AssetInspectorRuntime", "AttachmentEditorRuntime",
-		"CosmeticLoadoutRuntime", "MatchOutcomeRuntime", "RosterHudRuntime", "BattlePreparationRuntime"
+		"CosmeticLoadoutRuntime", "MatchOutcomeRuntime", "RosterHudRuntime", "BattlePreparationRuntime",
+		"ArenaEntranceRuntime"
 	]:
 		if not is_instance_valid(instance.get_node_or_null(node_path)):
 			failures.append("%s não foi integrado à cena principal" % node_path)
@@ -231,13 +253,20 @@ func _validate_main_scene(failures: Array[String]) -> void:
 		if float(loaded.get("hand_x", 0.0)) != 3.0 or editor.override_count() < 1:
 			failures.append("Editor não aplicou override em memória")
 	var preparation := instance.get_node_or_null("BattlePreparationRuntime") as BattlePreparationRuntime
+	var entrance := instance.get_node_or_null("ArenaEntranceRuntime") as ArenaEntranceRuntime
 	if is_instance_valid(preparation):
+		if not preparation.registered_gamepad_actions_valid():
+			failures.append("Preparação não registrou ações para os dois gamepads")
 		var test_loadout := BattleLoadoutCatalog.loadout_from_preset(&"rin_challenger")
 		test_loadout["element_id"] = &"water"
 		test_loadout["primary_weapon_id"] = &"breaker_gauntlets"
 		test_loadout["secondary_weapon_id"] = &"training_staff"
 		test_loadout["head"] = &"moon_halo"
 		preparation.set_loadout_for_test(1, test_loadout)
+		preparation.set_ready_for_test(1, true)
+		preparation.set_ready_for_test(2, true)
+		if not preparation.all_players_ready():
+			failures.append("Prontidão individual não confirmou os dois jogadores")
 		instance.call("_start_battle")
 		await process_frame
 		await process_frame
@@ -249,5 +278,30 @@ func _validate_main_scene(failures: Array[String]) -> void:
 				failures.append("Loadout não aplicou personagem ou elemento ao P1")
 			if fighter.primary_weapon_id != &"breaker_gauntlets" or fighter.secondary_weapon_id != &"training_staff":
 				failures.append("Loadout não aplicou kit de armas ao P1")
+			if fighter.is_physics_processing():
+				failures.append("P1 não foi congelado durante a entrada")
+		if is_instance_valid(entrance):
+			if not entrance.is_active():
+				failures.append("Entrada não iniciou após a prontidão")
+			entrance.preview_progress(0.5)
+			entrance.skip_for_test()
+			await process_frame
+			await process_frame
+			if entrance.is_active():
+				failures.append("Entrada não encerrou após skip")
+			if is_instance_valid(fighter) and not fighter.is_physics_processing():
+				failures.append("P1 não recuperou a física após LUTEM")
+	if not _has_joypad_event(&"p1_attack", 0) or not _has_joypad_event(&"p2_attack", 1):
+		failures.append("Combate não registrou gamepads separados para P1 e P2")
 	instance.queue_free()
 	await process_frame
+
+func _has_joypad_event(action_id: StringName, device: int) -> bool:
+	if not InputMap.has_action(action_id):
+		return false
+	for event in InputMap.action_get_events(action_id):
+		if event is InputEventJoypadButton and event.device == device:
+			return true
+		if event is InputEventJoypadMotion and event.device == device:
+			return true
+	return false
