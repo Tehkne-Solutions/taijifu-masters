@@ -13,9 +13,10 @@ static func export_snapshot(snapshot: Dictionary) -> Dictionary:
 	var base_name := "taijifu-bracket-%d-%s" % [int(snapshot.get("bracket_size", participants.size())), stamp]
 	var json_path := "%s/%s.json" % [EXPORT_DIR, base_name]
 	var svg_path := "%s/%s.svg" % [EXPORT_DIR, base_name]
+	var png_path := "%s/%s.png" % [EXPORT_DIR, base_name]
 	var payload := {
 		"signature": SIGNATURE,
-		"version": 1,
+		"version": 2,
 		"exported_unix": int(Time.get_unix_time_from_system()),
 		"bracket": snapshot.duplicate(true)
 	}
@@ -23,16 +24,28 @@ static func export_snapshot(snapshot: Dictionary) -> Dictionary:
 	if json_file == null:
 		return {"ok": false, "error": "Não foi possível criar o JSON"}
 	json_file.store_string(JSON.stringify(payload, "\t"))
+	var svg := build_svg(snapshot)
 	var svg_file := FileAccess.open(svg_path, FileAccess.WRITE)
 	if svg_file == null:
 		return {"ok": false, "error": "Não foi possível criar o SVG"}
-	svg_file.store_string(build_svg(snapshot))
+	svg_file.store_string(svg)
+	var image := Image.new()
+	var svg_error := image.load_svg_from_buffer(svg.to_utf8_buffer(), 1.0)
+	if svg_error != OK:
+		return {"ok": false, "error": "SVG criado, mas não foi possível renderizar o PNG", "svg_path": svg_path, "json_path": json_path}
+	var png_error := image.save_png(png_path)
+	if png_error != OK:
+		return {"ok": false, "error": "SVG criado, mas não foi possível salvar o PNG", "svg_path": svg_path, "json_path": json_path}
 	return {
 		"ok": true,
 		"json_path": json_path,
 		"svg_path": svg_path,
+		"png_path": png_path,
 		"json_absolute": ProjectSettings.globalize_path(json_path),
-		"svg_absolute": ProjectSettings.globalize_path(svg_path)
+		"svg_absolute": ProjectSettings.globalize_path(svg_path),
+		"png_absolute": ProjectSettings.globalize_path(png_path),
+		"png_width": image.get_width(),
+		"png_height": image.get_height()
 	}
 
 static func build_svg(snapshot: Dictionary) -> String:
