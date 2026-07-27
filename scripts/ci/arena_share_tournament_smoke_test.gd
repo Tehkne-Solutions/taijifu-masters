@@ -49,13 +49,14 @@ func _validate_share_codes(failures: Array[String]) -> void:
 
 func _validate_tournament_ledger(failures: Array[String]) -> void:
 	var ledger := TournamentLedger.new()
-	ledger.reset()
+	ledger.reset(4)
 	var participants: Array[Dictionary] = []
 	var presets: Array[StringName] = [&"adaptive_staff", &"rock_guardian", &"lyra_elementalist", &"rin_challenger"]
 	for index in range(4):
 		participants.append({
 			"participant_id": "p%d" % (index + 1),
 			"name": "COMPETIDOR %d" % (index + 1),
+			"seed": index + 1,
 			"loadout": BattleLoadoutCatalog.loadout_from_preset(presets[index]),
 			"source": "ci"
 		})
@@ -63,22 +64,22 @@ func _validate_tournament_ledger(failures: Array[String]) -> void:
 		failures.append("Torneio não iniciou com quatro participantes")
 		return
 	var first_pair := ledger.current_pair()
-	if first_pair.size() != 2 or String(first_pair[0].get("name", "")) != "COMPETIDOR 1":
-		failures.append("Semifinal A inválida")
+	if first_pair.size() != 2 or int(first_pair[0].get("seed", 0)) != 1 or int(first_pair[1].get("seed", 0)) != 4:
+		failures.append("Semifinal com seeds 1×4 inválida")
 	var result_a := ledger.record_winner(1)
-	if not bool(result_a.get("ok", false)) or ledger.stage_label() != "SEMIFINAL B":
-		failures.append("Avanço da semifinal A falhou")
+	if not bool(result_a.get("ok", false)) or not ledger.stage_label().contains("SEMIFINAL"):
+		failures.append("Avanço da primeira semifinal falhou")
 	var result_b := ledger.record_winner(2)
 	if not bool(result_b.get("ok", false)) or ledger.stage_label() != "FINAL":
-		failures.append("Avanço da semifinal B falhou")
+		failures.append("Avanço da segunda semifinal falhou")
 	var final_pair := ledger.current_pair()
 	if final_pair.size() != 2:
 		failures.append("Final não foi formada")
 	var final_result := ledger.record_winner(2)
 	if not bool(final_result.get("finished", false)):
 		failures.append("Final não encerrou o torneio")
-	if String(ledger.champion().get("name", "")) != "COMPETIDOR 4":
-		failures.append("Campeão do torneio incorreto")
+	if String(ledger.champion().get("name", "")) != "COMPETIDOR 3":
+		failures.append("Campeão do torneio de quatro incorreto")
 
 func _validate_scene_runtime(failures: Array[String]) -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
