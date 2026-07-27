@@ -2,14 +2,16 @@ const { test, expect } = require('@playwright/test');
 
 const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4173';
 
-const launchOptions = {
-  args: [
-    '--use-gl=swiftshader',
-    '--enable-webgl',
-    '--ignore-gpu-blocklist',
-    '--autoplay-policy=no-user-gesture-required'
-  ]
-};
+test.use({
+  launchOptions: {
+    args: [
+      '--use-gl=swiftshader',
+      '--enable-webgl',
+      '--ignore-gpu-blocklist',
+      '--autoplay-policy=no-user-gesture-required'
+    ]
+  }
+});
 
 function collectRuntimeFailures(page) {
   const pageErrors = [];
@@ -52,7 +54,6 @@ async function openAndWaitForArena(page) {
 
 test.describe('desktop', () => {
   test.use({
-    launchOptions,
     viewport: { width: 1280, height: 720 }
   });
 
@@ -90,7 +91,6 @@ test.describe('desktop', () => {
 
 test.describe('mobile touch', () => {
   test.use({
-    launchOptions,
     viewport: { width: 844, height: 390 },
     hasTouch: true,
     isMobile: true,
