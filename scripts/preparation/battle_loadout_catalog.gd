@@ -11,16 +11,8 @@ const WEAPON_ORDER: Array[StringName] = [
 	&"unarmed"
 ]
 const FIELD_ORDER: Array[StringName] = [
-	&"character",
-	&"build",
-	&"element",
-	&"primary_weapon",
-	&"secondary_weapon",
-	&"variant",
-	&"head",
-	&"back",
-	&"chest",
-	&"pet"
+	&"character", &"build", &"element", &"primary_weapon", &"secondary_weapon",
+	&"variant", &"head", &"back", &"chest", &"pet"
 ]
 
 const CHARACTER_PRESETS := {
@@ -29,30 +21,16 @@ const CHARACTER_PRESETS := {
 	&"lyra": [&"lyra_elementalist"],
 	&"rin": [&"rin_challenger"]
 }
-
-const ELEMENT_LABELS := {
-	&"fire": "FOGO",
-	&"water": "ÁGUA",
-	&"earth": "TERRA",
-	&"air": "AR"
-}
-
+const ELEMENT_LABELS := {&"fire": "FOGO", &"water": "ÁGUA", &"earth": "TERRA", &"air": "AR"}
 const FIELD_LABELS := {
-	&"character": "PERSONAGEM",
-	&"build": "BUILD",
-	&"element": "ELEMENTO",
-	&"primary_weapon": "ARMA PRINCIPAL",
-	&"secondary_weapon": "ARMA SECUNDÁRIA",
-	&"variant": "VARIANTE DE MESTRE",
-	&"head": "ACESSÓRIO",
-	&"back": "COSTAS",
-	&"chest": "AMULETO",
-	&"pet": "PET"
+	&"character": "PERSONAGEM", &"build": "BUILD", &"element": "ELEMENTO",
+	&"primary_weapon": "ARMA PRINCIPAL", &"secondary_weapon": "ARMA SECUNDÁRIA",
+	&"variant": "VARIANTE DE MESTRE", &"head": "ACESSÓRIO", &"back": "COSTAS",
+	&"chest": "AMULETO", &"pet": "PET"
 }
 
 static func default_loadout(player_index: int) -> Dictionary:
-	var preset_id: StringName = &"adaptive_staff" if player_index == 1 else &"rock_guardian"
-	return loadout_from_preset(preset_id)
+	return loadout_from_preset(&"adaptive_staff" if player_index == 1 else &"rock_guardian")
 
 static func loadout_from_preset(preset_id: StringName) -> Dictionary:
 	var build := BuildProfile.prototype_preset(preset_id)
@@ -64,10 +42,10 @@ static func loadout_from_preset(preset_id: StringName) -> Dictionary:
 		"primary_weapon_id": build.weapon_id,
 		"secondary_weapon_id": build.secondary_weapon_id,
 		"variant_id": &"",
-		"head": StringName(cosmetics.get("head", &"none")),
-		"back": StringName(cosmetics.get("back", &"none")),
-		"chest": StringName(cosmetics.get("chest", &"none")),
-		"pet": StringName(cosmetics.get("pet", &"none"))
+		"head": StringName(cosmetics.get("head", "none")),
+		"back": StringName(cosmetics.get("back", "none")),
+		"chest": StringName(cosmetics.get("chest", "none")),
+		"pet": StringName(cosmetics.get("pet", "none"))
 	}
 
 static func sanitize(source: Dictionary, unlocked_variants: Array = []) -> Dictionary:
@@ -95,16 +73,12 @@ static func sanitize(source: Dictionary, unlocked_variants: Array = []) -> Dicti
 	if variant_id not in variant_options:
 		variant_id = &""
 	var result := {
-		"character_id": character_id,
-		"preset_id": preset_id,
-		"element_id": element_id,
-		"primary_weapon_id": primary,
-		"secondary_weapon_id": secondary,
-		"variant_id": variant_id
+		"character_id": character_id, "preset_id": preset_id, "element_id": element_id,
+		"primary_weapon_id": primary, "secondary_weapon_id": secondary, "variant_id": variant_id
 	}
-	for socket_id in CosmeticSocketCatalog.SOCKET_ORDER:
-		var item_id := StringName(source.get(String(socket_id), &"none"))
-		if not CosmeticSocketCatalog.valid_item_for_socket(item_id, socket_id):
+	for socket_id in CosmeticSocketCatalog.SOCKET_IDS:
+		var item_id := StringName(source.get(String(socket_id), "none"))
+		if item_id not in CosmeticSocketCatalog.options_for(socket_id):
 			item_id = &"none"
 		result[String(socket_id)] = item_id
 	return result
@@ -128,20 +102,13 @@ static func variants_for_weapon(weapon_id: StringName, unlocked_variants: Array)
 
 static func options_for(field_id: StringName, loadout: Dictionary, unlocked_variants: Array) -> Array[StringName]:
 	match field_id:
-		&"character":
-			return CHARACTER_ORDER.duplicate()
-		&"build":
-			return presets_for_character(StringName(loadout.get("character_id", &"kael")))
-		&"element":
-			return ELEMENT_ORDER.duplicate()
-		&"primary_weapon", &"secondary_weapon":
-			return WEAPON_ORDER.duplicate()
-		&"variant":
-			return variants_for_weapon(StringName(loadout.get("primary_weapon_id", &"unarmed")), unlocked_variants)
-		&"head", &"back", &"chest", &"pet":
-			return CosmeticSocketCatalog.items_for_socket(field_id)
-		_:
-			return []
+		&"character": return CHARACTER_ORDER.duplicate()
+		&"build": return presets_for_character(StringName(loadout.get("character_id", &"kael")))
+		&"element": return ELEMENT_ORDER.duplicate()
+		&"primary_weapon", &"secondary_weapon": return WEAPON_ORDER.duplicate()
+		&"variant": return variants_for_weapon(StringName(loadout.get("primary_weapon_id", &"unarmed")), unlocked_variants)
+		&"head", &"back", &"chest", &"pet": return CosmeticSocketCatalog.options_for(field_id)
+		_: return []
 
 static func value_for_field(field_id: StringName, loadout: Dictionary) -> StringName:
 	match field_id:
@@ -157,17 +124,13 @@ static func value_for_field(field_id: StringName, loadout: Dictionary) -> String
 static func set_field(loadout: Dictionary, field_id: StringName, value_id: StringName, unlocked_variants: Array) -> Dictionary:
 	var result := loadout.duplicate(true)
 	match field_id:
-		&"character":
-			result = loadout_from_preset(presets_for_character(value_id)[0])
+		&"character": result = loadout_from_preset(presets_for_character(value_id)[0])
 		&"build":
-			var cosmetics := {
-				"head": result.get("head", &"none"),
-				"back": result.get("back", &"none"),
-				"chest": result.get("chest", &"none"),
-				"pet": result.get("pet", &"none")
-			}
+			var cosmetics := {}
+			for socket_id in CosmeticSocketCatalog.SOCKET_IDS:
+				cosmetics[String(socket_id)] = result.get(String(socket_id), &"none")
 			result = loadout_from_preset(value_id)
-			for socket_id in CosmeticSocketCatalog.SOCKET_ORDER:
+			for socket_id in CosmeticSocketCatalog.SOCKET_IDS:
 				result[String(socket_id)] = cosmetics[String(socket_id)]
 		&"element": result["element_id"] = value_id
 		&"primary_weapon": result["primary_weapon_id"] = value_id
@@ -196,8 +159,7 @@ static func validate() -> Array[String]:
 		if presets.is_empty():
 			failures.append("Personagem sem builds: %s" % String(character_id))
 		for preset_id in presets:
-			var build := BuildProfile.prototype_preset(preset_id)
-			if build.character_id != character_id:
+			if BuildProfile.prototype_preset(preset_id).character_id != character_id:
 				failures.append("Build %s pertence a personagem incorreto" % String(preset_id))
 	for field_id in FIELD_ORDER:
 		if field_label(field_id) == "":
