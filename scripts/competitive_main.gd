@@ -6,7 +6,9 @@ extends "res://scripts/main.gd"
 @onready var statistics_runtime: SeriesStatisticsRuntime = $SeriesStatisticsRuntime
 @onready var history_runtime: MatchHistoryRuntime = $MatchHistoryRuntime
 @onready var tournament_runtime: TournamentRuntime = $TournamentRuntime
+@onready var group_stage_runtime: GroupStageRuntime = $GroupStageRuntime
 @onready var player_profile_runtime: PlayerProfileRuntime = $PlayerProfileRuntime
+@onready var season_runtime: CompetitiveSeasonRuntime = $CompetitiveSeasonRuntime
 
 func _ready() -> void:
 	super._ready()
@@ -24,8 +26,9 @@ func _start_battle() -> void:
 		competitive_runtime.current_config(),
 		p1_loadout,
 		p2_loadout,
-		player_profile_runtime.profile_context_for_player(1),
-		player_profile_runtime.profile_context_for_player(2)
+		_profile_context_for_series(1),
+		_profile_context_for_series(2),
+		season_runtime.season_context()
 	)
 	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
 	competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
@@ -91,13 +94,14 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 			int(result.get("score_p1", 0)),
 			int(result.get("score_p2", 0))
 		]
-		var series_record := statistics_runtime.complete_series(
-			int(result.get("score_p1", 0)),
-			int(result.get("score_p2", 0)),
-			winner_index
-		)
+		var score_p1 := int(result.get("score_p1", 0))
+		var score_p2 := int(result.get("score_p2", 0))
+		var series_record := statistics_runtime.complete_series(score_p1, score_p2, winner_index)
+		var group_result: Dictionary = {}
 		var tournament_result: Dictionary = {}
-		if tournament_runtime.is_tournament_active():
+		if group_stage_runtime.is_group_stage_active():
+			group_result = group_stage_runtime.record_series_result(winner_index, score_p1, score_p2)
+		elif tournament_runtime.is_tournament_active():
 			tournament_result = tournament_runtime.record_series_winner(winner_index)
 		history_runtime.play_result(series_record)
 		await history_runtime.result_finished
@@ -108,14 +112,23 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 		competitive_arena_runtime.update_score_visual(competitive_runtime.score_snapshot())
 		_resetting_round = false
 		_enter_preparation()
-		if bool(tournament_result.get("ok", false)):
+		if bool(group_result.get("ok", false)):
+			if bool(group_result.get("finished", false)):
+				if bool(group_result.get("knockout_started", false)):
+					controls_label.text = "FASE DE GRUPOS CONCLUÍDA • SEMIFINAIS PREPARADAS • F10 abre o chaveamento."
+				else:
+					controls_label.text = "FASE DE GRUPOS CONCLUÍDA • F11 abre a classificação."
+			else:
+				group_stage_runtime.prepare_current_match()
+				controls_label.text = "%s • confirme os dois competidores para iniciar." % group_stage_runtime.ledger.stage_label()
+		elif bool(tournament_result.get("ok", false)):
 			if bool(tournament_result.get("finished", false)):
 				controls_label.text = "TORNEIO CONCLUÍDO • CAMPEÃO: %s • F10 abre o chaveamento." % tournament_runtime.champion_name()
 			else:
 				tournament_runtime.prepare_current_match()
 				controls_label.text = "%s • confirme os dois competidores para iniciar." % tournament_runtime.ledger.stage_label()
 		else:
-			controls_label.text = "Configure loadouts • F2 presets • F3 histórico • F8 ranking • F9 perfis • F10 torneio."
+			controls_label.text = "F6 perfis • F7 temporadas • F8 ranking • F9 perfis locais • F10 torneio • F11 grupos."
 		return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
@@ -125,6 +138,21 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	await get_tree().create_timer(0.65).timeout
 	_resetting_round = false
 	await _play_round_entrance()
+
+func _profile_context_for_series(player_index: int) -> Dictionary:
+	if group_stage_runtime.is_group_stage_active():
+		var group_context := group_stage_runtime.current_profile_context(player_index)
+		if not group_context.is_empty():
+			return group_context
+	if tournament_runtime.is_tournament_active():
+		var pair := tournament_runtime.current_pair()
+		if pair.size() == 2:
+			var participant: Dictionary = pair[clampi(player_index, 1, 2) - 1]
+			return {
+				"profile_id": String(participant.get("profile_id", "tournament_%s" % String(participant.get("participant_id", player_index)))),
+				"profile_name": String(participant.get("profile_name", participant.get("name", "COMPETIDOR")))
+			}
+	return player_profile_runtime.profile_context_for_player(player_index)
 
 func _cleanup_fighters() -> void:
 	if is_instance_valid(player_one):
