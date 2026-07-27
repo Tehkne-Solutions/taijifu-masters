@@ -12,15 +12,21 @@ var _connected_ids: Dictionary = {}
 func _ready() -> void:
 	history.load_from_disk()
 
-func begin_series(config: Dictionary, player_one_loadout: Dictionary, player_two_loadout: Dictionary) -> void:
+func begin_series(
+	config: Dictionary,
+	player_one_loadout: Dictionary,
+	player_two_loadout: Dictionary,
+	player_one_profile: Dictionary = {},
+	player_two_profile: Dictionary = {}
+) -> void:
 	var now := int(Time.get_unix_time_from_system())
 	_series = {
 		"match_id": "match_%d_%d" % [now, Time.get_ticks_msec() % 100000],
 		"started_unix": now,
 		"config": CompetitiveMatchCatalog.sanitize(config),
 		"players": [
-			_player_record(1, player_one_loadout),
-			_player_record(2, player_two_loadout)
+			_player_record(1, player_one_loadout, player_one_profile),
+			_player_record(2, player_two_loadout, player_two_profile)
 		],
 		"rounds": [],
 		"totals": [_empty_stats(), _empty_stats()]
@@ -225,11 +231,13 @@ func _accumulate_totals(round_stats: Array) -> void:
 		totals[index] = total
 	_series["totals"] = totals
 
-func _player_record(player_index: int, loadout: Dictionary) -> Dictionary:
+func _player_record(player_index: int, loadout: Dictionary, profile_context: Dictionary = {}) -> Dictionary:
 	var clean := BattleLoadoutCatalog.sanitize(loadout)
 	var build := BuildProfile.prototype_preset(StringName(clean.get("preset_id", &"adaptive_staff")))
 	return {
 		"player_index": player_index,
+		"profile_id": String(profile_context.get("profile_id", "profile_p%d" % player_index)),
+		"profile_name": PlayerProfileLedger.sanitize_name(String(profile_context.get("profile_name", "JOGADOR %d" % player_index)), "JOGADOR %d" % player_index),
 		"character_id": String(build.character_id),
 		"character_name": build.character_name,
 		"build_name": build.display_name,
