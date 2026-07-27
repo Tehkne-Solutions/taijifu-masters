@@ -27,6 +27,8 @@ func _validate_season_ledger(failures: Array[String]) -> void:
 	var beta := ledger.create_season("Temporada Beta")
 	if beta.is_empty() or String(ledger.active_context().get("season_name", "")) != "Temporada Beta":
 		failures.append("Nova temporada não foi ativada")
+	if String(beta.get("season_id", "")) == alpha_id:
+		failures.append("Temporadas consecutivas receberam IDs duplicados")
 	if not ledger.activate(alpha_id):
 		failures.append("Temporada anterior não pôde ser reativada")
 	elif String(ledger.active_context().get("season_id", "")) != alpha_id:
@@ -34,6 +36,13 @@ func _validate_season_ledger(failures: Array[String]) -> void:
 	var alpha_state := ledger.season_by_id(alpha_id)
 	if String(alpha_state.get("status", "")) != "active":
 		failures.append("Status da temporada reativada está incorreto")
+	var closed := ledger.close_active()
+	if closed.is_empty() or String(ledger.active_context().get("season_id", "")) != CompetitiveSeasonLedger.OFFSEASON_ID:
+		failures.append("Encerramento da temporada não entrou em fora de temporada")
+	if String(ledger.season_by_id(alpha_id).get("status", "")) != "closed":
+		failures.append("Temporada encerrada voltou ao estado ativo")
+	if not ledger.activate(alpha_id):
+		failures.append("Temporada encerrada não pôde ser reativada")
 
 func _validate_history_seasons(failures: Array[String]) -> void:
 	var history := MatchHistoryLedger.new()
@@ -92,6 +101,15 @@ func _validate_group_stage(failures: Array[String]) -> void:
 			labels.append(String(participant.get("qualification", "")))
 		if labels != ["A1", "B1", "A2", "B2"]:
 			failures.append("Ordem dos classificados não preservou A1×B2 e B1×A2")
+		var knockout := TournamentLedger.new()
+		if not knockout.set_participants(semifinalists) or not knockout.start():
+			failures.append("Classificados não iniciaram o mata-mata")
+		else:
+			var pair := knockout.current_pair()
+			if pair.size() != 2 or String(pair[0].get("qualification", "")) != "A1" or String(pair[1].get("qualification", "")) != "B2":
+				failures.append("Primeira semifinal não foi formada como A1×B2")
+			if pair.size() == 2 and (String(pair[0].get("profile_id", "")) == "" or String(pair[1].get("profile_id", "")) == ""):
+				failures.append("Mata-mata descartou a identidade dos perfis classificados")
 
 func _validate_scene_runtimes(failures: Array[String]) -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
