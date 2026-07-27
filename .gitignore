@@ -2,11 +2,21 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
 
 # Builds
 build/
 dist/
+web-build/
+.cache/
+
+# Node / browser smoke tests
+node_modules/
+web-tests/node_modules/
+web-tests/test-results/
+web-tests/playwright-report/
+
+# Vercel local
+.vercel/
 
 # OS / IDE
 .DS_Store

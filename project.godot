@@ -6,8 +6,11 @@ config_version=5
 [application]
 
 config/name="Taijifu Masters"
+config/description="Batalhas técnicas Tai, Ji e Fu em arenas manga 2D."
+config/version="0.1.0-web"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://web/taijifu-web-icon.svg"
 
 [display]
 
@@ -16,6 +19,7 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/handheld/orientation=1
 
 [rendering]
 
