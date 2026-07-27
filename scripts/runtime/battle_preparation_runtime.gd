@@ -151,7 +151,6 @@ func _build_interface() -> void:
 	_background.color = Color(0.012, 0.018, 0.032, 0.985)
 	_background.mouse_filter = Control.MOUSE_FILTER_STOP
 	_canvas.add_child(_background)
-
 	var header := ColorRect.new()
 	header.offset_right = 1280.0
 	header.offset_bottom = 86.0
@@ -168,10 +167,8 @@ func _build_interface() -> void:
 	_title.add_theme_font_size_override("font_size", 20)
 	_title.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0))
 	header.add_child(_title)
-
 	for slot in range(2):
 		_build_player_panel(slot + 1, 30.0 + slot * 630.0)
-
 	_footer = Label.new()
 	_footer.offset_left = 20.0
 	_footer.offset_top = 672.0
@@ -201,7 +198,6 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	style.corner_radius_bottom_right = 12
 	panel.add_theme_stylebox_override("panel", style)
 	_background.add_child(panel)
-
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 18)
 	margin.add_theme_constant_override("margin_right", 18)
@@ -211,7 +207,6 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	var root_column := VBoxContainer.new()
 	root_column.add_theme_constant_override("separation", 5)
 	margin.add_child(root_column)
-
 	var title := Label.new()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
@@ -224,7 +219,6 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	role.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
 	root_column.add_child(role)
 	_player_roles.append(role)
-
 	var middle := HBoxContainer.new()
 	middle.add_theme_constant_override("separation", 12)
 	root_column.add_child(middle)
@@ -245,7 +239,6 @@ func _build_player_panel(player_index: int, left: float) -> void:
 	fields.add_theme_font_size_override("bold_font_size", 13)
 	middle.add_child(fields)
 	_player_fields.append(fields)
-
 	var stats := Label.new()
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.add_theme_font_size_override("font_size", 13)
@@ -307,21 +300,16 @@ func _update_preview(slot: int, character_id: StringName) -> void:
 func _update_fields(slot: int, player_index: int) -> void:
 	var lines: Array[String] = []
 	var loadout := _loadouts[slot]
+	var color := "#86d7ff" if player_index == 1 else "#ff9a78"
 	for index in range(BattleLoadoutCatalog.FIELD_ORDER.size()):
 		var field_id := BattleLoadoutCatalog.FIELD_ORDER[index]
 		var value_id := BattleLoadoutCatalog.value_for_field(field_id, loadout)
-		var prefix := "▶" if index == _field_indices[slot] else " "
-		var color := "#86d7ff" if player_index == 1 else "#ff9a78"
+		var label := BattleLoadoutCatalog.field_label(field_id)
+		var value := BattleLoadoutCatalog.value_label(field_id, value_id)
 		if index == _field_indices[slot]:
-			lines.append("[color=%s][b]%s %s[/b][/color]\n   ◀ %s ▶" % [
-				color, prefix, BattleLoadoutCatalog.field_label(field_id),
-				BattleLoadoutCatalog.value_label(field_id, value_id)
-			])
+			lines.append("[color=%s][b]▶ %s: ◀ %s ▶[/b][/color]" % [color, label, value])
 		else:
-			lines.append("%s [b]%s[/b]\n   %s" % [
-				prefix, BattleLoadoutCatalog.field_label(field_id),
-				BattleLoadoutCatalog.value_label(field_id, value_id)
-			])
+			lines.append("  [b]%s:[/b] %s" % [label, value])
 	_player_fields[slot].text = "\n".join(lines)
 
 func _exit_tree() -> void:
