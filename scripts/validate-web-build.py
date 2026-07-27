@@ -38,6 +38,8 @@ def main() -> None:
     service_worker = first_match(output, ("*.service.worker.js", "*service*worker*.js"))
     manifest = first_match(output, ("*.manifest.json", "manifest.json", "*.webmanifest"))
     offline = first_match(output, ("*.offline.html", "offline.html"))
+    shell_css = output / "taijifu-web-shell.css"
+    shell_js = output / "taijifu-web-shell.js"
 
     required = {
         "WebAssembly": wasm,
@@ -46,6 +48,8 @@ def main() -> None:
         "service worker da PWA": service_worker,
         "manifesto da PWA": manifest,
         "página offline": offline,
+        "estilos responsivos": shell_css if shell_css.is_file() else None,
+        "runtime do shell Web": shell_js if shell_js.is_file() else None,
     }
     missing = [label for label, path in required.items() if path is None]
     if missing:
@@ -62,13 +66,39 @@ def main() -> None:
         fail(f"arquivo WASM anormalmente pequeno: {wasm.stat().st_size} bytes")
     if pack.stat().st_size < 1_000:
         fail(f"arquivo PCK anormalmente pequeno: {pack.stat().st_size} bytes")
+    if shell_css.stat().st_size < 2_000:
+        fail("folha de estilos responsiva está incompleta")
+    if shell_js.stat().st_size < 2_000:
+        fail("runtime do shell Web está incompleto")
 
     html = index.read_text(encoding="utf-8", errors="replace")
-    for asset in (wasm, pack, runtime_js):
+    for asset in (wasm, pack, runtime_js, shell_css, shell_js):
         if asset.name not in html:
             fail(f"index.html não referencia {asset.name}")
     if "<canvas" not in html.lower():
         fail("index.html não contém o canvas do Godot")
+
+    required_html_markers = (
+        "TAIJIFU_WEB_SHELL_HEAD",
+        "TAIJIFU_WEB_SHELL_BODY",
+        'id="taijifu-shell"',
+        'id="taijifu-enter"',
+        'id="taijifu-touch-controls"',
+        'data-key="KeyA"',
+        'data-key="KeyF"',
+        'id="taijifu-fullscreen"',
+    )
+    for marker in required_html_markers:
+        if marker not in html:
+            fail(f"index.html não contém o marcador Web obrigatório: {marker}")
+
+    manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
+    if manifest_data.get("display") != "standalone":
+        fail("manifesto PWA não está em modo standalone")
+    if manifest_data.get("orientation") != "landscape":
+        fail("manifesto PWA não exige orientação paisagem")
+    if manifest_data.get("lang") != "pt-BR":
+        fail("manifesto PWA não está identificado como pt-BR")
 
     metadata = {
         "product": "Taijifu Masters",
@@ -77,6 +107,13 @@ def main() -> None:
         "git_sha": os.environ.get("VERCEL_GIT_COMMIT_SHA")
         or os.environ.get("GITHUB_SHA")
         or "local",
+        "web_experience": {
+            "responsive_shell": True,
+            "touch_controls": True,
+            "orientation_guard": True,
+            "fullscreen": True,
+            "pwa_install": True,
+        },
         "files": {
             "index": index.name,
             "wasm": wasm.name,
@@ -85,10 +122,14 @@ def main() -> None:
             "service_worker": service_worker.name,
             "manifest": manifest.name,
             "offline": offline.name,
+            "shell_css": shell_css.name,
+            "shell_js": shell_js.name,
         },
         "sizes": {
             "wasm_bytes": wasm.stat().st_size,
             "pack_bytes": pack.stat().st_size,
+            "shell_css_bytes": shell_css.stat().st_size,
+            "shell_js_bytes": shell_js.stat().st_size,
         },
     }
     (output / "build-info.json").write_text(
@@ -100,6 +141,7 @@ def main() -> None:
     for label, path in required.items():
         assert path is not None
         print(f"  - {label}: {path.name} ({path.stat().st_size} bytes)")
+    print("[taijifu-web] UX Web: shell, fullscreen, orientação e touch aprovados estruturalmente")
 
 
 if __name__ == "__main__":
