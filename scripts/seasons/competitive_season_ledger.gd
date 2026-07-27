@@ -4,6 +4,8 @@ extends RefCounted
 const SAVE_PATH := "user://competitive_seasons.json"
 const VERSION := 1
 const MAX_SEASONS := 12
+const OFFSEASON_ID := "season_offseason"
+const OFFSEASON_NAME := "FORA DE TEMPORADA"
 
 var data: Dictionary = default_state()
 
@@ -48,15 +50,18 @@ func seasons() -> Array[Dictionary]:
 	return result
 
 func active_season() -> Dictionary:
-	var active_id := String(data.get("active_season_id", "season_1"))
+	var active_id := String(data.get("active_season_id", ""))
+	if active_id == "":
+		return {}
 	var found := season_by_id(active_id)
-	if not found.is_empty():
+	if not found.is_empty() and String(found.get("status", "closed")) == "active":
 		return found
-	var source := seasons()
-	return source[0] if not source.is_empty() else default_state()["seasons"][0]
+	return {}
 
 func active_context() -> Dictionary:
 	var season := active_season()
+	if season.is_empty():
+		return {"season_id": OFFSEASON_ID, "season_name": OFFSEASON_NAME}
 	return {
 		"season_id": String(season.get("season_id", "season_1")),
 		"season_name": String(season.get("name", "TEMPORADA 1"))
@@ -73,8 +78,9 @@ func create_season(name: String) -> Dictionary:
 	if source.size() >= MAX_SEASONS:
 		return {}
 	var now := int(Time.get_unix_time_from_system())
+	var season_id := _next_unique_id(now, source)
 	var season := {
-		"season_id": "season_%d_%d" % [now, Time.get_ticks_msec() % 100000],
+		"season_id": season_id,
 		"name": sanitize_name(name, "TEMPORADA %d" % (source.size() + 1)),
 		"created_unix": now,
 		"closed_unix": 0,
@@ -88,9 +94,9 @@ func create_season(name: String) -> Dictionary:
 			source[index] = existing
 	source.append(season)
 	data["seasons"] = source
-	data["active_season_id"] = String(season["season_id"])
+	data["active_season_id"] = season_id
 	save_to_disk()
-	return season.duplicate(true)
+	return season_by_id(season_id)
 
 func activate(season_id: String) -> bool:
 	var source: Array = data.get("seasons", [])
@@ -118,6 +124,8 @@ func activate(season_id: String) -> bool:
 
 func close_active() -> Dictionary:
 	var active := active_season()
+	if active.is_empty():
+		return {}
 	var active_id := String(active.get("season_id", ""))
 	var source: Array = data.get("seasons", [])
 	for index in range(source.size()):
@@ -130,9 +138,9 @@ func close_active() -> Dictionary:
 		season["closed_unix"] = int(Time.get_unix_time_from_system())
 		source[index] = season
 		data["seasons"] = source
-		data["active_season_id"] = active_id
+		data["active_season_id"] = ""
 		save_to_disk()
-		return season.duplicate(true)
+		return season_by_id(active_id)
 	return {}
 
 func rename(season_id: String, name: String) -> bool:
@@ -172,17 +180,38 @@ func sanitize_state(source: Dictionary) -> Dictionary:
 				"status": "active" if String(season.get("status", "closed")) == "active" else "closed"
 			})
 	if clean.is_empty():
-		clean = default_state()["seasons"].duplicate(true)
-		seen["season_1"] = true
-	var requested := String(source.get("active_season_id", clean[0].get("season_id", "season_1")))
-	if not seen.has(requested):
-		requested = String(clean[0].get("season_id", "season_1"))
+		var fallback: Dictionary = (default_state()["seasons"][0] as Dictionary).duplicate(true)
+		clean.append(fallback)
+		seen[String(fallback.get("season_id", "season_1"))] = true
+	var requested := String(source.get("active_season_id", ""))
+	if requested != "" and not seen.has(requested):
+		requested = ""
+	if requested == "":
+		for season in clean:
+			if String(season.get("status", "closed")) == "active":
+				requested = String(season.get("season_id", ""))
+				break
 	for index in range(clean.size()):
-		clean[index]["status"] = "active" if String(clean[index].get("season_id", "")) == requested else "closed"
+		var season_id := String(clean[index].get("season_id", ""))
+		clean[index]["status"] = "active" if requested != "" and season_id == requested else "closed"
+		if String(clean[index]["status"]) == "active":
+			clean[index]["closed_unix"] = 0
 	result["seasons"] = clean
 	result["active_season_id"] = requested
 	result["updated_unix"] = int(source.get("updated_unix", 0))
 	return result
+
+func _next_unique_id(now: int, source: Array[Dictionary]) -> String:
+	var used: Dictionary = {}
+	for season in source:
+		used[String(season.get("season_id", ""))] = true
+	var base := "season_%d_%d" % [now, Time.get_ticks_msec() % 100000]
+	var candidate := base
+	var suffix := 2
+	while used.has(candidate):
+		candidate = "%s_%d" % [base, suffix]
+		suffix += 1
+	return candidate
 
 static func sanitize_name(value: String, fallback: String = "TEMPORADA") -> String:
 	var clean := value.strip_edges().replace("\n", " ").replace("\r", " ").replace("\t", " ")
