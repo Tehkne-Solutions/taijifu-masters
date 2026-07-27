@@ -12,6 +12,8 @@ func _process(_delta: float) -> void:
 		controls_label.text += "\nO inspetor visual de assets"
 	if not controls_label.text.contains("F6 editor"):
 		controls_label.text += " • F6 editor de encaixes"
+	if not controls_label.text.contains("J cosméticos"):
+		controls_label.text += " • J cosméticos"
 
 func _sync_character_headings() -> void:
 	var player_one: FighterController = main.get("player_one") as FighterController
