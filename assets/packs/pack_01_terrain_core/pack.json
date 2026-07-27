@@ -1,11 +1,12 @@
 {
   "id": "PACK_01",
   "name": "Terrain Core",
-  "version": "0.1.0",
-  "status": "PLANNED",
+  "version": "0.2.0",
+  "status": "GENERATING",
   "signature": "Tehkné Solutions",
   "depends_on": ["PACK_00"],
   "asset_count_planned": 96,
+  "asset_count_implemented": 0,
   "families": [
     "grass",
     "dirt",
@@ -28,13 +29,29 @@
     "padding": 0,
     "master_size": 1024,
     "hd_size": 512,
-    "mobile_size": 256
+    "mobile_size": 256,
+    "contact_sheet_is_runtime_asset": false
   },
   "paths": {
     "inventory": "res://assets/packs/pack_01_terrain_core/inventory.json",
     "masters": "res://assets/packs/pack_01_terrain_core/master",
     "runtime_hd": "res://assets/packs/pack_01_terrain_core/runtime/hd",
     "runtime_mobile": "res://assets/packs/pack_01_terrain_core/runtime/mobile",
+    "transitions": "res://assets/packs/pack_01_terrain_core/transitions",
+    "overlays": "res://assets/packs/pack_01_terrain_core/overlays",
     "previews": "res://assets/packs/pack_01_terrain_core/previews"
-  }
+  },
+  "tooling": {
+    "inventory_generator": "res://tools/build_pack_01_inventory.py",
+    "validator": "res://tools/validate_pack_01.py"
+  },
+  "approval_gates": [
+    "96 inventory records",
+    "96 individual master PNG files",
+    "96 individual HD WebP files",
+    "96 individual mobile WebP files",
+    "four-side connection test",
+    "no external borders or side walls",
+    "Godot runtime loading validation"
+  ]
 }

@@ -1,0 +1,45 @@
+{
+  "pack": "PACK_01",
+  "version": "0.1.0",
+  "signature": "Tehkné Solutions",
+  "asset_count": 96,
+  "assets": [
+    {
+      "id": "TM_TERRAIN_GRASS_BASE_001",
+      "category": "terrain",
+      "family": "grass",
+      "variant": "base",
+      "status": "PLANNED",
+      "tileable": true,
+      "source": "master/grass/TM_TERRAIN_GRASS_BASE_001.png",
+      "runtime": {"hd": "runtime/hd/grass/TM_TERRAIN_GRASS_BASE_001.webp", "mobile": "runtime/mobile/grass/TM_TERRAIN_GRASS_BASE_001.webp"},
+      "pivot": {"x": 0.5, "y": 0.5}
+    },
+    {
+      "id": "TM_TERRAIN_GRASS_LIGHT_002",
+      "category": "terrain",
+      "family": "grass",
+      "variant": "light",
+      "status": "PLANNED",
+      "tileable": true,
+      "source": "master/grass/TM_TERRAIN_GRASS_LIGHT_002.png",
+      "runtime": {"hd": "runtime/hd/grass/TM_TERRAIN_GRASS_LIGHT_002.webp", "mobile": "runtime/mobile/grass/TM_TERRAIN_GRASS_LIGHT_002.webp"},
+      "pivot": {"x": 0.5, "y": 0.5}
+    },
+    {
+      "id": "TM_TERRAIN_GRASS_DARK_003",
+      "category": "terrain",
+      "family": "grass",
+      "variant": "dark",
+      "status": "PLANNED",
+      "tileable": true,
+      "source": "master/grass/TM_TERRAIN_GRASS_DARK_003.png",
+      "runtime": {"hd": "runtime/hd/grass/TM_TERRAIN_GRASS_DARK_003.webp", "mobile": "runtime/mobile/grass/TM_TERRAIN_GRASS_DARK_003.webp"},
+      "pivot": {"x": 0.5, "y": 0.5}
+    }
+  ],
+  "generation": {
+    "source_of_truth": "tools/build_pack_01_inventory.py",
+    "note": "O arquivo completo com 96 registros deve ser regenerado pelo script antes da entrega final do pack."
+  }
+}
