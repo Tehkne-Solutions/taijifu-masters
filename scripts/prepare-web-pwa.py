@@ -44,6 +44,8 @@ def main() -> None:
         web_source / "offline.html": output / "offline.html",
         web_source / "taijifu-web-shell.css": output / "taijifu-web-shell.css",
         web_source / "taijifu-web-shell.js": output / "taijifu-web-shell.js",
+        web_source / "taijifu-web-menu.css": output / "taijifu-web-menu.css",
+        web_source / "taijifu-web-menu.js": output / "taijifu-web-menu.js",
     }
     for source, target in source_targets.items():
         copy_required(source, target)
@@ -149,6 +151,7 @@ self.addEventListener('fetch', (event) => {{
 <link rel="icon" href="taijifu-web-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="taijifu-web-icon.svg">
 <link rel="stylesheet" href="taijifu-web-shell.css">
+<link rel="stylesheet" href="taijifu-web-menu.css">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Taijifu Masters">
 <!-- /TAIJIFU_WEB_SHELL_HEAD -->
@@ -156,7 +159,7 @@ self.addEventListener('fetch', (event) => {{
 
     body_injection = """
 <!-- TAIJIFU_WEB_SHELL_BODY -->
-<section id="taijifu-shell" class="taijifu-shell" data-state="loading" aria-label="Inicialização do Taijifu Masters">
+<section id="taijifu-shell" class="taijifu-shell" data-state="loading" data-mode="launch" aria-label="Menu Web do Taijifu Masters">
   <div class="taijifu-shell-card">
     <div class="taijifu-mark" aria-hidden="true">太極</div>
     <p class="taijifu-kicker">Tai • Ji • Fu</p>
@@ -171,12 +174,19 @@ self.addEventListener('fetch', (event) => {{
         <span id="taijifu-load-percent">3%</span>
       </div>
     </div>
-    <button id="taijifu-enter" class="taijifu-enter" type="button" disabled aria-busy="true" data-testid="enter-arena">Carregando arena</button>
+    <div class="taijifu-menu-actions">
+      <button id="taijifu-enter" class="taijifu-enter" type="button" disabled aria-busy="true" data-testid="enter-arena">Carregando arena</button>
+      <div class="taijifu-secondary-actions">
+        <button id="taijifu-tutorial-open" class="taijifu-secondary-button" type="button" data-testid="open-tutorial">Tutorial</button>
+        <button id="taijifu-settings-open" class="taijifu-secondary-button" type="button" data-testid="open-settings">Configurações</button>
+      </div>
+    </div>
     <p class="taijifu-device-hint">Desktop: teclado ou gamepad • Celular/tablet: controles touch em modo paisagem</p>
   </div>
 </section>
 
 <nav class="taijifu-toolbar" aria-label="Ferramentas do jogo Web">
+  <button id="taijifu-menu" class="taijifu-tool-button" type="button">Menu</button>
   <button id="taijifu-install" class="taijifu-tool-button" type="button" hidden>Instalar</button>
   <button id="taijifu-fullscreen" class="taijifu-tool-button" type="button">Tela cheia</button>
 </nav>
@@ -213,7 +223,92 @@ self.addEventListener('fetch', (event) => {{
   </div>
 </section>
 
+<section id="taijifu-web-dialog" class="taijifu-web-dialog" hidden aria-hidden="true">
+  <div class="taijifu-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="taijifu-dialog-title">
+    <header class="taijifu-dialog-header">
+      <div>
+        <p id="taijifu-dialog-kicker" class="taijifu-dialog-kicker">Taijifu Masters</p>
+        <h2 id="taijifu-dialog-title" class="taijifu-dialog-title">Treinamento</h2>
+      </div>
+      <button id="taijifu-dialog-close" class="taijifu-dialog-close" type="button" aria-label="Fechar">×</button>
+    </header>
+    <div class="taijifu-dialog-content">
+      <section id="taijifu-tutorial-view" class="taijifu-dialog-view" hidden>
+        <p id="taijifu-tutorial-device" class="taijifu-tutorial-device"></p>
+
+        <article class="taijifu-tutorial-step" data-step="0">
+          <h3>Movimento é posicionamento</h3>
+          <p>Controle distância, altura e plataformas. O melhor golpe começa antes do contato, quando você obriga o rival a ocupar uma posição desfavorável.</p>
+          <div class="taijifu-binding-grid">
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="A / D" data-touch="◀ / ▶" data-gamepad="Direcional">A / D</span><div><strong>Mover</strong><small>Aproxime, recue e reposicione.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="W" data-touch="Pulo" data-gamepad="Botão de salto">W</span><div><strong>Saltar</strong><small>Suba em plataformas e altere a linha de ataque.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="S" data-touch="▼" data-gamepad="Direcional para baixo">S</span><div><strong>Queda rápida</strong><small>Desça e interrompa trajetórias previsíveis.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="G" data-touch="Push" data-gamepad="Empurrão">G</span><div><strong>Empurrar</strong><small>Use o ambiente e force erros de equilíbrio.</small></div></div>
+          </div>
+        </article>
+
+        <article class="taijifu-tutorial-step" data-step="1" hidden>
+          <h3>Técnica supera repetição</h3>
+          <p>Alternar ataque, esquiva e guarda cria ritmo. Golpes previsíveis são punidos; aparos e contra-ataques dependem do momento correto.</p>
+          <div class="taijifu-binding-grid">
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="F" data-touch="Golpe" data-gamepad="Ataque principal">F</span><div><strong>Golpe</strong><small>Técnica principal da build equipada.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="Q" data-touch="Esquiva" data-gamepad="Esquiva">Q</span><div><strong>Esquiva</strong><small>Evite dano e mude o ângulo do combate.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="R" data-touch="Guarda" data-gamepad="Defesa">R</span><div><strong>Guarda e aparo</strong><small>Defenda ou neutralize no instante exato.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="E" data-touch="Agarra" data-gamepad="Agarrão">E</span><div><strong>Agarrão</strong><small>Quebre defesas passivas e controle espaço.</small></div></div>
+          </div>
+        </article>
+
+        <article class="taijifu-tutorial-step" data-step="2" hidden>
+          <h3>Construa sua assinatura</h3>
+          <p>Elementos, armas e ecos ampliam as possibilidades. Combine recursos sem abandonar os fundamentos de distância, leitura e tempo.</p>
+          <div class="taijifu-binding-grid">
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="C" data-touch="Elemento" data-gamepad="Técnica elemental">C</span><div><strong>Elemento</strong><small>Ative a técnica elemental selecionada.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="H" data-touch="Eco" data-gamepad="Eco">H</span><div><strong>Eco</strong><small>Execute a habilidade armazenada.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="V" data-touch="Arma" data-gamepad="Troca de arma">V</span><div><strong>Trocar arma</strong><small>Adapte alcance, ritmo e especialidade.</small></div></div>
+            <div class="taijifu-binding-card"><span class="taijifu-binding" data-keyboard="F9" data-touch="Menu Web" data-gamepad="Menu Web">F9</span><div><strong>Perfis e evolução</strong><small>As vitórias pertencem ao jogador, não só ao personagem.</small></div></div>
+          </div>
+        </article>
+
+        <footer class="taijifu-tutorial-footer">
+          <button id="taijifu-tutorial-previous" class="taijifu-dialog-action" type="button">Anterior</button>
+          <span id="taijifu-tutorial-status" class="taijifu-tutorial-status">Passo 1 de 3</span>
+          <button id="taijifu-tutorial-next" class="taijifu-dialog-action" data-role="primary" type="button">Próximo</button>
+        </footer>
+      </section>
+
+      <section id="taijifu-settings-view" class="taijifu-dialog-view" hidden>
+        <p class="taijifu-settings-intro">As preferências ficam apenas neste navegador e são aplicadas imediatamente, sem alterar as regras competitivas.</p>
+
+        <fieldset class="taijifu-settings-group">
+          <legend>Acessibilidade visual</legend>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Alto contraste</strong><small>Reforça contornos, textos e contraste do canvas.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-contrast" type="checkbox"></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Interface ampliada</strong><small>Aumenta textos e ferramentas da camada Web.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-large-ui" type="checkbox"></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Movimento reduzido</strong><small>Remove transições e animações não essenciais.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-motion" type="checkbox"></span></label>
+        </fieldset>
+
+        <fieldset class="taijifu-settings-group">
+          <legend>Controles touch</legend>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Exibição</strong><small>Automática, sempre visível ou oculta.</small></span><span class="taijifu-setting-control"><select id="taijifu-setting-touch-visibility"><option value="auto">Automática</option><option value="always">Sempre</option><option value="hidden">Oculta</option></select></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Tamanho dos controles</strong><small>Ajuste entre 80% e 130%.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-touch-scale" type="range" min="80" max="130" step="5"><output id="taijifu-touch-scale-value" class="taijifu-setting-value">100%</output></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Opacidade</strong><small>Reduza a interferência visual sobre a arena.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-touch-opacity" type="range" min="35" max="100" step="5"><output id="taijifu-touch-opacity-value" class="taijifu-setting-value">88%</output></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Modo canhoto</strong><small>Troca movimento e ações entre os lados.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-left-handed" type="checkbox"></span></label>
+          <label class="taijifu-setting-row"><span class="taijifu-setting-copy"><strong>Resposta tátil</strong><small>Usa vibração curta quando o navegador permitir.</small></span><span class="taijifu-setting-control"><input id="taijifu-setting-haptics" type="checkbox"></span></label>
+        </fieldset>
+
+        <footer class="taijifu-settings-footer">
+          <button id="taijifu-settings-tutorial" class="taijifu-dialog-action" type="button">Rever tutorial</button>
+          <button id="taijifu-settings-reset" class="taijifu-dialog-action" type="button">Restaurar padrões</button>
+          <button class="taijifu-dialog-action" data-role="primary" type="button" onclick="document.getElementById('taijifu-dialog-close').click()">Concluir</button>
+        </footer>
+      </section>
+    </div>
+  </div>
+</section>
+
+<div id="taijifu-announcer" class="taijifu-screen-reader" aria-live="polite" aria-atomic="true"></div>
+
 <script src="taijifu-web-shell.js"></script>
+<script src="taijifu-web-menu.js"></script>
 <!-- /TAIJIFU_WEB_SHELL_BODY -->
 """.strip()
 
@@ -227,6 +322,7 @@ self.addEventListener('fetch', (event) => {{
     print(f"[taijifu-pwa] Manifesto: {manifest_path.name}")
     print(f"[taijifu-pwa] Service worker: {worker_path.name}")
     print("[taijifu-pwa] Shell responsivo: taijifu-web-shell.css + taijifu-web-shell.js")
+    print("[taijifu-pwa] Menu e acessibilidade: taijifu-web-menu.css + taijifu-web-menu.js")
     print(f"[taijifu-pwa] Cache: {cache_name}")
 
 

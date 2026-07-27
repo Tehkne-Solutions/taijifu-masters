@@ -40,6 +40,8 @@ def main() -> None:
     offline = first_match(output, ("*.offline.html", "offline.html"))
     shell_css = output / "taijifu-web-shell.css"
     shell_js = output / "taijifu-web-shell.js"
+    menu_css = output / "taijifu-web-menu.css"
+    menu_js = output / "taijifu-web-menu.js"
 
     required = {
         "WebAssembly": wasm,
@@ -50,6 +52,8 @@ def main() -> None:
         "página offline": offline,
         "estilos responsivos": shell_css if shell_css.is_file() else None,
         "runtime do shell Web": shell_js if shell_js.is_file() else None,
+        "estilos do menu Web": menu_css if menu_css.is_file() else None,
+        "runtime do menu Web": menu_js if menu_js.is_file() else None,
     }
     missing = [label for label, path in required.items() if path is None]
     if missing:
@@ -70,9 +74,13 @@ def main() -> None:
         fail("folha de estilos responsiva está incompleta")
     if shell_js.stat().st_size < 2_000:
         fail("runtime do shell Web está incompleto")
+    if menu_css.stat().st_size < 3_000:
+        fail("folha de estilos do menu Web está incompleta")
+    if menu_js.stat().st_size < 5_000:
+        fail("runtime do menu Web está incompleto")
 
     html = index.read_text(encoding="utf-8", errors="replace")
-    for asset in (wasm, pack, runtime_js, shell_css, shell_js):
+    for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js):
         if asset.name not in html:
             fail(f"index.html não referencia {asset.name}")
     if "<canvas" not in html.lower():
@@ -83,6 +91,14 @@ def main() -> None:
         "TAIJIFU_WEB_SHELL_BODY",
         'id="taijifu-shell"',
         'id="taijifu-enter"',
+        'id="taijifu-menu"',
+        'id="taijifu-tutorial-open"',
+        'id="taijifu-settings-open"',
+        'id="taijifu-web-dialog"',
+        'id="taijifu-tutorial-view"',
+        'id="taijifu-settings-view"',
+        'id="taijifu-setting-contrast"',
+        'id="taijifu-setting-touch-scale"',
         'id="taijifu-touch-controls"',
         'data-key="KeyA"',
         'data-key="KeyF"',
@@ -113,6 +129,10 @@ def main() -> None:
             "orientation_guard": True,
             "fullscreen": True,
             "pwa_install": True,
+            "native_web_menu": True,
+            "adaptive_tutorial": True,
+            "accessibility_preferences": True,
+            "persistent_control_settings": True,
         },
         "files": {
             "index": index.name,
@@ -124,12 +144,16 @@ def main() -> None:
             "offline": offline.name,
             "shell_css": shell_css.name,
             "shell_js": shell_js.name,
+            "menu_css": menu_css.name,
+            "menu_js": menu_js.name,
         },
         "sizes": {
             "wasm_bytes": wasm.stat().st_size,
             "pack_bytes": pack.stat().st_size,
             "shell_css_bytes": shell_css.stat().st_size,
             "shell_js_bytes": shell_js.stat().st_size,
+            "menu_css_bytes": menu_css.stat().st_size,
+            "menu_js_bytes": menu_js.stat().st_size,
         },
     }
     (output / "build-info.json").write_text(
@@ -141,7 +165,7 @@ def main() -> None:
     for label, path in required.items():
         assert path is not None
         print(f"  - {label}: {path.name} ({path.stat().st_size} bytes)")
-    print("[taijifu-web] UX Web: shell, fullscreen, orientação e touch aprovados estruturalmente")
+    print("[taijifu-web] UX Web: shell, menu, tutorial, acessibilidade, orientação e touch aprovados estruturalmente")
 
 
 if __name__ == "__main__":
