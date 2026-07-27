@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="128" viewBox="0 0 512 128">
+  <defs>
+    <linearGradient id="kaelRobe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#55bce8"/><stop offset="1" stop-color="#235a93"/>
+    </linearGradient>
+    <linearGradient id="kaelScarf" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b5f4ff"/><stop offset="1" stop-color="#6cd5e8"/>
+    </linearGradient>
+    <style>.ink{stroke:#14192b;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.thin{stroke:#14192b;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}</style>
+  </defs>
+  <!-- IDLE -->
+  <g transform="translate(0 0)">
+    <ellipse cx="64" cy="116" rx="32" ry="6" fill="#101526" opacity=".28"/>
+    <path d="M48 41 Q44 61 45 91 L36 112 L55 112 L64 85 L73 112 L93 112 L82 90 Q84 62 79 42Z" fill="url(#kaelRobe)" class="ink"/>
+    <path d="M49 52 L29 76 M78 52 L96 73" fill="none" class="ink"/>
+    <path d="M44 47 Q28 48 19 61 Q35 58 52 62" fill="none" stroke="url(#kaelScarf)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="64" cy="29" r="17" fill="#e9c6a5" class="ink"/>
+    <path d="M47 28 Q49 5 69 8 Q87 11 82 34 L73 21 L64 28 L55 20Z" fill="#24334e" class="ink"/>
+    <path d="M55 31 L60 29 M69 29 L74 31" fill="none" class="thin"/>
+    <path d="M58 38 Q64 42 70 38" fill="none" class="thin"/>
+    <path d="M50 68 Q64 75 79 67" fill="none" stroke="#c8f4ff" stroke-width="3"/>
+  </g>
+  <!-- MOVE -->
+  <g transform="translate(128 0)">
+    <ellipse cx="64" cy="116" rx="35" ry="6" fill="#101526" opacity=".24"/>
+    <path d="M50 42 Q46 63 51 87 L28 108 L47 113 L66 88 L82 112 L101 106 L78 82 Q83 59 77 42Z" fill="url(#kaelRobe)" class="ink"/>
+    <path d="M49 53 L24 63 M78 52 L100 42" fill="none" class="ink"/>
+    <path d="M45 47 Q22 41 10 48 Q31 52 49 63" fill="none" stroke="url(#kaelScarf)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="64" cy="29" r="17" fill="#e9c6a5" class="ink"/>
+    <path d="M47 28 Q48 7 69 8 Q86 12 82 34 L72 20 L63 27 L54 20Z" fill="#24334e" class="ink"/>
+    <path d="M54 30 L61 28 M68 28 L76 30" fill="none" class="thin"/>
+    <path d="M58 38 Q64 41 70 37" fill="none" class="thin"/>
+    <path d="M18 77 L4 77 M24 91 L8 96" stroke="#71d8f2" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  </g>
+  <!-- ATTACK -->
+  <g transform="translate(256 0)">
+    <ellipse cx="66" cy="116" rx="39" ry="6" fill="#101526" opacity=".28"/>
+    <path d="M49 43 Q43 66 50 91 L35 113 L56 113 L67 88 L78 112 L100 108 L82 86 Q84 62 76 43Z" fill="url(#kaelRobe)" class="ink"/>
+    <path d="M50 53 L86 61 M75 50 L108 44" fill="none" class="ink"/>
+    <path d="M47 48 Q22 45 9 60 Q31 55 53 64" fill="none" stroke="url(#kaelScarf)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="63" cy="29" r="17" fill="#e9c6a5" class="ink"/>
+    <path d="M46 28 Q48 6 68 8 Q85 11 81 34 L71 19 L62 27 L53 19Z" fill="#24334e" class="ink"/>
+    <path d="M52 30 L60 27 M67 27 L76 30" fill="none" class="thin"/>
+    <path d="M58 38 L71 36" fill="none" class="thin"/>
+    <path d="M91 27 Q114 40 119 63" fill="none" stroke="#8beaff" stroke-width="7" stroke-linecap="round" opacity=".72"/>
+  </g>
+  <!-- GUARD / HURT -->
+  <g transform="translate(384 0)">
+    <ellipse cx="64" cy="116" rx="31" ry="6" fill="#101526" opacity=".30"/>
+    <path d="M50 43 Q44 65 47 91 L37 112 L56 112 L64 88 L74 112 L94 112 L81 88 Q84 63 77 43Z" fill="url(#kaelRobe)" class="ink"/>
+    <path d="M50 53 L77 69 M77 51 L49 72" fill="none" class="ink"/>
+    <path d="M47 48 Q26 47 15 58 Q33 57 50 65" fill="none" stroke="url(#kaelScarf)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="64" cy="29" r="17" fill="#e9c6a5" class="ink"/>
+    <path d="M47 28 Q49 7 69 8 Q86 11 82 34 L72 20 L64 27 L54 20Z" fill="#24334e" class="ink"/>
+    <path d="M53 30 L60 32 M68 32 L76 30" fill="none" class="thin"/>
+    <path d="M58 39 Q64 35 70 39" fill="none" class="thin"/>
+    <path d="M90 49 Q108 64 92 83" fill="none" stroke="#b8f5ff" stroke-width="5" stroke-linecap="round" opacity=".78"/>
+  </g>
+</svg>
