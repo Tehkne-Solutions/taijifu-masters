@@ -11,6 +11,7 @@ on:
       - "web/**"
       - "web-tests/**"
       - "vercel.json"
+      - "render.yaml"
       - ".github/workflows/web-release.yml"
   push:
     branches:
@@ -46,7 +47,9 @@ jobs:
         env:
           GODOT_VERSION: "4.3"
           GODOT_CHANNEL: stable
-        run: bash scripts/build-web.sh
+        run: |
+          set -o pipefail
+          bash scripts/build-web.sh 2>&1 | tee web-build.log
 
       - name: Instalar Chromium do Playwright
         working-directory: web-tests
@@ -85,12 +88,13 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publicar evidências do navegador
+      - name: Publicar evidências e logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: taijifu-web-smoke-${{ github.sha }}
           path: |
+            web-build.log
             web-server.log
             web-tests/test-results/
           if-no-files-found: ignore
