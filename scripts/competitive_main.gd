@@ -18,12 +18,13 @@ func _start_battle() -> void:
 	competitive_runtime.begin_series(p1_loadout, p2_loadout)
 	competitive_arena_runtime.configure(competitive_runtime.resolved_arena_rules())
 	_state = MatchState.ENTRANCE
-	center_label.text = "LEITURA DO CONFRONTO"
-	controls_label.text = "Compare vantagens e riscos antes da entrada."
-	vs_analysis_runtime.play(p1_loadout, p2_loadout, competitive_runtime.current_config())
-	await vs_analysis_runtime.analysis_finished
-	if _state != MatchState.ENTRANCE:
-		return
+	if not OS.has_feature("headless"):
+		center_label.text = "LEITURA DO CONFRONTO"
+		controls_label.text = "Compare vantagens e riscos antes da entrada."
+		vs_analysis_runtime.play(p1_loadout, p2_loadout, competitive_runtime.current_config())
+		await vs_analysis_runtime.analysis_finished
+		if _state != MatchState.ENTRANCE:
+			return
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
 	_spawn_fighters()
@@ -64,11 +65,7 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	await get_tree().create_timer(1.15).timeout
 	var result := competitive_runtime.record_round(winner_index, reason)
 	if bool(result.get("match_over", false)):
-		center_label.text = "%s VENCE A SÉRIE\n%d — %d" % [
-			String(result.get("winner_name", winner_name)),
-			int(result.get("score_p1", 0)),
-			int(result.get("score_p2", 0))
-		]
+		center_label.text = "%s VENCE A SÉRIE\n%d — %d" % [String(result.get("winner_name", winner_name)), int(result.get("score_p1", 0)), int(result.get("score_p2", 0))]
 		await get_tree().create_timer(2.15).timeout
 		_cleanup_temporary_loot()
 		competitive_arena_runtime.prepare_round()
@@ -77,7 +74,6 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 		_resetting_round = false
 		_enter_preparation()
 		return
-
 	_cleanup_temporary_loot()
 	competitive_arena_runtime.prepare_round()
 	player_one.reset_fighter(arena.respawn_point(1))
@@ -88,10 +84,8 @@ func _resolve_competitive_round(winner_index: int, reason: String) -> void:
 	await _play_round_entrance()
 
 func _cleanup_fighters() -> void:
-	if is_instance_valid(player_one):
-		player_one.queue_free()
-	if is_instance_valid(player_two):
-		player_two.queue_free()
+	if is_instance_valid(player_one): player_one.queue_free()
+	if is_instance_valid(player_two): player_two.queue_free()
 	player_one = null
 	player_two = null
 
