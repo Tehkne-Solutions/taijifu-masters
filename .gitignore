@@ -2,11 +2,15 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
 
 # Builds
 build/
 dist/
+web-build/
+.cache/
+
+# Vercel local
+.vercel/
 
 # OS / IDE
 .DS_Store
