@@ -1,7 +1,6 @@
 extends SceneTree
 
 const REQUIRED_RESOURCES := [
-	"res://project.godot",
 	"res://scenes/main.tscn",
 	"res://scenes/fighter/fighter.tscn",
 	"res://assets/characters/kael/kael_provisional_sheet.svg",
