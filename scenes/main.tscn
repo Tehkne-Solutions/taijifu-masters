@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -20,6 +20,7 @@
 [ext_resource type="Script" path="res://scripts/runtime/attachment_editor_runtime.gd" id="18_attachment_editor"]
 [ext_resource type="Script" path="res://scripts/runtime/cosmetic_loadout_runtime.gd" id="19_cosmetics"]
 [ext_resource type="Script" path="res://scripts/runtime/match_outcome_runtime.gd" id="20_outcome"]
+[ext_resource type="Script" path="res://scripts/runtime/battle_preparation_runtime.gd" id="21_preparation"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -41,6 +42,9 @@ script = ExtResource("7_mastery")
 
 [node name="MasterTrainingRuntime" type="Node" parent="."]
 script = ExtResource("9_training")
+
+[node name="BattlePreparationRuntime" type="Node" parent="."]
+script = ExtResource("21_preparation")
 
 [node name="VariantLoadoutRuntime" type="Node" parent="."]
 script = ExtResource("10_variant")
