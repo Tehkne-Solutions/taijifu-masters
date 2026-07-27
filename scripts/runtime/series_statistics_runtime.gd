@@ -1,6 +1,8 @@
 class_name SeriesStatisticsRuntime
 extends Node
 
+const MAX_HIGHLIGHTS_PER_ROUND := 24
+
 var history := MatchHistoryLedger.new()
 var _series: Dictionary = {}
 var _current_round: Dictionary = {}
@@ -33,7 +35,8 @@ func begin_round(player_one: FighterController, player_two: FighterController, r
 	_current_round = {
 		"round_number": maxi(1, round_number),
 		"started_msec": _round_started_msec,
-		"stats": [_empty_stats(), _empty_stats()]
+		"stats": [_empty_stats(), _empty_stats()],
+		"highlights": []
 	}
 
 func complete_round(
@@ -46,12 +49,14 @@ func complete_round(
 		begin_round(player_one, player_two, 1)
 	var duration := maxf(0.0, float(Time.get_ticks_msec() - _round_started_msec) / 1000.0)
 	var stats: Array = _current_round.get("stats", [_empty_stats(), _empty_stats()])
+	var highlights: Array = _current_round.get("highlights", [])
 	var round_record := {
 		"round_number": int(_current_round.get("round_number", 1)),
 		"winner_index": clampi(winner_index, 1, 2),
 		"reason": reason,
 		"duration_seconds": duration,
 		"stats": stats.duplicate(true),
+		"highlights": highlights.duplicate(true),
 		"resources": [
 			_resource_snapshot(player_one),
 			_resource_snapshot(player_two)
@@ -83,11 +88,17 @@ func current_series_snapshot() -> Dictionary:
 func recent_matches(limit: int = 10) -> Array[Dictionary]:
 	return history.recent(limit)
 
-func aggregate_history() -> Dictionary:
-	return history.aggregate()
+func filtered_matches(filters: Dictionary, limit: int = 20) -> Array[Dictionary]:
+	return history.filtered(filters, limit)
+
+func aggregate_history(filters: Dictionary = {}) -> Dictionary:
+	return history.aggregate(filters)
 
 func add_test_stat(player_index: int, stat_id: StringName, amount: float = 1.0) -> void:
 	_increment_stat(player_index, stat_id, amount)
+
+func add_test_highlight(player_index: int, event_id: StringName, label: String, value: float = 0.0) -> void:
+	_append_highlight(player_index, event_id, label, value)
 
 func _connect_fighter(fighter: FighterController) -> void:
 	if not is_instance_valid(fighter):
@@ -114,7 +125,7 @@ func _connect_fighter(fighter: FighterController) -> void:
 func _on_impact_resolved(
 	_target: MasteredWeaponFighterController,
 	attacker: FighterController,
-	_technique: TechniqueData,
+	technique: TechniqueData,
 	result_id: StringName,
 	damage_applied: float,
 	posture_applied: float,
@@ -130,6 +141,9 @@ func _on_impact_resolved(
 			_increment_stat(player_index, &"hits", 1.0)
 			_increment_stat(player_index, &"damage_dealt", damage_applied)
 			_increment_stat(player_index, &"posture_damage", posture_applied)
+			if damage_applied >= 18.0 or posture_applied >= 24.0:
+				var technique_name := technique.display_name if is_instance_valid(technique) else "Técnica decisiva"
+				_append_highlight(player_index, &"heavy_impact", "%s conecta um impacto decisivo" % technique_name, maxf(damage_applied, posture_applied))
 		&"blocked":
 			_increment_stat(player_index, &"blocked_contacts", 1.0)
 		&"parried":
@@ -140,28 +154,50 @@ func _on_impact_resolved(
 func _on_parry_performed(fighter: FighterController) -> void:
 	if is_instance_valid(fighter):
 		_increment_stat(fighter.player_index, &"parries", 1.0)
+		_append_highlight(fighter.player_index, &"parry", "Aparo técnico interrompe a pressão", 1.0)
 
-func _on_posture_broken(fighter: FighterController, _region_id: StringName) -> void:
+func _on_posture_broken(fighter: FighterController, region_id: StringName) -> void:
 	if is_instance_valid(fighter):
 		var opponent_index := 2 if fighter.player_index == 1 else 1
 		_increment_stat(opponent_index, &"posture_breaks", 1.0)
+		_append_highlight(opponent_index, &"posture_break", "Quebra de postura na região %s" % String(region_id).to_upper(), 1.0)
 
-func _on_weapon_disarmed(fighter: FighterController, _weapon_id: StringName) -> void:
+func _on_weapon_disarmed(fighter: FighterController, weapon_id: StringName) -> void:
 	if is_instance_valid(fighter):
 		var opponent_index := 2 if fighter.player_index == 1 else 1
 		_increment_stat(opponent_index, &"disarms", 1.0)
+		_append_highlight(opponent_index, &"disarm", "Desarme de %s" % WeaponKitCatalog.label_for(weapon_id), 1.0)
 
 func _on_grab_started(attacker: FighterController, _target: FighterController) -> void:
 	if is_instance_valid(attacker):
 		_increment_stat(attacker.player_index, &"grabs", 1.0)
+		_append_highlight(attacker.player_index, &"grab", "Agarrão estabelece controle de posição", 1.0)
 
-func _on_elemental_interaction(fighter: FighterController, _interaction_id: StringName, _element_id: StringName) -> void:
+func _on_elemental_interaction(fighter: FighterController, interaction_id: StringName, element_id: StringName) -> void:
 	if is_instance_valid(fighter):
 		_increment_stat(fighter.player_index, &"elemental_interactions", 1.0)
+		_append_highlight(fighter.player_index, &"elemental", "Interação %s com %s" % [String(interaction_id).to_upper(), String(element_id).to_upper()], 1.0)
 
-func _on_loot_collected(fighter: FighterController, _loot_type: StringName, _item_id: StringName) -> void:
+func _on_loot_collected(fighter: FighterController, loot_type: StringName, item_id: StringName) -> void:
 	if is_instance_valid(fighter):
 		_increment_stat(fighter.player_index, &"loot_collected", 1.0)
+		_append_highlight(fighter.player_index, &"loot", "Coleta %s: %s" % [String(loot_type).to_upper(), String(item_id).to_upper()], 1.0)
+
+func _append_highlight(player_index: int, event_id: StringName, label: String, value: float = 0.0) -> void:
+	if _current_round.is_empty() or player_index not in [1, 2]:
+		return
+	var highlights: Array = _current_round.get("highlights", [])
+	if highlights.size() >= MAX_HIGHLIGHTS_PER_ROUND:
+		return
+	var elapsed := maxf(0.0, float(Time.get_ticks_msec() - _round_started_msec) / 1000.0)
+	highlights.append({
+		"time_seconds": elapsed,
+		"player_index": player_index,
+		"event_id": String(event_id),
+		"label": label.left(96),
+		"value": value
+	})
+	_current_round["highlights"] = highlights
 
 func _increment_stat(player_index: int, stat_id: StringName, amount: float) -> void:
 	if _current_round.is_empty() or player_index not in [1, 2]:
