@@ -85,6 +85,9 @@ python3 "${ROOT_DIR}/scripts/prepare-web-pwa.py" "${OUTPUT_DIR}"
 log "Injetando configuração visual de gamepads"
 python3 "${ROOT_DIR}/scripts/inject-gamepad-web.py" "${OUTPUT_DIR}"
 
+log "Injetando editor visual de curvas e dojo de combos"
+python3 "${ROOT_DIR}/scripts/inject-controller-mastery-web.py" "${OUTPUT_DIR}"
+
 log "Validando artefatos gerados"
 python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
 
