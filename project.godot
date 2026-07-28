@@ -15,6 +15,7 @@ config/icon="res://web/taijifu-web-icon.svg"
 [autoload]
 
 AssetPackRegistry="*res://scripts/runtime/asset_pack_registry.gd"
+Pack99BattleVisualRuntime="*res://scripts/runtime/pack_99_battle_visual_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
 TaijifuGamepadExperience="*res://scripts/runtime/gamepad_experience_runtime.gd"
