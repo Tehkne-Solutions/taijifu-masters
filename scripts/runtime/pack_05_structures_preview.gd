@@ -1,20 +1,23 @@
 extends Node2D
 
 const PACK_ROOT := "res://assets/packs/pack_05_structures_buildings/runtime/hd"
+const PACK_PIVOT := Vector2(0.5, 0.92)
 const SAMPLE_ASSETS := [
     "TM_STRUCTURE_HOUSE_VILLAGE_RED_001.png",
     "TM_STRUCTURE_TOWER_WATCH_001.png",
     "TM_STRUCTURE_TEMPLE_PORTAL_001.png",
     "TM_STRUCTURE_BRIDGE_STONE_001.png",
-    "TM_STRUCTURE_RUIN_ARCH_001.png"
+    "TM_STRUCTURE_RUIN_ARCH_001.png",
+    "TM_STRUCTURE_GATE_SPIRIT_001.png"
 ]
 
 const SAMPLE_POSITIONS := [
-    Vector2(20, 220),
-    Vector2(270, 120),
-    Vector2(520, 120),
-    Vector2(760, 300),
-    Vector2(930, 200)
+    Vector2(170, 560),
+    Vector2(390, 560),
+    Vector2(610, 560),
+    Vector2(820, 560),
+    Vector2(1020, 560),
+    Vector2(1180, 560)
 ]
 
 func _ready() -> void:
@@ -31,6 +34,8 @@ func _build_preview() -> void:
             sprite.texture = load(path)
         else:
             sprite.texture = _fallback_texture(index)
+        var texture_size := sprite.texture.get_size()
+        sprite.offset = -Vector2(texture_size.x * PACK_PIVOT.x, texture_size.y * PACK_PIVOT.y)
         add_child(sprite)
 
 func _fallback_texture(index: int) -> Texture2D:
