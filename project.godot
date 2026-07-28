@@ -18,6 +18,7 @@ AssetPackRegistry="*res://scripts/runtime/asset_pack_registry.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
 TaijifuGamepadExperience="*res://scripts/runtime/gamepad_experience_runtime.gd"
+TaijifuControllerMastery="*res://scripts/runtime/controller_mastery_runtime.gd"
 
 [display]
 
