@@ -47,18 +47,23 @@
     return value && typeof value === 'object' ? value : null;
   }
 
+  function globalSnapshot() {
+    return parseResult(window.taijifuGamepadExperienceStateJson);
+  }
+
   function invoke(payload = { command: 'get_state' }) {
+    let result = null;
     try {
       if (typeof window.taijifuGamepadExperienceCommand === 'function') {
-        return parseResult(window.taijifuGamepadExperienceCommand(JSON.stringify(payload)));
+        result = parseResult(window.taijifuGamepadExperienceCommand(JSON.stringify(payload)));
       }
-      if (typeof window.taijifuGamepadExperienceState === 'function') {
-        return parseResult(window.taijifuGamepadExperienceState());
+      if (!result && typeof window.taijifuGamepadExperienceState === 'function') {
+        result = parseResult(window.taijifuGamepadExperienceState());
       }
     } catch (error) {
       console.warn('Taijifu Gamepad Web: comando indisponível.', error);
     }
-    return null;
+    return result || globalSnapshot();
   }
 
   function buttonName(index) {
