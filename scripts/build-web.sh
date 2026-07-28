@@ -88,6 +88,9 @@ python3 "${ROOT_DIR}/scripts/inject-gamepad-web.py" "${OUTPUT_DIR}"
 log "Injetando editor visual de curvas e dojo de combos"
 python3 "${ROOT_DIR}/scripts/inject-controller-mastery-web.py" "${OUTPUT_DIR}"
 
+log "Injetando gravação, fantasma e certificações"
+python3 "${ROOT_DIR}/scripts/inject-input-ghost-mastery-web.py" "${OUTPUT_DIR}"
+
 log "Validando artefatos gerados"
 python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
 

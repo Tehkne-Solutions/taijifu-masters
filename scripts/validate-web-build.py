@@ -44,6 +44,7 @@ def main() -> None:
     menu_js = output / "taijifu-web-menu.js"
     gamepad_js = output / "taijifu-gamepad-web.js"
     mastery_js = output / "taijifu-controller-mastery-web.js"
+    ghost_js = output / "taijifu-input-ghost-mastery-web.js"
 
     required = {
         "WebAssembly": wasm,
@@ -58,6 +59,7 @@ def main() -> None:
         "runtime do menu Web": menu_js if menu_js.is_file() else None,
         "painel Web de gamepads": gamepad_js if gamepad_js.is_file() else None,
         "editor Web de maestria": mastery_js if mastery_js.is_file() else None,
+        "painel Web de fantasma e certificações": ghost_js if ghost_js.is_file() else None,
     }
     missing = [label for label, path in required.items() if path is None]
     if missing:
@@ -86,9 +88,11 @@ def main() -> None:
         fail("painel Web de gamepads está incompleto")
     if mastery_js.stat().st_size < 14_000:
         fail("editor Web de maestria está incompleto")
+    if ghost_js.stat().st_size < 12_000:
+        fail("painel Web de fantasma e certificações está incompleto")
 
     html = index.read_text(encoding="utf-8", errors="replace")
-    for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js, gamepad_js, mastery_js):
+    for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js, gamepad_js, mastery_js, ghost_js):
         if asset.name not in html:
             fail(f"index.html não referencia {asset.name}")
     if "<canvas" not in html.lower():
@@ -99,6 +103,7 @@ def main() -> None:
         "TAIJIFU_WEB_SHELL_BODY",
         "TAIJIFU_GAMEPAD_WEB",
         "TAIJIFU_CONTROLLER_MASTERY_WEB",
+        "TAIJIFU_INPUT_GHOST_MASTERY_WEB",
         'id="taijifu-shell"',
         'id="taijifu-enter"',
         'id="taijifu-menu"',
@@ -165,6 +170,22 @@ def main() -> None:
         if marker not in mastery_source:
             fail(f"editor de maestria não contém o contrato obrigatório: {marker}")
 
+    ghost_source = ghost_js.read_text(encoding="utf-8", errors="replace")
+    for marker in (
+        "taijifuGhostMasteryCommand",
+        "taijifu-input-ghost-panel",
+        "start_recording",
+        "stop_recording",
+        "play_best",
+        "taijifu-ghost-live",
+        "renderComparison",
+        "renderCertifications",
+        "renderChallenges",
+        "weapon_mastery",
+    ):
+        if marker not in ghost_source:
+            fail(f"painel de fantasma não contém o contrato obrigatório: {marker}")
+
     manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
     if manifest_data.get("display") != "standalone":
         fail("manifesto PWA não está em modo standalone")
@@ -204,6 +225,13 @@ def main() -> None:
             "free_trigger_mapping": True,
             "parry_cancel_windows": True,
             "combo_metrics": True,
+            "input_recording": True,
+            "ghost_playback": True,
+            "attempt_comparison": True,
+            "technique_challenges": True,
+            "style_mastery": True,
+            "tai_ji_fu_certifications": True,
+            "weapon_mastery_bridge": True,
         },
         "files": {
             "index": index.name,
@@ -219,6 +247,7 @@ def main() -> None:
             "menu_js": menu_js.name,
             "gamepad_js": gamepad_js.name,
             "mastery_js": mastery_js.name,
+            "ghost_js": ghost_js.name,
         },
         "sizes": {
             "wasm_bytes": wasm.stat().st_size,
@@ -229,6 +258,7 @@ def main() -> None:
             "menu_js_bytes": menu_js.stat().st_size,
             "gamepad_js_bytes": gamepad_js.stat().st_size,
             "mastery_js_bytes": mastery_js.stat().st_size,
+            "ghost_js_bytes": ghost_js.stat().st_size,
         },
     }
     (output / "build-info.json").write_text(
@@ -240,7 +270,7 @@ def main() -> None:
     for label, path in required.items():
         assert path is not None
         print(f"  - {label}: {path.name} ({path.stat().st_size} bytes)")
-    print("[taijifu-web] UX Web: perfis GUID, curva visual, gatilhos livres, janelas, combos, gamepads, pausa e touch aprovados estruturalmente")
+    print("[taijifu-web] UX Web: gravação, fantasma, comparação, desafios, certificações, gamepads, pausa e touch aprovados estruturalmente")
 
 
 if __name__ == "__main__":
