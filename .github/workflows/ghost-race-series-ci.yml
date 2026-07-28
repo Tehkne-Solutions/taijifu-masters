@@ -1,0 +1,44 @@
+name: Ghost Race Series CI
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/ghost_race_series_runtime.gd'
+      - 'scripts/runtime/ghost_race_runtime.gd'
+      - 'scripts/ci/ghost_race_series_smoke_test.gd'
+      - 'web/taijifu-ghost-race-series-web.js'
+      - 'project.godot'
+      - '.github/workflows/ghost-race-series-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-series:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Baixar Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Validar parser e séries
+        run: |
+          set -o pipefail
+          ./godot --headless --editor --path . --quit 2>&1 | tee godot-series-import.log
+          ./godot --headless --path . --script res://scripts/ci/ghost_race_series_smoke_test.gd 2>&1 | tee godot-series.log
+      - name: Publicar logs quando houver falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghost-race-series-ci-logs
+          path: |
+            godot-series-import.log
+            godot-series.log
