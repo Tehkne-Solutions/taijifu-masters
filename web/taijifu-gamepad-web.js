@@ -9,8 +9,9 @@
 
   const BUTTON_NAMES = {
     0: 'A / Cruz', 1: 'B / Círculo', 2: 'X / Quadrado', 3: 'Y / Triângulo',
-    4: 'LB / L1', 5: 'RB / R1', 8: 'Select / View', 9: 'Start / Menu',
-    10: 'L3', 11: 'R3', 12: 'D-pad ↑', 13: 'D-pad ↓', 14: 'D-pad ←', 15: 'D-pad →'
+    4: 'Select / View', 5: 'Guide', 6: 'Start / Menu', 7: 'L3', 8: 'R3',
+    9: 'LB / L1', 10: 'RB / R1', 11: 'D-pad ↑', 12: 'D-pad ↓',
+    13: 'D-pad ←', 14: 'D-pad →'
   };
 
   const ui = {
@@ -274,7 +275,7 @@
       for (let index = 0; index < gamepad.buttons.length; index += 1) {
         const button = gamepad.buttons[index];
         const token = `${gamepad.index}:${index}`;
-        if ((button.pressed || button.value > 0.5) && !state.captureBaseline.has(token) && ![9, 16].includes(index)) {
+        if ((button.pressed || button.value > 0.5) && !state.captureBaseline.has(token) && ![6, 16].includes(index)) {
           const suffix = state.captureSuffix;
           state.captureSuffix = null;
           execute({ command: 'set_binding', player: state.player, suffix, button: index, device: gamepad.index }, `${suffix} remapeado para ${buttonName(index)}.`);
