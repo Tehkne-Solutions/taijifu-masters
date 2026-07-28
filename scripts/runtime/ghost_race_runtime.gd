@@ -1,7 +1,7 @@
 class_name GhostRaceRuntime
 extends Node
 
-const BRIDGE_VERSION := 1
+const BRIDGE_VERSION := 2
 
 var active := false
 var started_ms := 0
@@ -33,10 +33,19 @@ func start_selected() -> Dictionary:
 	if index < 0:
 		return _result(false, "Selecione um fantasma da biblioteca.")
 	var item: Dictionary = library.items[index]
+	var challenge := (item.get("challenge", {}) as Dictionary).duplicate(true)
+	var base_score := int(challenge.get("score", 0))
+	var multiplier := 1.0
+	var series := get_node_or_null("/root/TaijifuGhostRaceSeries")
+	if is_instance_valid(series) and bool(series.active):
+		multiplier = float(series.difficulty_multiplier())
+		challenge["base_score"] = base_score
+		challenge["score"] = int(series.adjusted_target_score(base_score))
+		challenge["difficulty_multiplier"] = multiplier
 	target = {
 		"id": String(item.get("id", "")),
 		"name": String(item.get("name", "Fantasma")),
-		"challenge": (item.get("challenge", {}) as Dictionary).duplicate(true),
+		"challenge": challenge,
 		"recording": (item.get("recording", {}) as Dictionary).duplicate(true)
 	}
 	target_duration_ms = maxi(1000, int((target.get("recording", {}) as Dictionary).get("duration_ms", 12000)))
@@ -52,7 +61,7 @@ func start_selected() -> Dictionary:
 	live_summary = {}
 	last_result = {}
 	_sync_web_state()
-	return _result(true, "Corrida assíncrona iniciada.", {"target": _public_target()})
+	return _result(true, "Corrida assíncrona iniciada.", {"target": _public_target(), "difficulty_multiplier": multiplier})
 
 func finish_race() -> Dictionary:
 	if not active:
@@ -78,7 +87,8 @@ func finish_race() -> Dictionary:
 		"target": target_summary,
 		"score_delta": player_score - target_score,
 		"elapsed_ms": elapsed_ms(),
-		"target_id": String(target.get("id", ""))
+		"target_id": String(target.get("id", "")),
+		"difficulty_multiplier": float(target_summary.get("difficulty_multiplier", 1.0))
 	}
 	active = false
 	live_summary = player_summary.duplicate(true)
@@ -132,6 +142,7 @@ func current_state() -> Dictionary:
 		"player": live_summary.duplicate(true),
 		"target": _public_target(),
 		"score_delta": int(live_summary.get("score", 0)) - int(challenge.get("score", 0)),
+		"difficulty_multiplier": float(challenge.get("difficulty_multiplier", 1.0)),
 		"last_result": last_result.duplicate(true),
 		"history": history_record,
 		"series": series_state
