@@ -85,6 +85,9 @@ func finish_race() -> Dictionary:
 	var history := get_node_or_null("/root/TaijifuGhostRaceHistory") as GhostRaceHistoryRuntime
 	if is_instance_valid(history):
 		history.record_result(last_result)
+	var series := get_node_or_null("/root/TaijifuGhostRaceSeries")
+	if is_instance_valid(series) and bool(series.active):
+		series.register_round(last_result)
 	_sync_web_state()
 	return _result(true, "Resultado: %s." % outcome, last_result.duplicate(true))
 
@@ -115,6 +118,10 @@ func current_state() -> Dictionary:
 	var history := get_node_or_null("/root/TaijifuGhostRaceHistory") as GhostRaceHistoryRuntime
 	if is_instance_valid(history):
 		history_record = history.public_record(String(target.get("id", "")))
+	var series_state: Dictionary = {}
+	var series := get_node_or_null("/root/TaijifuGhostRaceSeries")
+	if is_instance_valid(series):
+		series_state = series.current_state()
 	return {
 		"version": BRIDGE_VERSION,
 		"ready": true,
@@ -126,7 +133,8 @@ func current_state() -> Dictionary:
 		"target": _public_target(),
 		"score_delta": int(live_summary.get("score", 0)) - int(challenge.get("score", 0)),
 		"last_result": last_result.duplicate(true),
-		"history": history_record
+		"history": history_record,
+		"series": series_state
 	}
 
 func command(request: Dictionary) -> Dictionary:
