@@ -15,15 +15,21 @@
   };
   const read = () => {
     try {
-      if (window.taijifuGhostRaceHistoryState) return JSON.parse(window.taijifuGhostRaceHistoryState());
-      if (window.taijifuGhostRaceHistoryStateJson) return JSON.parse(window.taijifuGhostRaceHistoryStateJson);
+      if (window.taijifuGhostRaceHistoryState) {
+        return JSON.parse(window.taijifuGhostRaceHistoryState()) || { records: [] };
+      }
+      if (window.taijifuGhostRaceHistoryStateJson) {
+        return JSON.parse(window.taijifuGhostRaceHistoryStateJson) || { records: [] };
+      }
     } catch (_) {}
-    return {records:[]};
+    return { records: [] };
   };
   const render = () => {
     ensure();
     const list = document.querySelector(`#${id} [data-list]`);
-    const records = read().records || [];
+    if (!list) return;
+    const snapshot = read() || { records: [] };
+    const records = Array.isArray(snapshot.records) ? snapshot.records : [];
     if (!records.length) { list.className='muted'; list.textContent='Nenhuma tentativa registrada.'; return; }
     list.className='';
     list.innerHTML = records.map(r => `<div class="row"><strong>${r.target_id || 'Fantasma'}</strong><br>${r.wins||0}V · ${r.losses||0}D · ${r.ties||0}E · melhor ${r.best_score||0} pts<br><span class="muted">${Math.round((r.win_rate||0)*100)}% vitórias · precisão ${Math.round((r.best_accuracy||0)*100)}% · elo ${r.best_chain||0}</span></div>`).join('');
