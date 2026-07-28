@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime/pack_99_integration_preview.gd" id="1_preview"]
+
+[node name="Pack99IntegrationPreview" type="Node2D"]
+script = ExtResource("1_preview")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.035, 0.045, 0.065, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 28.0
+offset_top = 20.0
+offset_right = 980.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.94, 0.88, 0.68, 1)
+theme_override_font_sizes/font_size = 28
+text = "PACK 99 — INTEGRAÇÃO PACKS 07–10"
+
+[node name="Subtitle" type="Label" parent="."]
+offset_left = 30.0
+offset_top = 66.0
+offset_right = 1120.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.72, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 16
+text = "Heróis • Unidades • VFX • HUD/TCG — placeholders automáticos enquanto os binários não estiverem no repositório"

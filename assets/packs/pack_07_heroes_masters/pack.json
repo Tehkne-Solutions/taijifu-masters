@@ -1,0 +1,32 @@
+{
+  "id": "PACK_07",
+  "name": "Heroes & Masters",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01", "PACK_02"],
+  "asset_count": 48,
+  "distribution": {"classes": 6, "directions_per_class": 4, "variants_per_direction": 2},
+  "classes": [
+    {"id": "warden", "role": "defender", "weapon": "sword"},
+    {"id": "ranger", "role": "ranged", "weapon": "bow"},
+    {"id": "monk", "role": "balanced", "weapon": "staff"},
+    {"id": "mystic", "role": "support", "weapon": "orb"},
+    {"id": "reaver", "role": "bruiser", "weapon": "axe"},
+    {"id": "sentinel", "role": "control", "weapon": "spear"}
+  ],
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "animation_ready": true,
+    "directions": ["NE", "SE", "SW", "NW"],
+    "variants": ["base", "ascended"],
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.9}
+  },
+  "paths": {
+    "runtime_hd": "res://assets/packs/pack_07_heroes_masters/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_07_heroes_masters/runtime/mobile"
+  }
+}

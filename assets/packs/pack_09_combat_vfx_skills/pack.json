@@ -1,0 +1,22 @@
+{
+  "id": "PACK_09",
+  "name": "Combat VFX & Skills",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_02", "PACK_07", "PACK_08"],
+  "asset_count": 58,
+  "distribution": {"impacts": 12, "projectiles": 10, "buffs": 12, "debuffs": 8, "character_states": 8, "arena_effects": 8},
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "animation_ready": true,
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.5}
+  },
+  "paths": {
+    "runtime_hd": "res://assets/packs/pack_09_combat_vfx_skills/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_09_combat_vfx_skills/runtime/mobile"
+  }
+}
