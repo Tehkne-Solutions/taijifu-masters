@@ -3,6 +3,8 @@ extends Node
 signal reward_choices_ready(player_index: int, choices: Array[Dictionary])
 signal reward_chosen(player_index: int, reward: Dictionary)
 signal inventory_changed(player_index: int, inventory: Array[Dictionary])
+signal round_resolved(winner_index: int, loser_index: int)
+signal item_protection_changed(player_index: int, item_id: String)
 
 const REWARD_POOL := [
 	{"id":"ember_edge","label":"Lâmina da Brasa","type":"weapon","rarity":"rare","stat":"strength","amount":8.0},
@@ -21,6 +23,7 @@ var _fighters: Dictionary = {}
 var _inventories := {1: [], 2: []}
 var _pending_choices := {1: [], 2: []}
 var _round_wins := {1: 0, 2: 0}
+var _protected_item_ids := {1: "", 2: ""}
 var _connected: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _scan_timer := 0.0
@@ -54,7 +57,7 @@ func _on_fighter_defeated(defeated: FighterController) -> void:
 	_round_wins[winner] = int(_round_wins.get(winner, 0)) + 1
 	_apply_defeat_loss(loser)
 	_generate_reward_choices(winner)
-	_show_reward_panel(winner)
+	round_resolved.emit(winner, loser)
 
 func _generate_reward_choices(player_index: int) -> void:
 	var pool := REWARD_POOL.duplicate(true)
@@ -72,7 +75,10 @@ func choose_reward(player_index: int, choice_index: int) -> bool:
 	var reward: Dictionary = Dictionary(choices[choice_index]).duplicate(true)
 	var inventory: Array = _inventories.get(player_index, [])
 	if inventory.size() >= MAX_INVENTORY:
-		inventory.pop_front()
+		var remove_index := 0
+		if String(inventory[0].get("id", "")) == protected_item_id(player_index) and inventory.size() > 1:
+			remove_index = 1
+		inventory.remove_at(remove_index)
 	inventory.append(reward)
 	_inventories[player_index] = inventory
 	_pending_choices[player_index] = []
@@ -87,11 +93,17 @@ func _apply_defeat_loss(player_index: int) -> void:
 	var inventory: Array = _inventories.get(player_index, [])
 	if inventory.is_empty():
 		return
-	var loss_count := maxi(1, int(ceil(inventory.size() * LOSS_FRACTION)))
-	for i in range(loss_count):
-		if inventory.is_empty():
-			break
-		inventory.remove_at(_rng.randi_range(0, inventory.size() - 1))
+	var candidates: Array[int] = []
+	for index in range(inventory.size()):
+		if String(inventory[index].get("id", "")) != protected_item_id(player_index):
+			candidates.append(index)
+	var loss_count := mini(candidates.size(), maxi(1, int(ceil(inventory.size() * LOSS_FRACTION))))
+	candidates.shuffle()
+	var selected := candidates.slice(0, loss_count)
+	selected.sort()
+	selected.reverse()
+	for index in selected:
+		inventory.remove_at(index)
 	_inventories[player_index] = inventory
 	inventory_changed.emit(player_index, inventory_snapshot(player_index))
 
@@ -110,43 +122,29 @@ func _apply_reward_to_fighter(fighter: FighterController, reward: Dictionary) ->
 	fighter.stamina = minf(100.0, fighter.stamina + 12.0)
 	fighter.combat_state_changed.emit(fighter)
 
-func _show_reward_panel(player_index: int) -> void:
-	if get_tree().current_scene == null:
-		return
-	var choices: Array = _pending_choices.get(player_index, [])
-	if choices.is_empty():
-		return
-	var layer := CanvasLayer.new()
-	layer.name = "SeriesRewardChoice"
-	layer.layer = 150
-	get_tree().current_scene.add_child(layer)
-	var panel := PanelContainer.new()
-	panel.position = Vector2(390, 170)
-	panel.size = Vector2(500, 300)
-	layer.add_child(panel)
-	var box := VBoxContainer.new()
-	panel.add_child(box)
-	var title := Label.new()
-	title.text = "P%d • ESCOLHA UMA RECOMPENSA" % player_index
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	box.add_child(title)
-	for i in range(choices.size()):
-		var reward: Dictionary = choices[i]
-		var button := Button.new()
-		button.text = "%d — %s • %s" % [i + 1, String(reward["label"]), String(reward["rarity"]).to_upper()]
-		button.custom_minimum_size = Vector2(460, 52)
-		button.pressed.connect(func():
-			if choose_reward(player_index, i):
-				layer.queue_free()
-		)
-		box.add_child(button)
-	var timer := get_tree().create_timer(7.0)
-	timer.timeout.connect(func():
-		if is_instance_valid(layer):
-			choose_reward(player_index, 0)
-			layer.queue_free()
-	)
+func protect_item(player_index: int, item_index: int) -> bool:
+	var inventory: Array = _inventories.get(player_index, [])
+	if item_index < 0 or item_index >= inventory.size():
+		return false
+	var item_id := String(inventory[item_index].get("id", ""))
+	_protected_item_ids[player_index] = item_id
+	item_protection_changed.emit(player_index, item_id)
+	return true
+
+func discard_item(player_index: int, item_index: int) -> bool:
+	var inventory: Array = _inventories.get(player_index, [])
+	if item_index < 0 or item_index >= inventory.size():
+		return false
+	var removed: Dictionary = inventory[item_index]
+	inventory.remove_at(item_index)
+	_inventories[player_index] = inventory
+	if protected_item_id(player_index) == String(removed.get("id", "")):
+		_protected_item_ids[player_index] = ""
+	inventory_changed.emit(player_index, inventory_snapshot(player_index))
+	return true
+
+func protected_item_id(player_index: int) -> String:
+	return String(_protected_item_ids.get(player_index, ""))
 
 func inventory_snapshot(player_index: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -167,3 +165,4 @@ func reset_series() -> void:
 	_inventories = {1: [], 2: []}
 	_pending_choices = {1: [], 2: []}
 	_round_wins = {1: 0, 2: 0}
+	_protected_item_ids = {1: "", 2: ""}
