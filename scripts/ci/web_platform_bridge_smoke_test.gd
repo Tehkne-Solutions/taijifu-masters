@@ -11,6 +11,12 @@ func _run_validation() -> void:
 		_finish(failures)
 		return
 
+	var gamepad_training := root.get_node_or_null("TaijifuGamepadTraining") as GamepadTrainingRuntime
+	if not is_instance_valid(gamepad_training):
+		failures.append("Autoload TaijifuGamepadTraining ausente")
+		_finish(failures)
+		return
+
 	bridge.reset_keyboard_bindings()
 	var defaults := bridge.current_keyboard_bindings()
 	if String(defaults.get("p1_attack", "")) != "KeyF":
@@ -60,11 +66,48 @@ func _run_validation() -> void:
 	if bool(state.get("paused", true)):
 		failures.append("Estado final permaneceu pausado")
 
+	gamepad_training.reset_profile()
+	var gamepad_defaults := gamepad_training.current_profile()
+	var player_one_defaults: Dictionary = gamepad_defaults.get("players", {}).get("1", {})
+	var default_buttons: Dictionary = player_one_defaults.get("buttons", {})
+	if int(default_buttons.get("attack", -1)) != JOY_BUTTON_X:
+		failures.append("Golpe padrão do gamepad P1 não iniciou em X")
+	if not gamepad_training.set_button_binding_for_test(1, "attack", JOY_BUTTON_RIGHT_SHOULDER, 3):
+		failures.append("Remapeamento válido de gamepad foi rejeitado")
+	if not _has_joy_button(&"p1_attack", JOY_BUTTON_RIGHT_SHOULDER, 3):
+		failures.append("InputMap não recebeu o botão remapeado do gamepad")
+	if not _has_keyboard_key(&"p1_attack", KEY_J):
+		failures.append("Remapeamento do gamepad removeu o teclado")
+	if gamepad_training.set_button_binding_for_test(3, "attack", JOY_BUTTON_A, 0):
+		failures.append("Jogador inválido foi aceito no remapeamento")
+	if gamepad_training.set_button_binding_for_test(1, "unknown", JOY_BUTTON_A, 0):
+		failures.append("Ação de gamepad desconhecida foi aceita")
+
+	if not gamepad_training.set_deadzone_for_test(1, 0.41):
+		failures.append("Zona morta válida foi rejeitada")
+	if not is_equal_approx(InputMap.action_get_deadzone(&"p1_attack"), 0.41):
+		failures.append("Zona morta não foi aplicada ao InputMap")
+	gamepad_training.set_deadzone_for_test(1, 5.0)
+	var clamped_profile := gamepad_training.current_profile()
+	var clamped_player: Dictionary = clamped_profile.get("players", {}).get("1", {})
+	if not is_equal_approx(float(clamped_player.get("deadzone", 0.0)), GamepadTrainingRuntime.MAX_DEADZONE):
+		failures.append("Zona morta não respeitou o limite máximo")
+
+	if gamepad_training.record_outcome_for_test(2, 1, &"hit") != 1:
+		failures.append("Treino não reconheceu acerto real")
+	if gamepad_training.record_outcome_for_test(1, 2, &"blocked") != 2:
+		failures.append("Treino não reconheceu defesa real")
+	if gamepad_training.record_outcome_for_test(1, 2, &"evaded") != 3:
+		failures.append("Treino não reconheceu esquiva real")
+
+	gamepad_training.reset_profile()
 	bridge.reset_keyboard_bindings()
 	if String(bridge.current_keyboard_bindings().get("p1_attack", "")) != "KeyF":
 		failures.append("Restauração não recuperou KeyF")
 	if String(bridge.current_keyboard_bindings().get("p1_swap", "")) != "KeyT":
 		failures.append("Restauração não recuperou KeyT")
+	if not _has_joy_button(&"p1_attack", JOY_BUTTON_X, 0):
+		failures.append("Restauração não recuperou X no gamepad P1")
 
 	_finish(failures)
 
@@ -82,7 +125,7 @@ func _has_joy_button(action_id: StringName, button: JoyButton, device: int) -> b
 
 func _finish(failures: Array[String]) -> void:
 	if failures.is_empty():
-		print("TAIJIFU CI: ponte Web, pausa e remapeamento válidos.")
+		print("TAIJIFU CI: ponte Web, gamepad e treino real válidos.")
 		quit(0)
 		return
 	for failure in failures:
