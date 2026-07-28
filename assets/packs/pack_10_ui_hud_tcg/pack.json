@@ -1,0 +1,22 @@
+{
+  "id": "PACK_10",
+  "name": "Interface, HUD & TCG",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_07", "PACK_08", "PACK_09"],
+  "asset_count": 60,
+  "distribution": {"panels": 8, "buttons": 12, "bars": 8, "icons": 16, "card_frames": 8, "badges": 8},
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "nine_patch_candidates": true,
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.5}
+  },
+  "paths": {
+    "runtime_hd": "res://assets/packs/pack_10_ui_hud_tcg/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_10_ui_hud_tcg/runtime/mobile"
+  }
+}
