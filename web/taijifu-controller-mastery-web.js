@@ -13,6 +13,7 @@
     data: null,
     points: [0, 0.16, 0.44, 0.76, 1],
     dragging: null,
+    dirty: false,
     refreshTimer: 0
   };
 
@@ -49,7 +50,16 @@
   }
 
   function playerState() {
-    return state.data?.players?.[String(state.player)] || { device: state.player - 1, guid: '', profile: {} };
+    return state.data?.players?.[String(state.player)] || {
+      device: state.player - 1,
+      guid: '',
+      profile: {}
+    };
+  }
+
+  function markDirty(message = 'Alterações não salvas. Clique em Salvar perfil.') {
+    state.dirty = true;
+    if (ui.status) ui.status.textContent = message;
   }
 
   function injectStyle() {
@@ -73,9 +83,14 @@
       .taijifu-mastery-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
       .taijifu-mastery-metric{padding:9px 8px;border-radius:10px;background:rgba(120,177,226,.08);text-align:center}.taijifu-mastery-metric strong{display:block;color:#f0d58c;font-size:16px}.taijifu-mastery-metric span{color:rgba(211,226,240,.62);font-size:9px;text-transform:uppercase;letter-spacing:.08em}
       .taijifu-mastery-status{margin:9px 0 0;color:rgba(210,228,245,.68);font-size:11px;line-height:1.45}
+      .taijifu-mastery-fieldset.is-dirty{box-shadow:0 0 0 2px rgba(240,197,108,.12)}
       @media(max-width:760px){.taijifu-mastery-head,.taijifu-mastery-triggers{grid-template-columns:1fr}.taijifu-curve-editor{grid-template-columns:1fr}.taijifu-mastery-metrics{grid-template-columns:repeat(2,1fr)}}
     `;
     document.head.appendChild(style);
+  }
+
+  function curveValueMarkup(index) {
+    return `<label class="taijifu-curve-value"><span>${index * 25}%</span><input type="range" data-curve-index="${index}" min="0" max="1" step="0.01"><output data-curve-output="${index}">0%</output></label>`;
   }
 
   function injectPanel() {
@@ -104,7 +119,7 @@
           <circle class="taijifu-curve-point" data-index="2" r="9" tabindex="0" />
           <circle class="taijifu-curve-point" data-index="3" r="9" tabindex="0" />
         </svg>
-        <div id="taijifu-curve-values" class="taijifu-curve-values"></div>
+        <div id="taijifu-curve-values" class="taijifu-curve-values">${curveValueMarkup(1)}${curveValueMarkup(2)}${curveValueMarkup(3)}</div>
       </div>
       <div class="taijifu-mastery-triggers">
         <label class="taijifu-mastery-control">L2 executa<select id="taijifu-mastery-left-trigger">${options}</select></label>
@@ -150,32 +165,49 @@
   function bindEvents() {
     ui.player.addEventListener('change', () => {
       state.player = Number(ui.player.value) || 1;
-      render();
+      state.dirty = false;
+      render(true);
     });
-    ui.device.addEventListener('change', () => execute({ command: 'assign_device', player: state.player, device: Number(ui.device.value) }, 'Controle associado e perfil GUID carregado.'));
-    ui.trigger.addEventListener('input', updateLabels);
-    ui.cancel.addEventListener('input', updateLabels);
+    ui.device.addEventListener('change', () => {
+      state.dirty = false;
+      execute({ command: 'assign_device', player: state.player, device: Number(ui.device.value) }, 'Controle associado e perfil GUID carregado.');
+    });
+
+    [ui.leftTrigger, ui.rightTrigger, ui.cancelAssist, ui.windows].forEach((control) => {
+      control.addEventListener('change', () => markDirty());
+    });
+    ui.trigger.addEventListener('input', () => { markDirty(); updateLabels(); });
+    ui.cancel.addEventListener('input', () => { markDirty(); updateLabels(); });
+
+    ui.values.addEventListener('input', (event) => {
+      const input = event.target.closest('input[data-curve-index]');
+      if (!input) return;
+      const index = Number(input.dataset.curveIndex);
+      const value = Math.max(state.points[index - 1], Math.min(state.points[index + 1], Number(input.value)));
+      state.points[index] = Number(value.toFixed(3));
+      markDirty();
+      drawCurve();
+    });
+
     document.getElementById('taijifu-mastery-save').addEventListener('click', saveProfile);
-    document.getElementById('taijifu-mastery-reset').addEventListener('click', () => execute({ command: 'reset_device', player: state.player }, 'Perfil do controle restaurado.'));
+    document.getElementById('taijifu-mastery-reset').addEventListener('click', () => {
+      state.dirty = false;
+      execute({ command: 'reset_device', player: state.player }, 'Perfil do controle restaurado.');
+    });
     document.getElementById('taijifu-mastery-dojo').addEventListener('click', startDojo);
-    ui.windows.addEventListener('change', () => execute({ command: 'set_windows', enabled: ui.windows.checked }));
 
     ui.svg.addEventListener('pointerdown', (event) => {
       const point = event.target.closest('.taijifu-curve-point[data-index]');
       if (!point) return;
       state.dragging = Number(point.dataset.index);
       point.setPointerCapture?.(event.pointerId);
+      markDirty();
       updatePointFromPointer(event);
     });
     ui.svg.addEventListener('pointermove', (event) => {
       if (state.dragging !== null) updatePointFromPointer(event);
     });
-    ui.svg.addEventListener('pointerup', () => {
-      if (state.dragging !== null) {
-        state.dragging = null;
-        saveCurveOnly();
-      }
-    });
+    ui.svg.addEventListener('pointerup', () => { state.dragging = null; });
     ui.svg.addEventListener('pointercancel', () => { state.dragging = null; });
   }
 
@@ -187,26 +219,28 @@
     let value = Math.max(0, Math.min(1, (150 - y) / 140));
     value = Math.max(state.points[index - 1], Math.min(state.points[index + 1], value));
     state.points[index] = Number(value.toFixed(3));
-    renderCurve();
-  }
-
-  function saveCurveOnly() {
-    execute({ command: 'set_curve', player: state.player, points: state.points }, 'Curva personalizada salva no perfil do controle.');
+    drawCurve();
   }
 
   function saveProfile() {
     const curveResult = invoke({ command: 'set_curve', player: state.player, points: state.points });
     const triggerResult = invoke({
-      command: 'set_triggers', player: state.player,
-      left_action: ui.leftTrigger.value, right_action: ui.rightTrigger.value,
+      command: 'set_triggers',
+      player: state.player,
+      left_action: ui.leftTrigger.value,
+      right_action: ui.rightTrigger.value,
       threshold: Number(ui.trigger.value)
     });
     const cancelResult = invoke({
-      command: 'set_cancel', player: state.player,
-      threshold: Number(ui.cancel.value), enabled: ui.cancelAssist.checked
+      command: 'set_cancel',
+      player: state.player,
+      threshold: Number(ui.cancel.value),
+      enabled: ui.cancelAssist.checked
     });
-    state.data = cancelResult || triggerResult || curveResult || snapshot();
-    render();
+    const windowsResult = invoke({ command: 'set_windows', enabled: ui.windows.checked });
+    state.data = windowsResult || cancelResult || triggerResult || curveResult || snapshot();
+    state.dirty = false;
+    render(true);
     ui.status.textContent = 'Perfil por modelo/GUID atualizado.';
   }
 
@@ -221,33 +255,43 @@
     const result = invoke(payload);
     if (result) {
       state.data = result;
-      render();
+      state.dirty = false;
+      render(true);
       if (message) ui.status.textContent = message;
     } else {
       ui.status.textContent = 'A ponte de maestria ainda não respondeu.';
     }
   }
 
-  function render() {
+  function render(forceControls = false) {
     if (!ui.root || !state.data) return;
     const current = playerState();
     const deviceProfile = current.profile || {};
+    const canSyncControls = forceControls || !state.dirty;
+
+    ui.root.classList.toggle('is-dirty', state.dirty);
     ui.player.value = String(state.player);
-    renderDevices(Number(current.device ?? state.player - 1));
-    state.points = sanitizePoints(deviceProfile.curve_points);
-    ui.leftTrigger.value = deviceProfile.left_trigger_action || 'element';
-    ui.rightTrigger.value = deviceProfile.right_trigger_action || 'attack';
-    ui.trigger.value = String(Number(deviceProfile.trigger_threshold ?? 0.55));
-    ui.cancel.value = String(Number(deviceProfile.cancel_threshold ?? 0.68));
-    ui.cancelAssist.checked = deviceProfile.cancel_assist !== false;
-    ui.windows.checked = state.data.show_windows !== false;
     ui.profile.innerHTML = `<strong>${escapeHtml(deviceProfile.name || 'Controle')}</strong><br>GUID: <code>${escapeHtml(current.guid || 'perfil de slot')}</code>`;
-    updateLabels();
-    renderCurve();
+
+    if (canSyncControls) {
+      renderDevices(Number(current.device ?? state.player - 1));
+      state.points = sanitizePoints(deviceProfile.curve_points);
+      ui.leftTrigger.value = deviceProfile.left_trigger_action || 'element';
+      ui.rightTrigger.value = deviceProfile.right_trigger_action || 'attack';
+      ui.trigger.value = String(Number(deviceProfile.trigger_threshold ?? 0.55));
+      ui.cancel.value = String(Number(deviceProfile.cancel_threshold ?? 0.68));
+      ui.cancelAssist.checked = deviceProfile.cancel_assist !== false;
+      ui.windows.checked = state.data.show_windows !== false;
+      updateLabels();
+      drawCurve();
+    }
+
     renderMetrics();
-    const dojo = state.data.dojo || {};
-    const raw = state.data.raw_metrics || {};
-    ui.status.textContent = `Dojo ${dojo.active ? `ativo • etapa ${Number(dojo.stage) + 1}/4` : (dojo.completed ? 'concluído' : 'pendente')} • ${raw.last_event || 'edite a curva ou inicie o treino.'}`;
+    if (!state.dirty) {
+      const dojo = state.data.dojo || {};
+      const raw = state.data.raw_metrics || {};
+      ui.status.textContent = `Dojo ${dojo.active ? `ativo • etapa ${Number(dojo.stage) + 1}/4` : (dojo.completed ? 'concluído' : 'pendente')} • ${raw.last_event || 'edite a curva ou inicie o treino.'}`;
+    }
   }
 
   function sanitizePoints(value) {
@@ -270,7 +314,7 @@
     ui.device.value = String(selected);
   }
 
-  function renderCurve() {
+  function drawCurve() {
     const coordinates = state.points.map((value, index) => [10 + index * 85, 150 - value * 140]);
     ui.line.setAttribute('d', `M${coordinates.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')}`);
     ui.svg.querySelectorAll('.taijifu-curve-point').forEach((circle) => {
@@ -279,18 +323,16 @@
       circle.setAttribute('cy', coordinates[index][1]);
       circle.setAttribute('aria-label', `Ponto ${index}: ${Math.round(state.points[index] * 100)}%`);
     });
-    ui.values.innerHTML = [1, 2, 3].map((index) => `
-      <label class="taijifu-curve-value"><span>${index * 25}%</span><input type="range" data-curve-index="${index}" min="0" max="1" step="0.01" value="${state.points[index]}"><output>${Math.round(state.points[index] * 100)}%</output></label>
-    `).join('');
-    ui.values.querySelectorAll('input[data-curve-index]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const index = Number(input.dataset.curveIndex);
-        const value = Math.max(state.points[index - 1], Math.min(state.points[index + 1], Number(input.value)));
-        state.points[index] = Number(value.toFixed(3));
-        renderCurve();
-      }, { once: true });
-      input.addEventListener('change', saveCurveOnly, { once: true });
-    });
+    for (let index = 1; index <= 3; index += 1) {
+      const input = ui.values.querySelector(`input[data-curve-index="${index}"]`);
+      const output = ui.values.querySelector(`output[data-curve-output="${index}"]`);
+      if (input) {
+        input.min = String(state.points[index - 1]);
+        input.max = String(state.points[index + 1]);
+        input.value = String(state.points[index]);
+      }
+      if (output) output.textContent = `${Math.round(state.points[index] * 100)}%`;
+    }
   }
 
   function updateLabels() {
@@ -315,10 +357,13 @@
 
   function refresh() {
     const data = invoke({ command: 'get_state' });
-    if (data) {
-      state.data = data;
-      render();
+    if (!data) return;
+    state.data = data;
+    if (state.dirty) {
+      renderMetrics();
+      return;
     }
+    render();
   }
 
   function boot() {
@@ -335,7 +380,8 @@
     refresh,
     invoke,
     get state() { return state.data; },
-    get points() { return [...state.points]; }
+    get points() { return [...state.points]; },
+    get dirty() { return state.dirty; }
   };
 
   boot();
