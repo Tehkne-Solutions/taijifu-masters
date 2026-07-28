@@ -65,7 +65,7 @@ func _rebuild() -> void:
 		var spec: Dictionary = SHOP_ITEMS[item_id]
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation",12)
-		var owned := item_id in Array(_data.owned_items)
+		var owned: bool = item_id in Array(_data.owned_items)
 		row.add_child(_label("%s  •  %d FICHAS%s" % [spec.label,spec.cost,"  •  ADQUIRIDO" if owned else ""],16))
 		var button := Button.new()
 		button.text = "ADQUIRIDO" if owned else "COMPRAR"
@@ -129,7 +129,7 @@ func record_training_session() -> void:
 
 func profile_snapshot() -> Dictionary:
 	var progression := get_node_or_null("/root/TrainingProgressionRuntime")
-	var ps := progression.progression_snapshot() if progression != null else {"level":1,"total_xp":0,"training_tokens":0,"medals":[],"certifications":[]}
+	var ps: Dictionary = progression.progression_snapshot() if progression != null else {"level":1,"total_xp":0,"training_tokens":0,"medals":[],"certifications":[]}
 	var variants: Array = []
 	var scene := get_tree().current_scene
 	var master := scene.get_node_or_null("MasterTrainingRuntime") if scene != null else null
