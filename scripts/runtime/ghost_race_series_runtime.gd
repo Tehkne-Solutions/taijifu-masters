@@ -38,7 +38,7 @@ func start_series(format: int = 3) -> Dictionary:
 	var library := get_node_or_null("/root/TaijifuGhostLibrary")
 	if not is_instance_valid(library) or String(library.selected_id).is_empty():
 		return _result(false, "Selecione um fantasma antes de iniciar a série.")
-	var index := library._index_of(library.selected_id)
+	var index: int = int(library._index_of(library.selected_id))
 	if index < 0:
 		return _result(false, "Fantasma selecionado não encontrado.")
 	var item: Dictionary = library.items[index]
@@ -149,7 +149,7 @@ func _apply_reward(outcome: String, reward: Dictionary) -> void:
 func difficulty_multiplier() -> float:
 	var rival := rival_record(target_id)
 	var level := int(rival.get("level", 1))
-	var round_step := max(0, rounds.size()) * 0.03
+	var round_step: float = float(maxi(0, rounds.size())) * 0.03
 	return minf(1.75, 1.0 + float(level - 1) * 0.05 + round_step)
 
 func adjusted_target_score(base_score: int) -> int:
