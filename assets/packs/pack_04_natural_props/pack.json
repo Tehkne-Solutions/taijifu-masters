@@ -1,0 +1,32 @@
+{
+  "id": "PACK_04",
+  "name": "Rocks & Natural Props",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01", "PACK_03"],
+  "asset_count": 60,
+  "distribution": {
+    "rocks": 20,
+    "logs_stumps": 12,
+    "mushrooms": 12,
+    "branches": 8,
+    "formations": 8
+  },
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "external_frame": false,
+    "side_walls": false,
+    "padding": 0,
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.9}
+  },
+  "paths": {
+    "inventory": "res://assets/packs/pack_04_natural_props/inventory.json",
+    "runtime_hd": "res://assets/packs/pack_04_natural_props/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_04_natural_props/runtime/mobile",
+    "previews": "res://assets/packs/pack_04_natural_props/previews"
+  }
+}
