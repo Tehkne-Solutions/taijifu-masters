@@ -116,6 +116,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/ghost_sharing_smoke_test.gd 2>&1 | tee godot-ghost-sharing.log
 
+      - name: Validar biblioteca, seleção e remoção de fantasmas
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/ghost_library_smoke_test.gd 2>&1 | tee godot-ghost-library.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -137,4 +142,5 @@ jobs:
             godot-controller-mastery.log
             godot-input-ghost-mastery.log
             godot-ghost-sharing.log
+            godot-ghost-library.log
           if-no-files-found: ignore
