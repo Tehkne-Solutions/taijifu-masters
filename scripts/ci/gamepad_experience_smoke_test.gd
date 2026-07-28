@@ -5,8 +5,11 @@ func _initialize() -> void:
 
 func _run_validation() -> void:
 	var failures: Array[String] = []
+	var keyboard_bridge := root.get_node_or_null("TaijifuWebBridge") as WebPlatformBridgeRuntime
 	var base := root.get_node_or_null("TaijifuGamepadTraining") as GamepadTrainingRuntime
 	var experience := root.get_node_or_null("TaijifuGamepadExperience") as GamepadExperienceRuntime
+	if not is_instance_valid(keyboard_bridge):
+		failures.append("Autoload TaijifuWebBridge ausente")
 	if not is_instance_valid(base):
 		failures.append("Autoload TaijifuGamepadTraining ausente")
 	if not is_instance_valid(experience):
@@ -15,6 +18,7 @@ func _run_validation() -> void:
 		_finish(failures)
 		return
 
+	keyboard_bridge.reset_keyboard_bindings()
 	base.reset_profile()
 	experience.reset_all_profiles()
 	var initial := experience.current_state()
