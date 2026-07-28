@@ -28,6 +28,7 @@ ModeAwarePreparationRuntime="*res://scripts/runtime/mode_aware_preparation_runti
 CombatDifficultyTrainingRuntime="*res://scripts/runtime/combat_difficulty_training_runtime.gd"
 TrainingProgressionRuntime="*res://scripts/runtime/training_progression_runtime.gd"
 PlayerProgressionProfileRuntime="*res://scripts/runtime/player_progression_profile_runtime.gd"
+CosmeticCollectionRuntime="*res://scripts/runtime/cosmetic_collection_runtime.gd"
 PurchasedItemsApplicationRuntime="*res://scripts/runtime/purchased_items_application_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
