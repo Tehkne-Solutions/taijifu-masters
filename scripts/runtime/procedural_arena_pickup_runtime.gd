@@ -195,10 +195,11 @@ func _nearest_fighter(position: Vector2) -> FighterController:
 	for fighter in _fighters.values():
 		if not is_instance_valid(fighter):
 			continue
-		var distance := fighter.global_position.distance_to(position)
+		var typed_fighter := fighter as FighterController
+		var distance: float = typed_fighter.global_position.distance_to(position)
 		if distance < best:
 			best = distance
-			nearest = fighter
+			nearest = typed_fighter
 	return nearest
 
 func _roll_rarity() -> String:
