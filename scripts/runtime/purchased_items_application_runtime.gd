@@ -16,6 +16,7 @@ var _last_training_completion := ""
 var _scan_timer := 0.0
 var _profile_frame: Panel
 var _active_items: Array[String] = []
+var _equipped := {"banner":"", "aura":"", "frame":""}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -25,6 +26,9 @@ func _ready() -> void:
 	var profile := get_node_or_null("/root/PlayerProgressionProfileRuntime")
 	if profile != null and profile.has_signal("shop_purchase_completed"):
 		profile.shop_purchase_completed.connect(_on_purchase_completed)
+	var collection := get_node_or_null("/root/CosmeticCollectionRuntime")
+	if collection != null and collection.has_signal("equipment_changed"):
+		collection.equipment_changed.connect(_on_equipment_changed)
 	set_process(true)
 
 func _process(delta: float) -> void:
@@ -33,6 +37,7 @@ func _process(delta: float) -> void:
 		return
 	_scan_timer = 0.25
 	_refresh_active_items()
+	_refresh_equipped_items()
 	_discover_and_connect_fighters()
 	_apply_profile_frame()
 
@@ -47,6 +52,13 @@ func _refresh_active_items() -> void:
 	if "extra_preset" in _active_items:
 		profile.set_meta("extra_preset_slots", 1)
 
+func _refresh_equipped_items() -> void:
+	var collection := get_node_or_null("/root/CosmeticCollectionRuntime")
+	if collection != null and collection.has_method("equipped_snapshot"):
+		_equipped = Dictionary(collection.equipped_snapshot())
+	else:
+		_equipped = {"banner":"", "aura":"", "frame":""}
+
 func _discover_and_connect_fighters() -> void:
 	for fighter in get_tree().get_nodes_in_group("fighters"):
 		if not fighter is FighterController:
@@ -59,32 +71,40 @@ func _discover_and_connect_fighters() -> void:
 
 func _apply_fighter_cosmetics(fighter: FighterController) -> void:
 	var key := str(fighter.get_instance_id())
-	if _fighter_cosmetics.has(key):
+	var signature := "%s|%s" % [String(_equipped.get("banner", "")), String(_equipped.get("aura", ""))]
+	if String(_fighter_cosmetics.get(key, "")) == signature:
 		return
+	_clear_fighter_cosmetics(fighter)
 	var applied: Array[String] = []
-	for item_id in BANNER_COLORS:
-		if item_id in _active_items:
-			var banner := Polygon2D.new()
-			banner.name = "PurchasedBanner_%s" % item_id
-			banner.polygon = PackedVector2Array([Vector2(-18,-92),Vector2(18,-92),Vector2(13,-32),Vector2(0,-18),Vector2(-13,-32)])
-			banner.color = BANNER_COLORS[item_id]
-			banner.z_index = -1
-			fighter.add_child(banner)
-			applied.append(item_id)
-	if "training_aura" in _active_items:
+	var banner_id := String(_equipped.get("banner", ""))
+	if BANNER_COLORS.has(banner_id) and banner_id in _active_items:
+		var banner := Polygon2D.new()
+		banner.name = "EquippedBanner"
+		banner.polygon = PackedVector2Array([Vector2(-18,-92),Vector2(18,-92),Vector2(13,-32),Vector2(0,-18),Vector2(-13,-32)])
+		banner.color = BANNER_COLORS[banner_id]
+		banner.z_index = -1
+		fighter.add_child(banner)
+		applied.append(banner_id)
+	var aura_id := String(_equipped.get("aura", ""))
+	if aura_id == "training_aura" and aura_id in _active_items:
 		var aura := PointLight2D.new()
-		aura.name = "TrainingAura"
+		aura.name = "EquippedAura"
 		aura.energy = 0.65
 		aura.texture_scale = 1.3
 		aura.color = Color(0.65,0.9,1.0,0.75)
 		fighter.add_child(aura)
-		applied.append("training_aura")
-	_fighter_cosmetics[key] = true
-	if not applied.is_empty():
-		cosmetics_applied.emit(applied)
+		applied.append(aura_id)
+	_fighter_cosmetics[key] = signature
+	cosmetics_applied.emit(applied)
+
+func _clear_fighter_cosmetics(fighter: FighterController) -> void:
+	for child in fighter.get_children():
+		if child.name in ["EquippedBanner", "EquippedAura"]:
+			child.queue_free()
 
 func _apply_profile_frame() -> void:
-	if "master_frame" not in _active_items:
+	var frame_id := String(_equipped.get("frame", ""))
+	if frame_id != "master_frame" or frame_id not in _active_items:
 		if is_instance_valid(_profile_frame):
 			_profile_frame.queue_free()
 			_profile_frame = null
@@ -139,11 +159,20 @@ func _clear_training_guard() -> void:
 	_last_training_completion = ""
 
 func _on_purchase_completed(_item_id: String, _remaining_tokens: int) -> void:
-	_fighter_cosmetics.clear()
 	_refresh_active_items()
+
+func _on_equipment_changed(_slot_id: String, _item_id: String) -> void:
+	_refresh_equipped_items()
+	_fighter_cosmetics.clear()
+	if is_instance_valid(_profile_frame):
+		_profile_frame.queue_free()
+		_profile_frame = null
 
 func active_items() -> Array[String]:
 	return _active_items.duplicate()
+
+func equipped_items() -> Dictionary:
+	return _equipped.duplicate(true)
 
 func extra_preset_slots() -> int:
 	return 1 if "extra_preset" in _active_items else 0
