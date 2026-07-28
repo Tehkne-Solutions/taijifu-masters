@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime/pack_01_terrain_preview.gd" id="1_preview"]
+
+[node name="Pack01TerrainPreview" type="Node2D"]
+script = ExtResource("1_preview")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(640, 512)
+enabled = true
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 620.0
+offset_bottom = 54.0
+theme_override_colors/font_color = Color(0.956, 0.843, 0.49, 1)
+theme_override_font_sizes/font_size = 24
+text = "PACK 01 — TERRAIN CONNECTION TEST"
+
+[node name="Signature" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 980.0
+offset_right = 420.0
+offset_bottom = 1014.0
+theme_override_colors/font_color = Color(0.78, 0.8, 0.84, 1)
+text = "Tehkné Solutions"
