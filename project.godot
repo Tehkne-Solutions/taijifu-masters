@@ -24,6 +24,7 @@ SeriesLootProgressionRuntime="*res://scripts/runtime/series_loot_progression_run
 CompleteSeriesModeRuntime="*res://scripts/runtime/complete_series_mode_runtime.gd"
 GameModeRuntime="*res://scripts/runtime/game_mode_runtime.gd"
 MainMenuRuntime="*res://scripts/runtime/main_menu_runtime.gd"
+MainMenuHubRuntime="*res://scripts/runtime/main_menu_hub_runtime.gd"
 ModeAwarePreparationRuntime="*res://scripts/runtime/mode_aware_preparation_runtime.gd"
 CombatDifficultyTrainingRuntime="*res://scripts/runtime/combat_difficulty_training_runtime.gd"
 TrainingProgressionRuntime="*res://scripts/runtime/training_progression_runtime.gd"
