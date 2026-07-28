@@ -66,7 +66,7 @@ test('edita curva, gatilhos e cancelamento por perfil do controle', async ({ pag
     const state = window.taijifuControllerMasteryWeb?.state;
     const player = state?.players?.['1'];
     const profile = player?.profile;
-    return player?.guid === 'slot:1' &&
+    return player?.guid === 'slot:1' && state?.show_windows === true &&
       Array.isArray(profile?.curve_points) && profile.curve_points.length === 5 &&
       profile.left_trigger_action === 'block' && profile.right_trigger_action === 'swap' &&
       Math.abs(profile.trigger_threshold - 0.61) < 0.001 &&
@@ -75,7 +75,8 @@ test('edita curva, gatilhos e cancelamento por perfil do controle', async ({ pag
 
   await expect(page.locator('#taijifu-mastery-trigger-value')).toHaveText('0,61');
   await expect(page.locator('#taijifu-mastery-cancel-value')).toHaveText('74%');
-  await expect(page.locator('#taijifu-mastery-status')).toContainText('Perfil por modelo/GUID atualizado');
+  await expect(page.locator('#taijifu-mastery-profile')).toContainText('slot:1');
+  await expect(page.locator('#taijifu-mastery-status')).toContainText('Dojo');
   await expect(page.locator('#taijifu-mastery-metrics .taijifu-mastery-metric')).toHaveCount(8);
 
   const points = await page.evaluate(() => window.taijifuControllerMasteryWeb.points);
