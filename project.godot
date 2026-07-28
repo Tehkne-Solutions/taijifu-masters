@@ -25,6 +25,7 @@ CompleteSeriesModeRuntime="*res://scripts/runtime/complete_series_mode_runtime.g
 GameModeRuntime="*res://scripts/runtime/game_mode_runtime.gd"
 MainMenuRuntime="*res://scripts/runtime/main_menu_runtime.gd"
 ModeAwarePreparationRuntime="*res://scripts/runtime/mode_aware_preparation_runtime.gd"
+CombatDifficultyTrainingRuntime="*res://scripts/runtime/combat_difficulty_training_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
 TaijifuGamepadExperience="*res://scripts/runtime/gamepad_experience_runtime.gd"
