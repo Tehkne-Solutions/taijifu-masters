@@ -1,0 +1,35 @@
+{
+  "id": "PACK_02",
+  "name": "Board System",
+  "version": "0.1.0",
+  "status": "GENERATING",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01"],
+  "asset_count_planned": 48,
+  "asset_count_implemented": 0,
+  "families": ["paths", "zones", "sockets", "indicators", "anchors"],
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_overlays": true,
+    "terrain_replacement": false,
+    "visible_grid": false,
+    "external_borders": false,
+    "side_walls": false,
+    "padding": 0,
+    "hd_size": 512,
+    "mobile_size": 256
+  },
+  "paths": {
+    "inventory": "res://assets/packs/pack_02_board_system/inventory.json",
+    "runtime_hd": "res://assets/packs/pack_02_board_system/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_02_board_system/runtime/mobile",
+    "previews": "res://assets/packs/pack_02_board_system/previews"
+  },
+  "approval_gates": [
+    "48 individual runtime files",
+    "transparent overlays",
+    "no visible board grid",
+    "terrain remains visually dominant",
+    "Godot runtime loading validation"
+  ]
+}
