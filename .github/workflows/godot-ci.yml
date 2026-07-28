@@ -96,6 +96,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/web_platform_bridge_smoke_test.gd 2>&1 | tee godot-web-platform-bridge.log
 
+      - name: Validar curvas, gatilhos, vibração e dojo avançado
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/gamepad_experience_smoke_test.gd 2>&1 | tee godot-gamepad-experience.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -113,4 +118,5 @@ jobs:
             godot-seasons-profiles-groups.log
             godot-double-elimination.log
             godot-web-platform-bridge.log
+            godot-gamepad-experience.log
           if-no-files-found: ignore
