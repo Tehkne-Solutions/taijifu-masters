@@ -1,0 +1,33 @@
+{
+  "id": "PACK_05",
+  "name": "Structures & Buildings",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01", "PACK_03", "PACK_04"],
+  "asset_count": 56,
+  "distribution": {
+    "houses": 16,
+    "towers": 8,
+    "temples_portals": 8,
+    "bridges": 8,
+    "ruins": 8,
+    "gates": 8
+  },
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "modular_composition": true,
+    "external_frame": false,
+    "padding": 0,
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.92}
+  },
+  "paths": {
+    "inventory": "res://assets/packs/pack_05_structures_buildings/inventory.json",
+    "runtime_hd": "res://assets/packs/pack_05_structures_buildings/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_05_structures_buildings/runtime/mobile",
+    "previews": "res://assets/packs/pack_05_structures_buildings/previews"
+  }
+}
