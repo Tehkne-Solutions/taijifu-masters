@@ -42,6 +42,7 @@ def main() -> None:
     shell_js = output / "taijifu-web-shell.js"
     menu_css = output / "taijifu-web-menu.css"
     menu_js = output / "taijifu-web-menu.js"
+    gamepad_js = output / "taijifu-gamepad-web.js"
 
     required = {
         "WebAssembly": wasm,
@@ -54,6 +55,7 @@ def main() -> None:
         "runtime do shell Web": shell_js if shell_js.is_file() else None,
         "estilos do menu Web": menu_css if menu_css.is_file() else None,
         "runtime do menu Web": menu_js if menu_js.is_file() else None,
+        "painel Web de gamepads": gamepad_js if gamepad_js.is_file() else None,
     }
     missing = [label for label, path in required.items() if path is None]
     if missing:
@@ -78,9 +80,11 @@ def main() -> None:
         fail("folha de estilos do menu Web está incompleta")
     if menu_js.stat().st_size < 12_000:
         fail("runtime avançado do menu Web está incompleto")
+    if gamepad_js.stat().st_size < 10_000:
+        fail("painel Web de gamepads está incompleto")
 
     html = index.read_text(encoding="utf-8", errors="replace")
-    for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js):
+    for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js, gamepad_js):
         if asset.name not in html:
             fail(f"index.html não referencia {asset.name}")
     if "<canvas" not in html.lower():
@@ -89,6 +93,7 @@ def main() -> None:
     required_html_markers = (
         "TAIJIFU_WEB_SHELL_HEAD",
         "TAIJIFU_WEB_SHELL_BODY",
+        "TAIJIFU_GAMEPAD_WEB",
         'id="taijifu-shell"',
         'id="taijifu-enter"',
         'id="taijifu-menu"',
@@ -126,6 +131,19 @@ def main() -> None:
         if marker not in menu_source:
             fail(f"menu Web não contém o contrato avançado: {marker}")
 
+    gamepad_source = gamepad_js.read_text(encoding="utf-8", errors="replace")
+    for marker in (
+        "taijifuGamepadExperienceCommand",
+        "taijifu-gamepad-web-panel",
+        "response_curve",
+        "trigger_threshold",
+        "start_fundamentals",
+        "start_advanced",
+        "requestAnimationFrame(pollCapture)",
+    ):
+        if marker not in gamepad_source:
+            fail(f"painel de gamepad não contém o contrato obrigatório: {marker}")
+
     manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
     if manifest_data.get("display") != "standalone":
         fail("manifesto PWA não está em modo standalone")
@@ -155,6 +173,11 @@ def main() -> None:
             "keyboard_remapping": True,
             "dynamic_touch_bindings": True,
             "in_arena_practice": True,
+            "gamepad_web_panel": True,
+            "analog_response_curves": True,
+            "trigger_calibration": True,
+            "combat_haptics": True,
+            "advanced_combat_dojo": True,
         },
         "files": {
             "index": index.name,
@@ -168,6 +191,7 @@ def main() -> None:
             "shell_js": shell_js.name,
             "menu_css": menu_css.name,
             "menu_js": menu_js.name,
+            "gamepad_js": gamepad_js.name,
         },
         "sizes": {
             "wasm_bytes": wasm.stat().st_size,
@@ -176,6 +200,7 @@ def main() -> None:
             "shell_js_bytes": shell_js.stat().st_size,
             "menu_css_bytes": menu_css.stat().st_size,
             "menu_js_bytes": menu_js.stat().st_size,
+            "gamepad_js_bytes": gamepad_js.stat().st_size,
         },
     }
     (output / "build-info.json").write_text(
@@ -187,7 +212,7 @@ def main() -> None:
     for label, path in required.items():
         assert path is not None
         print(f"  - {label}: {path.name} ({path.stat().st_size} bytes)")
-    print("[taijifu-web] UX Web: pausa Godot, remapeamento, prática, acessibilidade e touch aprovados estruturalmente")
+    print("[taijifu-web] UX Web: gamepads, curvas, gatilhos, vibração, dojo, pausa, remapeamento e touch aprovados estruturalmente")
 
 
 if __name__ == "__main__":
