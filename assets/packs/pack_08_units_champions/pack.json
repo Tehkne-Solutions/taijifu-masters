@@ -1,0 +1,35 @@
+{
+  "id": "PACK_08",
+  "name": "Units & Champions",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01", "PACK_02", "PACK_07"],
+  "asset_count": 40,
+  "distribution": {"common_units": 12, "elite_units": 12, "enemy_units": 8, "champions": 8},
+  "archetypes": [
+    {"id": "soldier", "tier": "common", "weapon": "sword"},
+    {"id": "archer", "tier": "common", "weapon": "bow"},
+    {"id": "spearman", "tier": "common", "weapon": "spear"},
+    {"id": "shaman", "tier": "elite", "weapon": "staff"},
+    {"id": "berserker", "tier": "elite", "weapon": "axe"},
+    {"id": "guardian", "tier": "elite", "weapon": "shield"},
+    {"id": "wraith", "tier": "enemy", "weapon": "claws"},
+    {"id": "golem", "tier": "enemy", "weapon": "fists"},
+    {"id": "champion_dragon", "tier": "champion", "weapon": "blade"},
+    {"id": "champion_spirit", "tier": "champion", "weapon": "orb"}
+  ],
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "animation_ready": true,
+    "directions": ["NE", "SE", "SW", "NW"],
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.9}
+  },
+  "paths": {
+    "runtime_hd": "res://assets/packs/pack_08_units_champions/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_08_units_champions/runtime/mobile"
+  }
+}
