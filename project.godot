@@ -38,6 +38,10 @@ TaijifuGhostRivalRanking="*res://scripts/runtime/ghost_rival_ranking_runtime.gd"
 TaijifuMultiGhostRace="*res://scripts/runtime/multi_ghost_race_runtime.gd"
 TaijifuGhostRace="*res://scripts/runtime/ghost_race_runtime.gd"
 
+[debug]
+
+gdscript/warnings/inference_on_variant=1
+
 [display]
 
 window/size/viewport_width=1280
