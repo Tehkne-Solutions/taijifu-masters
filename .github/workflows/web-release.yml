@@ -35,14 +35,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restaurar cache do Godot
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache/godot
-            ~/.local/share/godot/export_templates/4.3.stable
-          key: godot-web-4.3-stable-${{ runner.os }}
-
       - name: Exportar build Web
         env:
           GODOT_VERSION: "4.3"
