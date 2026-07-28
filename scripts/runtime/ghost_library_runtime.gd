@@ -16,6 +16,22 @@ func _ready() -> void:
 	_load_library()
 	_register_web_bridge()
 
+func import_share_code(code: String) -> Dictionary:
+	var clean_code := code.strip_edges()
+	if clean_code.is_empty():
+		return _result(false, "Código de compartilhamento vazio.")
+	var sharing := get_node_or_null("/root/TaijifuGhostSharing") as GhostSharingRuntime
+	if not is_instance_valid(sharing):
+		return _result(false, "Runtime de compartilhamento indisponível.")
+	var validation := sharing.import_share_code(clean_code, false)
+	if not bool(validation.get("ok", false)):
+		return validation
+	var decoded := Marshalls.base64_to_raw(clean_code)
+	var parsed = JSON.parse_string(decoded.get_string_from_utf8())
+	if not parsed is Dictionary:
+		return _result(false, "Pacote validado, mas não pôde ser lido pela biblioteca.")
+	return add_package(parsed as Dictionary)
+
 func add_package(package: Dictionary) -> Dictionary:
 	var recording = package.get("recording", {})
 	if not recording is Dictionary or (recording as Dictionary).is_empty():
@@ -42,10 +58,9 @@ func add_package(package: Dictionary) -> Dictionary:
 		items.push_front(entry)
 		if items.size() > MAX_ITEMS:
 			items.resize(MAX_ITEMS)
-	if selected_id.is_empty():
-		selected_id = item_id
+	selected_id = item_id
 	_save_library()
-	_last_result = _result(true, "Fantasma salvo na biblioteca.", {"item": _public_item(entry)})
+	_last_result = _result(true, "Fantasma salvo na biblioteca.", {"item": _public_item(entry), "selected_id": selected_id})
 	_sync_web_state()
 	return _last_result
 
@@ -102,6 +117,7 @@ func current_state() -> Dictionary:
 
 func command(request: Dictionary) -> Dictionary:
 	match StringName(request.get("command", "get_state")):
+		&"import_code": return import_share_code(String(request.get("code", "")))
 		&"select": return select_item(String(request.get("id", "")))
 		&"remove": return remove_item(String(request.get("id", "")))
 		&"play_selected": return play_selected()
