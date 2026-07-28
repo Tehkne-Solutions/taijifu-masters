@@ -29,6 +29,7 @@ TaijifuControllerMastery="*res://scripts/runtime/controller_mastery_runtime.gd"
 TaijifuInputGhostMastery="*res://scripts/runtime/input_ghost_mastery_runtime.gd"
 TaijifuGhostSharing="*res://scripts/runtime/ghost_sharing_runtime.gd"
 TaijifuGhostLibrary="*res://scripts/runtime/ghost_library_runtime.gd"
+TaijifuGhostRaceHistory="*res://scripts/runtime/ghost_race_history_runtime.gd"
 TaijifuGhostRace="*res://scripts/runtime/ghost_race_runtime.gd"
 
 [display]

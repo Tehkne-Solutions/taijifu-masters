@@ -82,6 +82,9 @@ func finish_race() -> Dictionary:
 	}
 	active = false
 	live_summary = player_summary.duplicate(true)
+	var history := get_node_or_null("/root/TaijifuGhostRaceHistory") as GhostRaceHistoryRuntime
+	if is_instance_valid(history):
+		history.record_result(last_result)
 	_sync_web_state()
 	return _result(true, "Resultado: %s." % outcome, last_result.duplicate(true))
 
@@ -108,6 +111,10 @@ func _refresh_live_summary() -> void:
 
 func current_state() -> Dictionary:
 	var challenge: Dictionary = target.get("challenge", {})
+	var history_record: Dictionary = {}
+	var history := get_node_or_null("/root/TaijifuGhostRaceHistory") as GhostRaceHistoryRuntime
+	if is_instance_valid(history):
+		history_record = history.public_record(String(target.get("id", "")))
 	return {
 		"version": BRIDGE_VERSION,
 		"ready": true,
@@ -118,7 +125,8 @@ func current_state() -> Dictionary:
 		"player": live_summary.duplicate(true),
 		"target": _public_target(),
 		"score_delta": int(live_summary.get("score", 0)) - int(challenge.get("score", 0)),
-		"last_result": last_result.duplicate(true)
+		"last_result": last_result.duplicate(true),
+		"history": history_record
 	}
 
 func command(request: Dictionary) -> Dictionary:
