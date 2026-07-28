@@ -75,12 +75,12 @@ func _show_intermission(winner_index: int) -> void:
 	_intermission_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().root.add_child(_intermission_layer)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(220, 70)
-	panel.size = Vector2(840, 580)
+	panel.position = Vector2(180, 40)
+	panel.size = Vector2(920, 640)
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	_intermission_layer.add_child(panel)
 	var root_box := VBoxContainer.new()
-	root_box.add_theme_constant_override("separation", 12)
+	root_box.add_theme_constant_override("separation", 10)
 	panel.add_child(root_box)
 	var title := Label.new()
 	title.text = "INTERVALO • ROUND %d CONCLUÍDO" % round_number
@@ -91,6 +91,7 @@ func _show_intermission(winner_index: int) -> void:
 	score.text = "P1 %d  ×  %d P2  •  VENCEDOR: P%d  •  MELHOR DE %d" % [_loot_runtime.round_wins(1), _loot_runtime.round_wins(2), winner_index, best_of]
 	score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(score)
+	root_box.add_child(_build_reward_choices(winner_index))
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 18)
 	root_box.add_child(columns)
@@ -102,14 +103,46 @@ func _show_intermission(winner_index: int) -> void:
 	root_box.add_child(hint)
 	var continue_button := Button.new()
 	continue_button.text = "INICIAR ROUND %d" % (round_number + 1)
-	continue_button.custom_minimum_size = Vector2(0, 52)
+	continue_button.custom_minimum_size = Vector2(0, 48)
 	continue_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	continue_button.disabled = not _loot_runtime.pending_choices(winner_index).is_empty()
 	continue_button.pressed.connect(_continue_series)
 	root_box.add_child(continue_button)
 
+func _build_reward_choices(winner_index: int) -> Control:
+	var box := VBoxContainer.new()
+	var heading := Label.new()
+	heading.text = "P%d • ESCOLHA A RECOMPENSA DO ROUND" % winner_index
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 16)
+	box.add_child(heading)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+	var choices: Array = _loot_runtime.pending_choices(winner_index)
+	if choices.is_empty():
+		var chosen := Label.new()
+		chosen.text = "Recompensa selecionada."
+		row.add_child(chosen)
+		return box
+	for choice_index in range(choices.size()):
+		var selected_index := choice_index
+		var reward: Dictionary = choices[choice_index]
+		var button := Button.new()
+		button.text = "%s\n%s" % [String(reward.get("label", "RECOMPENSA")), String(reward.get("rarity", "common")).to_upper()]
+		button.custom_minimum_size = Vector2(270, 58)
+		button.process_mode = Node.PROCESS_MODE_ALWAYS
+		button.pressed.connect(func():
+			if _loot_runtime.choose_reward(winner_index, selected_index):
+				_show_intermission(winner_index)
+		)
+		row.add_child(button)
+	return box
+
 func _build_inventory_column(player_index: int) -> Control:
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(390, 380)
+	box.custom_minimum_size = Vector2(430, 330)
 	var heading := Label.new()
 	heading.text = "P%d • INVENTÁRIO DA SÉRIE" % player_index
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -124,27 +157,28 @@ func _build_inventory_column(player_index: int) -> Control:
 		box.add_child(empty)
 		return box
 	for index in range(inventory.size()):
+		var item_index := index
 		var item: Dictionary = inventory[index]
 		var row := HBoxContainer.new()
 		var item_label := Label.new()
 		var protected_mark := " • PROTEGIDO" if String(item.get("id", "")) == protected_id else ""
 		item_label.text = "%s • %s%s" % [String(item.get("label", "ITEM")), String(item.get("rarity", "common")).to_upper(), protected_mark]
-		item_label.custom_minimum_size = Vector2(205, 40)
+		item_label.custom_minimum_size = Vector2(230, 38)
 		row.add_child(item_label)
 		var protect := Button.new()
 		protect.text = "PROTEGER"
 		protect.process_mode = Node.PROCESS_MODE_ALWAYS
 		protect.pressed.connect(func():
-			_loot_runtime.protect_item(player_index, index)
-			_show_intermission(_history.back()["winner"])
+			_loot_runtime.protect_item(player_index, item_index)
+			_show_intermission(int(_history.back()["winner"]))
 		)
 		row.add_child(protect)
 		var discard := Button.new()
 		discard.text = "DESCARTAR"
 		discard.process_mode = Node.PROCESS_MODE_ALWAYS
 		discard.pressed.connect(func():
-			_loot_runtime.discard_item(player_index, index)
-			_show_intermission(_history.back()["winner"])
+			_loot_runtime.discard_item(player_index, item_index)
+			_show_intermission(int(_history.back()["winner"]))
 		)
 		row.add_child(discard)
 		box.add_child(row)
