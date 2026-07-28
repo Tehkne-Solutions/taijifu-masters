@@ -1,0 +1,33 @@
+{
+  "id": "PACK_06",
+  "name": "Resources & Interactive Objects",
+  "version": "1.0.0",
+  "status": "GENERATED",
+  "signature": "Tehkné Solutions",
+  "depends_on": ["PACK_00", "PACK_01", "PACK_03", "PACK_04", "PACK_05"],
+  "asset_count": 60,
+  "distribution": {
+    "chests": 12,
+    "altars": 8,
+    "mines": 12,
+    "fountains": 8,
+    "portals": 8,
+    "resource_nodes": 12
+  },
+  "runtime_rules": {
+    "individual_files": true,
+    "transparent_background": true,
+    "interaction_metadata": true,
+    "external_frame": false,
+    "padding": 0,
+    "hd_size": 512,
+    "mobile_size": 256,
+    "pivot": {"x": 0.5, "y": 0.9}
+  },
+  "paths": {
+    "inventory": "res://assets/packs/pack_06_resources_interactive/inventory.json",
+    "runtime_hd": "res://assets/packs/pack_06_resources_interactive/runtime/hd",
+    "runtime_mobile": "res://assets/packs/pack_06_resources_interactive/runtime/mobile",
+    "previews": "res://assets/packs/pack_06_resources_interactive/previews"
+  }
+}
