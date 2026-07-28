@@ -101,6 +101,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/gamepad_experience_smoke_test.gd 2>&1 | tee godot-gamepad-experience.log
 
+      - name: Validar perfis GUID, curva visual e combo dojo
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/controller_mastery_smoke_test.gd 2>&1 | tee godot-controller-mastery.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -119,4 +124,5 @@ jobs:
             godot-double-elimination.log
             godot-web-platform-bridge.log
             godot-gamepad-experience.log
+            godot-controller-mastery.log
           if-no-files-found: ignore
