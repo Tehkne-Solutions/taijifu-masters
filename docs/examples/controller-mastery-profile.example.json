@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "players": {
+    "1": {"device": 0, "guid": "030000005e0400008e02000000000000"},
+    "2": {"device": 1, "guid": "slot:2"}
+  },
+  "devices": {
+    "030000005e0400008e02000000000000": {
+      "name": "Controle sem fio",
+      "curve_points": [0.0, 0.12, 0.38, 0.74, 1.0],
+      "left_trigger_action": "block",
+      "right_trigger_action": "attack",
+      "trigger_threshold": 0.58,
+      "cancel_threshold": 0.7,
+      "cancel_assist": true
+    }
+  },
+  "show_windows": true,
+  "combo_dojo_completed": false,
+  "best_metrics": {}
+}
