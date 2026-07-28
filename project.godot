@@ -20,6 +20,7 @@ Pack99CombatEventRuntime="*res://scripts/runtime/pack_99_combat_event_runtime.gd
 Pack08ArenaUnitRuntime="*res://scripts/runtime/pack_08_arena_unit_runtime.gd"
 ProceduralArenaPickupRuntime="*res://scripts/runtime/procedural_arena_pickup_runtime.gd"
 PickupSynergyRuntime="*res://scripts/runtime/pickup_synergy_runtime.gd"
+SeriesLootProgressionRuntime="*res://scripts/runtime/series_loot_progression_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
 TaijifuGamepadExperience="*res://scripts/runtime/gamepad_experience_runtime.gd"
