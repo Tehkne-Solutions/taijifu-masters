@@ -111,6 +111,11 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/input_ghost_mastery_smoke_test.gd 2>&1 | tee godot-input-ghost-mastery.log
 
+      - name: Validar compartilhamento, checksum e importação segura
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/ghost_sharing_smoke_test.gd 2>&1 | tee godot-ghost-sharing.log
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -131,4 +136,5 @@ jobs:
             godot-gamepad-experience.log
             godot-controller-mastery.log
             godot-input-ghost-mastery.log
+            godot-ghost-sharing.log
           if-no-files-found: ignore
