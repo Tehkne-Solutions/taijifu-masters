@@ -34,6 +34,7 @@ TaijifuGhostLibrary="*res://scripts/runtime/ghost_library_runtime.gd"
 TaijifuGhostRaceHistory="*res://scripts/runtime/ghost_race_history_runtime.gd"
 TaijifuGhostRaceSeries="*res://scripts/runtime/ghost_race_series_runtime.gd"
 TaijifuGhostRivalRanking="*res://scripts/runtime/ghost_rival_ranking_runtime.gd"
+TaijifuMultiGhostRace="*res://scripts/runtime/multi_ghost_race_runtime.gd"
 TaijifuGhostRace="*res://scripts/runtime/ghost_race_runtime.gd"
 
 [display]
