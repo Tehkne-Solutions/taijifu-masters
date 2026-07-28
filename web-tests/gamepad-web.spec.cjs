@@ -54,8 +54,11 @@ test('configura curvas, gatilhos e vibração pela interface Web', async ({ page
   await page.locator('#taijifu-gamepad-vibration').dispatchEvent('change');
 
   await page.waitForFunction(() => {
-    const raw = window.taijifuGamepadExperienceState?.();
-    const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    let state = window.taijifuGamepadWeb?.state || null;
+    if (!state && typeof window.taijifuGamepadExperienceStateJson === 'string') {
+      try { state = JSON.parse(window.taijifuGamepadExperienceStateJson); }
+      catch (_error) { state = null; }
+    }
     const base = state?.base_profile?.players?.['1'];
     const tuning = state?.profile?.players?.['1'];
     return base?.device === -1 && Math.abs(base?.deadzone - 0.32) < 0.001 &&
@@ -67,6 +70,11 @@ test('configura curvas, gatilhos e vibração pela interface Web', async ({ page
   await expect(page.locator('#taijifu-gamepad-trigger-value')).toHaveText('0,66');
   await expect(page.locator('#taijifu-gamepad-vibration-value')).toHaveText('45%');
   await expect(page.locator('#taijifu-gamepad-status')).toContainText('L2 = Elemento, R2 = Golpe');
+  await expect(page.getByTestId('gamepad-grab')).toContainText('LB / L1');
+  await expect(page.getByTestId('gamepad-block')).toContainText('RB / R1');
+  await expect(page.getByTestId('gamepad-element')).toContainText('L3');
+  await expect(page.getByTestId('gamepad-echo')).toContainText('R3');
+  await expect(page.getByTestId('gamepad-swap')).toContainText('Select / View');
 
   await page.screenshot({
     path: testInfo.outputPath('taijifu-gamepad-web-panel.png'),

@@ -9,8 +9,9 @@
 
   const BUTTON_NAMES = {
     0: 'A / Cruz', 1: 'B / Círculo', 2: 'X / Quadrado', 3: 'Y / Triângulo',
-    4: 'LB / L1', 5: 'RB / R1', 8: 'Select / View', 9: 'Start / Menu',
-    10: 'L3', 11: 'R3', 12: 'D-pad ↑', 13: 'D-pad ↓', 14: 'D-pad ←', 15: 'D-pad →'
+    4: 'Select / View', 5: 'Guide', 6: 'Start / Menu', 7: 'L3', 8: 'R3',
+    9: 'LB / L1', 10: 'RB / R1', 11: 'D-pad ↑', 12: 'D-pad ↓',
+    13: 'D-pad ←', 14: 'D-pad →'
   };
 
   const ui = {
@@ -47,18 +48,23 @@
     return value && typeof value === 'object' ? value : null;
   }
 
+  function globalSnapshot() {
+    return parseResult(window.taijifuGamepadExperienceStateJson);
+  }
+
   function invoke(payload = { command: 'get_state' }) {
+    let result = null;
     try {
       if (typeof window.taijifuGamepadExperienceCommand === 'function') {
-        return parseResult(window.taijifuGamepadExperienceCommand(JSON.stringify(payload)));
+        result = parseResult(window.taijifuGamepadExperienceCommand(JSON.stringify(payload)));
       }
-      if (typeof window.taijifuGamepadExperienceState === 'function') {
-        return parseResult(window.taijifuGamepadExperienceState());
+      if (!result && typeof window.taijifuGamepadExperienceState === 'function') {
+        result = parseResult(window.taijifuGamepadExperienceState());
       }
     } catch (error) {
       console.warn('Taijifu Gamepad Web: comando indisponível.', error);
     }
-    return null;
+    return result || globalSnapshot();
   }
 
   function buttonName(index) {
@@ -269,7 +275,7 @@
       for (let index = 0; index < gamepad.buttons.length; index += 1) {
         const button = gamepad.buttons[index];
         const token = `${gamepad.index}:${index}`;
-        if ((button.pressed || button.value > 0.5) && !state.captureBaseline.has(token) && ![9, 16].includes(index)) {
+        if ((button.pressed || button.value > 0.5) && !state.captureBaseline.has(token) && ![6, 16].includes(index)) {
           const suffix = state.captureSuffix;
           state.captureSuffix = null;
           execute({ command: 'set_binding', player: state.player, suffix, button: index, device: gamepad.index }, `${suffix} remapeado para ${buttonName(index)}.`);

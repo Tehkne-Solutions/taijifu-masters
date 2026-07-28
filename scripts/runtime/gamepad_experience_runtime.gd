@@ -15,7 +15,6 @@ var _callbacks: Array = []
 var _window: JavaScriptObject
 var _connected_fighters: Dictionary = {}
 var _discover_timer := 0.0
-var _curve_refresh_timer := 0.0
 
 var _canvas: CanvasLayer
 var _advanced_panel: ColorRect
@@ -59,8 +58,8 @@ func _physics_process(_delta: float) -> void:
 	for player_index in [1, 2]:
 		if _advanced_active and player_index == 2:
 			_release_player_curve_actions(player_index)
-			continue
-		_inject_curved_stick(player_index)
+		else:
+			_inject_curved_stick(player_index)
 
 func _exit_tree() -> void:
 	_release_curve_actions()
@@ -203,8 +202,7 @@ func calibrate_triggers(player_index: int) -> Dictionary:
 	var device := _player_device(player_index)
 	var left := _normalized_trigger(device, JOY_AXIS_TRIGGER_LEFT)
 	var right := _normalized_trigger(device, JOY_AXIS_TRIGGER_RIGHT)
-	var resting := maxf(left, right)
-	var suggested := clampf(resting + 0.18, MIN_TRIGGER_THRESHOLD, MAX_TRIGGER_THRESHOLD)
+	var suggested := clampf(maxf(left, right) + 0.18, MIN_TRIGGER_THRESHOLD, MAX_TRIGGER_THRESHOLD)
 	var player := _experience_player(player_index)
 	set_tuning(
 		player_index,
@@ -216,7 +214,11 @@ func calibrate_triggers(player_index: int) -> Dictionary:
 	return {"device": device, "left": left, "right": right, "threshold": suggested}
 
 func horizontal_axis(player_index: int) -> float:
-	var fallback := Input.get_axis(_player_action(player_index, "left"), _player_action(player_index, "right"))
+	var left_action := _player_action(player_index, "left")
+	var right_action := _player_action(player_index, "right")
+	var fallback := 0.0
+	if InputMap.has_action(left_action) and InputMap.has_action(right_action):
+		fallback = Input.get_axis(left_action, right_action)
 	var device := _player_device(player_index)
 	if device < 0 or not Input.is_joy_known(device):
 		return fallback
@@ -227,6 +229,8 @@ func horizontal_axis(player_index: int) -> float:
 	return _curve_value(raw, deadzone, StringName(_experience_player(player_index).get("response_curve", "linear")))
 
 func _inject_curved_stick(player_index: int) -> void:
+	if not _movement_actions_exist(player_index):
+		return
 	var device := _player_device(player_index)
 	if device < 0 or not Input.is_joy_known(device):
 		_release_player_curve_actions(player_index)
@@ -239,7 +243,15 @@ func _inject_curved_stick(player_index: int) -> void:
 	_apply_action_strength(_player_action(player_index, "right"), maxf(0.0, horizontal))
 	_apply_action_strength(_player_action(player_index, "down"), maxf(0.0, vertical))
 
+func _movement_actions_exist(player_index: int) -> bool:
+	for suffix in ["left", "right", "down"]:
+		if not InputMap.has_action(_player_action(player_index, suffix)):
+			return false
+	return true
+
 func _apply_action_strength(action_id: StringName, strength: float) -> void:
+	if not InputMap.has_action(action_id):
+		return
 	if strength > 0.001:
 		Input.action_press(action_id, strength)
 	else:
@@ -251,7 +263,9 @@ func _release_curve_actions() -> void:
 
 func _release_player_curve_actions(player_index: int) -> void:
 	for suffix in ["left", "right", "down"]:
-		Input.action_release(_player_action(player_index, suffix))
+		var action_id := _player_action(player_index, suffix)
+		if InputMap.has_action(action_id):
+			Input.action_release(action_id)
 
 func _curve_value(raw: float, deadzone: float, curve_id: StringName) -> float:
 	var magnitude := absf(raw)
@@ -394,15 +408,20 @@ func vibrate_player(player_index: int, weak: float, strong: float, duration: flo
 	if device < 0 or not Input.is_joy_known(device):
 		return false
 	var scale := float(tuning.get("vibration_scale", 0.85))
-	Input.start_joy_vibration(device, clampf(weak * scale, 0.0, 1.0), clampf(strong * scale, 0.0, 1.0), maxf(0.02, duration))
+	Input.start_joy_vibration(
+		device,
+		clampf(weak * scale, 0.0, 1.0),
+		clampf(strong * scale, 0.0, 1.0),
+		maxf(0.02, duration)
+	)
 	return true
 
 func start_advanced_dojo() -> bool:
 	if _advanced_active:
 		return true
-	var base := _base_runtime()
-	if is_instance_valid(base):
-		base.stop_real_practice("Dojo avançado iniciado.")
+	var base_training := _base_runtime()
+	if is_instance_valid(base_training):
+		base_training.stop_real_practice("Dojo avançado iniciado.")
 	_scene = get_tree().current_scene
 	if not is_instance_valid(_scene):
 		return false
@@ -665,15 +684,15 @@ func command(request: Dictionary) -> Dictionary:
 		&"test_vibration":
 			vibrate_player(int(request.get("player", 1)), 0.45, 0.75, 0.30)
 		&"start_fundamentals":
-			var base := _base_runtime()
-			if is_instance_valid(base):
-				base.call_deferred("start_real_practice")
+			var fundamental_runtime := _base_runtime()
+			if is_instance_valid(fundamental_runtime):
+				fundamental_runtime.call_deferred("start_real_practice")
 		&"start_advanced":
 			call_deferred("start_advanced_dojo")
 		&"stop_training":
-			var base := _base_runtime()
-			if is_instance_valid(base):
-				base.stop_real_practice("Treino encerrado pela interface Web.")
+			var stop_runtime := _base_runtime()
+			if is_instance_valid(stop_runtime):
+				stop_runtime.stop_real_practice("Treino encerrado pela interface Web.")
 			stop_advanced_dojo("Treino encerrado pela interface Web.")
 		&"reset":
 			reset_all_profiles()
