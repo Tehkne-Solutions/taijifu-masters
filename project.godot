@@ -31,6 +31,7 @@ TrainingProgressionRuntime="*res://scripts/runtime/training_progression_runtime.
 PlayerProgressionProfileRuntime="*res://scripts/runtime/player_progression_profile_runtime.gd"
 CosmeticCollectionRuntime="*res://scripts/runtime/cosmetic_collection_runtime.gd"
 PurchasedItemsApplicationRuntime="*res://scripts/runtime/purchased_items_application_runtime.gd"
+MedievalUIThemeRuntime="*res://scripts/runtime/medieval_ui_theme_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 TaijifuGamepadTraining="*res://scripts/runtime/gamepad_training_runtime.gd"
 TaijifuGamepadExperience="*res://scripts/runtime/gamepad_experience_runtime.gd"
