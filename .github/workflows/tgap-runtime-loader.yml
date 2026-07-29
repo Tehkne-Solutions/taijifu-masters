@@ -1,0 +1,31 @@
+name: TGAP Runtime Loader
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/tgap_asset_loader.gd'
+      - 'project.godot'
+      - 'tests/tgap/test_runtime_loader_contract.py'
+      - 'docs/standards/TGAP_RUNTIME_ASSET_LOADER.md'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/runtime/tgap_asset_loader.gd'
+      - 'project.godot'
+      - 'tests/tgap/test_runtime_loader_contract.py'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-tgap-test.txt
+      - run: pytest -q tests/tgap/test_runtime_loader_contract.py
