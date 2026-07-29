@@ -1,0 +1,24 @@
+{
+  "schema": "tgap/legacy-sunset/v1",
+  "adapter": "AssetPackRegistry",
+  "default_enabled": false,
+  "legacy_pack_scan_default": false,
+  "allowed_runtime_methods": [
+    "get_pack",
+    "has_pack",
+    "list_pack_ids",
+    "resolve_asset",
+    "load_asset"
+  ],
+  "production_budget": 0,
+  "removal_conditions": {
+    "consecutive_green_runs": 5,
+    "production_findings": 0,
+    "legacy_fallback_events": 0
+  },
+  "temporary_reenable": {
+    "project_setting": "taijifu/tgap/legacy_adapter_enabled",
+    "scan_setting": "taijifu/tgap/legacy_pack_scan_enabled",
+    "requires_documented_reason": true
+  }
+}
