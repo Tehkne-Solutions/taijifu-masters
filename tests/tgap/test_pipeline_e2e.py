@@ -61,17 +61,26 @@ def build_canonical_pack(root: Path) -> Path:
     )
     write_json(pack / "runtime/lian_wu_runtime_manifest.json", {
         "pack_id": "pack_00_e2e_canonical",
-        "character_id": "lian_wu",
-        "atlas": "atlases/char_lian_wu__atlas.json",
+        "entity_id": "lian_wu",
+        "atlas": "atlases/char_lian_wu__atlas.png",
         "spriteframes": "runtime/lian_wu_spriteframes.tres",
         "animations": {"idle": {"frame_count": 1}},
     })
     write_json(pack / "manifest.json", {
-        "schema": "tgap/manifest/v1",
+        "schema": "tgap/v1",
         "pack_id": "pack_00_e2e_canonical",
-        "name": "TGAP Canonical E2E Pack",
+        "display_name": "TGAP Canonical E2E Pack",
+        "asset_class": "character",
         "version": "1.0.0",
-        "lifecycle": "approved",
+        "state": "approved",
+        "runtime": {
+            "entity_id": "lian_wu",
+            "frame_prefix": "char_lian_wu",
+            "atlas_png": "atlases/char_lian_wu__atlas.png",
+            "atlas_json": "atlases/char_lian_wu__atlas.json",
+            "spriteframes": "runtime/lian_wu_spriteframes.tres",
+            "manifest": "runtime/lian_wu_runtime_manifest.json",
+        },
     })
     write_json(pack / "production-status.json", {
         "pack_id": "pack_00_e2e_canonical",
@@ -118,12 +127,17 @@ def test_canonical_pack_crosses_full_pipeline_and_release(tmp_path: Path) -> Non
     assert report["pipeline_passed"] is True
     assert report["promotion_blocked"] is False
     assert [step["name"] for step in report["steps"]] == [
+        "contract_gate",
         "inventory",
         "visual_gate",
         "animation_gate",
         "runtime_gate",
+        "pipeline_contract_gate",
     ]
     assert all(step["passed"] for step in report["steps"])
+    contract_report = json.loads((pack / "validation/contract-gate-report.json").read_text(encoding="utf-8"))
+    assert contract_report["contract_gate_passed"] is True
+    assert any(item["name"] == "pipeline_report" for item in contract_report["results"])
 
     output_a = tmp_path / "release-a"
     output_b = tmp_path / "release-b"
