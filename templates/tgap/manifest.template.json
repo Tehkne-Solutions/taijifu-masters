@@ -1,0 +1,47 @@
+{
+  "tgap_version": "1.0.0",
+  "pack_id": "replace_me",
+  "version": "0.1.0",
+  "asset_class": "character",
+  "status": "scaffold",
+  "runtime_eligible": false,
+  "identity": {
+    "display_name": "Replace Me",
+    "canonical_prefix": "replace_me",
+    "visual_style": "project_defined",
+    "immutable_traits": []
+  },
+  "technical": {
+    "engine_targets": ["godot"],
+    "image_mode": "RGBA",
+    "transparent_background": true,
+    "frame_size": [128, 128],
+    "pivot": [64, 120],
+    "texture_filter": "nearest"
+  },
+  "directories": {
+    "source": "source",
+    "frames": "frames",
+    "atlases": "atlases",
+    "metadata": "metadata",
+    "runtime": "runtime",
+    "validation": "validation",
+    "preview": "preview",
+    "release": "release"
+  },
+  "gates": {
+    "integrity": false,
+    "dimensions": false,
+    "transparency": false,
+    "identity": false,
+    "animation": false,
+    "hashes": false,
+    "approval": false,
+    "runtime": false,
+    "release": false
+  },
+  "promotion": {
+    "blocked": true,
+    "reason": "scaffold only"
+  }
+}

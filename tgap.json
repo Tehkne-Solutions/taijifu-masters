@@ -1,0 +1,25 @@
+{
+  "tgap_version": "1.0.0",
+  "project_id": "taijifu_masters",
+  "engine": "godot",
+  "pack_root": "assets/tgap",
+  "legacy_pack_roots": [
+    "assets/packs",
+    "assets/pack_00_foundation",
+    "assets/pack_01_characters"
+  ],
+  "default_image": {
+    "mode": "RGBA",
+    "transparent_background": true,
+    "texture_filter": "nearest"
+  },
+  "promotion_policy": {
+    "require_closed_inventory": true,
+    "require_sha256": true,
+    "require_visual_approval": true,
+    "require_runtime_resolution": true,
+    "allow_silent_fallback_after_integration": false,
+    "allow_preview_as_runtime_asset": false
+  },
+  "pilot_pack": "pack_01_lian_wu"
+}

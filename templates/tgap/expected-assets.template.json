@@ -1,0 +1,17 @@
+{
+  "tgap_version": "1.0.0",
+  "pack_id": "replace_me",
+  "closed_inventory": true,
+  "assets": [
+    {
+      "id": "replace_me.source.master",
+      "path": "source/replace_me__master.png",
+      "kind": "source",
+      "required": true,
+      "runtime_eligible": false,
+      "format": "png",
+      "sha256": null,
+      "approved": false
+    }
+  ]
+}
