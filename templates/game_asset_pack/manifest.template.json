@@ -1,0 +1,39 @@
+{
+  "standard": "tehkne-game-asset-pack/1.0",
+  "pack_id": "pack_XX_example",
+  "game_id": "game_slug",
+  "version": "0.1.0",
+  "status": "scaffold",
+  "title": "Example Pack",
+  "description": "Replace with the production scope.",
+  "source_archive": {
+    "file": null,
+    "size_bytes": null,
+    "sha256": null
+  },
+  "dependencies": [],
+  "runtime_targets": ["godot", "web"],
+  "naming": {
+    "pattern": "<category>__<asset_id>__<state_or_variant>__f<frame>.<ext>",
+    "case": "snake_case"
+  },
+  "requirements": {
+    "individual_files": true,
+    "transparent_background_when_required": true,
+    "canonical_ids": true,
+    "sha256_per_asset": true,
+    "deterministic_archive": true,
+    "runtime_validation_scene": true,
+    "smoke_test": true
+  },
+  "assets_index": "expected-assets.json",
+  "production_status": "production-status.json",
+  "reports_directory": "reports",
+  "promotion": {
+    "approved": false,
+    "integrated": false,
+    "released": false,
+    "release_archive": null,
+    "release_sha256": null
+  }
+}
