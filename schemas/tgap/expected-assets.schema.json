@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taijifu.dev/schemas/tgap/expected-assets.schema.json",
+  "title": "TGAP Expected Assets",
+  "type": "object",
+  "required": ["schema", "pack_id"],
+  "properties": {
+    "schema": {"const": "tgap/expected-assets/v1"},
+    "pack_id": {"type": "string", "pattern": "^pack_[a-z0-9_]+$"},
+    "assets": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string", "minLength": 1},
+          {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "quality": {"enum": ["prototype", "final", "approved", "integrated", "released"]}
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "glob", "required"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "glob": {"type": "string", "minLength": 1},
+          "required": {"type": "integer", "minimum": 1},
+          "quality": {"enum": ["prototype", "final", "approved", "integrated", "released"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "animations": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    }
+  },
+  "anyOf": [{"required": ["assets"]}, {"required": ["groups"]}, {"required": ["animations"]}],
+  "additionalProperties": true
+}
