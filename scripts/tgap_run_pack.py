@@ -21,11 +21,29 @@ def run_step(name: str, command: list[str], cwd: Path) -> dict[str, Any]:
         "command": command,
         "exit_code": process.returncode,
         "passed": process.returncode == 0,
+        "skipped": False,
         "stdout": process.stdout.strip(),
         "stderr": process.stderr.strip(),
         "started_at": started.isoformat(),
         "finished_at": finished.isoformat(),
         "duration_seconds": round((finished - started).total_seconds(), 3),
+    }
+
+
+def skipped_step(name: str, reason: str) -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "name": name,
+        "command": [],
+        "exit_code": None,
+        "passed": False,
+        "skipped": True,
+        "skip_reason": reason,
+        "stdout": "",
+        "stderr": "",
+        "started_at": now,
+        "finished_at": now,
+        "duration_seconds": 0.0,
     }
 
 
@@ -38,38 +56,8 @@ def read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Executa gates TGAP e consolida o status do pack.")
-    parser.add_argument("pack_root", type=Path)
-    parser.add_argument("--migrate", action="store_true", help="Executa migrador específico antes dos gates.")
-    parser.add_argument("--migration-script", type=Path, default=Path("scripts/tgap_migrate_lian_wu.py"))
-    parser.add_argument("--python", default=sys.executable)
-    args = parser.parse_args()
-
-    repo = Path(__file__).resolve().parents[1]
-    pack = args.pack_root if args.pack_root.is_absolute() else repo / args.pack_root
-    pack = pack.resolve()
+def write_pipeline_report(pack: Path, steps: list[dict[str, Any]], reports: dict[str, Any]) -> dict[str, Any]:
     validation = pack / "validation"
-    validation.mkdir(parents=True, exist_ok=True)
-
-    steps: list[dict[str, Any]] = []
-    if args.migrate:
-        migration = args.migration_script if args.migration_script.is_absolute() else repo / args.migration_script
-        steps.append(run_step("migration", [args.python, str(migration)], repo))
-
-    steps.extend([
-        run_step("inventory", [args.python, str(repo / "scripts/tgap_inventory_report.py"), str(pack), "--write-status"], repo),
-        run_step("visual_gate", [args.python, str(repo / "scripts/tgap_visual_gate.py"), str(pack)], repo),
-        run_step("animation_gate", [args.python, str(repo / "scripts/tgap_animation_gate.py"), str(pack)], repo),
-        run_step("runtime_gate", [args.python, str(repo / "scripts/tgap_runtime_gate.py"), str(pack)], repo),
-    ])
-
-    reports = {
-        "inventory": read_json(validation / "inventory-report.json"),
-        "visual": read_json(validation / "visual-gate-report.json"),
-        "animation": read_json(validation / "animation-gate-report.json"),
-        "runtime": read_json(validation / "runtime-gate-report.json"),
-    }
     passed = all(step["passed"] for step in steps)
     consolidated = {
         "tgap_version": "1.0",
@@ -96,16 +84,85 @@ def main() -> int:
         "",
     ]
     for step in steps:
-        lines.append(f"- **{step['name']}**: {'PASS' if step['passed'] else 'FAIL'} (exit {step['exit_code']}, {step['duration_seconds']}s)")
-    failed = [step for step in steps if not step["passed"]]
+        if step.get("skipped"):
+            lines.append(f"- **{step['name']}**: SKIP — {step.get('skip_reason', 'etapa não executada')}")
+        else:
+            lines.append(
+                f"- **{step['name']}**: {'PASS' if step['passed'] else 'FAIL'} "
+                f"(exit {step['exit_code']}, {step['duration_seconds']}s)"
+            )
+    failed = [step for step in steps if not step["passed"] and not step.get("skipped")]
     if failed:
         lines.extend(["", "## Falhas", ""])
         for step in failed:
             detail = step["stderr"] or step["stdout"] or "sem diagnóstico textual"
             lines.append(f"### {step['name']}\n\n```text\n{detail}\n```")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return consolidated
 
-    print(json.dumps({"pipeline_passed": passed, "promotion_blocked": not passed, "report": str(json_path)}, ensure_ascii=False))
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Executa gates TGAP e consolida o status do pack.")
+    parser.add_argument("pack_root", type=Path)
+    parser.add_argument("--migrate", action="store_true", help="Executa migrador específico antes dos gates.")
+    parser.add_argument("--migration-script", type=Path, default=Path("scripts/tgap_migrate_lian_wu.py"))
+    parser.add_argument("--python", default=sys.executable)
+    args = parser.parse_args()
+
+    repo = Path(__file__).resolve().parents[1]
+    pack = args.pack_root if args.pack_root.is_absolute() else repo / args.pack_root
+    pack = pack.resolve()
+    validation = pack / "validation"
+    validation.mkdir(parents=True, exist_ok=True)
+
+    steps: list[dict[str, Any]] = []
+    if args.migrate:
+        migration = args.migration_script if args.migration_script.is_absolute() else repo / args.migration_script
+        steps.append(run_step("migration", [args.python, str(migration)], repo))
+
+    contract_command = [args.python, str(repo / "scripts/tgap_contract_gate.py"), str(pack)]
+    contract = run_step("contract_gate", contract_command, repo)
+    steps.append(contract)
+
+    technical_steps = [
+        ("inventory", [args.python, str(repo / "scripts/tgap_inventory_report.py"), str(pack), "--write-status"]),
+        ("visual_gate", [args.python, str(repo / "scripts/tgap_visual_gate.py"), str(pack)]),
+        ("animation_gate", [args.python, str(repo / "scripts/tgap_animation_gate.py"), str(pack)]),
+        ("runtime_gate", [args.python, str(repo / "scripts/tgap_runtime_gate.py"), str(pack)]),
+    ]
+    if contract["passed"]:
+        steps.extend(run_step(name, command, repo) for name, command in technical_steps)
+    else:
+        steps.extend(skipped_step(name, "contract_gate_failed") for name, _ in technical_steps)
+
+    reports = {
+        "contract": read_json(validation / "contract-gate-report.json"),
+        "inventory": read_json(validation / "inventory-report.json"),
+        "visual": read_json(validation / "visual-gate-report.json"),
+        "animation": read_json(validation / "animation-gate-report.json"),
+        "runtime": read_json(validation / "runtime-gate-report.json"),
+    }
+
+    write_pipeline_report(pack, steps, reports)
+
+    if contract["passed"]:
+        pipeline_contract = run_step(
+            "pipeline_contract_gate",
+            contract_command + ["--include-pipeline-report"],
+            repo,
+        )
+        steps.append(pipeline_contract)
+        reports["contract"] = read_json(validation / "contract-gate-report.json")
+    else:
+        steps.append(skipped_step("pipeline_contract_gate", "contract_gate_failed"))
+
+    consolidated = write_pipeline_report(pack, steps, reports)
+    passed = consolidated["pipeline_passed"]
+    print(json.dumps({
+        "pipeline_passed": passed,
+        "promotion_blocked": not passed,
+        "report": str(validation / "pipeline-report.json"),
+    }, ensure_ascii=False))
     return 0 if passed else 1
 
 
