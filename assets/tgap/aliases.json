@@ -1,0 +1,32 @@
+{
+  "schema": "tgap/aliases/v1",
+  "version": 1,
+  "aliases": {
+    "lian_wu": {
+      "pack_id": "pack_01_lian_wu",
+      "deprecated": false
+    },
+    "pack_01_characters_lian_wu": {
+      "pack_id": "pack_01_lian_wu",
+      "deprecated": true,
+      "replacement": "pack_01_lian_wu"
+    }
+  },
+  "path_aliases": {
+    "pack_01_lian_wu": {
+      "spriteframes": "runtime/lian_wu_spriteframes.tres",
+      "runtime_manifest": "runtime/lian_wu_runtime_manifest.json",
+      "atlas_png": "atlases/char_lian_wu__atlas.png",
+      "atlas_json": "atlases/char_lian_wu__atlas.json"
+    }
+  },
+  "fallbacks": {
+    "pack_01_lian_wu": {
+      "allowed_states": ["scaffold", "specified", "production", "validation"],
+      "paths": {
+        "spriteframes": "res://assets/pack_01_characters/lian_wu/runtime/lian_wu_spriteframes.tres",
+        "runtime_manifest": "res://assets/pack_01_characters/lian_wu/runtime/lian_wu_runtime_manifest.json"
+      }
+    }
+  }
+}
