@@ -15,7 +15,6 @@ config/icon="res://web/taijifu-web-icon.svg"
 [autoload]
 
 TgapAssetLoader="*res://scripts/runtime/tgap_asset_loader.gd"
-AssetPackRegistry="*res://scripts/runtime/asset_pack_registry.gd"
 Pack99BattleVisualRuntime="*res://scripts/runtime/pack_99_battle_visual_runtime.gd"
 Pack99CombatEventRuntime="*res://scripts/runtime/pack_99_combat_event_runtime.gd"
 Pack08ArenaUnitRuntime="*res://scripts/runtime/pack_08_arena_unit_runtime.gd"

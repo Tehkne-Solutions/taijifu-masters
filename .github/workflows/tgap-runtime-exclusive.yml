@@ -1,0 +1,25 @@
+name: TGAP Runtime Exclusive
+
+on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "scripts/runtime/**"
+      - "tests/tgap/**"
+      - "config/tgap-legacy-sunset.json"
+      - ".github/workflows/tgap-runtime-exclusive.yml"
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run exclusive runtime tests
+        run: python -m pytest tests/tgap/test_legacy_autoload_removed.py tests/tgap/test_legacy_adapter_sunset.py
+      - name: Enforce zero legacy production findings
+        run: python scripts/tgap_audit_legacy_usage.py --fail-on-findings
