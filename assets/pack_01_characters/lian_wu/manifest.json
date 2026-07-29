@@ -1,0 +1,74 @@
+{
+  "pack_id": "pack_01_characters",
+  "asset_id": "char_lian_wu",
+  "version": "1.0.1",
+  "status": "specified_assets_missing",
+  "display_name": "Lian Wu",
+  "archetype": "disciple_serene_blade",
+  "visual_identity": {
+    "style": "comic_manga_2_5d_retro_vector",
+    "signature_color": "#1769C2",
+    "signature_element": "blue_kimono_sash",
+    "outline_px": 3,
+    "player_outline_px": 2,
+    "rim_light": "#7DDEFF",
+    "pivot": "feet_center"
+  },
+  "runtime": {
+    "base_frame": [128, 128],
+    "projected_height_px": 96,
+    "fps_default": 12,
+    "texture_filter": "nearest",
+    "loop_idle": true,
+    "flip_horizontal": true
+  },
+  "production_gate": {
+    "master_model": false,
+    "individual_frames": false,
+    "transparent_background": false,
+    "stable_pivots": false,
+    "metadata": false,
+    "atlas_png": false,
+    "atlas_json": false,
+    "godot_spriteframes": false,
+    "validation_scene": false,
+    "runtime_integration": false
+  },
+  "folders": {
+    "frames": "frames",
+    "atlases": "atlases",
+    "portraits": "portraits",
+    "vfx": "vfx",
+    "metadata": "metadata",
+    "source": "source"
+  },
+  "animations": [
+    {"id":"idle","frames":6,"fps":8,"loop":true},
+    {"id":"walk","frames":8,"fps":12,"loop":true},
+    {"id":"run","frames":8,"fps":14,"loop":true},
+    {"id":"jump_start","frames":4,"fps":12,"loop":false},
+    {"id":"jump_loop","frames":3,"fps":10,"loop":true},
+    {"id":"fall","frames":3,"fps":10,"loop":true},
+    {"id":"land","frames":4,"fps":14,"loop":false},
+    {"id":"attack_light_01","frames":6,"fps":16,"loop":false},
+    {"id":"attack_light_02","frames":7,"fps":16,"loop":false},
+    {"id":"attack_heavy","frames":9,"fps":14,"loop":false},
+    {"id":"dash","frames":5,"fps":18,"loop":false},
+    {"id":"block","frames":4,"fps":10,"loop":true},
+    {"id":"parry","frames":5,"fps":18,"loop":false},
+    {"id":"skill_water_dragon","frames":10,"fps":14,"loop":false},
+    {"id":"hurt","frames":4,"fps":14,"loop":false},
+    {"id":"knockback","frames":5,"fps":12,"loop":false},
+    {"id":"downed","frames":6,"fps":10,"loop":false},
+    {"id":"death","frames":8,"fps":10,"loop":false},
+    {"id":"victory","frames":8,"fps":10,"loop":true}
+  ],
+  "exports": {
+    "individual_frames": true,
+    "transparent_background": true,
+    "atlas_png": true,
+    "atlas_json": true,
+    "godot_spriteframes": true,
+    "naming": "char_lian_wu__<animation>__f<frame_2d>.png"
+  }
+}
