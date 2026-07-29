@@ -1,0 +1,41 @@
+name: TGAP Registry
+
+on:
+  pull_request:
+    paths:
+      - 'tgap-registry.json'
+      - 'schemas/tgap/registry.schema.json'
+      - 'scripts/tgap_registry_gate.py'
+      - 'assets/tgap/**/manifest.json'
+      - 'tests/tgap/test_registry_gate.py'
+  push:
+    branches: [main]
+    paths:
+      - 'tgap-registry.json'
+      - 'schemas/tgap/registry.schema.json'
+      - 'scripts/tgap_registry_gate.py'
+      - 'assets/tgap/**/manifest.json'
+
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-tgap.txt -r requirements-tgap-test.txt
+      - name: Validar registro global
+        run: python scripts/tgap_registry_gate.py
+      - name: Executar testes do registro
+        run: pytest -q tests/tgap/test_registry_gate.py
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-registry-report
+          path: artifacts/tgap/registry-gate-report.json
+          if-no-files-found: warn
+          retention-days: 30
