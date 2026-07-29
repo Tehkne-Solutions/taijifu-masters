@@ -16,7 +16,7 @@
         "required": ["pack_id", "root", "version", "asset_class", "integration_order", "dependencies", "compatibility"],
         "properties": {
           "pack_id": {"type": "string", "pattern": "^pack_[a-z0-9_]+$"},
-          "root": {"type": "string", "pattern": "^assets/tgap/pack_[a-z0-9_]+$"},
+          "root": {"type": "string", "minLength": 1},
           "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"},
           "asset_class": {"enum": ["character", "unit", "vfx", "tile", "prop", "environment", "ui"]},
           "integration_order": {"type": "integer", "minimum": 0},
