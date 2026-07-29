@@ -1,0 +1,23 @@
+{
+  "pack_id": "pack_XX_example",
+  "status": "scaffold",
+  "updated_at": null,
+  "counts": {
+    "expected": 0,
+    "present": 0,
+    "valid": 0,
+    "approved": 0,
+    "integrated": 0
+  },
+  "gates": {
+    "integrity": false,
+    "dimensions_and_format": false,
+    "visual_identity": false,
+    "hashes": false,
+    "runtime_import": false,
+    "smoke_test": false,
+    "promotion": false
+  },
+  "blocking_issues": [],
+  "notes": []
+}

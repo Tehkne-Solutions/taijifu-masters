@@ -1,0 +1,18 @@
+{
+  "pack_id": "pack_XX_example",
+  "version": "0.1.0",
+  "assets": [
+    {
+      "id": "category__asset_id__state_or_variant",
+      "path": "assets/category/category__asset_id__state_or_variant.png",
+      "type": "image",
+      "required": true,
+      "width": 128,
+      "height": 128,
+      "alpha_required": true,
+      "approved": false,
+      "sha256": null,
+      "runtime_targets": ["godot", "web"]
+    }
+  ]
+}
