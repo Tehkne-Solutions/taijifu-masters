@@ -31,10 +31,11 @@ def test_manifest_declares_deterministic_visual_identity() -> None:
     assert manifest["runtime"]["spriteframes"].endswith(".tres")
 
 
-def test_sha256_is_stable(tmp_path: Path) -> None:
+def test_sha256_changes_with_content(tmp_path: Path) -> None:
     module = load_module()
     target = tmp_path / "fixture.bin"
     target.write_bytes(b"taijifu-official-baseline")
-    assert module.sha256(target) == module.sha256(target)
+    first = module.sha256(target)
+    assert first == module.sha256(target)
     target.write_bytes(b"taijifu-official-baseline-v2")
-    assert module.sha256(target) != module.sha256(tmp_path / "missing.bin") if False else True
+    assert first != module.sha256(target)
