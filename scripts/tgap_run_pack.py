@@ -61,12 +61,14 @@ def main() -> int:
         run_step("inventory", [args.python, str(repo / "scripts/tgap_inventory_report.py"), str(pack), "--write-status"], repo),
         run_step("visual_gate", [args.python, str(repo / "scripts/tgap_visual_gate.py"), str(pack)], repo),
         run_step("animation_gate", [args.python, str(repo / "scripts/tgap_animation_gate.py"), str(pack)], repo),
+        run_step("runtime_gate", [args.python, str(repo / "scripts/tgap_runtime_gate.py"), str(pack)], repo),
     ])
 
     reports = {
         "inventory": read_json(validation / "inventory-report.json"),
         "visual": read_json(validation / "visual-gate-report.json"),
         "animation": read_json(validation / "animation-gate-report.json"),
+        "runtime": read_json(validation / "runtime-gate-report.json"),
     }
     passed = all(step["passed"] for step in steps)
     consolidated = {
