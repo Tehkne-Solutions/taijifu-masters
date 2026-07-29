@@ -23,12 +23,15 @@ var _preset_ids: Array[StringName] = []
 var _selected_preset_indices: Array[int] = [0, 2]
 var _selected_element_indices: Array[int] = [3, 2]
 var _message_sequence := 0
+var _skill_dock: Control
+var _skill_labels: Array[Dictionary] = [{}, {}]
 
 func _ready() -> void:
 	_register_prototype_inputs()
 	_preset_ids = BuildProfile.available_prototype_presets()
 	arena.sector_shifted.connect(_on_sector_shifted)
 	preparation_runtime.start_requested.connect(_start_battle)
+	_build_skill_dock()
 	_enter_preparation()
 
 func _process(delta: float) -> void:
@@ -48,6 +51,8 @@ func _enter_preparation() -> void:
 	camera.zoom = Vector2(0.72, 0.72)
 	center_label.text = "PREPARAÇÃO COMPLETA"
 	controls_label.text = "Configure os dois loadouts e confirme individualmente."
+	if is_instance_valid(_skill_dock):
+		_skill_dock.visible = false
 	_sync_legacy_preparation_state()
 	preparation_runtime.open()
 
@@ -74,6 +79,8 @@ func _start_battle() -> void:
 	_spawn_fighters()
 	center_label.text = "ENTRADA NA ARENA"
 	controls_label.text = "Controles bloqueados até o comando LUTEM."
+	if is_instance_valid(_skill_dock):
+		_skill_dock.visible = false
 	entrance_runtime.play(player_one, player_two)
 	await entrance_runtime.entrance_finished
 	if _state != MatchState.ENTRANCE:
@@ -81,7 +88,9 @@ func _start_battle() -> void:
 	arena.start_battle_flow()
 	_state = MatchState.BATTLE
 	center_label.text = "RUÍNAS DO CAMINHO TRIPLO\nTAI • JI • FU"
-	controls_label.text = "P1: A/D • W salto • S queda • Q esquiva • F técnica • G empurrão • E agarrão • C elemento • H eco • R defesa\nP2: Setas • Num0 esquiva • Num1 técnica • Num2 empurrão • Num4 agarrão • Num6 elemento • Num5 eco • Num3 defesa\nGamepads: analógico move • A salto • B esquiva • X técnica • Y empurrão • LB agarrão • RB defesa"
+	controls_label.text = ""
+	if is_instance_valid(_skill_dock):
+		_skill_dock.visible = true
 
 func _spawn_fighters() -> void:
 	player_one = _spawn_fighter(1, preparation_runtime.loadout_for_player(1), Color(0.25, 0.70, 1.0))
@@ -133,6 +142,8 @@ func _update_camera(delta: float) -> void:
 func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1 — %s" % player_one.build.character_name.to_upper())
 	player_two_label.text = _fighter_summary(player_two, "P2 — %s" % player_two.build.character_name.to_upper())
+	_update_skill_dock_player(1, player_one)
+	_update_skill_dock_player(2, player_two)
 
 func _fighter_summary(fighter: FighterController, title: String) -> String:
 	var element_label := String(fighter.build.element_id).to_upper()
@@ -141,12 +152,128 @@ func _fighter_summary(fighter: FighterController, title: String) -> String:
 		var elemental := fighter as ElementalFighterController
 		element_label = elemental.current_element_label()
 		state_label = elemental.current_elemental_status_label()
-	return "%s\n%s\nVIDA %d  POST %d  FÔL %d\nTAI %d  JI %d  FU %d\n%s • %s\nARMA %s  DES %d%%\n%s • %s" % [
-		title, fighter.build.display_name, roundi(fighter.health), roundi(fighter.posture), roundi(fighter.stamina),
-		roundi(fighter.build.tai_index()), roundi(fighter.build.ji_index()), roundi(fighter.build.fu_index()),
-		element_label, state_label, fighter.current_weapon_label(), roundi(fighter.disarm_pressure),
-		fighter.current_technique_label(), fighter.current_echo_label()
+	return "%s\nVIDA %d  •  POST %d  •  FÔL %d\n%s • %s" % [
+		title, roundi(fighter.health), roundi(fighter.posture), roundi(fighter.stamina), element_label, state_label
 	]
+
+func _build_skill_dock() -> void:
+	_skill_dock = Control.new()
+	_skill_dock.name = "MedievalSkillDock"
+	_skill_dock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_skill_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$HUD.add_child(_skill_dock)
+	var dock := PanelContainer.new()
+	dock.anchor_left = 0.5
+	dock.anchor_top = 1.0
+	dock.anchor_right = 0.5
+	dock.anchor_bottom = 1.0
+	dock.offset_left = -500.0
+	dock.offset_top = -112.0
+	dock.offset_right = 500.0
+	dock.offset_bottom = -12.0
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.075, 0.045, 0.025, 0.94)
+	style.border_color = Color(0.66, 0.45, 0.20, 0.96)
+	style.set_border_width_all(3)
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	dock.add_theme_stylebox_override("panel", style)
+	_skill_dock.add_child(dock)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	dock.add_child(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	margin.add_child(row)
+	row.add_child(_build_player_skill_strip(1))
+	var seal := Label.new()
+	seal.text = "TAI\nJI\nFU"
+	seal.custom_minimum_size = Vector2(54, 78)
+	seal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	seal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	seal.add_theme_font_size_override("font_size", 13)
+	seal.add_theme_color_override("font_color", Color(0.95, 0.78, 0.40))
+	row.add_child(seal)
+	row.add_child(_build_player_skill_strip(2))
+	_skill_dock.visible = false
+
+func _build_player_skill_strip(player_index: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(445, 78)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.14, 0.09, 0.05, 0.92)
+	style.border_color = Color(0.36, 0.58, 0.76) if player_index == 1 else Color(0.72, 0.34, 0.22)
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 7
+	style.corner_radius_top_right = 7
+	style.corner_radius_bottom_left = 7
+	style.corner_radius_bottom_right = 7
+	panel.add_theme_stylebox_override("panel", style)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = "MESTRE %d • CÍRCULO DE TÉCNICAS" % player_index
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_color_override("font_color", Color(0.92, 0.82, 0.58))
+	column.add_child(title)
+	var skills := HBoxContainer.new()
+	skills.add_theme_constant_override("separation", 5)
+	column.add_child(skills)
+	var entries := [
+		{"id":"dodge", "p1":"Q", "p2":"N0", "label":"ESQUIVA"},
+		{"id":"technique", "p1":"F", "p2":"N1", "label":"TÉCNICA"},
+		{"id":"push", "p1":"G", "p2":"N2", "label":"IMPULSO"},
+		{"id":"grab", "p1":"E", "p2":"N4", "label":"AGARRÃO"},
+		{"id":"element", "p1":"C", "p2":"N6", "label":"ELEMENTO"},
+		{"id":"echo", "p1":"H", "p2":"N5", "label":"ECO"},
+		{"id":"block", "p1":"R", "p2":"N3", "label":"DEFESA"}
+	]
+	var labels := {}
+	for entry in entries:
+		var slot := Label.new()
+		var key := String(entry.p1) if player_index == 1 else String(entry.p2)
+		slot.text = "%s\n%s" % [key, String(entry.label)]
+		slot.custom_minimum_size = Vector2(57, 42)
+		slot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		slot.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		slot.add_theme_font_size_override("font_size", 9)
+		slot.add_theme_color_override("font_color", Color(0.90, 0.86, 0.72))
+		var slot_style := StyleBoxFlat.new()
+		slot_style.bg_color = Color(0.06, 0.045, 0.03, 0.96)
+		slot_style.border_color = Color(0.48, 0.34, 0.16, 0.9)
+		slot_style.set_border_width_all(1)
+		slot_style.corner_radius_top_left = 4
+		slot_style.corner_radius_top_right = 4
+		slot_style.corner_radius_bottom_left = 4
+		slot_style.corner_radius_bottom_right = 4
+		slot.add_theme_stylebox_override("normal", slot_style)
+		skills.add_child(slot)
+		labels[String(entry.id)] = slot
+	_skill_labels[player_index - 1] = labels
+	return panel
+
+func _update_skill_dock_player(player_index: int, fighter: FighterController) -> void:
+	if _skill_labels.size() < player_index:
+		return
+	var labels: Dictionary = _skill_labels[player_index - 1]
+	if labels.is_empty():
+		return
+	var technique: Label = labels.get("technique")
+	var element: Label = labels.get("element")
+	var echo: Label = labels.get("echo")
+	if technique != null:
+		technique.tooltip_text = fighter.current_technique_label()
+	if element != null:
+		element.tooltip_text = String(fighter.build.element_id).to_upper()
+	if echo != null:
+		echo.tooltip_text = fighter.current_echo_label()
 
 func _check_world_limits() -> void:
 	for fighter in [player_one, player_two]:
