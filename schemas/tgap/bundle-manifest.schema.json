@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taijifu.dev/schemas/tgap/bundle-manifest.schema.json",
+  "title": "TGAP Multi-pack Bundle Manifest",
+  "type": "object",
+  "required": ["schema", "project_id", "bundle_version", "registry_version", "publishable", "packs", "archive"],
+  "properties": {
+    "schema": {"const": "tgap/bundle/v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "bundle_version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"},
+    "registry_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "publishable": {"type": "boolean"},
+    "forced": {"type": "boolean"},
+    "integration_plan": {"type": "array", "items": {"type": "string"}},
+    "packs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["pack_id", "version", "root", "pipeline_approved", "file_count", "sha256"],
+        "properties": {
+          "pack_id": {"type": "string"},
+          "version": {"type": "string"},
+          "root": {"type": "string"},
+          "pipeline_approved": {"type": "boolean"},
+          "file_count": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "archive": {
+      "type": "object",
+      "required": ["path", "sha256", "file_count"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "file_count": {"type": "integer", "minimum": 1}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"publishable": {"const": true}}},
+      "then": {
+        "properties": {
+          "forced": {"const": false},
+          "packs": {"items": {"properties": {"pipeline_approved": {"const": true}}}}
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}
