@@ -1,0 +1,60 @@
+{
+  "pack_id": "pack_01_characters_lian_wu",
+  "generated_by": "scripts/prepare_lian_wu_pack.py",
+  "closed_inventory": true,
+  "summary": {
+    "master_sources": 1,
+    "animation_frames": 113,
+    "portraits": 3,
+    "icons": 2,
+    "vfx_frames": 18,
+    "atlases": 2,
+    "metadata": 21,
+    "runtime_resources": 2,
+    "validation_files": 2,
+    "preview_files": 1,
+    "total_expected": 165
+  },
+  "animations": {
+    "idle": 6,
+    "walk": 8,
+    "run": 8,
+    "jump_start": 4,
+    "jump_loop": 3,
+    "fall": 3,
+    "land": 4,
+    "attack_light_01": 6,
+    "attack_light_02": 7,
+    "attack_heavy": 9,
+    "dash": 5,
+    "block": 4,
+    "parry": 5,
+    "skill_water_dragon": 10,
+    "hurt": 4,
+    "knockback": 5,
+    "downed": 6,
+    "death": 8,
+    "victory": 8
+  },
+  "required_single_files": [
+    "source/char_lian_wu__master.png",
+    "portraits/portrait_lian_wu__profile.png",
+    "portraits/portrait_lian_wu__battle.png",
+    "portraits/portrait_lian_wu__defeated.png",
+    "icons/icon_lian_wu__character.png",
+    "icons/icon_lian_wu__water_element.png",
+    "atlases/char_lian_wu__atlas.png",
+    "atlases/char_lian_wu__atlas.json",
+    "runtime/lian_wu_spriteframes.tres",
+    "runtime/lian_wu_runtime_manifest.json",
+    "validation/pack01_lian_wu_validation.tscn",
+    "validation/pack01_lian_wu_validation.gd",
+    "preview/pack01_lian_wu_preview.png"
+  ],
+  "required_patterns": [
+    "frames/<animation>/char_lian_wu__<animation>__f<frame_2d>.png",
+    "metadata/<animation>.json",
+    "vfx/water_slash/vfx_lian_wu__water_slash__f<frame_2d>.png",
+    "vfx/water_dragon/vfx_lian_wu__water_dragon__f<frame_2d>.png"
+  ]
+}
