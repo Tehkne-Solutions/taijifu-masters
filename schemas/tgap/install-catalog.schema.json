@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taijifu.dev/schemas/tgap/install-catalog.schema.json",
+  "title": "TGAP Installed Asset Catalog",
+  "type": "object",
+  "required": ["schema", "project_id", "generation", "active_bundle", "packs"],
+  "properties": {
+    "schema": {"const": "tgap/install-catalog/v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "generation": {"type": "integer", "minimum": 1},
+    "installed_at": {"type": "string", "format": "date-time"},
+    "active_bundle": {
+      "type": "object",
+      "required": ["version", "sha256", "manifest"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "manifest": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "packs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pack_id", "version", "root", "file_count", "sha256"],
+        "properties": {
+          "pack_id": {"type": "string", "pattern": "^pack_[a-z0-9_]+$"},
+          "version": {"type": "string", "minLength": 1},
+          "root": {"type": "string", "pattern": "^packs/pack_[a-z0-9_]+$"},
+          "file_count": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
