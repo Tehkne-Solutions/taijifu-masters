@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/validation/pack00_visual_validation.gd" id="1_validation"]
+
+[node name="Pack00VisualValidation" type="Node2D"]
+script = ExtResource("1_validation")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(3840, 1620)
+zoom = Vector2(0.72, 0.72)
+enabled = true
+position_smoothing_enabled = false
+
+[node name="Fighters" type="Node2D" parent="."]
+
+[node name="P1" type="Node2D" parent="Fighters"]
+position = Vector2(3080, 1880)
+
+[node name="P2" type="Node2D" parent="Fighters"]
+position = Vector2(3660, 1440)
+
+[node name="P3" type="Node2D" parent="Fighters"]
+position = Vector2(4260, 1740)
+
+[node name="P4" type="Node2D" parent="Fighters"]
+position = Vector2(4820, 1300)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="ColorRect" parent="HUD"]
+offset_right = 1920.0
+offset_bottom = 74.0
+mouse_filter = 2
+color = Color(0.025, 0.03, 0.04, 0.9)
+
+[node name="Title" type="Label" parent="HUD"]
+offset_left = 28.0
+offset_top = 12.0
+offset_right = 900.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(1, 0.76, 0.28, 1)
+theme_override_font_sizes/font_size = 26
+text = "PACK 00 — VALIDAÇÃO VISUAL • 4 LUTADORES"
+vertical_alignment = 1
+
+[node name="Metrics" type="Label" parent="HUD"]
+offset_left = 1080.0
+offset_top = 12.0
+offset_right = 1890.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.82, 0.86, 0.9, 1)
+theme_override_font_sizes/font_size = 17
+text = "ARENA 4×3 VIEWPORTS  •  CÂMERA DE GRUPO  •  LIMITE 72 PX"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Legend" type="Label" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -58.0
+offset_right = 1180.0
+offset_bottom = -18.0
+theme_override_colors/font_color = Color(0.9, 0.92, 0.96, 0.92)
+theme_override_font_sizes/font_size = 16
+text = "Teste: enquadramento coletivo, cores P1–P4, sombra de contato, contraste e escala mínima."
+vertical_alignment = 1

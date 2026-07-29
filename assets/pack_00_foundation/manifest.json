@@ -1,0 +1,75 @@
+{
+  "pack_id": "pack_00_foundation",
+  "version": "1.0.0",
+  "title": "Visual Foundation",
+  "status": "validation",
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "aspect_ratio": "16:9"
+  },
+  "arena": {
+    "viewport_columns": 4,
+    "viewport_rows": 3,
+    "world_width": 7680,
+    "world_height": 3240,
+    "recommended_players": 4,
+    "supported_players": [2, 3, 4, 5, 6]
+  },
+  "camera": {
+    "keep_all_alive_players_visible": true,
+    "horizontal_margin": 320,
+    "vertical_margin": 220,
+    "zoom_max": 1.05,
+    "zoom_min": 0.56,
+    "zoom_emergency": 0.48,
+    "position_smoothing": 5.5,
+    "zoom_smoothing": 4.5,
+    "minimum_projected_character_height": 72
+  },
+  "character": {
+    "base_height": 112,
+    "logical_box": [64, 112],
+    "pivot": "feet_center",
+    "structural_outline_px": 3,
+    "player_outline_px": 2,
+    "contact_shadow": {
+      "width": 72,
+      "height": 20,
+      "ground_opacity": 0.38
+    },
+    "contrast_mask": {
+      "radius": 84,
+      "normal_opacity": 0.06,
+      "overlap_opacity": 0.18
+    }
+  },
+  "player_colors": {
+    "p1": "#2F8CFF",
+    "p2": "#FF4A3D",
+    "p3": "#FFC83D",
+    "p4": "#45D47A",
+    "p5": "#A76CFF",
+    "p6": "#38D9E6"
+  },
+  "layers": [
+    {"id": 1, "name": "sky_atmosphere", "parallax": 0.05},
+    {"id": 2, "name": "distant_mountains", "parallax": 0.12},
+    {"id": 3, "name": "distant_structures", "parallax": 0.22},
+    {"id": 4, "name": "mid_vegetation", "parallax": 0.38},
+    {"id": 5, "name": "playable_structures", "parallax": 0.62},
+    {"id": 6, "name": "terrain_platforms", "parallax": 1.0},
+    {"id": 7, "name": "interactive_objects", "parallax": 1.0},
+    {"id": 8, "name": "contact_shadows", "parallax": 1.0},
+    {"id": 9, "name": "characters", "parallax": 1.0},
+    {"id": 10, "name": "combat_vfx", "parallax": 1.0},
+    {"id": 11, "name": "player_markers", "parallax": 1.0},
+    {"id": 12, "name": "hud", "parallax": 0.0}
+  ],
+  "exports": {
+    "sprites": "png_rgba",
+    "scenarios": "webp_lossless_or_png",
+    "master_scale": "2x_or_4x",
+    "runtime_filter": "nearest_or_project_defined"
+  }
+}
