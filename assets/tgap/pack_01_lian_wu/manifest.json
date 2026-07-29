@@ -1,0 +1,47 @@
+{
+  "schema": "tgap/v1",
+  "pack_id": "pack_01_lian_wu",
+  "display_name": "Lian Wu",
+  "asset_class": "character",
+  "project_id": "taijifu-masters",
+  "version": "0.1.0",
+  "state": "specified",
+  "root": "assets/tgap/pack_01_lian_wu",
+  "legacy_source": "assets/pack_01_characters/lian_wu",
+  "runtime_target": "godot",
+  "visual_identity": {
+    "style": "comic_manga_2_5d_retro_vector",
+    "signature_color": "#1769C2",
+    "signature_element": "blue_kimono_sash",
+    "frame_size": [128, 128],
+    "pivot": [64, 120],
+    "projected_height_px": 96,
+    "outline_px": 3,
+    "rim_light": "#7DDEFF"
+  },
+  "inventory": {
+    "closed": true,
+    "expected_total": 163,
+    "path": "expected-assets.json"
+  },
+  "promotion": {
+    "blocked": true,
+    "requires": [
+      "all_expected_assets_present",
+      "all_sha256_valid",
+      "image_gate_passed",
+      "animation_gate_passed",
+      "runtime_gate_passed",
+      "approval_signed"
+    ]
+  },
+  "fallback_policy": {
+    "scaffold": "allowed",
+    "specified": "allowed",
+    "production": "allowed",
+    "validation": "allowed_with_warning",
+    "approved": "forbidden",
+    "integrated": "forbidden",
+    "released": "forbidden"
+  }
+}
