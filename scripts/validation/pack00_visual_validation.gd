@@ -11,6 +11,10 @@ const PLAYER_COLORS := [
 	Color("ffc83d"),
 	Color("45d47a")
 ]
+const SHADOW_TEXTURE := preload("res://assets/pack_00_foundation/visual/contact_shadow.svg")
+const CONTRAST_TEXTURE := preload("res://assets/pack_00_foundation/visual/local_contrast_overlay.svg")
+const MARKER_TEXTURE := preload("res://assets/pack_00_foundation/visual/player_marker.svg")
+const SILHOUETTE_TEXTURE := preload("res://assets/pack_00_foundation/visual/fighter_silhouette.svg")
 
 @onready var camera: Camera2D = $Camera2D
 @onready var fighters: Array[Node2D] = [
@@ -19,19 +23,76 @@ const PLAYER_COLORS := [
 	$Fighters/P3,
 	$Fighters/P4
 ]
+@onready var metrics: Label = $HUD/Metrics
 
 var _elapsed := 0.0
 
 func _ready() -> void:
 	camera.position = WORLD_SIZE * 0.5
 	camera.zoom = Vector2.ONE * 0.72
+	for index in fighters.size():
+		_decorate_fighter(fighters[index], index)
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	_elapsed += delta
 	_animate_test_fighters()
 	_update_group_camera(delta)
+	_update_metrics()
 	queue_redraw()
+
+func _decorate_fighter(fighter: Node2D, player_index: int) -> void:
+	var color: Color = PLAYER_COLORS[player_index]
+
+	var contrast := Sprite2D.new()
+	contrast.name = "LocalContrastOverlay"
+	contrast.texture = CONTRAST_TEXTURE
+	contrast.position = Vector2(0.0, -48.0)
+	contrast.scale = Vector2(1.15, 1.15)
+	contrast.modulate = Color(1.0, 1.0, 1.0, 0.82)
+	contrast.z_index = -3
+	fighter.add_child(contrast)
+
+	var shadow := Sprite2D.new()
+	shadow.name = "ContactShadow"
+	shadow.texture = SHADOW_TEXTURE
+	shadow.position = Vector2(0.0, 92.0)
+	shadow.scale = Vector2(0.82, 0.72)
+	shadow.z_index = -2
+	fighter.add_child(shadow)
+
+	var silhouette := Sprite2D.new()
+	silhouette.name = "FighterSilhouette"
+	silhouette.texture = SILHOUETTE_TEXTURE
+	silhouette.position = Vector2(0.0, -18.0)
+	silhouette.scale = Vector2(0.62, 0.62)
+	silhouette.modulate = color
+	silhouette.z_index = 0
+	fighter.add_child(silhouette)
+
+	var marker := Sprite2D.new()
+	marker.name = "PlayerMarker"
+	marker.texture = MARKER_TEXTURE
+	marker.position = Vector2(0.0, -154.0)
+	marker.scale = Vector2(0.58, 0.58)
+	marker.modulate = color
+	marker.z_index = 3
+	fighter.add_child(marker)
+
+	var label := Label.new()
+	label.name = "PlayerLabel"
+	label.text = "P%d" % (player_index + 1)
+	label.position = Vector2(-31.0, -184.0)
+	label.size = Vector2(62.0, 34.0)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 3)
+	label.z_index = 4
+	fighter.add_child(label)
 
 func _animate_test_fighters() -> void:
 	var center := WORLD_SIZE * 0.5
@@ -43,6 +104,11 @@ func _animate_test_fighters() -> void:
 	]
 	for index in fighters.size():
 		fighters[index].position = center + offsets[index]
+		var shadow := fighters[index].get_node_or_null("ContactShadow") as Sprite2D
+		if shadow != null:
+			var lift := absf(sin(_elapsed * (0.9 + index * 0.08)))
+			shadow.scale = Vector2(0.82 - lift * 0.16, 0.72 - lift * 0.12)
+			shadow.modulate.a = 1.0 - lift * 0.28
 
 func _update_group_camera(delta: float) -> void:
 	if fighters.is_empty():
@@ -64,11 +130,12 @@ func _update_group_camera(delta: float) -> void:
 	camera.global_position = camera.global_position.lerp(target, 1.0 - exp(-5.5 * delta))
 	camera.zoom = camera.zoom.lerp(Vector2.ONE * readable_zoom, 1.0 - exp(-4.5 * delta))
 
+func _update_metrics() -> void:
+	metrics.text = "ARENA 4×3  •  CÂMERA DE GRUPO  •  ZOOM %.2f  •  4/4 VISÍVEIS" % camera.zoom.x
+
 func _draw() -> void:
 	_draw_world_layers()
 	_draw_platforms()
-	for index in fighters.size():
-		_draw_fighter_marker(fighters[index].position, index)
 
 func _draw_world_layers() -> void:
 	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color("24364a"))
@@ -94,22 +161,3 @@ func _draw_platforms() -> void:
 	for platform in platforms:
 		draw_rect(platform, Color("374936"))
 		draw_line(platform.position, platform.position + Vector2(platform.size.x, 0.0), Color("90b36c"), 10.0)
-
-func _draw_fighter_marker(position: Vector2, player_index: int) -> void:
-	var color: Color = PLAYER_COLORS[player_index]
-	var shadow_position := position + Vector2(0.0, 62.0)
-	draw_ellipse(shadow_position, Vector2(42.0, 12.0), Color(0.0, 0.0, 0.0, 0.38))
-	draw_circle(position, 58.0, Color(0.02, 0.025, 0.035, 0.92))
-	draw_arc(position, 61.0, 0.0, TAU, 40, color, 6.0)
-	draw_circle(position + Vector2(0.0, -18.0), 23.0, color.darkened(0.22))
-	draw_rect(Rect2(position + Vector2(-22.0, 8.0), Vector2(44.0, 52.0)), color.darkened(0.38))
-	draw_line(position + Vector2(-24.0, 14.0), position + Vector2(-46.0, 42.0), color, 10.0)
-	draw_line(position + Vector2(24.0, 14.0), position + Vector2(46.0, 42.0), color, 10.0)
-	draw_string(ThemeDB.fallback_font, position + Vector2(-15.0, -76.0), "P%d" % (player_index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color.WHITE)
-
-func draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
-	var points := PackedVector2Array()
-	for index in 32:
-		var angle := TAU * float(index) / 32.0
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	draw_colored_polygon(points, color)
