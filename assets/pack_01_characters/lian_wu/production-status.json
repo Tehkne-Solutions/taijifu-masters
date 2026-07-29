@@ -1,0 +1,29 @@
+{
+  "pack_id": "pack_01_characters_lian_wu",
+  "status": "specified",
+  "expected": 163,
+  "present": 0,
+  "approved": 0,
+  "missing": 163,
+  "progress_percent": 0.0,
+  "gates": {
+    "files": false,
+    "dimensions": false,
+    "transparency": false,
+    "pivots": false,
+    "hashes": false,
+    "visual_approval": false,
+    "godot_import": false,
+    "runtime_integration": false,
+    "archive": false
+  },
+  "promotion_blocked": true,
+  "blocking_reasons": [
+    "modelo mestre ausente",
+    "113 frames de animação ausentes",
+    "retratos, ícones e VFX ausentes",
+    "atlas e metadados ausentes",
+    "SpriteFrames e cena de validação ausentes",
+    "archive final e SHA-256 ausentes"
+  ]
+}
