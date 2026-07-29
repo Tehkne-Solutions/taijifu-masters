@@ -1,127 +1,49 @@
 #!/usr/bin/env python3
-"""Gera inventário TGAP com presença, qualidade, hashes e bloqueios de promoção."""
-
+"""Gera inventário TGAP por classe, com qualidade, hashes e bloqueios."""
 from __future__ import annotations
-
-import argparse
-import hashlib
-import json
+import argparse, hashlib, json
 from collections import Counter
 from pathlib import Path
 from typing import Any
+from tgap_asset_profiles import resolve_profile
 
-FINAL_STATES = {"final", "approved", "integrated", "released"}
-PROTOTYPE_MARKERS = ("prototype", "keypose", "placeholder", "preview", "concept", "mockup")
+FINAL_STATES={"final","approved","integrated","released"}
+PROTOTYPE_MARKERS=("prototype","keypose","placeholder","preview","concept","mockup")
 
+def sha256(path:Path)->str:
+    d=hashlib.sha256()
+    with path.open("rb") as h:
+        for chunk in iter(lambda:h.read(1024*1024),b""): d.update(chunk)
+    return d.hexdigest()
 
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def classify(path: str, declared_quality: str | None = None) -> str:
-    quality = (declared_quality or "").lower()
-    lower = path.lower()
-    if quality in FINAL_STATES:
-        return "final"
-    if quality == "prototype" or any(marker in lower for marker in PROTOTYPE_MARKERS):
-        return "prototype"
+def classify(path:str, quality:str|None=None)->str:
+    q=(quality or "").lower(); lower=path.lower()
+    if q in FINAL_STATES:return "final"
+    if q=="prototype" or any(m in lower for m in PROTOTYPE_MARKERS):return "prototype"
     return "unverified"
 
+def expand_entries(root:Path, expected:dict[str,Any], profile:dict[str,Any])->list[dict[str,Any]]:
+    entries=[]
+    for item in expected.get("assets",[]): entries.append({"path":item} if isinstance(item,str) else dict(item))
+    for group in expected.get("groups",[]):
+        pattern=group.get("glob"); required=int(group.get("required",0)); quality=group.get("quality")
+        matches=sorted(root.glob(pattern)) if pattern else []
+        for p in matches: entries.append({"path":p.relative_to(root).as_posix(),"quality":quality,"group":group.get("id")})
+        for i in range(max(0,required-len(matches))): entries.append({"path":f"<missing:{group.get('id','group')}:{i+1}>","quality":quality,"virtual_missing":True})
+    return entries
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("pack_root", type=Path)
-    parser.add_argument("--write-status", action="store_true")
-    args = parser.parse_args()
-
-    root = args.pack_root.resolve()
-    expected_path = root / "expected-assets.json"
-    status_path = root / "production-status.json"
-    report_path = root / "validation" / "inventory-report.json"
-    markdown_path = root / "validation" / "inventory-report.md"
-
-    expected = json.loads(expected_path.read_text(encoding="utf-8"))
-    entries = expected.get("assets", [])
-    results: list[dict[str, Any]] = []
-
-    for item in entries:
-        if isinstance(item, str):
-            rel = item
-            declared_quality = None
-        else:
-            rel = item["path"]
-            declared_quality = item.get("quality")
-        target = root / rel
-        entry: dict[str, Any] = {"path": rel, "present": target.is_file(), "classification": "missing"}
-        if target.is_file():
-            entry.update({
-                "size_bytes": target.stat().st_size,
-                "sha256": sha256(target),
-                "classification": classify(rel, declared_quality),
-            })
-        results.append(entry)
-
-    counts = Counter(entry["classification"] for entry in results)
-    present = sum(1 for entry in results if entry["present"])
-    total = len(results)
-    final_count = counts["final"]
-    blocked = present != total or final_count != total
-
-    report = {
-        "tgap_version": "1.0",
-        "pack_root": str(root),
-        "expected": total,
-        "present": present,
-        "missing": total - present,
-        "final": final_count,
-        "prototype": counts["prototype"],
-        "unverified": counts["unverified"],
-        "progress_physical": round(present / total, 6) if total else 0,
-        "progress_final": round(final_count / total, 6) if total else 0,
-        "promotion_blocked": blocked,
-        "assets": results,
-    }
-
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    lines = [
-        "# Relatório de Inventário TGAP", "",
-        f"- Esperados: **{total}**",
-        f"- Presentes: **{present}**",
-        f"- Ausentes: **{total - present}**",
-        f"- Finais: **{final_count}**",
-        f"- Protótipos: **{counts['prototype']}**",
-        f"- Não verificados: **{counts['unverified']}**",
-        f"- Promoção bloqueada: **{'sim' if blocked else 'não'}**", "",
-        "## Ausentes", "",
-    ]
-    lines.extend(f"- `{entry['path']}`" for entry in results if not entry["present"])
-    markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-    if args.write_status:
-        current = json.loads(status_path.read_text(encoding="utf-8")) if status_path.exists() else {}
-        current.update({
-            "expected": total,
-            "present": present,
-            "missing": total - present,
-            "final": final_count,
-            "prototype": counts["prototype"],
-            "unverified": counts["unverified"],
-            "progress_physical": report["progress_physical"],
-            "progress_final": report["progress_final"],
-            "promotion_blocked": blocked,
-            "inventory_report": "validation/inventory-report.json",
-        })
-        status_path.write_text(json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    print(json.dumps({key: report[key] for key in ("expected", "present", "missing", "final", "prototype", "unverified", "promotion_blocked")}, ensure_ascii=False))
-    return 1 if blocked else 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def main()->int:
+    ap=argparse.ArgumentParser(); ap.add_argument("pack_root",type=Path); ap.add_argument("--write-status",action="store_true"); a=ap.parse_args()
+    root=a.pack_root.resolve(); expected=json.loads((root/"expected-assets.json").read_text(encoding="utf-8")); manifest=json.loads((root/"manifest.json").read_text(encoding="utf-8")); profile=resolve_profile(manifest)
+    results=[]
+    for item in expand_entries(root,expected,profile):
+        rel=item["path"]; target=root/rel; present=not item.get("virtual_missing") and target.is_file(); e={"path":rel,"present":present,"classification":"missing","group":item.get("group")}
+        if present:e.update(size_bytes=target.stat().st_size,sha256=sha256(target),classification=classify(rel,item.get("quality")))
+        results.append(e)
+    counts=Counter(x["classification"] for x in results); total=len(results); present=sum(x["present"] for x in results); final=counts["final"]; blocked=total==0 or present!=total or final!=total
+    report={"tgap_version":"1.0","asset_class":profile["asset_class"],"pack_root":str(root),"expected":total,"present":present,"missing":total-present,"final":final,"prototype":counts["prototype"],"unverified":counts["unverified"],"progress_physical":round(present/total,6) if total else 0,"progress_final":round(final/total,6) if total else 0,"promotion_blocked":blocked,"assets":results}
+    v=root/"validation"; v.mkdir(parents=True,exist_ok=True); (v/"inventory-report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8"); (v/"inventory-report.md").write_text(f"# Inventário TGAP\n\n- Classe: **{profile['asset_class']}**\n- Presentes: **{present}/{total}**\n- Finais: **{final}/{total}**\n- Promoção bloqueada: **{'sim' if blocked else 'não'}**\n",encoding="utf-8")
+    if a.write_status:
+        s=root/"production-status.json"; current=json.loads(s.read_text(encoding="utf-8")) if s.exists() else {}; current.update({k:report[k] for k in ("expected","present","missing","final","prototype","unverified","progress_physical","progress_final","promotion_blocked")}); s.write_text(json.dumps(current,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    print(json.dumps({k:report[k] for k in ("asset_class","expected","present","missing","final","promotion_blocked")},ensure_ascii=False)); return 1 if blocked else 0
+if __name__=="__main__": raise SystemExit(main())
