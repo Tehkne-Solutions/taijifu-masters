@@ -1,0 +1,62 @@
+name: TGAP Multi-pack Bundle
+
+on:
+  pull_request:
+    paths:
+      - 'tgap-registry.json'
+      - 'schemas/tgap/bundle-manifest.schema.json'
+      - 'scripts/tgap_bundle_packs.py'
+      - 'tests/tgap/test_multipack_bundle.py'
+      - 'assets/tgap/**'
+  workflow_dispatch:
+    inputs:
+      bundle_version:
+        description: 'Versão SemVer do bundle'
+        required: true
+        default: '0.1.0'
+      create_bundle:
+        description: 'Gerar bundle além do plano'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements-tgap.txt
+            requirements-tgap-test.txt
+
+      - run: python -m pip install --disable-pip-version-check -r requirements-tgap.txt -r requirements-tgap-test.txt
+
+      - name: Validar registro global
+        run: python scripts/tgap_registry_gate.py
+
+      - name: Testar bundle multi-pack
+        run: pytest -q tests/tgap/test_multipack_bundle.py
+
+      - name: Gerar plano de integração
+        run: python scripts/tgap_bundle_packs.py --version "${{ inputs.bundle_version || '0.1.0' }}" --plan-only
+
+      - name: Gerar bundle oficial
+        if: github.event_name == 'workflow_dispatch' && inputs.create_bundle
+        run: python scripts/tgap_bundle_packs.py --version "${{ inputs.bundle_version }}" --run-pipelines
+
+      - name: Publicar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-multipack-${{ inputs.bundle_version || 'plan' }}
+          path: artifacts/tgap/
+          if-no-files-found: warn
+          retention-days: 90
