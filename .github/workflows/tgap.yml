@@ -5,13 +5,17 @@ on:
     paths:
       - 'assets/tgap/**'
       - 'scripts/tgap_*.py'
+      - 'schemas/tgap/**'
       - 'docs/standards/TGAP_*.md'
+      - 'requirements-tgap.txt'
       - 'tgap.json'
   push:
     branches: [main]
     paths:
       - 'assets/tgap/**'
       - 'scripts/tgap_*.py'
+      - 'schemas/tgap/**'
+      - 'requirements-tgap.txt'
       - 'tgap.json'
     tags:
       - 'tgap-*-v*'
@@ -102,8 +106,14 @@ jobs:
       - name: Instalar dependências TGAP
         run: python -m pip install --disable-pip-version-check -r requirements-tgap.txt
 
+      - name: Validar contratos TGAP
+        run: python scripts/tgap_contract_gate.py "${{ matrix.pack }}"
+
       - name: Executar pipeline TGAP
         run: python scripts/tgap_run_pack.py "${{ matrix.pack }}"
+
+      - name: Revalidar contrato do relatório consolidado
+        run: python scripts/tgap_contract_gate.py "${{ matrix.pack }}" --include-pipeline-report
 
       - name: Publicar relatórios
         if: always()
