@@ -1,0 +1,25 @@
+{
+  "schema": "tgap/production-status/v1",
+  "pack_id": "pack_01_lian_wu",
+  "state": "specified",
+  "expected": 163,
+  "present": 0,
+  "missing": 163,
+  "progress": 0.0,
+  "promotion_blocked": true,
+  "gates": {
+    "integrity": false,
+    "image": false,
+    "animation": false,
+    "runtime": false,
+    "approval": false,
+    "release": false
+  },
+  "legacy_migration": {
+    "source_root": "assets/pack_01_characters/lian_wu",
+    "target_root": "assets/tgap/pack_01_lian_wu",
+    "binary_copy_complete": false,
+    "metadata_copy_complete": false,
+    "runtime_switch_complete": false
+  }
+}
