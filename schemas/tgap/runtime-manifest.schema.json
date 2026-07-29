@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taijifu.dev/schemas/tgap/runtime-manifest.schema.json",
+  "title": "TGAP Runtime Manifest",
+  "type": "object",
+  "required": ["pack_id", "entity_id", "atlas", "spriteframes", "animations"],
+  "properties": {
+    "pack_id": {"type": "string", "pattern": "^pack_[a-z0-9_]+$"},
+    "entity_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "character_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "atlas": {"type": "string", "minLength": 1},
+    "spriteframes": {"type": "string", "minLength": 1},
+    "animations": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "integer", "minimum": 1},
+          {
+            "type": "object",
+            "required": ["frame_count"],
+            "properties": {
+              "frame_count": {"type": "integer", "minimum": 1},
+              "fps": {"type": "number", "exclusiveMinimum": 0, "maximum": 60},
+              "loop": {"type": "boolean"}
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": true
+}

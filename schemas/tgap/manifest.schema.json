@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taijifu.dev/schemas/tgap/manifest.schema.json",
+  "title": "TGAP Pack Manifest",
+  "type": "object",
+  "required": ["schema", "pack_id", "asset_class", "version", "state"],
+  "properties": {
+    "schema": {"const": "tgap/v1"},
+    "pack_id": {"type": "string", "pattern": "^pack_[a-z0-9_]+$"},
+    "display_name": {"type": "string", "minLength": 1},
+    "asset_class": {"enum": ["character", "unit", "vfx", "tile", "prop", "environment", "ui"]},
+    "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"},
+    "state": {"enum": ["scaffold", "specified", "production", "validation", "approved", "integrated", "released"]},
+    "root": {"type": "string", "minLength": 1},
+    "runtime_target": {"type": "string"},
+    "validation_profile": {"type": "object"},
+    "runtime": {
+      "type": "object",
+      "required": ["entity_id", "frame_prefix", "atlas_png", "atlas_json", "spriteframes", "manifest"],
+      "properties": {
+        "entity_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "frame_prefix": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "atlas_png": {"type": "string", "minLength": 1},
+        "atlas_json": {"type": "string", "minLength": 1},
+        "spriteframes": {"type": "string", "minLength": 1},
+        "manifest": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}
