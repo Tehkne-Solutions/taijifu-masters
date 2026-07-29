@@ -1,0 +1,31 @@
+name: TGAP Legacy Production Gate
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "scenes/**"
+      - "resources/**"
+      - "config/tgap-legacy-audit-policy.json"
+      - "tests/tgap/**"
+      - ".github/workflows/tgap-legacy-production-gate.yml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run migration tests
+        run: pytest -q tests/tgap/test_legacy_usage_audit.py tests/tgap/test_legacy_migration_batch_01.py
+      - name: Audit production consumers
+        run: python scripts/tgap_audit_legacy_usage.py --fail-on-findings
+      - name: Publish audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-legacy-production-report
+          path: artifacts/tgap/legacy-usage-report.json
