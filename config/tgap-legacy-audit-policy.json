@@ -1,0 +1,15 @@
+{
+  "schema": "tgap/legacy-audit-policy/v1",
+  "production_globs": [
+    "scripts/**/*.gd",
+    "scenes/**/*.tscn",
+    "resources/**/*.tres"
+  ],
+  "allowed_globs": [
+    "scripts/runtime/asset_pack_registry.gd",
+    "scripts/tgap_audit_legacy_usage.py",
+    "tests/**",
+    "docs/**",
+    ".github/**"
+  ]
+}
