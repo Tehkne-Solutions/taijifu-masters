@@ -1,0 +1,36 @@
+name: TGAP Pack Promotion Readiness
+
+on:
+  pull_request:
+    paths:
+      - 'assets/tgap/**'
+      - 'tgap-registry.json'
+      - 'scripts/tgap_pack_promotion_readiness.py'
+      - 'tests/tgap/test_pack_promotion_readiness.py'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/tgap/**'
+      - 'tgap-registry.json'
+      - 'scripts/tgap_pack_promotion_readiness.py'
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Executar testes
+        run: python -m pytest -q tests/tgap/test_pack_promotion_readiness.py
+      - name: Gerar prontidão informativa
+        run: python scripts/tgap_pack_promotion_readiness.py --pack pack_01_lian_wu
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-pack-promotion-readiness
+          path: artifacts/tgap/promotion-readiness.json
+          if-no-files-found: error
+          retention-days: 30
