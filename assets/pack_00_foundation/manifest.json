@@ -1,8 +1,8 @@
 {
   "pack_id": "pack_00_foundation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Visual Foundation",
-  "status": "validation",
+  "status": "runtime_validation",
   "viewport": {
     "width": 1920,
     "height": 1080,
@@ -51,6 +51,12 @@
     "p4": "#45D47A",
     "p5": "#A76CFF",
     "p6": "#38D9E6"
+  },
+  "runtime_assets": {
+    "contact_shadow": "res://assets/pack_00_foundation/visual/contact_shadow.svg",
+    "local_contrast_overlay": "res://assets/pack_00_foundation/visual/local_contrast_overlay.svg",
+    "player_marker": "res://assets/pack_00_foundation/visual/player_marker.svg",
+    "fighter_silhouette": "res://assets/pack_00_foundation/visual/fighter_silhouette.svg"
   },
   "layers": [
     {"id": 1, "name": "sky_atmosphere", "parallax": 0.05},
