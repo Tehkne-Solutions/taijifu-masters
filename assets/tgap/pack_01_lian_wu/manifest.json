@@ -9,6 +9,14 @@
   "root": "assets/tgap/pack_01_lian_wu",
   "legacy_source": "assets/pack_01_characters/lian_wu",
   "runtime_target": "godot",
+  "runtime": {
+    "entity_id": "lian_wu",
+    "frame_prefix": "char_lian_wu",
+    "atlas_png": "atlases/char_lian_wu__atlas.png",
+    "atlas_json": "atlases/char_lian_wu__atlas.json",
+    "spriteframes": "runtime/lian_wu_spriteframes.tres",
+    "manifest": "runtime/lian_wu_runtime_manifest.json"
+  },
   "visual_identity": {
     "style": "comic_manga_2_5d_retro_vector",
     "signature_color": "#1769C2",
