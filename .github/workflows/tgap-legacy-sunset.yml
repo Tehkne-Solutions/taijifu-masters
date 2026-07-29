@@ -1,0 +1,31 @@
+name: TGAP Legacy Sunset
+
+on:
+  pull_request:
+    paths:
+      - "scripts/runtime/asset_pack_registry.gd"
+      - "scripts/tgap_audit_legacy_usage.py"
+      - "config/tgap-legacy-*.json"
+      - "tests/tgap/**"
+      - ".github/workflows/tgap-legacy-sunset.yml"
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run sunset tests
+        run: python -m unittest discover -s tests/tgap -p 'test_legacy_adapter_sunset.py'
+      - name: Enforce zero production legacy budget
+        run: python scripts/tgap_audit_legacy_usage.py --fail-on-findings
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-legacy-sunset-report
+          path: artifacts/tgap/legacy-usage-report.json
