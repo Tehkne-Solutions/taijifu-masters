@@ -190,114 +190,192 @@ func _build_interface() -> void:
 	_canvas.layer = 210
 	_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_canvas)
+
 	_background = ColorRect.new()
 	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_background.color = Color(0.012, 0.018, 0.032, 0.985)
+	_background.color = Color(0.045, 0.032, 0.022, 0.985)
 	_background.mouse_filter = Control.MOUSE_FILTER_STOP
 	_canvas.add_child(_background)
-	var header := ColorRect.new()
-	header.offset_right = 1280.0
-	header.offset_bottom = 86.0
-	header.color = Color(0.035, 0.065, 0.105, 0.98)
+
+	var vignette := ColorRect.new()
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vignette.color = Color(0.02, 0.012, 0.008, 0.36)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_background.add_child(vignette)
+
+	var header := PanelContainer.new()
+	header.offset_left = 18.0
+	header.offset_top = 14.0
+	header.offset_right = 1262.0
+	header.offset_bottom = 92.0
+	header.add_theme_stylebox_override("panel", _panel_style(Color(0.12, 0.075, 0.04, 0.98), Color(0.72, 0.49, 0.19, 0.96), 3, 8))
 	_background.add_child(header)
+
 	_title = Label.new()
-	_title.offset_left = 20.0
-	_title.offset_top = 12.0
-	_title.offset_right = 1260.0
-	_title.offset_bottom = 72.0
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 20)
-	_title.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0))
-	header.add_child(_title)
+	_title.add_theme_font_size_override("font_size", 22)
+	_title.add_theme_color_override("font_color", Color(0.96, 0.84, 0.57))
+	header.add_child(_with_margin(_title, 10, 10, 8, 8))
+
+	var versus := Label.new()
+	versus.offset_left = 610.0
+	versus.offset_top = 280.0
+	versus.offset_right = 670.0
+	versus.offset_bottom = 344.0
+	versus.text = "VS"
+	versus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	versus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	versus.add_theme_font_size_override("font_size", 28)
+	versus.add_theme_color_override("font_color", Color(0.82, 0.61, 0.27))
+	_background.add_child(versus)
+
 	for slot in range(2):
-		_build_player_panel(slot + 1, 30.0 + slot * 630.0)
+		_build_player_panel(slot + 1, 24.0 + slot * 636.0)
+
+	var footer_panel := PanelContainer.new()
+	footer_panel.offset_left = 24.0
+	footer_panel.offset_top = 662.0
+	footer_panel.offset_right = 1256.0
+	footer_panel.offset_bottom = 714.0
+	footer_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.10, 0.065, 0.038, 0.96), Color(0.48, 0.31, 0.13, 0.9), 2, 6))
+	_background.add_child(footer_panel)
+
 	_footer = Label.new()
-	_footer.offset_left = 20.0
-	_footer.offset_top = 672.0
-	_footer.offset_right = 1260.0
-	_footer.offset_bottom = 716.0
-	_footer.text = "P1: W/S + A/D • F ou A confirma • 1 ou Y restaura    |    P2: setas • Num1 ou A confirma • 2 ou Y restaura"
+	_footer.text = "SELECIONE CAMPO ↑↓  •  ALTERE VALOR ←→  •  CONFIRME A / F  •  RESTAURE Y / 1–2"
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_footer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_footer.add_theme_font_size_override("font_size", 13)
-	_footer.add_theme_color_override("font_color", Color(0.72, 0.82, 0.94))
-	_background.add_child(_footer)
+	_footer.add_theme_color_override("font_color", Color(0.84, 0.76, 0.61))
+	footer_panel.add_child(_with_margin(_footer, 8, 8, 5, 5))
 	_canvas.visible = false
 
 func _build_player_panel(player_index: int, left: float) -> void:
 	var panel := PanelContainer.new()
 	panel.offset_left = left
-	panel.offset_top = 104.0
-	panel.offset_right = left + 590.0
-	panel.offset_bottom = 660.0
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.035, 0.045, 0.070, 0.96)
-	style.border_color = Color(0.28, 0.67, 0.95, 0.9) if player_index == 1 else Color(1.0, 0.42, 0.26, 0.9)
-	style.set_border_width_all(2)
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
-	panel.add_theme_stylebox_override("panel", style)
+	panel.offset_top = 108.0
+	panel.offset_right = left + 596.0
+	panel.offset_bottom = 648.0
+	var accent := Color(0.42, 0.66, 0.62, 0.96) if player_index == 1 else Color(0.72, 0.38, 0.24, 0.96)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.085, 0.055, 0.034, 0.985), accent, 3, 10))
 	_background.add_child(panel)
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 18)
 	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(margin)
+
 	var root_column := VBoxContainer.new()
-	root_column.add_theme_constant_override("separation", 3)
+	root_column.add_theme_constant_override("separation", 5)
 	margin.add_child(root_column)
+
+	var crest := Label.new()
+	crest.text = "ESTANDARTE DO NORTE" if player_index == 1 else "ESTANDARTE DO SUL"
+	crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	crest.add_theme_font_size_override("font_size", 11)
+	crest.add_theme_color_override("font_color", Color(0.74, 0.64, 0.46))
+	root_column.add_child(crest)
+
 	var title := Label.new()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color(0.66, 0.87, 1.0) if player_index == 1 else Color(1.0, 0.70, 0.60))
+	title.add_theme_font_size_override("font_size", 23)
+	title.add_theme_color_override("font_color", Color(0.82, 0.94, 0.88) if player_index == 1 else Color(1.0, 0.78, 0.66))
 	root_column.add_child(title)
 	_player_titles.append(title)
+
 	var role := Label.new()
 	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	role.add_theme_font_size_override("font_size", 12)
-	role.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
+	role.add_theme_color_override("font_color", Color(0.78, 0.71, 0.60))
 	root_column.add_child(role)
 	_player_roles.append(role)
+
+	var ready_panel := PanelContainer.new()
+	ready_panel.custom_minimum_size = Vector2(0, 34)
+	ready_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.14, 0.09, 0.05, 0.92), Color(0.45, 0.31, 0.14, 0.9), 1, 4))
+	root_column.add_child(ready_panel)
+
 	var ready_label := Label.new()
 	ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ready_label.add_theme_font_size_override("font_size", 14)
-	root_column.add_child(ready_label)
+	ready_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ready_label.add_theme_font_size_override("font_size", 13)
+	ready_panel.add_child(ready_label)
 	_player_ready_labels.append(ready_label)
+
 	var middle := HBoxContainer.new()
-	middle.add_theme_constant_override("separation", 12)
+	middle.add_theme_constant_override("separation", 14)
 	root_column.add_child(middle)
+
+	var preview_frame := PanelContainer.new()
+	preview_frame.custom_minimum_size = Vector2(218, 248)
+	preview_frame.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.038, 0.025, 0.96), Color(0.39, 0.28, 0.14, 0.9), 2, 6))
+	middle.add_child(preview_frame)
+
 	var preview := PreparationAvatarPreview.new()
 	preview.set_player_index(player_index)
-	middle.add_child(preview)
+	preview_frame.add_child(_with_margin(preview, 6, 6, 6, 6))
 	_player_previews.append(preview)
+
+	var field_frame := PanelContainer.new()
+	field_frame.custom_minimum_size = Vector2(326, 248)
+	field_frame.add_theme_stylebox_override("panel", _panel_style(Color(0.13, 0.095, 0.06, 0.95), Color(0.53, 0.37, 0.16, 0.9), 2, 6))
+	middle.add_child(field_frame)
+
 	var fields := RichTextLabel.new()
-	fields.custom_minimum_size = Vector2(320.0, 218.0)
+	fields.custom_minimum_size = Vector2(302.0, 226.0)
 	fields.bbcode_enabled = true
 	fields.fit_content = false
 	fields.scroll_active = false
 	fields.add_theme_font_size_override("normal_font_size", 12)
 	fields.add_theme_font_size_override("bold_font_size", 13)
-	middle.add_child(fields)
+	fields.add_theme_color_override("default_color", Color(0.88, 0.82, 0.70))
+	field_frame.add_child(_with_margin(fields, 12, 12, 9, 9))
 	_player_fields.append(fields)
+
 	var stats := Label.new()
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.add_theme_font_size_override("font_size", 13)
-	stats.add_theme_color_override("font_color", Color(0.94, 0.82, 0.48))
+	stats.add_theme_color_override("font_color", Color(0.95, 0.78, 0.40))
 	root_column.add_child(stats)
 	_player_stats.append(stats)
+
+	var summary_panel := PanelContainer.new()
+	summary_panel.custom_minimum_size = Vector2(0.0, 76.0)
+	summary_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.07, 0.047, 0.03, 0.94), Color(0.34, 0.24, 0.12, 0.82), 1, 5))
+	root_column.add_child(summary_panel)
+
 	var summary := Label.new()
-	summary.custom_minimum_size = Vector2(0.0, 60.0)
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_size_override("font_size", 11)
-	summary.add_theme_color_override("font_color", Color(0.75, 0.80, 0.89))
-	root_column.add_child(summary)
+	summary.add_theme_color_override("font_color", Color(0.80, 0.75, 0.66))
+	summary_panel.add_child(_with_margin(summary, 10, 10, 7, 7))
 	_player_summaries.append(summary)
+
+func _panel_style(bg: Color, border: Color, width: int, radius: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg
+	style.border_color = border
+	style.set_border_width_all(width)
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
+	style.shadow_size = 6
+	return style
+
+func _with_margin(control: Control, left: int, right: int, top: int, bottom: int) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", left)
+	margin.add_theme_constant_override("margin_right", right)
+	margin.add_theme_constant_override("margin_top", top)
+	margin.add_theme_constant_override("margin_bottom", bottom)
+	margin.add_child(control)
+	return margin
 
 func _refresh() -> void:
 	_refresh_player(1)
@@ -306,11 +384,11 @@ func _refresh() -> void:
 
 func _refresh_header() -> void:
 	if all_players_ready():
-		_title.text = "AMBOS PRONTOS • ENTRADA NA ARENA\nOS LOADOUTS FORAM BLOQUEADOS"
-		_title.add_theme_color_override("font_color", Color(0.58, 1.0, 0.68))
+		_title.text = "OS DOIS MESTRES ESTÃO PRONTOS • PORTÕES DA ARENA ABRINDO"
+		_title.add_theme_color_override("font_color", Color(0.66, 1.0, 0.69))
 	else:
-		_title.text = "PREPARAÇÃO COMPLETA • TAIJIFU MASTERS\nCADA JOGADOR DEVE CONFIRMAR SEU LOADOUT"
-		_title.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0))
+		_title.text = "CONSELHO DE GUERRA • PREPARE SEU MESTRE PARA O DUELO"
+		_title.add_theme_color_override("font_color", Color(0.96, 0.84, 0.57))
 
 func _refresh_player(player_index: int) -> void:
 	if _player_titles.size() < player_index:
@@ -321,12 +399,12 @@ func _refresh_player(player_index: int) -> void:
 	var character_id := StringName(loadout.get("character_id", &"kael"))
 	var preset_id := StringName(loadout.get("preset_id", &"adaptive_staff"))
 	var build := BuildProfile.prototype_preset(preset_id)
-	_player_titles[slot].text = "P%d — %s" % [player_index, build.character_name.to_upper()]
+	_player_titles[slot].text = "MESTRE %d • %s" % [player_index, build.character_name.to_upper()]
 	_player_roles[slot].text = CharacterVisualCatalog.role(character_id).to_upper()
-	_player_ready_labels[slot].text = "✓ PRONTO — CONFIRME NOVAMENTE PARA EDITAR" if _ready_states[slot] else "AGUARDANDO CONFIRMAÇÃO"
+	_player_ready_labels[slot].text = "✓ JURAMENTO SELADO • CONFIRME PARA REABRIR" if _ready_states[slot] else "LOADOUT ABERTO • CONFIRME QUANDO ESTIVER PRONTO"
 	_player_ready_labels[slot].add_theme_color_override(
 		"font_color",
-		Color(0.48, 1.0, 0.58) if _ready_states[slot] else Color(0.92, 0.72, 0.30)
+		Color(0.55, 1.0, 0.63) if _ready_states[slot] else Color(0.95, 0.76, 0.34)
 	)
 	_player_stats[slot].text = "TAI %d   JI %d   FU %d   •   VIDA %d   POSTURA %d" % [
 		roundi(build.tai_index()), roundi(build.ji_index()), roundi(build.fu_index()),
@@ -344,16 +422,16 @@ func _refresh_player(player_index: int) -> void:
 func _update_fields(slot: int, player_index: int) -> void:
 	var lines: Array[String] = []
 	var loadout := _loadouts[slot]
-	var color := "#86d7ff" if player_index == 1 else "#ff9a78"
+	var color := "#9ed8c6" if player_index == 1 else "#e6a07a"
 	for index in range(BattleLoadoutCatalog.FIELD_ORDER.size()):
 		var field_id := BattleLoadoutCatalog.FIELD_ORDER[index]
 		var value_id := BattleLoadoutCatalog.value_for_field(field_id, loadout)
 		var label := BattleLoadoutCatalog.field_label(field_id)
 		var value := BattleLoadoutCatalog.value_label(field_id, value_id)
 		if index == _field_indices[slot] and not _ready_states[slot]:
-			lines.append("[color=%s][b]▶ %s: ◀ %s ▶[/b][/color]" % [color, label, value])
+			lines.append("[color=%s][b]◆ %s[/b][/color]\n[color=#f0d89c]   ◀ %s ▶[/color]" % [color, label, value])
 		else:
-			lines.append("  [b]%s:[/b] %s" % [label, value])
+			lines.append("[color=#b9a98d]%s[/color]  [b]%s[/b]" % [label, value])
 	_player_fields[slot].text = "\n".join(lines)
 
 func _register_preparation_inputs() -> void:
