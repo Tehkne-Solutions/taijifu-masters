@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="Script" path="res://scripts/competitive_main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
@@ -41,6 +41,7 @@
 [ext_resource type="Script" path="res://scripts/runtime/profile_comparison_runtime.gd" id="39_profile_compare"]
 [ext_resource type="Script" path="res://scripts/runtime/group_stage_runtime.gd" id="40_group_stage"]
 [ext_resource type="Script" path="res://scripts/runtime/double_elimination_runtime.gd" id="41_double_elimination"]
+[ext_resource type="Script" path="res://scripts/runtime/medieval_notification_center.gd" id="42_notifications"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -164,6 +165,9 @@ script = ExtResource("20_outcome")
 
 [node name="RosterHudRuntime" type="Node" parent="."]
 script = ExtResource("17_roster")
+
+[node name="MedievalNotificationCenter" type="Node" parent="."]
+script = ExtResource("42_notifications")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 430)
