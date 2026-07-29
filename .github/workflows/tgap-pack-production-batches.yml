@@ -1,0 +1,45 @@
+name: TGAP Pack Production Batches
+
+on:
+  pull_request:
+    paths:
+      - 'assets/tgap/pack_01_lian_wu/**'
+      - 'scripts/tgap_pack_promotion_readiness.py'
+      - 'scripts/tgap_pack_production_batches.py'
+      - 'tests/tgap/test_pack_production_batches.py'
+      - 'requirements-tgap-test.txt'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/tgap/pack_01_lian_wu/**'
+      - 'scripts/tgap_pack_promotion_readiness.py'
+      - 'scripts/tgap_pack_production_batches.py'
+
+jobs:
+  batches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - name: Instalar dependências
+        run: python -m pip install --disable-pip-version-check -r requirements-tgap-test.txt
+      - name: Testar planejador
+        run: python -m pytest -q tests/tgap/test_pack_production_batches.py tests/tgap/test_pack_promotion_readiness.py
+      - name: Gerar prontidão
+        run: python scripts/tgap_pack_promotion_readiness.py --pack pack_01_lian_wu
+      - name: Gerar lotes progressivos
+        run: python scripts/tgap_pack_production_batches.py --pack pack_01_lian_wu
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-pack01-production-plan
+          path: |
+            artifacts/tgap/promotion-readiness.json
+            artifacts/tgap/pack-production-batches.json
+          if-no-files-found: error
+          retention-days: 30
