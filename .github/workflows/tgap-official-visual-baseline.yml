@@ -1,0 +1,36 @@
+name: TGAP Official Visual Baseline
+
+on:
+  pull_request:
+    paths:
+      - 'tgap-registry.json'
+      - 'assets/tgap/**'
+      - 'scripts/tgap_official_visual_baseline.py'
+      - 'tests/tgap/test_official_visual_baseline.py'
+  push:
+    branches: [main]
+    paths:
+      - 'tgap-registry.json'
+      - 'assets/tgap/**'
+      - 'scripts/tgap_official_visual_baseline.py'
+      - 'tests/tgap/test_official_visual_baseline.py'
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest
+      - run: pytest -q tests/tgap/test_official_visual_baseline.py
+      - run: python scripts/tgap_official_visual_baseline.py
+      - name: Publicar baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-official-visual-baseline
+          path: artifacts/tgap/official-visual-baseline.json
+          if-no-files-found: error
+          retention-days: 30
