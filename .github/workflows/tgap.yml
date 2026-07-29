@@ -1,0 +1,171 @@
+name: TGAP
+
+on:
+  pull_request:
+    paths:
+      - 'assets/tgap/**'
+      - 'scripts/tgap_*.py'
+      - 'docs/standards/TGAP_*.md'
+      - 'tgap.json'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/tgap/**'
+      - 'scripts/tgap_*.py'
+      - 'tgap.json'
+    tags:
+      - 'tgap-*-v*'
+  workflow_dispatch:
+    inputs:
+      pack_root:
+        description: 'Raiz do pack, por exemplo assets/tgap/pack_01_lian_wu'
+        required: true
+        default: 'assets/tgap/pack_01_lian_wu'
+      release_version:
+        description: 'Versão sem prefixo v; vazio executa apenas validação'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tgap-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      packs: ${{ steps.packs.outputs.matrix }}
+      has_packs: ${{ steps.packs.outputs.has_packs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: packs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_PACK: ${{ inputs.pack_root }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            candidates="$MANUAL_PACK"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            candidates=$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" \
+              | awk -F/ '/^assets\/tgap\/[^/]+\// {print $1"/"$2"/"$3}' \
+              | sort -u)
+          else
+            base="$BEFORE_SHA"
+            if [[ -z "$base" || "$base" =~ ^0+$ ]]; then base="HEAD^"; fi
+            candidates=$(git diff --name-only "$base" "$GITHUB_SHA" \
+              | awk -F/ '/^assets\/tgap\/[^/]+\// {print $1"/"$2"/"$3}' \
+              | sort -u)
+          fi
+
+          valid=""
+          while IFS= read -r pack; do
+            [[ -z "$pack" ]] && continue
+            [[ -f "$pack/manifest.json" && -f "$pack/expected-assets.json" ]] || continue
+            valid+="$pack"$'\n'
+          done <<< "$candidates"
+
+          matrix=$(printf '%s' "$valid" | sed '/^$/d' | jq -R . | jq -s -c .)
+          [[ "$matrix" == "[]" ]] && has=false || has=true
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "has_packs=$has" >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: discover
+    if: needs.discover.outputs.has_packs == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: ${{ fromJson(needs.discover.outputs.packs) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-tgap.txt
+
+      - name: Instalar dependências TGAP
+        run: python -m pip install --disable-pip-version-check -r requirements-tgap.txt
+
+      - name: Executar pipeline TGAP
+        run: python scripts/tgap_run_pack.py "${{ matrix.pack }}"
+
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-validation-${{ strategy.job-index }}
+          path: ${{ matrix.pack }}/validation/
+          if-no-files-found: warn
+          retention-days: 30
+
+  release:
+    needs: [discover, validate]
+    if: >-
+      always() &&
+      needs.discover.outputs.has_packs == 'true' &&
+      needs.validate.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/tgap-') ||
+       (github.event_name == 'workflow_dispatch' && inputs.release_version != ''))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: ${{ fromJson(needs.discover.outputs.packs) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-tgap.txt
+
+      - run: python -m pip install --disable-pip-version-check -r requirements-tgap.txt
+
+      - id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            version="${{ inputs.release_version }}"
+          else
+            version="${GITHUB_REF_NAME##*-v}"
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]] || {
+            echo "Versão inválida: $version" >&2; exit 2;
+          }
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Gerar release determinístico
+        run: python scripts/tgap_release_pack.py "${{ matrix.pack }}" --version "${{ steps.version.outputs.value }}"
+
+      - name: Publicar artefato de release
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-release-${{ strategy.job-index }}-${{ steps.version.outputs.value }}
+          path: ${{ matrix.pack }}/release/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Anexar à GitHub Release
+        if: startsWith(github.ref, 'refs/tags/tgap-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" "${{ matrix.pack }}"/release/* --clobber
