@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 RES_PATH_RE = re.compile(r'res://[^"\s)\]]+')
-FRAME_KEY_RE = re.compile(r"char_lian_wu__(?P<animation>[a-z0-9_]+)__f(?P<index>\d{2})")
 
 
 def load_json(path: Path) -> tuple[Any | None, str | None]:
@@ -36,6 +35,59 @@ def check_file(path: Path, label: str, errors: list[str]) -> bool:
     return True
 
 
+def runtime_config(root: Path, errors: list[str], warnings: list[str]) -> dict[str, str]:
+    pack_manifest, manifest_error = load_json(root / "manifest.json")
+    if manifest_error or not isinstance(pack_manifest, dict):
+        errors.append(f"manifest.json inválido: {manifest_error}")
+        return {}
+
+    configured = pack_manifest.get("runtime")
+    if isinstance(configured, dict):
+        required = ("entity_id", "frame_prefix", "atlas_png", "atlas_json", "spriteframes", "manifest")
+        missing = [field for field in required if not isinstance(configured.get(field), str) or not configured[field]]
+        if missing:
+            errors.append(f"configuração runtime incompleta: {', '.join(missing)}")
+            return {}
+        return {field: configured[field] for field in required}
+
+    warnings.append("manifest.json sem bloco runtime; usando descoberta legada")
+    atlas_jsons = sorted((root / "atlases").glob("*__atlas.json"))
+    atlas_pngs = sorted((root / "atlases").glob("*__atlas.png"))
+    spriteframes = sorted((root / "runtime").glob("*_spriteframes.tres"))
+    runtime_manifests = sorted((root / "runtime").glob("*_runtime_manifest.json"))
+    if not (len(atlas_jsons) == len(atlas_pngs) == len(spriteframes) == len(runtime_manifests) == 1):
+        errors.append("não foi possível descobrir uma configuração de runtime única")
+        return {}
+
+    runtime_data, runtime_error = load_json(runtime_manifests[0])
+    if runtime_error or not isinstance(runtime_data, dict):
+        errors.append(f"manifesto de runtime inválido: {runtime_error}")
+        return {}
+    entity_id = str(runtime_data.get("character_id") or runtime_data.get("entity_id") or root.name)
+
+    atlas_data, atlas_error = load_json(atlas_jsons[0])
+    prefix = ""
+    if not atlas_error and isinstance(atlas_data, dict):
+        raw_frames = atlas_data.get("frames", {})
+        names = list(raw_frames) if isinstance(raw_frames, dict) else []
+        if names:
+            stem = Path(str(names[0])).stem
+            match = re.match(r"(?P<prefix>.+)__[a-z0-9_]+__f\d+$", stem)
+            prefix = match.group("prefix") if match else ""
+    if not prefix:
+        errors.append("não foi possível inferir frame_prefix do atlas legado")
+        return {}
+
+    return {
+        "entity_id": entity_id,
+        "frame_prefix": prefix,
+        "atlas_png": atlas_pngs[0].relative_to(root).as_posix(),
+        "atlas_json": atlas_jsons[0].relative_to(root).as_posix(),
+        "spriteframes": spriteframes[0].relative_to(root).as_posix(),
+        "manifest": runtime_manifests[0].relative_to(root).as_posix(),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("pack_root", type=Path)
@@ -44,22 +96,25 @@ def main() -> int:
     root = args.pack_root.resolve()
     validation = root / "validation"
     validation.mkdir(parents=True, exist_ok=True)
-
-    expected_path = root / "expected-assets.json"
-    expected, expected_error = load_json(expected_path)
     errors: list[str] = []
     warnings: list[str] = []
     checks: dict[str, Any] = {}
 
+    expected, expected_error = load_json(root / "expected-assets.json")
     if expected_error or not isinstance(expected, dict):
         errors.append(f"expected-assets.json inválido: {expected_error}")
         expected = {}
 
-    atlas_png = root / "atlases/char_lian_wu__atlas.png"
-    atlas_json = root / "atlases/char_lian_wu__atlas.json"
-    spriteframes = root / "runtime/lian_wu_spriteframes.tres"
-    runtime_manifest = root / "runtime/lian_wu_runtime_manifest.json"
+    config = runtime_config(root, errors, warnings)
+    frame_prefix = config.get("frame_prefix", "")
+    frame_key_re = re.compile(rf"{re.escape(frame_prefix)}__(?P<animation>[a-z0-9_]+)__f(?P<index>\d{{2}})") if frame_prefix else None
 
+    atlas_png = root / config.get("atlas_png", "__missing__")
+    atlas_json = root / config.get("atlas_json", "__missing__")
+    spriteframes = root / config.get("spriteframes", "__missing__")
+    runtime_manifest = root / config.get("manifest", "__missing__")
+
+    checks["configuration"] = config
     checks["required_files"] = {
         "atlas_png": check_file(atlas_png, "atlas PNG", errors),
         "atlas_json": check_file(atlas_json, "atlas JSON", errors),
@@ -70,10 +125,9 @@ def main() -> int:
     expected_frames: set[str] = set()
     for animation, count in expected.get("animations", {}).items():
         for index in range(int(count)):
-            expected_frames.add(f"char_lian_wu__{animation}__f{index:02d}")
+            expected_frames.add(f"{frame_prefix}__{animation}__f{index:02d}")
 
     atlas_frames: set[str] = set()
-    atlas_data: Any = None
     if atlas_json.is_file():
         atlas_data, atlas_error = load_json(atlas_json)
         if atlas_error:
@@ -83,9 +137,7 @@ def main() -> int:
             if isinstance(raw_frames, dict):
                 atlas_frames = {Path(key).stem for key in raw_frames}
             elif isinstance(raw_frames, list):
-                for item in raw_frames:
-                    if isinstance(item, dict) and item.get("filename"):
-                        atlas_frames.add(Path(str(item["filename"])).stem)
+                atlas_frames = {Path(str(item["filename"])).stem for item in raw_frames if isinstance(item, dict) and item.get("filename")}
             else:
                 errors.append("atlas JSON sem coleção 'frames' válida")
 
@@ -95,20 +147,13 @@ def main() -> int:
         errors.append(f"{len(missing_in_atlas)} frames esperados não estão no atlas")
     if extra_in_atlas:
         warnings.append(f"{len(extra_in_atlas)} frames extras encontrados no atlas")
+    checks["atlas_consistency"] = {"expected_frames": len(expected_frames), "atlas_frames": len(atlas_frames), "missing": missing_in_atlas, "extra": extra_in_atlas}
 
-    checks["atlas_consistency"] = {
-        "expected_frames": len(expected_frames),
-        "atlas_frames": len(atlas_frames),
-        "missing": missing_in_atlas,
-        "extra": extra_in_atlas,
-    }
-
-    sprite_text = ""
     sprite_frame_names: set[str] = set()
     referenced_paths: set[str] = set()
     if spriteframes.is_file():
         sprite_text = spriteframes.read_text(encoding="utf-8", errors="replace")
-        sprite_frame_names = {match.group(0) for match in FRAME_KEY_RE.finditer(sprite_text)}
+        sprite_frame_names = {match.group(0) for match in frame_key_re.finditer(sprite_text)} if frame_key_re else set()
         referenced_paths = set(RES_PATH_RE.findall(sprite_text))
         if "SpriteFrames" not in sprite_text:
             errors.append("arquivo .tres não declara recurso SpriteFrames")
@@ -118,21 +163,10 @@ def main() -> int:
     missing_in_spriteframes = sorted(expected_frames - sprite_frame_names)
     if missing_in_spriteframes:
         errors.append(f"{len(missing_in_spriteframes)} frames esperados não estão no SpriteFrames")
-
-    broken_refs: list[str] = []
-    for ref in sorted(referenced_paths):
-        clean = ref.rstrip('"')
-        if not rel_resolve(root, clean).exists():
-            broken_refs.append(clean)
+    broken_refs = [ref.rstrip('"') for ref in sorted(referenced_paths) if not rel_resolve(root, ref.rstrip('"')).exists()]
     if broken_refs:
         errors.append(f"{len(broken_refs)} referências res:// quebradas")
-
-    checks["spriteframes_consistency"] = {
-        "declared_frames": len(sprite_frame_names),
-        "missing": missing_in_spriteframes,
-        "resource_references": sorted(referenced_paths),
-        "broken_references": broken_refs,
-    }
+    checks["spriteframes_consistency"] = {"declared_frames": len(sprite_frame_names), "missing": missing_in_spriteframes, "resource_references": sorted(referenced_paths), "broken_references": broken_refs}
 
     manifest_data: Any = None
     if runtime_manifest.is_file():
@@ -142,62 +176,31 @@ def main() -> int:
         elif not isinstance(manifest_data, dict):
             errors.append("manifesto de runtime deve ser um objeto JSON")
         else:
-            for field in ("pack_id", "character_id", "atlas", "spriteframes", "animations"):
+            for field in ("pack_id", "atlas", "spriteframes", "animations"):
                 if field not in manifest_data:
                     errors.append(f"manifesto de runtime sem campo obrigatório: {field}")
+            manifest_entity = manifest_data.get("entity_id") or manifest_data.get("character_id")
+            if manifest_entity != config.get("entity_id"):
+                errors.append(f"entity_id divergente: esperado {config.get('entity_id')}, recebido {manifest_entity}")
             declared_animations = manifest_data.get("animations", {})
             if isinstance(declared_animations, dict):
                 for animation, count in expected.get("animations", {}).items():
                     declared = declared_animations.get(animation)
-                    if isinstance(declared, dict):
-                        declared_count = declared.get("frame_count")
-                    else:
-                        declared_count = declared
+                    declared_count = declared.get("frame_count") if isinstance(declared, dict) else declared
                     if declared_count != count:
-                        errors.append(
-                            f"manifesto divergente em {animation}: esperado {count}, recebido {declared_count}"
-                        )
+                        errors.append(f"manifesto divergente em {animation}: esperado {count}, recebido {declared_count}")
             else:
                 errors.append("campo animations do manifesto não é um objeto")
 
-    checks["runtime_manifest"] = {
-        "valid": isinstance(manifest_data, dict),
-        "animation_count": len(manifest_data.get("animations", {})) if isinstance(manifest_data, dict) else 0,
-    }
-
+    checks["runtime_manifest"] = {"valid": isinstance(manifest_data, dict), "animation_count": len(manifest_data.get("animations", {})) if isinstance(manifest_data, dict) else 0}
     passed = not errors
-    report = {
-        "tgap_version": "1.0",
-        "pack_root": str(root),
-        "runtime_gate_passed": passed,
-        "promotion_blocked": not passed,
-        "errors": errors,
-        "warnings": warnings,
-        "checks": checks,
-    }
-
-    json_path = validation / "runtime-gate-report.json"
-    md_path = validation / "runtime-gate-report.md"
-    json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    lines = [
-        "# Gate de Runtime TGAP",
-        "",
-        f"- Aprovado: **{'sim' if passed else 'não'}**",
-        f"- Erros: **{len(errors)}**",
-        f"- Alertas: **{len(warnings)}**",
-        f"- Frames esperados: **{len(expected_frames)}**",
-        f"- Frames no atlas: **{len(atlas_frames)}**",
-        f"- Frames no SpriteFrames: **{len(sprite_frame_names)}**",
-        "",
-        "## Erros",
-        "",
-    ]
+    report = {"tgap_version": "1.0", "pack_root": str(root), "runtime_gate_passed": passed, "promotion_blocked": not passed, "errors": errors, "warnings": warnings, "checks": checks}
+    (validation / "runtime-gate-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    lines = ["# Gate de Runtime TGAP", "", f"- Aprovado: **{'sim' if passed else 'não'}**", f"- Erros: **{len(errors)}**", f"- Alertas: **{len(warnings)}**", f"- Frames esperados: **{len(expected_frames)}**", f"- Frames no atlas: **{len(atlas_frames)}**", f"- Frames no SpriteFrames: **{len(sprite_frame_names)}**", "", "## Erros", ""]
     lines.extend(f"- {item}" for item in errors)
     lines.extend(["", "## Alertas", ""])
     lines.extend(f"- {item}" for item in warnings)
-    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
+    (validation / "runtime-gate-report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps({"runtime_gate_passed": passed, "errors": len(errors), "warnings": len(warnings)}))
     return 0 if passed else 1
 
