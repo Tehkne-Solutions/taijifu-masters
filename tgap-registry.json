@@ -1,0 +1,21 @@
+{
+  "schema": "tgap/registry/v1",
+  "project_id": "taijifu-masters",
+  "registry_version": "1.0.0",
+  "packs": [
+    {
+      "pack_id": "pack_01_lian_wu",
+      "root": "assets/tgap/pack_01_lian_wu",
+      "version": "0.1.0",
+      "asset_class": "character",
+      "integration_order": 100,
+      "enabled": true,
+      "dependencies": [],
+      "compatibility": {
+        "tgap": ">=1.0.0",
+        "runtime": "godot",
+        "project": "taijifu-masters"
+      }
+    }
+  ]
+}
