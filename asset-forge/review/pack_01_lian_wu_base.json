@@ -1,0 +1,26 @@
+{
+  "schema": "taijifu/asset-forge-review-config/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "output_dir": "artifacts/asset-forge/review/pack_01_lian_wu_base/site",
+  "assets": [
+    {"path": "assets/tgap/pack_01_lian_wu_base/source/char_lian_wu__master.png", "label": "Master", "group": "master"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/turnaround/char_lian_wu__front.png", "label": "Turnaround — frente", "group": "turnaround"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/turnaround/char_lian_wu__back.png", "label": "Turnaround — costas", "group": "turnaround"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/turnaround/char_lian_wu__left.png", "label": "Turnaround — esquerda", "group": "turnaround"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/turnaround/char_lian_wu__right.png", "label": "Turnaround — direita", "group": "turnaround"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/portraits/portrait_lian_wu__profile.png", "label": "Retrato — perfil", "group": "portraits"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/portraits/portrait_lian_wu__battle.png", "label": "Retrato — batalha", "group": "portraits"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/portraits/portrait_lian_wu__defeated.png", "label": "Retrato — derrotado", "group": "portraits"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/icons/icon_lian_wu__character.png", "label": "Ícone — personagem", "group": "icons"},
+    {"path": "assets/tgap/pack_01_lian_wu_base/icons/icon_lian_wu__water_element.png", "label": "Ícone — elemento água", "group": "icons"}
+  ],
+  "checklist": {
+    "identity_consistent": "Identidade visual consistente em todas as vistas",
+    "transparent_background": "Fundo transparente e sem halos",
+    "not_cropped": "Nenhuma parte relevante está cortada",
+    "turnaround_consistent": "Turnaround mantém proporções, roupa e acessórios",
+    "portraits_consistent": "Retratos preservam rosto e linguagem visual",
+    "icons_legible": "Ícones permanecem legíveis em tamanho reduzido",
+    "technical_quality": "Qualidade técnica adequada ao runtime"
+  }
+}
