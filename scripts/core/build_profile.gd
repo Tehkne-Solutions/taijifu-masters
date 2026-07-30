@@ -73,6 +73,8 @@ func technique_for(path: String, slot: int = 0) -> StringName:
 	return collection[clampi(slot, 0, collection.size() - 1)]
 
 static func available_prototype_presets() -> Array[StringName]:
+	# Os presets exclusivos da vertical slice não entram nesta lista para não
+	# alterar menus, preparação e progressão do protótipo completo.
 	return [
 		&"adaptive_staff",
 		&"aerial_flow",
@@ -82,9 +84,34 @@ static func available_prototype_presets() -> Array[StringName]:
 		&"rin_challenger"
 	]
 
+static func first_playable_presets() -> Array[StringName]:
+	return [&"lian_wu_first_playable", &"training_rival_first_playable"]
+
 static func prototype_preset(preset_id: StringName) -> BuildProfile:
 	var profile := BuildProfile.new()
 	match preset_id:
+		&"lian_wu_first_playable":
+			profile.character_id = &"lian_wu"
+			profile.character_name = "Lian Wu"
+			profile.display_name = "Lâmina Serena"
+			profile.tactical_summary = "Água, precisão técnica e transições rápidas com katana."
+			profile.strength = 58.0; profile.defense = 57.0; profile.agility = 76.0; profile.resistance = 56.0
+			profile.technique = 86.0; profile.control = 70.0; profile.perception = 78.0; profile.focus = 82.0
+			profile.armor_weight = 14.0; profile.weapon_id = &"serene_katana"; profile.secondary_weapon_id = &"unarmed"; profile.element_id = &"water"
+			profile.tai_techniques = [&"tai_advancing_kick", &"tai_aerial_arc"]
+			profile.ji_techniques = [&"ji_body_hook", &"ji_sweep"]
+			profile.fu_techniques = [&"fu_flow_strike", &"fu_reversal"]
+		&"training_rival_first_playable":
+			profile.character_id = &"training_rival"
+			profile.character_name = "Rival de Treino"
+			profile.display_name = "Punho da Fornalha"
+			profile.tactical_summary = "Fogo, pressão frontal e dano elevado de postura."
+			profile.strength = 82.0; profile.defense = 65.0; profile.agility = 48.0; profile.resistance = 72.0
+			profile.technique = 58.0; profile.control = 74.0; profile.perception = 62.0; profile.focus = 55.0
+			profile.armor_weight = 36.0; profile.weapon_id = &"breaker_gauntlets"; profile.secondary_weapon_id = &"unarmed"; profile.element_id = &"fire"
+			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
+			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
+			profile.fu_techniques = [&"gauntlet_guard_turn", &"fu_reversal"]
 		&"adaptive_staff":
 			profile.character_id = &"kael"
 			profile.character_name = "Kael"
