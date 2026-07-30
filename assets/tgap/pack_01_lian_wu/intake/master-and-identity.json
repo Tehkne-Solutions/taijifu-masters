@@ -1,0 +1,21 @@
+{
+  "schema": "tgap/intake-batch/v1",
+  "pack_id": "pack_01_lian_wu",
+  "batch_id": "master_and_identity",
+  "status": "awaiting_physical_assets",
+  "required": [
+    {"path": "source/char_lian_wu__master.png", "role": "master", "min_width": 512, "min_height": 512, "alpha_required": true},
+    {"path": "portraits/portrait_lian_wu__profile.png", "role": "portrait_profile", "min_width": 256, "min_height": 256, "alpha_required": true},
+    {"path": "portraits/portrait_lian_wu__battle.png", "role": "portrait_battle", "min_width": 256, "min_height": 256, "alpha_required": true},
+    {"path": "portraits/portrait_lian_wu__defeated.png", "role": "portrait_defeated", "min_width": 256, "min_height": 256, "alpha_required": true},
+    {"path": "icons/icon_lian_wu__character.png", "role": "character_icon", "width": 128, "height": 128, "alpha_required": true},
+    {"path": "icons/icon_lian_wu__water_element.png", "role": "element_icon", "width": 128, "height": 128, "alpha_required": true}
+  ],
+  "identity": {
+    "style": "comic_manga_2_5d_retro_vector",
+    "signature_color": "#1769C2",
+    "signature_element": "blue_kimono_sash",
+    "outline_px": 3,
+    "rim_light": "#7DDEFF"
+  }
+}

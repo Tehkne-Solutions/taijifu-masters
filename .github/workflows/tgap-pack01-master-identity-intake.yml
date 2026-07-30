@@ -1,0 +1,41 @@
+name: TGAP Pack 01 Master Identity Intake
+
+on:
+  pull_request:
+    paths:
+      - 'assets/tgap/pack_01_lian_wu/source/**'
+      - 'assets/tgap/pack_01_lian_wu/portraits/**'
+      - 'assets/tgap/pack_01_lian_wu/icons/**'
+      - 'assets/tgap/pack_01_lian_wu/intake/**'
+      - 'scripts/tgap_validate_intake_batch.py'
+      - 'tests/tgap/test_validate_intake_batch.py'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/tgap/pack_01_lian_wu/source/**'
+      - 'assets/tgap/pack_01_lian_wu/portraits/**'
+      - 'assets/tgap/pack_01_lian_wu/icons/**'
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-tgap-test.txt
+      - name: Testar contrato
+        run: python -m pytest -q tests/tgap/test_validate_intake_batch.py
+      - name: Gerar relatório informativo
+        run: python scripts/tgap_validate_intake_batch.py
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tgap-pack01-master-identity-intake
+          path: artifacts/tgap/pack01-master-identity-intake.json
+          if-no-files-found: error
+          retention-days: 30
