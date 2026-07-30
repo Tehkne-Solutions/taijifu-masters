@@ -23,6 +23,8 @@ func _run() -> void:
 		return
 	if not _validate_arena_presentation(instance):
 		return
+	if not _validate_ai_configuration(instance):
+		return
 
 	var fighters := get_nodes_in_group("fighters")
 	if fighters.size() != 2:
@@ -66,7 +68,16 @@ func _run() -> void:
 	quit(0)
 
 func _validate_scene_nodes(instance: FirstPlayableController) -> bool:
-	for path in ["EnvironmentArt", "Arena", "ArenaDressing", "TacticalBotRuntime", "Camera2D", "HUD/CenterInfo"]:
+	for path in [
+		"EnvironmentArt",
+		"Arena",
+		"ArenaDressing",
+		"TacticalBotRuntime",
+		"DifficultyController",
+		"Camera2D",
+		"HUD/CenterInfo",
+		"HUD/DifficultyInfo"
+	]:
 		if instance.get_node_or_null(path) == null:
 			_fail("required node is missing: %s" % path)
 			return false
@@ -110,6 +121,32 @@ func _validate_arena_presentation(instance: FirstPlayableController) -> bool:
 		return false
 	if bool(dressing_signature.get("collision_changes", true)):
 		_fail("visual dressing must not change collision")
+		return false
+	return true
+
+func _validate_ai_configuration(instance: FirstPlayableController) -> bool:
+	var difficulty := instance.get_node("DifficultyController") as FirstPlayableDifficultyController
+	var bot := instance.get_node("TacticalBotRuntime") as TacticalBotRuntime
+	var label := instance.get_node("HUD/DifficultyInfo") as Label
+	if not is_instance_valid(difficulty) or not is_instance_valid(bot) or not is_instance_valid(label):
+		_fail("AI configuration nodes are invalid")
+		return false
+	var signature := difficulty.selection_signature()
+	var ids: Array = signature.get("difficulty_ids", [])
+	if ids != [&"apprentice", &"disciple", &"master"]:
+		_fail("First Playable must expose apprentice, disciple and master")
+		return false
+	if StringName(signature.get("default_id", &"")) != &"disciple":
+		_fail("First Playable default difficulty must be disciple")
+		return false
+	if difficulty.selected_difficulty_id != &"disciple" or bot.difficulty_id != &"disciple":
+		_fail("default AI difficulty was not applied")
+		return false
+	if not bool(signature.get("persists_across_rematch", false)):
+		_fail("difficulty must persist across rematch")
+		return false
+	if "[1]" not in label.text or "[2]" not in label.text or "[3]" not in label.text:
+		_fail("difficulty HUD does not expose the three shortcuts")
 		return false
 	return true
 
