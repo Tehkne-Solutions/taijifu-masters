@@ -1,0 +1,90 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
+[ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
+[ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="3_bot"]
+
+[node name="FirstPlayable" type="Node2D"]
+script = ExtResource("1_controller")
+
+[node name="Arena" type="Node2D" parent="."]
+script = ExtResource("2_arena")
+show_strategic_points = false
+
+[node name="TacticalBotRuntime" type="Node" parent="."]
+script = ExtResource("3_bot")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(1400, 500)
+zoom = Vector2(0.72, 0.72)
+enabled = true
+position_smoothing_enabled = false
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopShade" type="ColorRect" parent="HUD"]
+offset_right = 1280.0
+offset_bottom = 146.0
+mouse_filter = 2
+color = Color(0.018, 0.023, 0.035, 0.92)
+
+[node name="PlayerOne" type="Label" parent="HUD"]
+offset_left = 22.0
+offset_top = 14.0
+offset_right = 438.0
+offset_bottom = 122.0
+theme_override_colors/font_color = Color(0.66, 0.87, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "P1"
+vertical_alignment = 1
+
+[node name="PlayerTwo" type="Label" parent="HUD"]
+offset_left = 842.0
+offset_top = 14.0
+offset_right = 1258.0
+offset_bottom = 122.0
+theme_override_colors/font_color = Color(1, 0.72, 0.62, 1)
+theme_override_font_sizes/font_size = 16
+text = "CPU"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CenterInfo" type="Label" parent="HUD"]
+offset_left = 420.0
+offset_top = 18.0
+offset_right = 860.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.96, 0.83, 0.42, 1)
+theme_override_font_sizes/font_size = 25
+text = "FIRST PLAYABLE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StateInfo" type="Label" parent="HUD"]
+offset_left = 390.0
+offset_top = 106.0
+offset_right = 890.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(0.68, 0.86, 1, 0.96)
+theme_override_font_sizes/font_size = 12
+text = "VERTICAL SLICE • P1 VS CPU"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BottomShade" type="ColorRect" parent="HUD"]
+offset_top = 642.0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.018, 0.023, 0.035, 0.86)
+
+[node name="Controls" type="Label" parent="HUD"]
+offset_left = 18.0
+offset_top = 648.0
+offset_right = 1262.0
+offset_bottom = 716.0
+theme_override_colors/font_color = Color(0.78, 0.8, 0.85, 0.98)
+theme_override_font_sizes/font_size = 12
+text = "A/D mover • W saltar • F atacar • Q esquivar • R defender"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,37 @@
+name: First Playable Smoke
+
+on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "scenes/vertical_slice/**"
+      - "scenes/fighter/**"
+      - "scripts/vertical_slice/**"
+      - "scripts/fighter/**"
+      - "scripts/arena/triple_path_arena.gd"
+      - "scripts/runtime/tactical_bot_runtime.gd"
+      - "scripts/core/**"
+      - "scripts/combat/**"
+      - "tests/first_playable_scene_smoke.gd"
+      - ".github/workflows/first-playable-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot 4.3
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project
+        run: ./godot --headless --editor --path . --quit-after 3
+
+      - name: Run First Playable smoke
+        run: ./godot --headless --path . --script tests/first_playable_scene_smoke.gd
