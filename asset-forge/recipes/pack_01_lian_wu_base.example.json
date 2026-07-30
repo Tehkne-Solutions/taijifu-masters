@@ -48,10 +48,26 @@
     },
     {
       "type": "atlas",
-      "glob": "assets/tgap/pack_01_lian_wu_base/{turnaround,portraits,icons}/*.png",
-      "output": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__atlas.png",
-      "metadata": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__atlas.json",
+      "glob": "assets/tgap/pack_01_lian_wu_base/turnaround/*.png",
+      "output": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__turnaround_atlas.png",
+      "metadata": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__turnaround_atlas.json",
       "max_width": 2048,
+      "padding": 4
+    },
+    {
+      "type": "atlas",
+      "glob": "assets/tgap/pack_01_lian_wu_base/portraits/*.png",
+      "output": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__portraits_atlas.png",
+      "metadata": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__portraits_atlas.json",
+      "max_width": 2048,
+      "padding": 4
+    },
+    {
+      "type": "atlas",
+      "glob": "assets/tgap/pack_01_lian_wu_base/icons/*.png",
+      "output": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__icons_atlas.png",
+      "metadata": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__icons_atlas.json",
+      "max_width": 1024,
       "padding": 4
     }
   ],
