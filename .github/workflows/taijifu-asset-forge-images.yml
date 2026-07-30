@@ -1,0 +1,37 @@
+name: Taijifu Asset Forge Images
+
+on:
+  pull_request:
+    paths:
+      - 'tools/asset_forge/image_ops.py'
+      - 'asset-forge/recipes/**'
+      - 'tests/asset_forge/test_image_ops.py'
+      - 'requirements-tgap-test.txt'
+      - '.github/workflows/taijifu-asset-forge-images.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/asset_forge/image_ops.py'
+      - 'asset-forge/recipes/**'
+      - 'tests/asset_forge/test_image_ops.py'
+      - 'requirements-tgap-test.txt'
+  workflow_dispatch:
+
+jobs:
+  image-processing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - name: Instalar dependências
+        run: python -m pip install -r requirements-tgap-test.txt
+      - name: Testar processamento físico
+        run: python -m pytest -q tests/asset_forge/test_image_ops.py tests/asset_forge/test_forge.py
+      - name: Verificar que receita não fabrica intake
+        run: |
+          test ! -e asset-forge/intake/pack_01_lian_wu_base/char_lian_wu__master_raw.png
+          test ! -e assets/tgap/pack_01_lian_wu_base/source/char_lian_wu__master.png
