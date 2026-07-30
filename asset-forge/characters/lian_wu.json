@@ -1,0 +1,52 @@
+{
+  "schema": "taijifu/character-dna/v1",
+  "id": "lian_wu",
+  "name": "Lian Wu",
+  "pack_id": "pack_01_lian_wu_base",
+  "origin": "Montanhas Orientais",
+  "faction": "Ordem do Fluxo Sereno",
+  "combat_style": ["tai_chi", "kung_fu_tradicional", "qigong"],
+  "movement": {
+    "profile": "grounded_flow",
+    "speed": "medium",
+    "mobility": "medium",
+    "defense": "high",
+    "counter_attack": "high"
+  },
+  "palette": {
+    "primary": ["white", "gray", "deep_blue"],
+    "accent": ["gold"],
+    "forbidden": ["neon_green", "magenta"]
+  },
+  "personality": ["calm", "patient", "precise", "dangerous"],
+  "lore": "Um mestre marcial que converte pressão em fluxo e vence sem desperdiçar movimento.",
+  "skills": ["flow_guard", "redirecting_palm", "qi_step"],
+  "ultimate": "serene_convergence",
+  "rarity": "master",
+  "source_assets": [
+    "char_lian_wu__master_raw.png",
+    "turnaround_raw.png",
+    "portraits_raw.png",
+    "icons_raw.png"
+  ],
+  "animations": [
+    "idle",
+    "walk",
+    "run",
+    "attack_01",
+    "attack_02",
+    "hit",
+    "block",
+    "death",
+    "victory"
+  ],
+  "visual_rules": {
+    "silhouette_must_be_unique": true,
+    "transparent_background": true,
+    "no_borders": true,
+    "no_contact_sheets_as_source": true,
+    "master_resolution": 1024,
+    "portrait_resolution": 512,
+    "icon_resolutions": [32, 64, 128, 256]
+  }
+}
