@@ -6,6 +6,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	FirstPlayableSession.reset()
 	var packed := load(SCENE_PATH) as PackedScene
 	if packed == null:
 		_fail("could not load %s" % SCENE_PATH)
@@ -24,6 +25,8 @@ func _run() -> void:
 	if not _validate_arena_presentation(instance):
 		return
 	if not _validate_ai_configuration(instance):
+		return
+	if not _validate_hud_configuration(instance):
 		return
 
 	var fighters := get_nodes_in_group("fighters")
@@ -74,9 +77,18 @@ func _validate_scene_nodes(instance: FirstPlayableController) -> bool:
 		"ArenaDressing",
 		"TacticalBotRuntime",
 		"DifficultyController",
+		"HudController",
 		"Camera2D",
 		"HUD/CenterInfo",
-		"HUD/DifficultyInfo"
+		"HUD/DifficultyInfo",
+		"HUD/P1Health",
+		"HUD/P1Posture",
+		"HUD/P1Stamina",
+		"HUD/P2Health",
+		"HUD/P2Posture",
+		"HUD/P2Stamina",
+		"HUD/ResultOverlay",
+		"HUD/PauseOverlay"
 	]:
 		if instance.get_node_or_null(path) == null:
 			_fail("required node is missing: %s" % path)
@@ -142,11 +154,32 @@ func _validate_ai_configuration(instance: FirstPlayableController) -> bool:
 	if difficulty.selected_difficulty_id != &"disciple" or bot.difficulty_id != &"disciple":
 		_fail("default AI difficulty was not applied")
 		return false
-	if not bool(signature.get("persists_across_rematch", false)):
-		_fail("difficulty must persist across rematch")
+	if not bool(signature.get("persists_across_rematch", false)) or not bool(signature.get("persists_from_menu", false)):
+		_fail("difficulty must persist from menu and across rematch")
 		return false
 	if "[1]" not in label.text or "[2]" not in label.text or "[3]" not in label.text:
 		_fail("difficulty HUD does not expose the three shortcuts")
+		return false
+	return true
+
+func _validate_hud_configuration(instance: FirstPlayableController) -> bool:
+	var hud := instance.get_node("HudController") as FirstPlayableHudController
+	if not is_instance_valid(hud):
+		_fail("HUD controller is invalid")
+		return false
+	var signature := hud.presentation_signature()
+	if int(signature.get("resource_bars_per_fighter", 0)) != 3:
+		_fail("each fighter must expose health, posture and stamina bars")
+		return false
+	for key in ["result_overlay", "rematch_button", "menu_button", "pause_overlay", "resume_button", "mouse_supported", "gamepad_focus_supported"]:
+		if not bool(signature.get(key, false)):
+			_fail("HUD capability is missing: %s" % key)
+			return false
+	if (instance.get_node("HUD/ResultOverlay") as Control).visible:
+		_fail("result overlay must start hidden")
+		return false
+	if (instance.get_node("HUD/PauseOverlay") as Control).visible:
+		_fail("pause overlay must start hidden")
 		return false
 	return true
 
