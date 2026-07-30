@@ -1,0 +1,14 @@
+{
+  "schema": "taijifu/asset-forge-orchestration-config/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "pack_spec": "asset-forge/packs/pack_01_lian_wu_base.json",
+  "image_recipe": "asset-forge/recipes/pack_01_lian_wu_base.example.json",
+  "godot_recipe": "asset-forge/godot/pack_01_lian_wu_base.json",
+  "required_intake": [
+    "asset-forge/intake/pack_01_lian_wu_base/char_lian_wu__master_raw.png",
+    "asset-forge/intake/pack_01_lian_wu_base/turnaround_raw.png",
+    "asset-forge/intake/pack_01_lian_wu_base/portraits_raw.png",
+    "asset-forge/intake/pack_01_lian_wu_base/icons_raw.png"
+  ],
+  "report": "artifacts/asset-forge/pack_01_lian_wu_base__orchestration.json"
+}
