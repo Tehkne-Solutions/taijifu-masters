@@ -73,13 +73,19 @@ jobs:
           assert manifest["totals"]["file_count"] >= 3
           assert any(item["path"].endswith(".exe") for item in manifest["files"])
 
-          expected = checksum_path.read_text(encoding="utf-8").split()[0]
+          checksum_parts = checksum_path.read_text(encoding="utf-8").strip().split(maxsplit=1)
+          assert len(checksum_parts) == 2, checksum_parts
+          expected, referenced_name = checksum_parts
+          assert referenced_name.lstrip("*") == zip_path.name, referenced_name
+          assert "/" not in referenced_name and "\\" not in referenced_name, referenced_name
+
           actual = hashlib.sha256(zip_path.read_bytes()).hexdigest()
           assert actual == expected, (actual, expected)
           print(json.dumps({
               "build_id": manifest["build_id"],
               "zip_size_bytes": zip_path.stat().st_size,
               "zip_sha256": actual,
+              "checksum_reference": referenced_name,
           }, indent=2))
           PY
 

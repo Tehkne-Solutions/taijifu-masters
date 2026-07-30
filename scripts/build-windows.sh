@@ -88,7 +88,10 @@ log "Empacotando ZIP Windows"
   cd "${OUTPUT_DIR}"
   zip -q -9 -r "${DIST_DIR}/${ZIP_NAME}" .
 )
-sha256sum "${DIST_DIR}/${ZIP_NAME}" | tee "${DIST_DIR}/${ZIP_NAME}.sha256"
+(
+  cd "${DIST_DIR}"
+  sha256sum "${ZIP_NAME}" | tee "${ZIP_NAME}.sha256"
+)
 
 log "Build Windows concluído"
 find "${OUTPUT_DIR}" -maxdepth 1 -type f -printf '%f\t%k KB\n' | sort

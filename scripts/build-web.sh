@@ -70,12 +70,16 @@ log "Injetando ranking local de rivais"
 python3 "${ROOT_DIR}/scripts/inject-ghost-rival-ranking-web.py" "${OUTPUT_DIR}"
 log "Injetando corrida multirrival"
 python3 "${ROOT_DIR}/scripts/inject-multi-ghost-race-web.py" "${OUTPUT_DIR}"
+log "Validando artefatos e contratos Web"
+python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
+test -s "${OUTPUT_DIR}/build-info.json"
+mv "${OUTPUT_DIR}/build-info.json" "${OUTPUT_DIR}/web-validation-info.json"
 log "Gerando manifesto rastreável do First Playable"
 python3 "${ROOT_DIR}/scripts/create-first-playable-build-manifest.py" \
   --platform web \
   --output-dir "${OUTPUT_DIR}" \
   --project-root "${ROOT_DIR}"
-log "Validando artefatos gerados"
-python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
+test -s "${OUTPUT_DIR}/build-info.json"
+test -s "${OUTPUT_DIR}/web-validation-info.json"
 log "Build Web concluído"
 find "${OUTPUT_DIR}" -maxdepth 1 -type f -printf '%f\t%k KB\n' | sort
