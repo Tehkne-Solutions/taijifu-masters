@@ -1,0 +1,25 @@
+name: Character Factory
+
+on:
+  pull_request:
+    paths:
+      - "asset-forge/characters/**"
+      - "tools/asset_forge/character_factory.py"
+      - "tests/asset_forge/test_character_factory.py"
+      - ".github/workflows/character-factory.yml"
+  workflow_dispatch:
+
+jobs:
+  validate-character-dna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tests
+        run: python -m pip install pytest
+      - name: Validate Lian Wu DNA
+        run: python tools/asset_forge/character_factory.py asset-forge/characters/lian_wu.json --check
+      - name: Run Character Factory tests
+        run: python -m pytest tests/asset_forge/test_character_factory.py -q
