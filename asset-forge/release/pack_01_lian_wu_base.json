@@ -1,8 +1,11 @@
 {
-  "schema": "taijifu/asset-forge-release-config/v1",
+  "schema": "taijifu/asset-forge-release-config/v2",
   "pack_id": "pack_01_lian_wu_base",
   "intake_config": "asset-forge/intake/pack_01_lian_wu_base.json",
   "orchestration_config": "asset-forge/orchestration/pack_01_lian_wu_base.json",
+  "perceptual_config": "asset-forge/perceptual/pack_01_lian_wu_base.json",
+  "perceptual_report": "artifacts/asset-forge/review/pack_01_lian_wu_base/perceptual-report.json",
+  "diff_matrix_config": "asset-forge/diff-matrix/pack_01_lian_wu_base.json",
   "pack_spec": "asset-forge/packs/pack_01_lian_wu_base.json",
   "approval": "artifacts/asset-forge/review/pack_01_lian_wu_base/approval.json",
   "report": "artifacts/asset-forge/pack_01_lian_wu_base__release-pipeline.json"
