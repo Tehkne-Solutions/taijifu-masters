@@ -98,7 +98,13 @@ func _resolve_character() -> void:
 	if is_instance_valid(_fighter.build) and _fighter.build.character_id != &"":
 		_character_id = _fighter.build.character_id
 		return
+	# O presenter é filho do lutador e seu _ready() executa antes do _ready()
+	# do pai. Por isso presets precisam de resolução segura antes do build existir.
 	match _fighter.build_preset:
+		&"lian_wu_first_playable":
+			_character_id = &"lian_wu"
+		&"training_rival_first_playable":
+			_character_id = &"training_rival"
 		&"rock_guardian", &"foundation_breaker":
 			_character_id = &"nara"
 		&"lyra_elementalist":
@@ -109,6 +115,10 @@ func _resolve_character() -> void:
 			_character_id = &"kael"
 
 func _load_sheet() -> void:
+	if CharacterVisualCatalog.uses_procedural_fallback(_character_id):
+		_active = false
+		_sprite.visible = false
+		return
 	var path := CharacterVisualCatalog.sheet_path(_character_id)
 	if path == "" or not ResourceLoader.exists(path):
 		_active = false
