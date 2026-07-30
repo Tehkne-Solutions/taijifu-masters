@@ -43,14 +43,17 @@ jobs:
           set -o pipefail
           bash scripts/build-web.sh 2>&1 | tee web-build.log
 
-      - name: Validar manifesto First Playable Web
+      - name: Validar manifestos First Playable Web
         run: |
           python3 - <<'PY'
           import json
           from pathlib import Path
 
           manifest_path = Path("web-build/build-info.json")
+          validation_path = Path("web-build/web-validation-info.json")
           assert manifest_path.is_file(), manifest_path
+          assert validation_path.is_file(), validation_path
+
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
           assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
           assert manifest["platform"] == "web"
@@ -59,10 +62,21 @@ jobs:
           assert manifest["signature"] == "Tehkné Solutions"
           assert manifest["version"] == "0.2.0-first-playable"
           assert manifest["totals"]["file_count"] > 0
+
+          validation = json.loads(validation_path.read_text(encoding="utf-8"))
+          assert validation["product"] == "Taijifu Masters"
+          assert validation["publisher"] == "Tehkné Solutions"
+          experience = validation["web_experience"]
+          assert experience["responsive_shell"] is True
+          assert experience["native_web_menu"] is True
+          assert experience["godot_pause_bridge"] is True
+          assert experience["gamepad_web_panel"] is True
+
           print(json.dumps({
               "build_id": manifest["build_id"],
               "files": manifest["totals"]["file_count"],
               "size_bytes": manifest["totals"]["size_bytes"],
+              "web_validation": "approved",
           }, indent=2))
           PY
 
