@@ -2,8 +2,9 @@ class_name FirstPlayableController
 extends Node2D
 
 const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
-const PLAYER_PRESET: StringName = &"adaptive_staff"
-const CPU_PRESET: StringName = &"rin_challenger"
+const CHARACTER_IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
+const PLAYER_PRESET: StringName = &"lian_wu_first_playable"
+const CPU_PRESET: StringName = &"training_rival_first_playable"
 const COUNTDOWN_SECONDS := 3
 
 @export_range(0.01, 2.0, 0.01) var countdown_step_seconds := 0.72
@@ -74,7 +75,7 @@ func _start_match() -> void:
 	camera.global_position = arena.world_center()
 	camera.zoom = Vector2(0.72, 0.72)
 	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nENTER reinicia • ESC volta ao protótipo completo"
-	state_label.text = "VERTICAL SLICE • P1 VS CPU • IA DISCÍPULO"
+	state_label.text = "LIAN WU VS RIVAL DE TREINO • IA DISCÍPULO"
 
 	for value in range(COUNTDOWN_SECONDS, 0, -1):
 		if generation != _match_generation:
@@ -98,8 +99,8 @@ func _start_match() -> void:
 	center_label.text = "RUÍNAS DO CAMINHO TRIPLO"
 
 func _spawn_fighters() -> void:
-	player_one = _spawn_fighter(1, PLAYER_PRESET, Color(0.22, 0.67, 1.0))
-	player_two = _spawn_fighter(2, CPU_PRESET, Color(1.0, 0.34, 0.20))
+	player_one = _spawn_fighter(1, PLAYER_PRESET, Color(0.16, 0.42, 0.82))
+	player_two = _spawn_fighter(2, CPU_PRESET, Color(0.48, 0.12, 0.07))
 	player_one.facing = 1.0
 	player_two.facing = -1.0
 
@@ -110,6 +111,9 @@ func _spawn_fighter(player_index: int, preset_id: StringName, color: Color) -> F
 	fighter.fighter_color = color
 	fighter.position = arena.respawn_point(player_index)
 	fighter.defeated.connect(_on_fighter_defeated)
+	var identity := CHARACTER_IDENTITY.new() as FirstPlayableCharacterIdentity
+	identity.name = "FirstPlayableIdentity"
+	fighter.add_child(identity)
 	add_child(fighter)
 	fighter.queue_redraw()
 	return fighter
@@ -188,7 +192,7 @@ func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1")
 	player_two_label.text = _fighter_summary(player_two, "CPU")
 	if _state == MatchState.BATTLE:
-		state_label.text = "P1 VS CPU • IA DISCÍPULO • TEMPO %02d" % ceili(_time_remaining)
+		state_label.text = "LIAN WU VS RIVAL • IA DISCÍPULO • TEMPO %02d" % ceili(_time_remaining)
 
 func _fighter_summary(fighter: FighterController, prefix: String) -> String:
 	return "%s • %s\nVIDA %d  POST %d  FÔL %d\n%s • %s" % [
