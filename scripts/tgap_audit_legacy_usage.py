@@ -64,13 +64,19 @@ def classify(path: str, policy: dict) -> str:
     return "non_production"
 
 
-def audit(root: Path, policy: dict) -> dict:
+def audit(root: Path, policy: dict | None = None) -> dict:
+    """Audit a tree using the configured policy or the stable default policy.
+
+    ``policy`` remains optional for backwards compatibility with tests and
+    external tooling that used the original single-argument API.
+    """
+    effective_policy = DEFAULT_POLICY if policy is None else policy
     findings = []
     counts = Counter()
     scope_counts = Counter()
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        scope = classify(relative, policy)
+        scope = classify(relative, effective_policy)
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
@@ -96,7 +102,7 @@ def audit(root: Path, policy: dict) -> dict:
     return {
         "schema": "tgap/legacy-audit/v2",
         "root": root.as_posix(),
-        "policy": policy,
+        "policy": effective_policy,
         "summary": {
             "total_findings": len(findings),
             "production_findings": len(production),
@@ -109,11 +115,13 @@ def audit(root: Path, policy: dict) -> dict:
     }
 
 
-def migrate(root: Path, policy: dict) -> list[str]:
+def migrate(root: Path, policy: dict | None = None) -> list[str]:
+    """Apply supported rewrites using the configured or default policy."""
+    effective_policy = DEFAULT_POLICY if policy is None else policy
     changed = []
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        if path.suffix.lower() != ".gd" or classify(relative, policy) != "production":
+        if path.suffix.lower() != ".gd" or classify(relative, effective_policy) != "production":
             continue
         text = path.read_text(encoding="utf-8")
         updated = text
