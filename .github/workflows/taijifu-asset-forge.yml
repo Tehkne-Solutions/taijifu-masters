@@ -1,0 +1,47 @@
+name: Taijifu Asset Forge
+
+on:
+  pull_request:
+    paths:
+      - 'tools/asset_forge/**'
+      - 'asset-forge/**'
+      - 'tests/asset_forge/**'
+      - '.github/workflows/taijifu-asset-forge.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/asset_forge/**'
+      - 'asset-forge/**'
+      - 'tests/asset_forge/**'
+  workflow_dispatch:
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - name: Instalar testes
+        run: python -m pip install -r requirements-tgap-test.txt
+      - name: Testar Asset Forge
+        run: python -m pytest -q tests/asset_forge/test_forge.py
+      - name: Inicializar Pack 01 Base
+        run: python tools/asset_forge/forge.py init asset-forge/packs/pack_01_lian_wu_base.json
+      - name: Validar estado real
+        run: python tools/asset_forge/forge.py validate asset-forge/packs/pack_01_lian_wu_base.json
+      - name: Gerar preview e bundle informativo
+        run: python tools/asset_forge/forge.py bundle asset-forge/packs/pack_01_lian_wu_base.json
+      - name: Publicar diagnóstico do Pack 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-asset-forge-pack01-diagnostic
+          path: |
+            assets/tgap/pack_01_lian_wu_base/reports/validation.json
+            assets/tgap/pack_01_lian_wu_base/preview/index.html
+            artifacts/asset-forge/pack_01_lian_wu_base__bundle-report.json
+            artifacts/asset-forge/pack_01_lian_wu_base.zip
+          retention-days: 30
