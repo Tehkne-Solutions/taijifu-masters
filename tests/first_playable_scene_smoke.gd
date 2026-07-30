@@ -19,17 +19,9 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
-	if instance.get_node_or_null("Arena") == null:
-		_fail("Arena node is missing")
+	if not _validate_scene_nodes(instance):
 		return
-	if instance.get_node_or_null("TacticalBotRuntime") == null:
-		_fail("TacticalBotRuntime node is missing")
-		return
-	if instance.get_node_or_null("Camera2D") == null:
-		_fail("Camera2D node is missing")
-		return
-	if instance.get_node_or_null("HUD/CenterInfo") == null:
-		_fail("HUD/CenterInfo node is missing")
+	if not _validate_arena_presentation(instance):
 		return
 
 	var fighters := get_nodes_in_group("fighters")
@@ -72,6 +64,54 @@ func _run() -> void:
 
 	print("FIRST_PLAYABLE_SMOKE_OK")
 	quit(0)
+
+func _validate_scene_nodes(instance: FirstPlayableController) -> bool:
+	for path in ["EnvironmentArt", "Arena", "ArenaDressing", "TacticalBotRuntime", "Camera2D", "HUD/CenterInfo"]:
+		if instance.get_node_or_null(path) == null:
+			_fail("required node is missing: %s" % path)
+			return false
+	return true
+
+func _validate_arena_presentation(instance: FirstPlayableController) -> bool:
+	var environment := instance.get_node("EnvironmentArt") as FirstPlayableEnvironmentArt
+	var arena := instance.get_node("Arena") as FirstPlayableArena
+	var dressing := instance.get_node("ArenaDressing") as FirstPlayableArenaDressing
+	if not is_instance_valid(environment) or not is_instance_valid(arena) or not is_instance_valid(dressing):
+		_fail("arena presentation nodes have invalid scripts")
+		return false
+	if environment.z_index >= arena.z_index:
+		_fail("environment art must remain behind arena collision presentation")
+		return false
+	if dressing.z_index <= arena.z_index:
+		_fail("arena dressing must remain above blockout surfaces")
+		return false
+	if arena.show_strategic_points:
+		_fail("debug strategic points must be hidden in First Playable")
+		return false
+	var environment_signature := environment.environment_signature()
+	if int(environment_signature.get("ink_mountains", 0)) < 3 or int(environment_signature.get("waterfalls", 0)) < 3:
+		_fail("environment background is incomplete")
+		return false
+	if not bool(environment_signature.get("animated_clouds", false)):
+		_fail("animated atmosphere is missing")
+		return false
+	var dressing_signature := dressing.presentation_signature()
+	if int(dressing_signature.get("static_platform_overlays", 0)) != 15:
+		_fail("expected 15 platform overlays")
+		return false
+	if int(dressing_signature.get("wall_overlays", 0)) != 3:
+		_fail("expected 3 wall overlays")
+		return false
+	if int(dressing_signature.get("route_beacons", 0)) != 3:
+		_fail("expected 3 route beacons")
+		return false
+	if int(dressing_signature.get("spawn_shrines", 0)) != 2:
+		_fail("expected 2 spawn shrines")
+		return false
+	if bool(dressing_signature.get("collision_changes", true)):
+		_fail("visual dressing must not change collision")
+		return false
+	return true
 
 func _validate_character(
 	fighter: FighterController,
