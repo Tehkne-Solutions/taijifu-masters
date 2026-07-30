@@ -1,0 +1,39 @@
+name: Taijifu Asset Forge Godot
+
+on:
+  pull_request:
+    paths:
+      - 'tools/asset_forge/godot_ops.py'
+      - 'asset-forge/godot/**'
+      - 'tests/asset_forge/test_godot_ops.py'
+      - '.github/workflows/taijifu-asset-forge-godot.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/asset_forge/godot_ops.py'
+      - 'asset-forge/godot/**'
+
+jobs:
+  generate-runtime-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-tgap-test.txt
+      - run: python -m pip install -r requirements-tgap-test.txt
+      - run: python -m pytest -q tests/asset_forge/test_godot_ops.py
+      - name: Gerar contrato runtime informativo
+        run: python tools/asset_forge/godot_ops.py asset-forge/godot/pack_01_lian_wu_base.json
+      - name: Publicar relatório
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-asset-forge-pack01-godot
+          path: |
+            artifacts/asset-forge/pack_01_lian_wu_base__godot.json
+            assets/tgap/pack_01_lian_wu_base/runtime/asset_forge_runtime_manifest.json
+            assets/tgap/pack_01_lian_wu_base/validation/asset_forge_validation.tscn
+            assets/tgap/pack_01_lian_wu_base/validation/asset_forge_validation.gd
+          retention-days: 30

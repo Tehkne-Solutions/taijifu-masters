@@ -1,0 +1,32 @@
+{
+  "schema": "taijifu/asset-forge-godot-recipe/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "subject_id": "char_lian_wu",
+  "pack_root": "assets/tgap/pack_01_lian_wu_base",
+  "required_assets": [
+    "source/char_lian_wu__master.png",
+    "turnaround/char_lian_wu__front.png",
+    "turnaround/char_lian_wu__back.png",
+    "turnaround/char_lian_wu__left.png",
+    "turnaround/char_lian_wu__right.png",
+    "portraits/portrait_lian_wu__profile.png",
+    "portraits/portrait_lian_wu__battle.png",
+    "portraits/portrait_lian_wu__defeated.png",
+    "icons/icon_lian_wu__character.png",
+    "icons/icon_lian_wu__water_element.png"
+  ],
+  "resources": {
+    "master": "res://assets/tgap/pack_01_lian_wu_base/source/char_lian_wu__master.png",
+    "portrait_profile": "res://assets/tgap/pack_01_lian_wu_base/portraits/portrait_lian_wu__profile.png",
+    "portrait_battle": "res://assets/tgap/pack_01_lian_wu_base/portraits/portrait_lian_wu__battle.png",
+    "icon_character": "res://assets/tgap/pack_01_lian_wu_base/icons/icon_lian_wu__character.png",
+    "icon_element": "res://assets/tgap/pack_01_lian_wu_base/icons/icon_lian_wu__water_element.png"
+  },
+  "semantic_aliases": {
+    "character.lian_wu.master": "master",
+    "character.lian_wu.portrait.profile": "portrait_profile",
+    "character.lian_wu.portrait.battle": "portrait_battle",
+    "character.lian_wu.icon": "icon_character",
+    "element.water.icon": "icon_element"
+  }
+}
