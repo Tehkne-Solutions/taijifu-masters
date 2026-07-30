@@ -43,8 +43,21 @@ def load_policy(path: Path | None) -> dict:
     }
 
 
+def _glob_variants(pattern: str):
+    """Yield fnmatch-compatible variants where ``**/`` may match zero folders."""
+    yield pattern
+    collapsed = pattern
+    while "/**/" in collapsed:
+        collapsed = collapsed.replace("/**/", "/", 1)
+        yield collapsed
+
+
 def matches_any(value: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatch(value, pattern) for pattern in patterns)
+    return any(
+        fnmatch.fnmatch(value, variant)
+        for pattern in patterns
+        for variant in _glob_variants(pattern)
+    )
 
 
 def iter_files(root: Path):
