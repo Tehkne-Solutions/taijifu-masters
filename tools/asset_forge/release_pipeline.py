@@ -29,6 +29,30 @@ def append_step(report: dict, command: list[str], strict: bool, step: str) -> di
     return result
 
 
+def append_governance_steps(report: dict, config: dict, strict: bool) -> None:
+    dna = config.get("character_dna")
+    if not dna:
+        report["steps"].append({"step": "production_governance", "ok": False, "reason": "character_dna_not_configured"})
+        return
+
+    budget_command = [sys.executable, "tools/asset_forge/asset_budget.py", dna]
+    if config.get("pack_root"):
+        budget_command += ["--root", config["pack_root"]]
+    if strict:
+        budget_command.append("--strict")
+    append_step(report, budget_command, strict, "asset_budget")
+
+    board_command = [sys.executable, "tools/asset_forge/production_board.py", dna]
+    append_step(report, board_command, False, "production_board")
+
+    append_step(
+        report,
+        [sys.executable, "tools/asset_forge/character_index.py"],
+        False,
+        "character_index",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Taijifu Asset Forge release pipeline")
     parser.add_argument("config", type=Path)
@@ -40,77 +64,83 @@ def main() -> int:
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     report = {
-        "schema": "taijifu/asset-forge-release-pipeline/v2",
+        "schema": "taijifu/asset-forge-release-pipeline/v3",
         "pack_id": config["pack_id"],
         "steps": [],
         "ready": False,
         "bundle_promoted": False,
     }
 
-    if args.source:
-        intake = [sys.executable, "tools/asset_forge/intake.py", config["intake_config"], str(args.source), "--clean"]
-        if args.strict:
-            intake.append("--strict")
-        append_step(report, intake, args.strict, "intake")
+    try:
+        if args.source:
+            intake = [sys.executable, "tools/asset_forge/intake.py", config["intake_config"], str(args.source), "--clean"]
+            if args.strict:
+                intake.append("--strict")
+            append_step(report, intake, args.strict, "intake")
 
-    orchestration = append_step(
-        report,
-        [sys.executable, "tools/asset_forge/orchestrator.py", config["orchestration_config"]],
-        False,
-        "orchestration",
-    )
-
-    perceptual = append_step(
-        report,
-        [sys.executable, "tools/asset_forge/perceptual_gate.py", config["perceptual_config"]] + (["--strict"] if args.strict else []),
-        args.strict,
-        "perceptual_gate",
-    )
-
-    append_step(
-        report,
-        [sys.executable, "tools/asset_forge/diff_matrix.py", config["diff_matrix_config"]] + (["--strict"] if args.strict else []),
-        args.strict,
-        "diff_matrix",
-    )
-
-    approval_path = args.approval or Path(config["approval"])
-    if args.draft:
-        promotion = [
-            sys.executable,
-            "tools/asset_forge/promote_approval.py",
-            str(args.draft),
-            str(approval_path),
-            "--perceptual",
-            config["perceptual_report"],
-        ]
-        append_step(report, promotion, args.strict, "promote_approval")
-
-    approval_ok = False
-    if approval_path.exists():
-        gate = [sys.executable, "tools/asset_forge/approval_gate.py", "verify", str(approval_path), "--pack", config["pack_id"]]
-        if args.strict:
-            gate.append("--strict")
-        approval_result = append_step(report, gate, args.strict, "approval_gate")
-        approval_ok = approval_result["ok"]
-    else:
-        report["steps"].append({"step": "approval_gate", "ok": False, "reason": "approval_missing"})
-
-    report["ready"] = orchestration["ok"] and perceptual["ok"] and approval_ok
-    if report["ready"]:
-        bundle = append_step(
+        orchestration = append_step(
             report,
-            [sys.executable, "tools/asset_forge/forge.py", "bundle", config["pack_spec"], "--strict"],
-            True,
-            "bundle",
+            [sys.executable, "tools/asset_forge/orchestrator.py", config["orchestration_config"]],
+            False,
+            "orchestration",
         )
-        report["bundle_promoted"] = bundle["ok"]
-        report["ready"] = report["ready"] and bundle["ok"]
 
-    output = Path(config["report"])
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False))
+        perceptual = append_step(
+            report,
+            [sys.executable, "tools/asset_forge/perceptual_gate.py", config["perceptual_config"]] + (["--strict"] if args.strict else []),
+            args.strict,
+            "perceptual_gate",
+        )
+
+        append_step(
+            report,
+            [sys.executable, "tools/asset_forge/diff_matrix.py", config["diff_matrix_config"]] + (["--strict"] if args.strict else []),
+            args.strict,
+            "diff_matrix",
+        )
+
+        approval_path = args.approval or Path(config["approval"])
+        if args.draft:
+            promotion = [
+                sys.executable,
+                "tools/asset_forge/promote_approval.py",
+                str(args.draft),
+                str(approval_path),
+                "--perceptual",
+                config["perceptual_report"],
+            ]
+            append_step(report, promotion, args.strict, "promote_approval")
+
+        approval_ok = False
+        if approval_path.exists():
+            gate = [sys.executable, "tools/asset_forge/approval_gate.py", "verify", str(approval_path), "--pack", config["pack_id"]]
+            if args.strict:
+                gate.append("--strict")
+            approval_result = append_step(report, gate, args.strict, "approval_gate")
+            approval_ok = approval_result["ok"]
+        else:
+            report["steps"].append({"step": "approval_gate", "ok": False, "reason": "approval_missing"})
+
+        report["ready"] = orchestration["ok"] and perceptual["ok"] and approval_ok
+        if report["ready"]:
+            bundle = append_step(
+                report,
+                [sys.executable, "tools/asset_forge/forge.py", "bundle", config["pack_spec"], "--strict"],
+                True,
+                "bundle",
+            )
+            report["bundle_promoted"] = bundle["ok"]
+            report["ready"] = report["ready"] and bundle["ok"]
+    except RuntimeError as exc:
+        report["fatal_error"] = str(exc)
+        report["ready"] = False
+    finally:
+        append_governance_steps(report, config, args.strict)
+        output = Path(config["report"])
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(report, ensure_ascii=False))
+
     return 0 if report["ready"] or not args.strict else 11
 
 

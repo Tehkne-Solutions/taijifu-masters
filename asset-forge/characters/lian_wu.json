@@ -48,5 +48,14 @@
     "master_resolution": 1024,
     "portrait_resolution": 512,
     "icon_resolutions": [32, 64, 128, 256]
+  },
+  "asset_budget": {
+    "max_png_files": 180,
+    "max_frames": 160,
+    "max_dimension": 2048,
+    "max_disk_mb": 48,
+    "max_runtime_memory_mb": 192,
+    "max_draw_calls": 4,
+    "estimated_draw_calls": 2
   }
 }

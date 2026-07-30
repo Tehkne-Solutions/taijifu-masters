@@ -1,6 +1,8 @@
 {
-  "schema": "taijifu/asset-forge-release-config/v2",
+  "schema": "taijifu/asset-forge-release-config/v3",
   "pack_id": "pack_01_lian_wu_base",
+  "character_dna": "asset-forge/characters/lian_wu.json",
+  "pack_root": "assets/tgap/pack_01_lian_wu_base",
   "intake_config": "asset-forge/intake/pack_01_lian_wu_base.json",
   "orchestration_config": "asset-forge/orchestration/pack_01_lian_wu_base.json",
   "perceptual_config": "asset-forge/perceptual/pack_01_lian_wu_base.json",
