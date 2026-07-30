@@ -41,6 +41,9 @@ jobs:
       - name: Run First Playable scene smoke
         run: ./godot --headless --path . --script tests/first_playable_scene_smoke.gd
 
+      - name: Run First Playable menu and UI flow
+        run: ./godot --headless --path . --script tests/first_playable_flow_test.gd
+
       - name: Run First Playable AI behavior
         run: ./godot --headless --path . --script tests/first_playable_ai_behavior_test.gd
 
