@@ -1,0 +1,28 @@
+{
+  "schema": "taijifu/asset-forge-spec/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "subject_id": "char_lian_wu",
+  "output_root": "assets/tgap/pack_01_lian_wu_base",
+  "style": "comic_manga_2_5d_retro_vector",
+  "signature_color": "#1769C2",
+  "frame": {"width": 128, "height": 128, "pivot": [64, 120]},
+  "atlas": {"width": 2048},
+  "assets": [
+    {"path": "source/char_lian_wu__master.png", "kind": "master", "width": 1024, "height": 1024, "alpha": true},
+    {"path": "turnaround/char_lian_wu__front.png", "kind": "turnaround", "width": 512, "height": 768, "alpha": true},
+    {"path": "turnaround/char_lian_wu__back.png", "kind": "turnaround", "width": 512, "height": 768, "alpha": true},
+    {"path": "turnaround/char_lian_wu__left.png", "kind": "turnaround", "width": 512, "height": 768, "alpha": true},
+    {"path": "turnaround/char_lian_wu__right.png", "kind": "turnaround", "width": 512, "height": 768, "alpha": true},
+    {"path": "portraits/portrait_lian_wu__profile.png", "kind": "portrait", "width": 512, "height": 512, "alpha": true},
+    {"path": "portraits/portrait_lian_wu__battle.png", "kind": "portrait", "width": 512, "height": 512, "alpha": true},
+    {"path": "portraits/portrait_lian_wu__defeated.png", "kind": "portrait", "width": 512, "height": 512, "alpha": true},
+    {"path": "icons/icon_lian_wu__character.png", "kind": "icon", "width": 256, "height": 256, "alpha": true},
+    {"path": "icons/icon_lian_wu__water_element.png", "kind": "icon", "width": 256, "height": 256, "alpha": true},
+    {"path": "palette/lian_wu__palette.json", "kind": "metadata"},
+    {"path": "metadata/lian_wu__visual_identity.json", "kind": "metadata"},
+    {"path": "preview/pack_01_lian_wu_base__preview.png", "kind": "preview", "width": 1280, "height": 720, "alpha": false},
+    {"path": "runtime/lian_wu_base_runtime_manifest.json", "kind": "runtime"},
+    {"path": "validation/lian_wu_base_validation.json", "kind": "validation"}
+  ],
+  "animations": []
+}
