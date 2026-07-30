@@ -4,9 +4,11 @@ extends Node
 signal difficulty_changed(difficulty_id: StringName, label: String)
 
 const FIRST_PLAYABLE_DIFFICULTIES: Array[StringName] = [&"apprentice", &"disciple", &"master"]
+const DIFFICULTY_LABELS: Array[String] = ["APRENDIZ", "DISCÍPULO", "ADEPTO", "MESTRE"]
 
 @onready var bot: TacticalBotRuntime = get_node("../TacticalBotRuntime")
 @onready var difficulty_label: Label = get_node("../HUD/DifficultyInfo")
+@onready var state_label: Label = get_node("../HUD/StateInfo")
 
 var selected_difficulty_id: StringName = &"disciple"
 
@@ -15,6 +17,7 @@ func _ready() -> void:
 	_register_key_action(&"first_playable_ai_normal", KEY_2)
 	_register_key_action(&"first_playable_ai_hard", KEY_3)
 	_apply_selected_difficulty()
+	_update_labels()
 	call_deferred("_hide_bot_debug_status")
 
 func _process(_delta: float) -> void:
@@ -27,7 +30,7 @@ func _process(_delta: float) -> void:
 	# O controlador da partida pode desabilitar o bot durante countdown/result,
 	# mas não deve sobrescrever a dificuldade escolhida para a próxima revanche.
 	_apply_selected_difficulty()
-	_update_label()
+	_update_labels()
 	_hide_bot_debug_status()
 
 func set_difficulty(difficulty_id: StringName) -> void:
@@ -35,11 +38,11 @@ func set_difficulty(difficulty_id: StringName) -> void:
 		return
 	if selected_difficulty_id == difficulty_id:
 		_apply_selected_difficulty()
-		_update_label()
+		_update_labels()
 		return
 	selected_difficulty_id = difficulty_id
 	_apply_selected_difficulty()
-	_update_label()
+	_update_labels()
 	difficulty_changed.emit(selected_difficulty_id, current_label())
 
 func current_label() -> String:
@@ -58,10 +61,15 @@ func _apply_selected_difficulty() -> void:
 	if is_instance_valid(bot):
 		bot.difficulty_id = selected_difficulty_id
 
-func _update_label() -> void:
-	if not is_instance_valid(difficulty_label):
+func _update_labels() -> void:
+	if is_instance_valid(difficulty_label):
+		difficulty_label.text = "IA %s  •  [1] APRENDIZ  [2] DISCÍPULO  [3] MESTRE" % current_label()
+	if not is_instance_valid(state_label):
 		return
-	difficulty_label.text = "IA %s  •  [1] APRENDIZ  [2] DISCÍPULO  [3] MESTRE" % current_label()
+	var updated := state_label.text
+	for old_label in DIFFICULTY_LABELS:
+		updated = updated.replace("IA %s" % old_label, "IA %s" % current_label())
+	state_label.text = updated
 
 func _hide_bot_debug_status() -> void:
 	if is_instance_valid(bot) and is_instance_valid(bot._status_label):
