@@ -1,0 +1,105 @@
+name: First Playable Windows Build
+
+on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - "tests/first_playable*.gd"
+      - ".github/workflows/first-playable-windows-build.yml"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: first-playable-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Exportar First Playable Windows x86_64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Godot e templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/godot
+            ~/.local/share/godot/export_templates/4.3.stable
+          key: godot-4.3-stable-export-templates-v1
+
+      - name: Exportar e empacotar Windows
+        env:
+          GODOT_VERSION: "4.3"
+          GODOT_CHANNEL: stable
+        run: |
+          set -o pipefail
+          bash scripts/build-windows.sh 2>&1 | tee first-playable-windows-build.log
+
+      - name: Validar manifesto e pacote
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest_path = Path("windows-build/build-info.json")
+          zip_path = Path("dist/Taijifu-Masters-First-Playable-Windows-x86_64.zip")
+          checksum_path = Path(str(zip_path) + ".sha256")
+          executable = Path("windows-build/Taijifu-Masters-First-Playable.exe")
+
+          assert manifest_path.is_file(), manifest_path
+          assert zip_path.is_file() and zip_path.stat().st_size > 0, zip_path
+          assert checksum_path.is_file(), checksum_path
+          assert executable.is_file() and executable.stat().st_size > 0, executable
+
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
+          assert manifest["platform"] == "windows"
+          assert manifest["main_scene"] == "res://scenes/vertical_slice/first_playable_menu.tscn"
+          assert manifest["signature"] == "Tehkné Solutions"
+          assert manifest["totals"]["file_count"] >= 3
+          assert any(item["path"].endswith(".exe") for item in manifest["files"])
+
+          expected = checksum_path.read_text(encoding="utf-8").split()[0]
+          actual = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+          assert actual == expected, (actual, expected)
+          print(json.dumps({
+              "build_id": manifest["build_id"],
+              "zip_size_bytes": zip_path.stat().st_size,
+              "zip_sha256": actual,
+          }, indent=2))
+          PY
+
+      - name: Publicar build Windows
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-first-playable-windows-${{ github.sha }}
+          path: |
+            dist/Taijifu-Masters-First-Playable-Windows-x86_64.zip
+            dist/Taijifu-Masters-First-Playable-Windows-x86_64.zip.sha256
+            windows-build/build-info.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publicar log de exportação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-first-playable-windows-log-${{ github.sha }}
+          path: first-playable-windows-build.log
+          if-no-files-found: ignore
+          retention-days: 14
