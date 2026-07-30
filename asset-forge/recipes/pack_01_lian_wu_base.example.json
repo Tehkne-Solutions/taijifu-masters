@@ -1,0 +1,59 @@
+{
+  "schema": "taijifu/asset-forge-recipe/v2",
+  "pack_id": "pack_01_lian_wu_base",
+  "note": "Receita operacional. Só deve ser executada quando os arquivos de intake reais existirem.",
+  "operations": [
+    {
+      "type": "normalize",
+      "source": "asset-forge/intake/pack_01_lian_wu_base/char_lian_wu__master_raw.png",
+      "output": "assets/tgap/pack_01_lian_wu_base/source/char_lian_wu__master.png",
+      "width": 1024,
+      "height": 1024,
+      "pivot": [512, 984],
+      "chroma": "#00FF00",
+      "tolerance": 24
+    },
+    {
+      "type": "split_grid",
+      "source": "asset-forge/intake/pack_01_lian_wu_base/turnaround_raw.png",
+      "output_dir": "assets/tgap/pack_01_lian_wu_base/turnaround",
+      "columns": 4,
+      "rows": 1,
+      "pattern": "char_lian_wu__turn_{frame:02d}.png",
+      "chroma": "#00FF00",
+      "tolerance": 24,
+      "normalize": {"width": 512, "height": 768, "pivot": [256, 744]}
+    },
+    {
+      "type": "split_grid",
+      "source": "asset-forge/intake/pack_01_lian_wu_base/portraits_raw.png",
+      "output_dir": "assets/tgap/pack_01_lian_wu_base/portraits",
+      "columns": 3,
+      "rows": 1,
+      "pattern": "portrait_lian_wu__variant_{frame:02d}.png",
+      "chroma": "#00FF00",
+      "tolerance": 24,
+      "normalize": {"width": 512, "height": 512, "pivot": [256, 500]}
+    },
+    {
+      "type": "split_grid",
+      "source": "asset-forge/intake/pack_01_lian_wu_base/icons_raw.png",
+      "output_dir": "assets/tgap/pack_01_lian_wu_base/icons",
+      "columns": 2,
+      "rows": 1,
+      "pattern": "icon_lian_wu__variant_{frame:02d}.png",
+      "chroma": "#00FF00",
+      "tolerance": 24,
+      "normalize": {"width": 256, "height": 256, "pivot": [128, 248]}
+    },
+    {
+      "type": "atlas",
+      "glob": "assets/tgap/pack_01_lian_wu_base/{turnaround,portraits,icons}/*.png",
+      "output": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__atlas.png",
+      "metadata": "assets/tgap/pack_01_lian_wu_base/atlases/lian_wu_base__atlas.json",
+      "max_width": 2048,
+      "padding": 4
+    }
+  ],
+  "report": "artifacts/asset-forge/pack_01_lian_wu_base__image-processing.json"
+}
