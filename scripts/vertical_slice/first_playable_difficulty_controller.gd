@@ -13,6 +13,7 @@ const DIFFICULTY_LABELS: Array[String] = ["APRENDIZ", "DISCÍPULO", "ADEPTO", "M
 var selected_difficulty_id: StringName = &"disciple"
 
 func _ready() -> void:
+	selected_difficulty_id = FirstPlayableSession.selected_difficulty_id
 	_register_key_action(&"first_playable_ai_easy", KEY_1)
 	_register_key_action(&"first_playable_ai_normal", KEY_2)
 	_register_key_action(&"first_playable_ai_hard", KEY_3)
@@ -36,6 +37,7 @@ func _process(_delta: float) -> void:
 func set_difficulty(difficulty_id: StringName) -> void:
 	if difficulty_id not in FIRST_PLAYABLE_DIFFICULTIES:
 		return
+	FirstPlayableSession.set_difficulty(difficulty_id)
 	if selected_difficulty_id == difficulty_id:
 		_apply_selected_difficulty()
 		_update_labels()
@@ -54,7 +56,8 @@ func selection_signature() -> Dictionary:
 		"default_id": &"disciple",
 		"selected_id": selected_difficulty_id,
 		"keys": {&"apprentice": "1", &"disciple": "2", &"master": "3"},
-		"persists_across_rematch": true
+		"persists_across_rematch": true,
+		"persists_from_menu": true
 	}
 
 func _apply_selected_difficulty() -> void:
