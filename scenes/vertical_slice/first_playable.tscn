@@ -1,15 +1,23 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="3_bot"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_environment_art.gd" id="4_environment"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena_dressing.gd" id="5_dressing"]
 
 [node name="FirstPlayable" type="Node2D"]
 script = ExtResource("1_controller")
 
+[node name="EnvironmentArt" type="Node2D" parent="."]
+script = ExtResource("4_environment")
+
 [node name="Arena" type="Node2D" parent="."]
 script = ExtResource("2_arena")
 show_strategic_points = false
+
+[node name="ArenaDressing" type="Node2D" parent="."]
+script = ExtResource("5_dressing")
 
 [node name="TacticalBotRuntime" type="Node" parent="."]
 script = ExtResource("3_bot")
