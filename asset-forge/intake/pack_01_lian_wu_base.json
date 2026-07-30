@@ -1,0 +1,17 @@
+{
+  "schema": "taijifu/asset-forge-intake/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "staging_root": "artifacts/asset-forge/intake-staging/pack_01_lian_wu_base",
+  "intake_root": "asset-forge/intake/pack_01_lian_wu_base",
+  "review_root": "artifacts/asset-forge/review/pack_01_lian_wu_base",
+  "report": "artifacts/asset-forge/pack_01_lian_wu_base__intake.json",
+  "max_files": 32,
+  "max_bytes": 80000000,
+  "allowed_extensions": [".png"],
+  "expected": [
+    "char_lian_wu__master_raw.png",
+    "turnaround_raw.png",
+    "portraits_raw.png",
+    "icons_raw.png"
+  ]
+}
