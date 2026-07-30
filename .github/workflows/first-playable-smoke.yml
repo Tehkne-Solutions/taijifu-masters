@@ -10,6 +10,7 @@ on:
       - "scripts/fighter/**"
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
+      - "scripts/ai/bot_behavior_catalog.gd"
       - "scripts/core/**"
       - "scripts/combat/**"
       - "scripts/visual/character_visual_catalog.gd"
@@ -39,6 +40,9 @@ jobs:
 
       - name: Run First Playable scene smoke
         run: ./godot --headless --path . --script tests/first_playable_scene_smoke.gd
+
+      - name: Run First Playable AI behavior
+        run: ./godot --headless --path . --script tests/first_playable_ai_behavior_test.gd
 
       - name: Run First Playable match cycle
         run: ./godot --headless --path . --script tests/first_playable_match_cycle_test.gd

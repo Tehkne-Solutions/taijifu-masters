@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="3_bot"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_environment_art.gd" id="4_environment"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena_dressing.gd" id="5_dressing"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_difficulty_controller.gd" id="6_difficulty"]
 
 [node name="FirstPlayable" type="Node2D"]
 script = ExtResource("1_controller")
@@ -21,6 +22,9 @@ script = ExtResource("5_dressing")
 
 [node name="TacticalBotRuntime" type="Node" parent="."]
 script = ExtResource("3_bot")
+
+[node name="DifficultyController" type="Node" parent="."]
+script = ExtResource("6_difficulty")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(1400, 500)
@@ -76,6 +80,17 @@ offset_bottom = 140.0
 theme_override_colors/font_color = Color(0.68, 0.86, 1, 0.96)
 theme_override_font_sizes/font_size = 12
 text = "VERTICAL SLICE • P1 VS CPU"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DifficultyInfo" type="Label" parent="HUD"]
+offset_left = 300.0
+offset_top = 598.0
+offset_right = 980.0
+offset_bottom = 638.0
+theme_override_colors/font_color = Color(0.96, 0.78, 0.36, 0.98)
+theme_override_font_sizes/font_size = 12
+text = "IA DISCÍPULO  •  [1] APRENDIZ  [2] DISCÍPULO  [3] MESTRE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
