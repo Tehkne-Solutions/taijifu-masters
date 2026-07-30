@@ -15,6 +15,7 @@ enum MatchState { BOOT, COUNTDOWN, BATTLE, RESULT }
 
 @onready var arena: FirstPlayableArena = $Arena
 @onready var bot_runtime: TacticalBotRuntime = $TacticalBotRuntime
+@onready var difficulty_controller: FirstPlayableDifficultyController = $DifficultyController
 @onready var camera: Camera2D = $Camera2D
 @onready var player_one_label: Label = $HUD/PlayerOne
 @onready var player_two_label: Label = $HUD/PlayerTwo
@@ -75,7 +76,7 @@ func _start_match() -> void:
 	camera.global_position = arena.world_center()
 	camera.zoom = Vector2(0.72, 0.72)
 	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nENTER reinicia • ESC volta ao protótipo completo"
-	state_label.text = "LIAN WU VS RIVAL DE TREINO • IA DISCÍPULO"
+	state_label.text = "LIAN WU VS RIVAL DE TREINO • IA %s" % _difficulty_label()
 
 	for value in range(COUNTDOWN_SECONDS, 0, -1):
 		if generation != _match_generation:
@@ -92,7 +93,7 @@ func _start_match() -> void:
 
 	_set_fighters_controls(true)
 	arena.start_battle_flow()
-	bot_runtime.difficulty_id = &"disciple"
+	bot_runtime.difficulty_id = difficulty_controller.selected_difficulty_id
 	bot_runtime.personality_id = &"aggressive"
 	bot_runtime.enabled = true
 	_state = MatchState.BATTLE
@@ -148,7 +149,7 @@ func _finish_match(winner: FighterController, reason: String) -> void:
 	var result_label := "DERROTA" if winner.player_index == 2 else "VITÓRIA"
 	center_label.text = "%s\n%s VENCE" % [result_label, winner.build.character_name.to_upper()]
 	controls_label.text = "ENTER para revanche • ESC para voltar ao protótipo completo"
-	state_label.text = "PARTIDA CONCLUÍDA • %s" % reason
+	state_label.text = "PARTIDA CONCLUÍDA • %s • IA %s" % [reason, _difficulty_label()]
 
 func _set_fighters_controls(active: bool) -> void:
 	for fighter in [player_one, player_two]:
@@ -192,7 +193,12 @@ func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1")
 	player_two_label.text = _fighter_summary(player_two, "CPU")
 	if _state == MatchState.BATTLE:
-		state_label.text = "LIAN WU VS RIVAL • IA DISCÍPULO • TEMPO %02d" % ceili(_time_remaining)
+		state_label.text = "LIAN WU VS RIVAL • IA %s • TEMPO %02d" % [_difficulty_label(), ceili(_time_remaining)]
+
+func _difficulty_label() -> String:
+	if is_instance_valid(difficulty_controller):
+		return difficulty_controller.current_label()
+	return BotBehaviorCatalog.difficulty_label(bot_runtime.difficulty_id)
 
 func _fighter_summary(fighter: FighterController, prefix: String) -> String:
 	return "%s • %s\nVIDA %d  POST %d  FÔL %d\n%s • %s" % [
