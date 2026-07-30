@@ -6,9 +6,13 @@ const PLAYER_PRESET: StringName = &"adaptive_staff"
 const CPU_PRESET: StringName = &"rin_challenger"
 const COUNTDOWN_SECONDS := 3
 
+@export_range(0.01, 2.0, 0.01) var countdown_step_seconds := 0.72
+@export_range(0.01, 1.0, 0.01) var fight_command_seconds := 0.42
+@export_range(5.0, 600.0, 1.0) var match_time_limit_seconds := 90.0
+
 enum MatchState { BOOT, COUNTDOWN, BATTLE, RESULT }
 
-@onready var arena: TriplePathArena = $Arena
+@onready var arena: FirstPlayableArena = $Arena
 @onready var bot_runtime: TacticalBotRuntime = $TacticalBotRuntime
 @onready var camera: Camera2D = $Camera2D
 @onready var player_one_label: Label = $HUD/PlayerOne
@@ -21,12 +25,20 @@ var player_one: FighterController
 var player_two: FighterController
 var _state: MatchState = MatchState.BOOT
 var _match_generation := 0
+var _time_remaining := 0.0
 
 func _ready() -> void:
 	_register_inputs()
 	arena.show_strategic_points = false
 	bot_runtime.enabled = false
 	_start_match()
+
+func _physics_process(_delta: float) -> void:
+	# O controlador pai processa antes dos lutadores. Soltar as ações aqui
+	# mantém gravidade, colisão e assentamento no piso ativos sem permitir
+	# comandos durante contagem regressiva ou tela de resultado.
+	if _state != MatchState.BATTLE:
+		_release_all_combat_actions()
 
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed(&"first_playable_restart"):
@@ -40,20 +52,25 @@ func _process(delta: float) -> void:
 		return
 
 	_update_camera(delta)
-	_update_hud()
 	if _state == MatchState.BATTLE:
+		_time_remaining = maxf(0.0, _time_remaining - delta)
 		_check_world_limits()
+		if _state == MatchState.BATTLE and _time_remaining <= 0.0:
+			_resolve_timeout()
+	_update_hud()
 
 func _start_match() -> void:
 	_match_generation += 1
 	var generation := _match_generation
 	_state = MatchState.COUNTDOWN
+	_time_remaining = match_time_limit_seconds
 	bot_runtime.enabled = false
 	_release_all_combat_actions()
+	arena.stop_battle_flow()
 	_cleanup_fighters()
 	_cleanup_temporary_loot()
 	_spawn_fighters()
-	_set_fighters_active(false)
+	_set_fighters_controls(false)
 	camera.global_position = arena.world_center()
 	camera.zoom = Vector2(0.72, 0.72)
 	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nENTER reinicia • ESC volta ao protótipo completo"
@@ -63,16 +80,16 @@ func _start_match() -> void:
 		if generation != _match_generation:
 			return
 		center_label.text = str(value)
-		await get_tree().create_timer(0.72).timeout
+		await get_tree().create_timer(countdown_step_seconds).timeout
 
 	if generation != _match_generation:
 		return
 	center_label.text = "LUTEM"
-	await get_tree().create_timer(0.42).timeout
+	await get_tree().create_timer(fight_command_seconds).timeout
 	if generation != _match_generation:
 		return
 
-	_set_fighters_active(true)
+	_set_fighters_controls(true)
 	arena.start_battle_flow()
 	bot_runtime.difficulty_id = &"disciple"
 	bot_runtime.personality_id = &"aggressive"
@@ -100,28 +117,49 @@ func _spawn_fighter(player_index: int, preset_id: StringName, color: Color) -> F
 func _on_fighter_defeated(defeated_fighter: FighterController) -> void:
 	if _state != MatchState.BATTLE:
 		return
+	var winner := player_two if defeated_fighter == player_one else player_one
+	_finish_match(winner, "KO")
+
+func _resolve_timeout() -> void:
+	if _state != MatchState.BATTLE:
+		return
+	var p1_score := _timeout_score(player_one)
+	var p2_score := _timeout_score(player_two)
+	var winner := player_one if p1_score >= p2_score else player_two
+	_finish_match(winner, "TEMPO")
+
+func _timeout_score(fighter: FighterController) -> float:
+	var health_ratio := fighter.health / maxf(1.0, fighter.build.max_health())
+	var posture_ratio := fighter.posture / maxf(1.0, fighter.build.max_posture())
+	return health_ratio * 0.8 + posture_ratio * 0.2
+
+func _finish_match(winner: FighterController, reason: String) -> void:
+	if _state != MatchState.BATTLE:
+		return
 	_state = MatchState.RESULT
 	bot_runtime.enabled = false
 	_release_all_combat_actions()
-	_set_fighters_active(false)
-	var winner := player_two if defeated_fighter == player_one else player_one
+	_set_fighters_controls(false)
+	arena.stop_battle_flow()
 	var result_label := "DERROTA" if winner.player_index == 2 else "VITÓRIA"
 	center_label.text = "%s\n%s VENCE" % [result_label, winner.build.character_name.to_upper()]
 	controls_label.text = "ENTER para revanche • ESC para voltar ao protótipo completo"
-	state_label.text = "PARTIDA CONCLUÍDA • KO"
+	state_label.text = "PARTIDA CONCLUÍDA • %s" % reason
 
-func _set_fighters_active(active: bool) -> void:
+func _set_fighters_controls(active: bool) -> void:
 	for fighter in [player_one, player_two]:
 		if not is_instance_valid(fighter):
 			continue
-		fighter.set_physics_process(active)
 		if not active:
-			fighter.velocity = Vector2.ZERO
+			fighter.velocity.x = 0.0
 
 func _cleanup_fighters() -> void:
 	for fighter in [player_one, player_two]:
-		if is_instance_valid(fighter):
-			fighter.queue_free()
+		if not is_instance_valid(fighter):
+			continue
+		if fighter.get_parent() == self:
+			remove_child(fighter)
+		fighter.queue_free()
 	player_one = null
 	player_two = null
 
@@ -149,6 +187,8 @@ func _update_camera(delta: float) -> void:
 func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1")
 	player_two_label.text = _fighter_summary(player_two, "CPU")
+	if _state == MatchState.BATTLE:
+		state_label.text = "P1 VS CPU • IA DISCÍPULO • TEMPO %02d" % ceili(_time_remaining)
 
 func _fighter_summary(fighter: FighterController, prefix: String) -> String:
 	return "%s • %s\nVIDA %d  POST %d  FÔL %d\n%s • %s" % [

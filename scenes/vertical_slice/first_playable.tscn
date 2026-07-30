@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
-[ext_resource type="Script" path="res://scripts/arena/triple_path_arena.gd" id="2_arena"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="3_bot"]
 
 [node name="FirstPlayable" type="Node2D"]
