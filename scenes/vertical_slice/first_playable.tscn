@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_environment_art.gd" id="4_environment"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena_dressing.gd" id="5_dressing"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_difficulty_controller.gd" id="6_difficulty"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_hud_controller.gd" id="7_hud"]
 
 [node name="FirstPlayable" type="Node2D"]
 script = ExtResource("1_controller")
@@ -26,6 +27,9 @@ script = ExtResource("3_bot")
 [node name="DifficultyController" type="Node" parent="."]
 script = ExtResource("6_difficulty")
 
+[node name="HudController" type="Node" parent="."]
+script = ExtResource("7_hud")
+
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(1400, 500)
 zoom = Vector2(0.72, 0.72)
@@ -36,36 +40,84 @@ position_smoothing_enabled = false
 
 [node name="TopShade" type="ColorRect" parent="HUD"]
 offset_right = 1280.0
-offset_bottom = 146.0
+offset_bottom = 154.0
 mouse_filter = 2
 color = Color(0.018, 0.023, 0.035, 0.92)
 
 [node name="PlayerOne" type="Label" parent="HUD"]
 offset_left = 22.0
-offset_top = 14.0
-offset_right = 438.0
-offset_bottom = 122.0
+offset_top = 8.0
+offset_right = 398.0
+offset_bottom = 62.0
 theme_override_colors/font_color = Color(0.66, 0.87, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "P1"
+theme_override_font_sizes/font_size = 15
+text = "P1 • LIAN WU"
 vertical_alignment = 1
 
+[node name="P1Health" type="ProgressBar" parent="HUD"]
+offset_left = 22.0
+offset_top = 66.0
+offset_right = 398.0
+offset_bottom = 80.0
+value = 100.0
+show_percentage = false
+
+[node name="P1Posture" type="ProgressBar" parent="HUD"]
+offset_left = 22.0
+offset_top = 85.0
+offset_right = 398.0
+offset_bottom = 97.0
+value = 100.0
+show_percentage = false
+
+[node name="P1Stamina" type="ProgressBar" parent="HUD"]
+offset_left = 22.0
+offset_top = 102.0
+offset_right = 398.0
+offset_bottom = 112.0
+value = 100.0
+show_percentage = false
+
 [node name="PlayerTwo" type="Label" parent="HUD"]
-offset_left = 842.0
-offset_top = 14.0
+offset_left = 882.0
+offset_top = 8.0
 offset_right = 1258.0
-offset_bottom = 122.0
+offset_bottom = 62.0
 theme_override_colors/font_color = Color(1, 0.72, 0.62, 1)
-theme_override_font_sizes/font_size = 16
-text = "CPU"
+theme_override_font_sizes/font_size = 15
+text = "CPU • RIVAL DE TREINO"
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="P2Health" type="ProgressBar" parent="HUD"]
+offset_left = 882.0
+offset_top = 66.0
+offset_right = 1258.0
+offset_bottom = 80.0
+value = 100.0
+show_percentage = false
+
+[node name="P2Posture" type="ProgressBar" parent="HUD"]
+offset_left = 882.0
+offset_top = 85.0
+offset_right = 1258.0
+offset_bottom = 97.0
+value = 100.0
+show_percentage = false
+
+[node name="P2Stamina" type="ProgressBar" parent="HUD"]
+offset_left = 882.0
+offset_top = 102.0
+offset_right = 1258.0
+offset_bottom = 112.0
+value = 100.0
+show_percentage = false
+
 [node name="CenterInfo" type="Label" parent="HUD"]
-offset_left = 420.0
-offset_top = 18.0
-offset_right = 860.0
-offset_bottom = 104.0
+offset_left = 410.0
+offset_top = 14.0
+offset_right = 870.0
+offset_bottom = 94.0
 theme_override_colors/font_color = Color(0.96, 0.83, 0.42, 1)
 theme_override_font_sizes/font_size = 25
 text = "FIRST PLAYABLE"
@@ -74,9 +126,9 @@ vertical_alignment = 1
 
 [node name="StateInfo" type="Label" parent="HUD"]
 offset_left = 390.0
-offset_top = 106.0
+offset_top = 108.0
 offset_right = 890.0
-offset_bottom = 140.0
+offset_bottom = 145.0
 theme_override_colors/font_color = Color(0.68, 0.86, 1, 0.96)
 theme_override_font_sizes/font_size = 12
 text = "VERTICAL SLICE • P1 VS CPU"
@@ -111,3 +163,113 @@ theme_override_font_sizes/font_size = 12
 text = "A/D mover • W saltar • F atacar • Q esquivar • R defender"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ResultOverlay" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="HUD/ResultOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.01, 0.015, 0.025, 0.84)
+
+[node name="Panel" type="PanelContainer" parent="HUD/ResultOverlay"]
+layout_mode = 0
+offset_left = 390.0
+offset_top = 205.0
+offset_right = 890.0
+offset_bottom = 520.0
+
+[node name="Content" type="VBoxContainer" parent="HUD/ResultOverlay/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="HUD/ResultOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 86)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 34
+text = "RESULTADO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Detail" type="Label" parent="HUD/ResultOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.88, 0.98, 1)
+theme_override_font_sizes/font_size = 16
+text = "PARTIDA CONCLUÍDA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RematchButton" type="Button" parent="HUD/ResultOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "REVANCHE"
+
+[node name="MenuButton" type="Button" parent="HUD/ResultOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "VOLTAR AO MENU"
+
+[node name="PauseOverlay" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+process_mode = 3
+
+[node name="Shade" type="ColorRect" parent="HUD/PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.01, 0.015, 0.025, 0.78)
+
+[node name="Panel" type="PanelContainer" parent="HUD/PauseOverlay"]
+layout_mode = 0
+offset_left = 420.0
+offset_top = 238.0
+offset_right = 860.0
+offset_bottom = 482.0
+
+[node name="Content" type="VBoxContainer" parent="HUD/PauseOverlay/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="HUD/PauseOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 30
+text = "PAUSA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CONTINUAR"
+
+[node name="MenuButton" type="Button" parent="HUD/PauseOverlay/Panel/Content"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "VOLTAR AO MENU"
