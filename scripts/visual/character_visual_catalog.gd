@@ -3,11 +3,14 @@ extends RefCounted
 
 const FRAME_SIZE := Vector2(128.0, 128.0)
 const STATE_ORDER: Array[StringName] = [&"idle", &"move", &"attack", &"guard"]
+const ATLAS_CHARACTER_IDS: Array[StringName] = [&"kael", &"nara", &"lyra", &"rin"]
+const FIRST_PLAYABLE_CHARACTER_IDS: Array[StringName] = [&"lian_wu", &"training_rival"]
 
 const CHARACTERS := {
 	&"kael": {
 		"display_name": "Kael",
 		"role": "Discípulo do Fluxo",
+		"render_mode": &"atlas",
 		"sheet": "res://assets/characters/kael/kael_animated_sheet.svg",
 		"columns": 4,
 		"rows": 4,
@@ -17,6 +20,7 @@ const CHARACTERS := {
 	&"nara": {
 		"display_name": "Nara",
 		"role": "Guardiã da Rocha",
+		"render_mode": &"atlas",
 		"sheet": "res://assets/characters/nara/nara_animated_sheet.svg",
 		"columns": 4,
 		"rows": 4,
@@ -26,6 +30,7 @@ const CHARACTERS := {
 	&"lyra": {
 		"display_name": "Lyra",
 		"role": "Tecelã Elemental",
+		"render_mode": &"atlas",
 		"sheet": "res://assets/characters/lyra/lyra_animated_sheet.svg",
 		"columns": 4,
 		"rows": 4,
@@ -35,16 +40,47 @@ const CHARACTERS := {
 	&"rin": {
 		"display_name": "Rin",
 		"role": "Rival da Chama",
+		"render_mode": &"atlas",
 		"sheet": "res://assets/characters/rin/rin_animated_sheet.svg",
 		"columns": 4,
 		"rows": 4,
 		"scale": 0.79,
 		"fps": {&"idle": 5.0, &"move": 11.0, &"attack": 14.0, &"guard": 6.0}
+	},
+	&"lian_wu": {
+		"display_name": "Lian Wu",
+		"role": "Discípulo da Lâmina Serena",
+		"render_mode": &"procedural",
+		"sheet": "",
+		"columns": 4,
+		"rows": 4,
+		"scale": 1.0,
+		"fps": {&"idle": 5.0, &"move": 10.0, &"attack": 13.0, &"guard": 6.0}
+	},
+	&"training_rival": {
+		"display_name": "Rival de Treino",
+		"role": "Punho da Fornalha",
+		"render_mode": &"procedural",
+		"sheet": "",
+		"columns": 4,
+		"rows": 4,
+		"scale": 1.0,
+		"fps": {&"idle": 4.0, &"move": 8.0, &"attack": 11.0, &"guard": 5.0}
 	}
 }
 
 static func character_ids() -> Array[StringName]:
-	return [&"kael", &"nara", &"lyra", &"rin"]
+	# Mantém a lista histórica de personagens com atlas para não ampliar menus,
+	# inspeções e preparação do protótipo completo nesta sprint.
+	return ATLAS_CHARACTER_IDS.duplicate()
+
+static func first_playable_character_ids() -> Array[StringName]:
+	return FIRST_PLAYABLE_CHARACTER_IDS.duplicate()
+
+static func all_character_ids() -> Array[StringName]:
+	var ids := character_ids()
+	ids.append_array(first_playable_character_ids())
+	return ids
 
 static func has_character(character_id: StringName) -> bool:
 	return CHARACTERS.has(character_id)
@@ -58,6 +94,12 @@ static func display_name(character_id: StringName) -> String:
 
 static func role(character_id: StringName) -> String:
 	return String(profile(character_id).get("role", "Praticante Taijifu"))
+
+static func render_mode(character_id: StringName) -> StringName:
+	return StringName(profile(character_id).get("render_mode", &"atlas"))
+
+static func uses_procedural_fallback(character_id: StringName) -> bool:
+	return render_mode(character_id) == &"procedural"
 
 static func sheet_path(character_id: StringName) -> String:
 	return String(profile(character_id).get("sheet", ""))
@@ -94,6 +136,10 @@ static func validate_character(character_id: StringName) -> Array[String]:
 	var path := String(data.get("sheet", ""))
 	var column_count := int(data.get("columns", 0))
 	var row_count := int(data.get("rows", 0))
+	if uses_procedural_fallback(character_id):
+		if path != "":
+			failures.append("Personagem procedural %s não deve declarar atlas" % String(character_id))
+		return failures
 	if path == "":
 		failures.append("%s não possui caminho de atlas" % String(character_id))
 	elif not ResourceLoader.exists(path):
