@@ -1,0 +1,36 @@
+{
+  "schema": "taijifu/asset-forge-character-pack-template/v1",
+  "status": "template_only",
+  "instructions": "Copie este arquivo e substitua todos os valores iniciados por __ antes de executar qualquer etapa.",
+  "pack_id": "__PACK_ID__",
+  "display_name": "__DISPLAY_NAME__",
+  "intake": {
+    "required": [
+      "__CHARACTER_ID____master_raw.png",
+      "turnaround_raw.png",
+      "portraits_raw.png",
+      "icons_raw.png"
+    ]
+  },
+  "outputs": {
+    "root": "assets/tgap/__PACK_DIRECTORY__",
+    "review": "artifacts/asset-forge/review/__PACK_ID__",
+    "bundle": "artifacts/asset-forge/bundles/__PACK_ID__.zip"
+  },
+  "gates": [
+    "intake",
+    "image_processing",
+    "technical_validation",
+    "godot_runtime",
+    "visual_review",
+    "perceptual_consistency",
+    "signed_approval",
+    "strict_bundle"
+  ],
+  "promotion_policy": {
+    "allow_placeholders": false,
+    "require_physical_pngs": true,
+    "require_signed_approval": true,
+    "require_perceptual_report": true
+  }
+}
