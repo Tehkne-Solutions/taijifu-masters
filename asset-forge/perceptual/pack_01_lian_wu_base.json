@@ -1,0 +1,21 @@
+{
+  "schema": "taijifu/asset-forge-perceptual-config/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "root": "artifacts/asset-forge/processed/pack_01_lian_wu_base",
+  "report": "artifacts/asset-forge/review/pack_01_lian_wu_base/perceptual-report.json",
+  "assets": [
+    {"id":"master","path":"char_lian_wu__master.png"},
+    {"id":"front","path":"turnaround/front.png"},
+    {"id":"back","path":"turnaround/back.png"},
+    {"id":"left","path":"turnaround/left.png"},
+    {"id":"right","path":"turnaround/right.png"},
+    {"id":"portrait_neutral","path":"portraits/neutral.png"},
+    {"id":"icon_primary","path":"icons/primary.png"}
+  ],
+  "comparisons": [
+    {"a":"left","b":"right","max_distance":0.58},
+    {"a":"master","b":"front","max_distance":0.72},
+    {"a":"master","b":"portrait_neutral","max_distance":0.78},
+    {"a":"portrait_neutral","b":"icon_primary","max_distance":0.82}
+  ]
+}
