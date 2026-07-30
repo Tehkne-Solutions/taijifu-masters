@@ -12,6 +12,7 @@ on:
       - "scripts/runtime/tactical_bot_runtime.gd"
       - "scripts/core/**"
       - "scripts/combat/**"
+      - "scripts/visual/character_visual_catalog.gd"
       - "tests/first_playable*.gd"
       - ".github/workflows/first-playable-smoke.yml"
   workflow_dispatch:
@@ -32,6 +33,9 @@ jobs:
 
       - name: Import project
         run: ./godot --headless --editor --path . --quit-after 3
+
+      - name: Run First Playable character contract
+        run: ./godot --headless --path . --script tests/first_playable_character_contract_test.gd
 
       - name: Run First Playable scene smoke
         run: ./godot --headless --path . --script tests/first_playable_scene_smoke.gd

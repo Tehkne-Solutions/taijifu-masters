@@ -4,6 +4,19 @@ extends RefCounted
 const CONTEXT_KEYS: Array[String] = ["air", "low", "advance", "neutral_ji", "neutral_fu"]
 
 const KITS := {
+	&"serene_katana": {
+		"label": "KATANA SERENA",
+		# Kit provisório da vertical slice. Reutiliza técnicas genéricas já
+		# validadas até os golpes exclusivos de lâmina entrarem no catálogo.
+		"air": &"tai_aerial_arc",
+		"low": &"ji_sweep",
+		"advance": &"tai_advancing_kick",
+		"neutral_ji": &"ji_body_hook",
+		"neutral_fu": &"fu_flow_strike",
+		"damage_multiplier": 1.04,
+		"posture_multiplier": 0.98,
+		"preferred_range": 112.0
+	},
 	&"training_staff": {
 		"label": "BASTÃO ADAPTATIVO",
 		"air": &"staff_vault_arc",
@@ -106,6 +119,8 @@ static func preferred_range(weapon_id: StringName) -> float:
 
 static func tactical_summary(weapon_id: StringName) -> String:
 	match weapon_id:
+		&"serene_katana":
+			return "Precisão, transição Fu e alcance médio controlado."
 		&"training_staff":
 			return "Alcance, varredura e redirecionamento Fu."
 		&"seismic_gauntlets", &"breaker_gauntlets":
