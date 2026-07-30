@@ -1,0 +1,41 @@
+name: Asset Forge Production Board
+
+on:
+  pull_request:
+    paths:
+      - "asset-forge/characters/**"
+      - "asset-forge/**"
+      - "tools/asset_forge/**"
+      - "tests/asset_forge/**"
+      - ".github/workflows/asset-forge-production-board.yml"
+  workflow_dispatch:
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install pytest pillow
+      - name: Run production board tests
+        run: python -m pytest tests/asset_forge/test_production_board.py -q
+      - name: Generate Lian Wu board
+        run: |
+          python tools/asset_forge/production_board.py \
+            asset-forge/characters/lian_wu.json \
+            --output artifacts/asset-forge/boards/lian_wu
+      - name: Publish board and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: taijifu-production-board-lian-wu
+          path: |
+            artifacts/asset-forge/boards/lian_wu/
+            artifacts/asset-forge/review/pack_01_lian_wu_base/
+            artifacts/asset-forge/pack_01_lian_wu_base__release-pipeline.json
+          if-no-files-found: warn
+          retention-days: 30
