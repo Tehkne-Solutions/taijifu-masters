@@ -1,5 +1,5 @@
 ; Engine configuration file.
-; Taijifu Masters — Protótipo Zero
+; Taijifu Masters — First Playable
 
 config_version=5
 
@@ -7,8 +7,8 @@ config_version=5
 
 config/name="Taijifu Masters"
 config/description="Batalhas técnicas Tai, Ji e Fu em arenas manga 2D."
-config/version="0.1.0-web"
-run/main_scene="res://scenes/main.tscn"
+config/version="0.2.0-first-playable"
+run/main_scene="res://scenes/vertical_slice/first_playable_menu.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://web/taijifu-web-icon.svg"
 
