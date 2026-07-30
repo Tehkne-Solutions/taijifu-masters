@@ -3,6 +3,7 @@ extends Node2D
 
 const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const CHARACTER_IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
+const MENU_SCENE := "res://scenes/vertical_slice/first_playable_menu.tscn"
 const PLAYER_PRESET: StringName = &"lian_wu_first_playable"
 const CPU_PRESET: StringName = &"training_rival_first_playable"
 const COUNTDOWN_SECONDS := 3
@@ -16,6 +17,7 @@ enum MatchState { BOOT, COUNTDOWN, BATTLE, RESULT }
 @onready var arena: FirstPlayableArena = $Arena
 @onready var bot_runtime: TacticalBotRuntime = $TacticalBotRuntime
 @onready var difficulty_controller: FirstPlayableDifficultyController = $DifficultyController
+@onready var hud_controller: FirstPlayableHudController = $HudController
 @onready var camera: Camera2D = $Camera2D
 @onready var player_one_label: Label = $HUD/PlayerOne
 @onready var player_two_label: Label = $HUD/PlayerTwo
@@ -28,11 +30,16 @@ var player_two: FighterController
 var _state: MatchState = MatchState.BOOT
 var _match_generation := 0
 var _time_remaining := 0.0
+var _is_paused := false
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_register_inputs()
 	arena.show_strategic_points = false
 	bot_runtime.enabled = false
+	hud_controller.rematch_requested.connect(_start_match)
+	hud_controller.menu_requested.connect(_return_to_menu)
+	hud_controller.resume_requested.connect(_resume_match)
 	_start_match()
 
 func _physics_process(_delta: float) -> void:
@@ -43,11 +50,16 @@ func _physics_process(_delta: float) -> void:
 		_release_all_combat_actions()
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed(&"first_playable_restart"):
-		_start_match()
+	if Input.is_action_just_pressed(&"first_playable_pause"):
+		if _state == MatchState.RESULT:
+			_return_to_menu()
+		else:
+			_set_paused(not _is_paused)
 		return
-	if Input.is_action_just_pressed(&"first_playable_exit"):
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
+	if _is_paused:
+		return
+	if Input.is_action_just_pressed(&"first_playable_restart") and _state == MatchState.RESULT:
+		_start_match()
 		return
 
 	if not is_instance_valid(player_one) or not is_instance_valid(player_two):
@@ -62,6 +74,8 @@ func _process(delta: float) -> void:
 	_update_hud()
 
 func _start_match() -> void:
+	_set_paused(false)
+	hud_controller.hide_result()
 	_match_generation += 1
 	var generation := _match_generation
 	_state = MatchState.COUNTDOWN
@@ -75,19 +89,19 @@ func _start_match() -> void:
 	_set_fighters_controls(false)
 	camera.global_position = arena.world_center()
 	camera.zoom = Vector2(0.72, 0.72)
-	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nENTER reinicia • ESC volta ao protótipo completo"
+	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nESC pausa • 1/2/3 dificuldade"
 	state_label.text = "LIAN WU VS RIVAL DE TREINO • IA %s" % _difficulty_label()
 
 	for value in range(COUNTDOWN_SECONDS, 0, -1):
 		if generation != _match_generation:
 			return
 		center_label.text = str(value)
-		await get_tree().create_timer(countdown_step_seconds).timeout
+		await get_tree().create_timer(countdown_step_seconds, false).timeout
 
 	if generation != _match_generation:
 		return
 	center_label.text = "LUTEM"
-	await get_tree().create_timer(fight_command_seconds).timeout
+	await get_tree().create_timer(fight_command_seconds, false).timeout
 	if generation != _match_generation:
 		return
 
@@ -146,10 +160,24 @@ func _finish_match(winner: FighterController, reason: String) -> void:
 	_release_all_combat_actions()
 	_set_fighters_controls(false)
 	arena.stop_battle_flow()
-	var result_label := "DERROTA" if winner.player_index == 2 else "VITÓRIA"
+	var player_won := winner.player_index == 1
+	var result_label := "VITÓRIA" if player_won else "DERROTA"
 	center_label.text = "%s\n%s VENCE" % [result_label, winner.build.character_name.to_upper()]
-	controls_label.text = "ENTER para revanche • ESC para voltar ao protótipo completo"
+	controls_label.text = "ENTER ou botão para revanche • ESC para menu"
 	state_label.text = "PARTIDA CONCLUÍDA • %s • IA %s" % [reason, _difficulty_label()]
+	hud_controller.show_result(winner.build.character_name, player_won, reason, _difficulty_label())
+
+func _set_paused(active: bool) -> void:
+	_is_paused = active
+	hud_controller.show_pause(active)
+	get_tree().paused = active
+
+func _resume_match() -> void:
+	_set_paused(false)
+
+func _return_to_menu() -> void:
+	_set_paused(false)
+	get_tree().change_scene_to_file(MENU_SCENE)
 
 func _set_fighters_controls(active: bool) -> void:
 	for fighter in [player_one, player_two]:
@@ -192,6 +220,7 @@ func _update_camera(delta: float) -> void:
 func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1")
 	player_two_label.text = _fighter_summary(player_two, "CPU")
+	hud_controller.update_fighters(player_one, player_two)
 	if _state == MatchState.BATTLE:
 		state_label.text = "LIAN WU VS RIVAL • IA %s • TEMPO %02d" % [_difficulty_label(), ceili(_time_remaining)]
 
@@ -201,12 +230,9 @@ func _difficulty_label() -> String:
 	return BotBehaviorCatalog.difficulty_label(bot_runtime.difficulty_id)
 
 func _fighter_summary(fighter: FighterController, prefix: String) -> String:
-	return "%s • %s\nVIDA %d  POST %d  FÔL %d\n%s • %s" % [
+	return "%s • %s\n%s • %s" % [
 		prefix,
 		fighter.build.character_name.to_upper(),
-		roundi(fighter.health),
-		roundi(fighter.posture),
-		roundi(fighter.stamina),
 		String(fighter.build.element_id).to_upper(),
 		fighter.current_weapon_label()
 	]
@@ -234,7 +260,7 @@ func _register_inputs() -> void:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.5)
 	_add_key_action(&"first_playable_restart", KEY_ENTER)
-	_add_key_action(&"first_playable_exit", KEY_ESCAPE)
+	_add_key_action(&"first_playable_pause", KEY_ESCAPE)
 
 func _add_key_action(action: StringName, keycode: Key) -> void:
 	if not InputMap.has_action(action):
