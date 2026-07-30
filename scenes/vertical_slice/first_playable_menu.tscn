@@ -1,0 +1,188 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_menu.gd" id="1_menu"]
+
+[node name="FirstPlayableMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.025, 0.04, 0.07, 1)
+
+[node name="SkyBand" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 1280.0
+offset_bottom = 244.0
+mouse_filter = 2
+color = Color(0.055, 0.16, 0.25, 0.72)
+
+[node name="EmberBand" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 518.0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.22, 0.055, 0.035, 0.42)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 0
+offset_left = 210.0
+offset_top = 38.0
+offset_right = 1070.0
+offset_bottom = 112.0
+theme_override_colors/font_color = Color(0.98, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 42
+text = "TAIJIFU MASTERS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="."]
+layout_mode = 0
+offset_left = 260.0
+offset_top = 108.0
+offset_right = 1020.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.76, 0.88, 0.98, 0.96)
+theme_override_font_sizes/font_size = 17
+text = "FIRST PLAYABLE • RUÍNAS DO CAMINHO TRIPLO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 170.0
+offset_right = 1090.0
+offset_bottom = 665.0
+theme_override_constants/separation = 14
+
+[node name="Fighters" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="LianCard" type="PanelContainer" parent="Content/Fighters"]
+custom_minimum_size = Vector2(440, 124)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Content/Fighters/LianCard"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.88, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "P1 • LIAN WU\nDISCÍPULO DA LÂMINA SERENA\nÁGUA • KATANA • TÉCNICA E FOCO"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Versus" type="Label" parent="Content/Fighters"]
+custom_minimum_size = Vector2(54, 124)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.72, 0.24, 1)
+theme_override_font_sizes/font_size = 25
+text = "VS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RivalCard" type="PanelContainer" parent="Content/Fighters"]
+custom_minimum_size = Vector2(440, 124)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Content/Fighters/RivalCard"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.72, 0.58, 1)
+theme_override_font_sizes/font_size = 15
+text = "CPU • RIVAL DE TREINO\nPUNHO DA FORNALHA\nFOGO • MANOPLAS • PRESSÃO E POSTURA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Difficulty" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DifficultyLabel" type="Label" parent="Content/Difficulty"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "DIFICULDADE DA IA • DISCÍPULO"
+horizontal_alignment = 1
+
+[node name="Options" type="HBoxContainer" parent="Content/Difficulty"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="EasyButton" type="Button" parent="Content/Difficulty/Options"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "○ 1 • APRENDIZ"
+
+[node name="NormalButton" type="Button" parent="Content/Difficulty/Options"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "● 2 • DISCÍPULO"
+
+[node name="HardButton" type="Button" parent="Content/Difficulty/Options"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "○ 3 • MESTRE"
+
+[node name="Actions" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="Content/Actions"]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.88, 0.56, 1)
+theme_override_font_sizes/font_size = 22
+text = "JOGAR CONTRA IA"
+
+[node name="PrototypeButton" type="Button" parent="Content/Actions"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "ABRIR PROTÓTIPO COMPLETO"
+
+[node name="ExitButton" type="Button" parent="Content/Actions"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "SAIR"
+
+[node name="Help" type="Label" parent="Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.72, 0.8, 0.95)
+theme_override_font_sizes/font_size = 12
+text = "ENTER iniciar • 1/2/3 dificuldade • teclado, mouse e gamepad"
+horizontal_alignment = 1
+
+[node name="Signature" type="Label" parent="."]
+layout_mode = 0
+offset_left = 940.0
+offset_top = 680.0
+offset_right = 1260.0
+offset_bottom = 710.0
+theme_override_colors/font_color = Color(0.72, 0.74, 0.8, 0.85)
+theme_override_font_sizes/font_size = 12
+text = "TEHKNÉ SOLUTIONS"
+horizontal_alignment = 2
+vertical_alignment = 1
