@@ -1,0 +1,24 @@
+{
+  "schema": "taijifu/asset-forge-diff-matrix-config/v1",
+  "pack_id": "pack_01_lian_wu_base",
+  "cell_size": [512, 512],
+  "comparisons": [
+    {
+      "id": "master_vs_front",
+      "left": "assets/tgap/pack_01_lian_wu/characters/char_lian_wu__master.png",
+      "right": "assets/tgap/pack_01_lian_wu/characters/char_lian_wu__front.png"
+    },
+    {
+      "id": "left_vs_right",
+      "left": "assets/tgap/pack_01_lian_wu/characters/char_lian_wu__left.png",
+      "right": "assets/tgap/pack_01_lian_wu/characters/char_lian_wu__right.png"
+    },
+    {
+      "id": "portrait_vs_icon",
+      "left": "assets/tgap/pack_01_lian_wu/portraits/char_lian_wu__portrait_neutral.png",
+      "right": "assets/tgap/pack_01_lian_wu/icons/char_lian_wu__icon_primary.png"
+    }
+  ],
+  "output": "artifacts/asset-forge/review/pack_01_lian_wu_base/diff-matrix.png",
+  "report": "artifacts/asset-forge/review/pack_01_lian_wu_base/diff-matrix-report.json"
+}
