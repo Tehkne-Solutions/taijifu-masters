@@ -2,6 +2,8 @@ class_name MatchTelemetry
 extends RefCounted
 
 const TELEMETRY_DIR := "user://telemetry"
+const TELEMETRY_SCHEMA := "tehkne/taijifu-match-telemetry/v3"
+const TELEMETRY_VERSION := 3
 
 var _session_id := ""
 var _round_index := 0
@@ -11,16 +13,21 @@ var _players: Dictionary = {}
 var _round_events: Array[Dictionary] = []
 var _rounds: Array[Dictionary] = []
 var _last_round: Dictionary = {}
+var _session_metadata: Dictionary = {}
+var _round_metadata: Dictionary = {}
+var _last_written_path := ""
 
-func begin_session() -> void:
+func begin_session(metadata: Dictionary = {}) -> void:
 	_session_started_unix = int(Time.get_unix_time_from_system())
 	_session_id = "%d-%d" % [_session_started_unix, randi_range(1000, 9999)]
 	_round_index = 0
 	_rounds.clear()
 	_last_round.clear()
+	_session_metadata = metadata.duplicate(true)
+	_last_written_path = ""
 	begin_round()
 
-func begin_round() -> void:
+func begin_round(metadata: Dictionary = {}) -> void:
 	_round_index += 1
 	_round_started_msec = Time.get_ticks_msec()
 	_players = {
@@ -28,6 +35,13 @@ func begin_round() -> void:
 		"p2": _new_player_metrics()
 	}
 	_round_events.clear()
+	_round_metadata = metadata.duplicate(true)
+
+func set_session_metadata(metadata: Dictionary, overwrite := true) -> void:
+	_session_metadata.merge(metadata, overwrite)
+
+func set_round_metadata(metadata: Dictionary, overwrite := true) -> void:
+	_round_metadata.merge(metadata, overwrite)
 
 func record_route(profile_id: StringName, route_id: StringName, delta: float) -> void:
 	var metrics := _player_metrics(profile_id)
@@ -59,16 +73,34 @@ func record_event(
 		"amount": amount
 	})
 
-func finish_round(winner_profile_id: StringName = &"") -> String:
+func finish_round(
+	winner_profile_id: StringName = &"",
+	result_metadata: Dictionary = {}
+) -> String:
+	var metadata := _round_metadata.duplicate(true)
+	metadata.merge(result_metadata, true)
 	var round_data := {
 		"round_index": _round_index,
 		"duration_msec": Time.get_ticks_msec() - _round_started_msec,
 		"winner_profile_id": String(winner_profile_id),
+		"metadata": metadata,
 		"players": _players.duplicate(true),
 		"events": _round_events.duplicate(true)
 	}
 	_last_round = round_data.duplicate(true)
 	_rounds.append(round_data)
+	return _write_session()
+
+func annotate_last_round(annotation: Dictionary) -> String:
+	if _rounds.is_empty():
+		return ""
+	var last_index := _rounds.size() - 1
+	var round_data: Dictionary = _rounds[last_index]
+	var metadata: Dictionary = round_data.get("metadata", {}).duplicate(true)
+	metadata.merge(annotation, true)
+	round_data["metadata"] = metadata
+	_rounds[last_index] = round_data
+	_last_round = round_data.duplicate(true)
 	return _write_session()
 
 func last_round_snapshot() -> Dictionary:
@@ -79,17 +111,30 @@ func current_round_snapshot() -> Dictionary:
 		"round_index": _round_index,
 		"duration_msec": Time.get_ticks_msec() - _round_started_msec,
 		"winner_profile_id": "",
+		"metadata": _round_metadata.duplicate(true),
 		"players": _players.duplicate(true),
 		"events": _round_events.duplicate(true)
 	}
 
 func session_snapshot() -> Dictionary:
 	return {
-		"version": 2,
+		"schema": TELEMETRY_SCHEMA,
+		"version": TELEMETRY_VERSION,
 		"session_id": _session_id,
 		"started_unix": _session_started_unix,
+		"updated_unix": int(Time.get_unix_time_from_system()),
+		"metadata": _session_metadata.duplicate(true),
 		"rounds": _rounds.duplicate(true)
 	}
+
+func session_json() -> String:
+	return JSON.stringify(session_snapshot(), "\t")
+
+func session_id() -> String:
+	return _session_id
+
+func last_written_path() -> String:
+	return _last_written_path
 
 func current_route_summary(profile_id: StringName) -> String:
 	var metrics := _player_metrics(profile_id)
@@ -121,11 +166,7 @@ func _write_session() -> String:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return ""
-	file.store_string(JSON.stringify({
-		"version": 2,
-		"session_id": _session_id,
-		"started_unix": _session_started_unix,
-		"updated_unix": int(Time.get_unix_time_from_system()),
-		"rounds": _rounds
-	}, "\t"))
+	file.store_string(session_json())
+	file.close()
+	_last_written_path = path
 	return path
