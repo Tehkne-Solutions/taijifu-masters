@@ -1,0 +1,62 @@
+name: First Playable Release Gate
+
+on:
+  pull_request:
+    paths:
+      - "scripts/vertical_slice/**"
+      - "scripts/runtime/impact_director.gd"
+      - "scenes/vertical_slice/**"
+      - "assets/tgap/pack_01_lian_wu/**"
+      - "tests/first_playable_*"
+      - "tests/test_first_playable_lot01_importer.py"
+      - "tools/asset_forge/**"
+      - "tools/release/run_first_playable_release_gate.py"
+      - ".github/workflows/first-playable-release-gate.yml"
+  workflow_dispatch:
+    inputs:
+      strict_assets:
+        description: "Bloquear enquanto o Lot 01 real não estiver integrado"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências Python
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Configurar Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: "4.3.0"
+          use-dotnet: false
+
+      - name: Executar gate de integração
+        shell: bash
+        run: |
+          STRICT=""
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.strict_assets }}" == "true" ]]; then
+            STRICT="--strict-assets"
+          fi
+          python tools/release/run_first_playable_release_gate.py $STRICT
+
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-playable-release-gate
+          path: artifacts/first-playable-release-gate.json
+          if-no-files-found: warn
+          retention-days: 14
+
+# Tehkné Solutions
