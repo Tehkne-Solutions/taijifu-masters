@@ -68,10 +68,18 @@ jobs:
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
           assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
           assert manifest["platform"] == "windows"
+          assert manifest["channel"] == "external-playtest"
+          assert manifest["version"] == "0.2.1-playtest"
           assert manifest["main_scene"] == "res://scenes/vertical_slice/first_playable_menu.tscn"
           assert manifest["signature"] == "Tehkné Solutions"
           assert manifest["totals"]["file_count"] >= 3
           assert any(item["path"].endswith(".exe") for item in manifest["files"])
+          telemetry = manifest["telemetry"]
+          assert telemetry["schema"] == "tehkne/taijifu-match-telemetry/v3"
+          assert telemetry["privacy"] == "local_only"
+          assert telemetry["automatic_upload"] is False
+          assert telemetry["post_match_balance_feedback"] is True
+          assert telemetry["report_copy"] is True
 
           checksum_parts = checksum_path.read_text(encoding="utf-8").strip().split(maxsplit=1)
           assert len(checksum_parts) == 2, checksum_parts
@@ -83,9 +91,11 @@ jobs:
           assert actual == expected, (actual, expected)
           print(json.dumps({
               "build_id": manifest["build_id"],
+              "version": manifest["version"],
               "zip_size_bytes": zip_path.stat().st_size,
               "zip_sha256": actual,
               "checksum_reference": referenced_name,
+              "telemetry": "local-v3",
           }, indent=2))
           PY
 
