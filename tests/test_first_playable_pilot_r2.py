@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import sys
 import unittest
 from pathlib import Path
 
@@ -24,13 +25,20 @@ def load_json(path: Path) -> dict:
 
 
 def load_hardened_cli():
-    module_path = ROOT / "tools" / "playtest" / "run_first_playable_pilot.py"
-    spec = importlib.util.spec_from_file_location("run_first_playable_pilot_r2", module_path)
-    if spec is None or spec.loader is None:
-        raise AssertionError("Could not load hardened pilot CLI")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    module_dir = ROOT / "tools" / "playtest"
+    module_path = module_dir / "run_first_playable_pilot.py"
+    sys.path.insert(0, str(module_dir))
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "run_first_playable_pilot_r2", module_path
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError("Could not load hardened pilot CLI")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.path.remove(str(module_dir))
 
 
 class FirstPlayablePilotR2Tests(unittest.TestCase):
