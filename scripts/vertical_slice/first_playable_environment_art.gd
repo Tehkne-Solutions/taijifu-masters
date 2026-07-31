@@ -2,11 +2,13 @@ class_name FirstPlayableEnvironmentArt
 extends TriplePathEnvironmentArt
 
 const FINAL_LAYER := preload("res://scripts/vertical_slice/first_playable_arena_final_layer.gd")
+const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
+const AUDIO_DIRECTOR := preload("res://scripts/vertical_slice/first_playable_audio_director.gd")
 
 func _ready() -> void:
-	# Fundo atrás do blockout, das ruínas e dos lutadores.
 	z_index = -10
 	_install_final_layer()
+	_install_combat_feedback()
 	queue_redraw()
 
 func _install_final_layer() -> void:
@@ -17,6 +19,19 @@ func _install_final_layer() -> void:
 	final_layer.name = "ArenaFinalLayer"
 	root.add_child.call_deferred(final_layer)
 
+func _install_combat_feedback() -> void:
+	var root := get_parent()
+	if root == null:
+		return
+	if not root.has_node("ImpactDirector"):
+		var impact_director := IMPACT_DIRECTOR.new() as ImpactDirector
+		impact_director.name = "ImpactDirector"
+		root.add_child.call_deferred(impact_director)
+	if not root.has_node("FirstPlayableAudioDirector"):
+		var audio_director := AUDIO_DIRECTOR.new() as FirstPlayableAudioDirector
+		audio_director.name = "FirstPlayableAudioDirector"
+		root.add_child.call_deferred(audio_director)
+
 func presentation_signature() -> Dictionary:
 	return {
 		"sky_layers": 4,
@@ -26,6 +41,9 @@ func presentation_signature() -> Dictionary:
 		"palette": &"ink_stone_jade_ember_gold",
 		"purple_tech_glow": false,
 		"collision_changes": false,
+		"impact_director": true,
+		"procedural_combat_audio": true,
+		"balance_changes": false,
 		"signature": "Tehkné Solutions"
 	}
 
