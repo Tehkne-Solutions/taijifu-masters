@@ -25,14 +25,16 @@ install_editor() {
   local extracted
   extracted="$(find "${CACHE_ROOT}" -maxdepth 1 -type f -name 'Godot_*linux.x86_64' | head -n 1)"
   [[ -n "${extracted}" ]] || { echo "Executável do Godot não encontrado." >&2; exit 1; }
-  mv "${extracted}" "${GODOT_BIN}"; chmod +x "${GODOT_BIN}"
+  mv "${extracted}" "${GODOT_BIN}"
+  chmod +x "${GODOT_BIN}"
 }
 install_templates() {
   [[ -f "${TEMPLATE_DIR}/web_release.zip" ]] && return
   log "Instalando templates oficiais de exportação"
   local archive="${CACHE_ROOT}/export-templates.tpz" stage="${CACHE_ROOT}/templates-stage"
   download "${TEMPLATES_URL}" "${archive}"
-  rm -rf "${stage}"; mkdir -p "${stage}" "${TEMPLATE_DIR}"
+  rm -rf "${stage}"
+  mkdir -p "${stage}" "${TEMPLATE_DIR}"
   unzip -q -o "${archive}" -d "${stage}"
   local web_template
   web_template="$(find "${stage}" -type f -name 'web_release.zip' | head -n 1)"
@@ -45,41 +47,32 @@ install_templates
 log "Godot detectado: $("${GODOT_BIN}" --version)"
 log "Importando recursos"
 "${GODOT_BIN}" --headless --editor --path "${ROOT_DIR}" --quit
+
 log "Exportando preset Web para ${OUTPUT_DIR}"
-rm -rf "${OUTPUT_DIR}"; mkdir -p "${OUTPUT_DIR}"
+rm -rf "${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
 "${GODOT_BIN}" --headless --verbose --path "${ROOT_DIR}" --export-release "Web" "${OUTPUT_DIR}/index.html"
-log "Preparando manifesto, service worker e modo offline"
+
+log "Preparando shell Web essencial, manifesto, service worker e modo offline"
 python3 "${ROOT_DIR}/scripts/prepare-web-pwa.py" "${OUTPUT_DIR}"
-log "Injetando configuração visual de gamepads"
-python3 "${ROOT_DIR}/scripts/inject-gamepad-web.py" "${OUTPUT_DIR}"
-log "Injetando editor visual de curvas e dojo de combos"
-python3 "${ROOT_DIR}/scripts/inject-controller-mastery-web.py" "${OUTPUT_DIR}"
-log "Injetando gravação, fantasma e certificações"
-python3 "${ROOT_DIR}/scripts/inject-input-ghost-mastery-web.py" "${OUTPUT_DIR}"
-log "Injetando compartilhamento de fantasmas e desafios"
-python3 "${ROOT_DIR}/scripts/inject-ghost-sharing-web.py" "${OUTPUT_DIR}"
-log "Injetando biblioteca local de fantasmas"
-python3 "${ROOT_DIR}/scripts/inject-ghost-library-web.py" "${OUTPUT_DIR}"
-log "Injetando placar da corrida contra fantasmas"
-python3 "${ROOT_DIR}/scripts/inject-ghost-race-web.py" "${OUTPUT_DIR}"
-log "Injetando histórico das corridas contra fantasmas"
-python3 "${ROOT_DIR}/scripts/inject-ghost-race-history-web.py" "${OUTPUT_DIR}"
-log "Injetando séries contra fantasmas"
-python3 "${ROOT_DIR}/scripts/inject-ghost-race-series-web.py" "${OUTPUT_DIR}"
-log "Injetando ranking local de rivais"
-python3 "${ROOT_DIR}/scripts/inject-ghost-rival-ranking-web.py" "${OUTPUT_DIR}"
-log "Injetando corrida multirrival"
-python3 "${ROOT_DIR}/scripts/inject-multi-ghost-race-web.py" "${OUTPUT_DIR}"
-log "Validando artefatos e contratos Web"
+
+# Sprint 0: o build padrão não injeta painéis experimentais independentes.
+# Gamepad avançado, maestria, fantasmas, ranking, séries e multirrival permanecem
+# no repositório para futura reintrodução por um menu único e explícito.
+log "Validando artefatos e contrato essencial do jogo"
 python3 "${ROOT_DIR}/scripts/validate-web-build.py" "${OUTPUT_DIR}"
+
 test -s "${OUTPUT_DIR}/build-info.json"
 mv "${OUTPUT_DIR}/build-info.json" "${OUTPUT_DIR}/web-validation-info.json"
+
 log "Gerando manifesto rastreável do First Playable"
 python3 "${ROOT_DIR}/scripts/create-first-playable-build-manifest.py" \
   --platform web \
   --output-dir "${OUTPUT_DIR}" \
   --project-root "${ROOT_DIR}"
+
 test -s "${OUTPUT_DIR}/build-info.json"
 test -s "${OUTPUT_DIR}/web-validation-info.json"
+
 log "Build Web concluído"
 find "${OUTPUT_DIR}" -maxdepth 1 -type f -printf '%f\t%k KB\n' | sort
