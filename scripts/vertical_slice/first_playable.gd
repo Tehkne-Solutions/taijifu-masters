@@ -31,6 +31,10 @@ var _state: MatchState = MatchState.BOOT
 var _match_generation := 0
 var _time_remaining := 0.0
 var _is_paused := false
+var _round_started_msec := 0
+var _last_telemetry_path := ""
+var _feedback_submitted := false
+var _telemetry := MatchTelemetry.new()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -40,6 +44,10 @@ func _ready() -> void:
 	hud_controller.rematch_requested.connect(_start_match)
 	hud_controller.menu_requested.connect(_return_to_menu)
 	hud_controller.resume_requested.connect(_resume_match)
+	hud_controller.feedback_submitted.connect(_on_feedback_submitted)
+	hud_controller.report_copy_requested.connect(_copy_playtest_report)
+	difficulty_controller.difficulty_changed.connect(_on_difficulty_changed)
+	_begin_playtest_session()
 	_start_match()
 
 func _physics_process(_delta: float) -> void:
@@ -73,13 +81,33 @@ func _process(delta: float) -> void:
 			_resolve_timeout()
 	_update_hud()
 
+func _begin_playtest_session() -> void:
+	_telemetry.begin_session({
+		"experience": "first_playable",
+		"build_version": String(ProjectSettings.get_setting("application/config/version", "unknown")),
+		"platform": OS.get_name(),
+		"locale": TranslationServer.get_locale(),
+		"privacy": "local_only",
+		"signature": "Tehkné Solutions"
+	})
+
 func _start_match() -> void:
+	if _match_generation > 0:
+		if _state == MatchState.RESULT:
+			_last_telemetry_path = _telemetry.annotate_last_round({
+				"rematch_requested": true,
+				"rematch_requested_unix": int(Time.get_unix_time_from_system())
+			})
+		_telemetry.begin_round()
+
 	_set_paused(false)
 	hud_controller.hide_result()
 	_match_generation += 1
 	var generation := _match_generation
 	_state = MatchState.COUNTDOWN
 	_time_remaining = match_time_limit_seconds
+	_round_started_msec = Time.get_ticks_msec()
+	_feedback_submitted = false
 	bot_runtime.enabled = false
 	_release_all_combat_actions()
 	arena.stop_battle_flow()
@@ -91,6 +119,17 @@ func _start_match() -> void:
 	camera.zoom = Vector2(0.72, 0.72)
 	controls_label.text = "A/D mover • W saltar • F atacar • Q esquivar • R defender • G impulso • E agarrar\nESC pausa • 1/2/3 dificuldade"
 	state_label.text = "LIAN WU VS RIVAL DE TREINO • IA %s" % _difficulty_label()
+	_telemetry.set_round_metadata({
+		"experience": "first_playable",
+		"match_generation": _match_generation,
+		"difficulty_id": String(difficulty_controller.selected_difficulty_id),
+		"difficulty_label": _difficulty_label(),
+		"time_limit_seconds": match_time_limit_seconds,
+		"player_character": "Lian Wu",
+		"cpu_character": "Rival de Treino",
+		"arena": "Ruínas do Caminho Triplo"
+	})
+	_telemetry.record_event(&"p1", &"match_started", difficulty_controller.selected_difficulty_id)
 
 	for value in range(COUNTDOWN_SECONDS, 0, -1):
 		if generation != _match_generation:
@@ -112,6 +151,7 @@ func _start_match() -> void:
 	bot_runtime.enabled = true
 	_state = MatchState.BATTLE
 	center_label.text = "RUÍNAS DO CAMINHO TRIPLO"
+	_telemetry.record_event(&"p1", &"battle_started", difficulty_controller.selected_difficulty_id)
 
 func _spawn_fighters() -> void:
 	player_one = _spawn_fighter(1, PLAYER_PRESET, Color(0.16, 0.42, 0.82))
@@ -161,23 +201,117 @@ func _finish_match(winner: FighterController, reason: String) -> void:
 	_set_fighters_controls(false)
 	arena.stop_battle_flow()
 	var player_won := winner.player_index == 1
+	var winner_profile_id: StringName = &"p1" if player_won else &"p2"
 	var result_label := "VITÓRIA" if player_won else "DERROTA"
+	var reason_id := StringName(reason.to_lower())
+	_telemetry.record_event(winner_profile_id, &"match_won", reason_id)
+	_telemetry.record_event(&"p1", &"match_finished", reason_id)
+	_last_telemetry_path = _telemetry.finish_round(winner_profile_id, {
+		"result_reason": String(reason_id),
+		"player_won": player_won,
+		"winner_character": winner.build.character_name,
+		"difficulty_id": String(difficulty_controller.selected_difficulty_id),
+		"difficulty_label": _difficulty_label(),
+		"elapsed_seconds": float(Time.get_ticks_msec() - _round_started_msec) / 1000.0,
+		"time_remaining_seconds": _time_remaining,
+		"p1_final": _fighter_final_state(player_one),
+		"p2_final": _fighter_final_state(player_two)
+	})
 	center_label.text = "%s\n%s VENCE" % [result_label, winner.build.character_name.to_upper()]
 	controls_label.text = "ENTER ou botão para revanche • ESC para menu"
 	state_label.text = "PARTIDA CONCLUÍDA • %s • IA %s" % [reason, _difficulty_label()]
-	hud_controller.show_result(winner.build.character_name, player_won, reason, _difficulty_label())
+	hud_controller.show_result(
+		winner.build.character_name,
+		player_won,
+		reason,
+		_difficulty_label(),
+		_last_telemetry_path.get_file()
+	)
 
 func _set_paused(active: bool) -> void:
+	if _is_paused == active:
+		return
 	_is_paused = active
 	hud_controller.show_pause(active)
 	get_tree().paused = active
+	if _state == MatchState.COUNTDOWN or _state == MatchState.BATTLE:
+		_telemetry.record_event(&"p1", &"pause" if active else &"resume")
 
 func _resume_match() -> void:
 	_set_paused(false)
 
 func _return_to_menu() -> void:
 	_set_paused(false)
+	if _state == MatchState.RESULT:
+		_last_telemetry_path = _telemetry.annotate_last_round({
+			"returned_to_menu": true,
+			"returned_to_menu_unix": int(Time.get_unix_time_from_system())
+		})
+	elif _state == MatchState.COUNTDOWN or _state == MatchState.BATTLE:
+		_close_abandoned_round()
 	get_tree().change_scene_to_file(MENU_SCENE)
+
+func _close_abandoned_round() -> void:
+	bot_runtime.enabled = false
+	arena.stop_battle_flow()
+	_telemetry.record_event(&"p1", &"match_abandoned")
+	_last_telemetry_path = _telemetry.finish_round(&"", {
+		"result_reason": "abandoned",
+		"player_won": false,
+		"difficulty_id": String(difficulty_controller.selected_difficulty_id),
+		"difficulty_label": _difficulty_label(),
+		"elapsed_seconds": float(Time.get_ticks_msec() - _round_started_msec) / 1000.0,
+		"time_remaining_seconds": _time_remaining,
+		"p1_final": _fighter_final_state(player_one),
+		"p2_final": _fighter_final_state(player_two)
+	})
+
+func _on_feedback_submitted(rating_id: StringName) -> void:
+	if _state != MatchState.RESULT or _feedback_submitted:
+		return
+	_feedback_submitted = true
+	_last_telemetry_path = _telemetry.annotate_last_round({
+		"balance_feedback": String(rating_id),
+		"feedback_submitted_unix": int(Time.get_unix_time_from_system())
+	})
+	hud_controller.set_report_status(
+		"FEEDBACK SALVO • SESSÃO %s" % _telemetry.session_id()
+	)
+
+func _copy_playtest_report() -> void:
+	var report := _telemetry.session_json()
+	if report == "":
+		hud_controller.set_report_status("RELATÓRIO AINDA NÃO DISPONÍVEL")
+		return
+	DisplayServer.clipboard_set(report)
+	hud_controller.set_report_status(
+		"RELATÓRIO COPIADO • SESSÃO %s" % _telemetry.session_id()
+	)
+
+func _on_difficulty_changed(difficulty_id: StringName, label: String) -> void:
+	if _state != MatchState.COUNTDOWN and _state != MatchState.BATTLE:
+		return
+	_telemetry.set_round_metadata({
+		"difficulty_id": String(difficulty_id),
+		"difficulty_label": label
+	})
+	_telemetry.record_event(&"p1", &"difficulty_changed", difficulty_id)
+
+func _fighter_final_state(fighter: FighterController) -> Dictionary:
+	if not is_instance_valid(fighter):
+		return {}
+	return {
+		"character": fighter.build.character_name,
+		"health": fighter.health,
+		"max_health": fighter.build.max_health(),
+		"posture": fighter.posture,
+		"max_posture": fighter.build.max_posture(),
+		"stamina": fighter.stamina,
+		"position": {
+			"x": fighter.global_position.x,
+			"y": fighter.global_position.y
+		}
+	}
 
 func _set_fighters_controls(active: bool) -> void:
 	for fighter in [player_one, player_two]:
