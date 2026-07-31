@@ -159,7 +159,9 @@ func _validate_resource_bars(battle: FirstPlayableController) -> bool:
 
 func _validate_playtest_feedback(battle: FirstPlayableController) -> bool:
 	var content_path := "HUD/ResultOverlay/Panel/Content/"
-	var balanced_button := battle.get_node_or_null(content_path + "FeedbackBalanced") as Button
+	var balanced_button := battle.get_node_or_null(
+		content_path + "PlaytestFeedbackButtons/FeedbackBalanced"
+	) as Button
 	var copy_button := battle.get_node_or_null(content_path + "CopyPlaytestReportButton") as Button
 	var feedback_status := battle.get_node_or_null(content_path + "PlaytestFeedbackStatus") as Label
 	if not is_instance_valid(balanced_button):
