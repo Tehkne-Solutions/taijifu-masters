@@ -8,7 +8,7 @@ A coleta desta sprint é local. Nenhum relatório é enviado automaticamente par
 
 ## Preparação
 
-1. Use uma build identificada como `0.2.1-playtest` ou posterior.
+1. Use exclusivamente a build `0.2.2-playtest` no piloto `pilot-09-r2`.
 2. Extraia o pacote Windows antes de executar.
 3. No Web, use navegador Chromium atualizado e mantenha o jogo em orientação paisagem.
 4. Tenha em mãos o código anônimo `TJFP-###` fornecido pelo coordenador.

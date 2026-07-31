@@ -58,7 +58,7 @@ jobs:
           assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
           assert manifest["platform"] == "web"
           assert manifest["channel"] == "external-playtest"
-          assert manifest["version"] == "0.2.1-playtest"
+          assert manifest["version"] == "0.2.2-playtest"
           assert manifest["main_scene"] == "res://scenes/vertical_slice/first_playable_menu.tscn"
           assert manifest["battle_scene"] == "res://scenes/vertical_slice/first_playable.tscn"
           assert manifest["signature"] == "Tehkné Solutions"

@@ -2,8 +2,8 @@
 """Canonical hardened CLI for the Taijifu Masters First Playable pilot.
 
 The sibling `first_playable_pilot.py` contains the deterministic domain core.
-This entrypoint adds operational privacy and cross-file integrity checks and is
-the only CLI that should be used with real pilot data.
+This entrypoint adds operational privacy, version resolution and cross-file
+integrity checks and is the only CLI that should be used with real pilot data.
 
 Signature: Tehkné Solutions
 """
@@ -11,11 +11,31 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 import first_playable_pilot as core
+
+
+def project_build_version() -> str:
+    """Resolve the active build without mutating the historical domain fixture."""
+    configured = os.environ.get("TAIJIFU_BUILD_VERSION", "").strip()
+    if configured:
+        return configured
+    candidates = [
+        Path(__file__).resolve().parents[2] / "project.godot",
+        Path.cwd() / "project.godot",
+    ]
+    for project_file in candidates:
+        if not project_file.is_file():
+            continue
+        for raw_line in project_file.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if line.startswith('config/version="') and line.endswith('"'):
+                return line[len('config/version="'):-1]
+    return core.BUILD_VERSION
 
 
 def sanitize_intake_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -108,6 +128,7 @@ def harden_backlog_gate(backlog: dict[str, Any]) -> dict[str, Any]:
 
 
 def command_plan(argv: list[str]) -> int:
+    core.BUILD_VERSION = project_build_version()
     return core.main(["plan", *argv])
 
 
@@ -120,6 +141,7 @@ def command_intake(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     plan = core.load_plan(args.plan)
+    core.BUILD_VERSION = str(plan.get("build_version", core.BUILD_VERSION))
     manifest = sanitize_intake_manifest(core.build_intake_manifest(args.inputs, plan))
     validate_context(plan, intake=manifest)
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -133,6 +155,7 @@ def command_intake(argv: list[str]) -> int:
                 "accepted": manifest["inputs"]["accepted_files"],
                 "rejected": manifest["inputs"]["rejected_files"],
                 "manifest": str(json_path),
+                "build_version": core.BUILD_VERSION,
                 "local_paths_removed": True,
             },
             indent=2,

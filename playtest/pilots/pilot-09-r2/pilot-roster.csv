@@ -1,0 +1,10 @@
+participant_id,platform,difficulty_1,difficulty_2,difficulty_3,matches_per_difficulty,expected_matches,report_filename_prefix
+TJFP-001,windows,apprentice,disciple,master,2,6,TJFP-001__
+TJFP-002,web,disciple,master,apprentice,2,6,TJFP-002__
+TJFP-003,windows,master,apprentice,disciple,2,6,TJFP-003__
+TJFP-004,windows,apprentice,master,disciple,2,6,TJFP-004__
+TJFP-005,web,master,disciple,apprentice,2,6,TJFP-005__
+TJFP-006,windows,disciple,apprentice,master,2,6,TJFP-006__
+TJFP-007,windows,apprentice,disciple,master,2,6,TJFP-007__
+TJFP-008,web,disciple,master,apprentice,2,6,TJFP-008__
+TJFP-009,windows,master,apprentice,disciple,2,6,TJFP-009__

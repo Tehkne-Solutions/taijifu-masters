@@ -2,100 +2,91 @@
 
 ## Objetivo
 
-Executar a primeira rodada real do First Playable `0.2.1-playtest` com 6–12 participantes, preservando anonimato e produzindo evidência suficiente para priorizar correções antes da arte final.
+Executar a rodada real `pilot-09-r2` com a build `0.2.2-playtest`, de 6 a 12 participantes, preservando anonimato e produzindo evidência suficiente para priorizar correções antes da arte final.
 
-Esta etapa não inventa resultados. Os dados sintéticos existem apenas nos testes automatizados.
+Nenhum resultado é inventado. Dados sintéticos existem somente nos testes automatizados.
 
-O comando operacional oficial é `tools/playtest/run_first_playable_pilot.py`. O módulo `first_playable_pilot.py` contém o núcleo de domínio e não deve ser usado diretamente com dados reais.
+O comando operacional oficial é `tools/playtest/run_first_playable_pilot.py`. O módulo `first_playable_pilot.py` é apenas o núcleo determinístico.
 
-## Tamanho recomendado
+## Plano oficial
 
-A primeira rodada deve usar **9 participantes**:
+A primeira rodada usa 9 códigos anônimos:
 
-- 6 no Windows;
-- 3 no Web/Chromium;
+- 6 participantes no Windows;
+- 3 participantes no Web/Chromium;
 - 3 iniciando no Aprendiz;
 - 3 iniciando no Discípulo;
 - 3 iniciando no Mestre;
-- 2 partidas em cada dificuldade por participante.
+- 2 partidas em cada dificuldade por participante;
+- até 54 partidas previstas.
 
-Resultado esperado: até 54 partidas. O gate mínimo continua sendo 6 participantes e 24 partidas concluídas.
+O plano versionado está em `playtest/pilots/pilot-09-r2/`.
 
-## Perfis de experiência
+## Privacidade
 
-Selecionar perfis por experiência, sem registrar identidade no projeto:
+Dentro do projeto, cada participante existe somente como `TJFP-###`.
 
-- 3 pessoas com pouca experiência em jogos de luta;
-- 3 pessoas que jogam ação/luta ocasionalmente;
-- 3 pessoas com experiência em jogos competitivos;
-- incluir teclado e gamepad quando disponíveis;
-- não armazenar nome, e-mail, telefone, IP ou redes sociais.
+Não registrar:
 
-O coordenador mantém contatos fora dos relatórios técnicos. Dentro do projeto, cada pessoa existe apenas como `TJFP-###`.
+- nome;
+- e-mail;
+- telefone;
+- IP;
+- CPF/CNPJ;
+- senha, token ou credencial;
+- perfis de redes sociais.
 
-## 1. Gerar o plano
+Contatos pessoais permanecem fora dos relatórios técnicos e fora do GitHub.
 
-Na raiz do repositório:
+## Distribuição
 
-```bash
-python tools/playtest/run_first_playable_pilot.py plan \
-  --pilot-id pilot-09-r1 \
-  --participants 9 \
-  --windows-share 0.6666667 \
-  --matches-per-difficulty 2 \
-  --output-dir pilot-control/pilot-09-r1
-```
-
-PowerShell:
-
-```powershell
-python tools/playtest/run_first_playable_pilot.py plan `
-  --pilot-id pilot-09-r1 `
-  --participants 9 `
-  --windows-share 0.6666667 `
-  --matches-per-difficulty 2 `
-  --output-dir pilot-control/pilot-09-r1
-```
-
-Arquivos gerados:
-
-- `pilot-plan.json`: contrato da rodada;
-- `pilot-roster.csv`: distribuição para coordenação;
-- `pilot-plan.md`: roteiro legível;
-- `pilot-observations.json`: formulário qualitativo vazio;
-- `pilot-decisions.json`: registro vazio de decisões P0/P1.
-
-## 2. Entregar o kit
-
-Usar somente o kit auditado:
+Entregar somente o kit:
 
 ```text
-Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip
+Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip
 ```
 
-Cada participante recebe:
+O coordenador usa o pacote privado:
 
-- seu código anônimo;
-- sua plataforma;
+```text
+Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.2-playtest.zip
+```
+
+O pacote privado não deve ser enviado integralmente aos participantes.
+
+Cada participante recebe apenas:
+
+- o kit do jogador;
+- o código `TJFP-###` atribuído;
+- a plataforma;
 - a ordem das dificuldades;
-- a instrução de jogar a primeira tentativa sem orientação;
-- o protocolo `FIRST-PLAYABLE-PLAYTEST.md` contido no kit.
+- o protocolo `FIRST-PLAYABLE-PLAYTEST.md`.
 
-## 3. Receber os relatórios
+## Fluxo no jogo
 
-Cada JSON deve ser renomeado antes do intake:
+1. Abrir o First Playable.
+2. Informar o código anônimo no menu.
+3. Confirmar que o botão `JOGAR CONTRA IA` foi liberado.
+4. Selecionar a dificuldade indicada.
+5. Jogar sem orientação na primeira tentativa.
+6. Responder à avaliação de equilíbrio após cada partida.
+7. No Web, usar `BAIXAR RELATÓRIO JSON`.
+8. No Windows, usar `LOCALIZAR RELATÓRIO JSON`.
+9. Usar a cópia para clipboard apenas como fallback.
+
+O arquivo já deve nascer como:
 
 ```text
 TJFP-001__taijifu_1785450000-1234.json
 ```
 
-Nunca editar o conteúdo para inserir o código. O vínculo fica apenas no nome do arquivo e no manifesto de intake.
+Não renomear quando o prefixo estiver correto.
 
-Estrutura recomendada:
+## Estrutura privada recomendada
 
 ```text
 pilot-data/
-  pilot-09-r1/
+  pilot-09-r2/
     reports/
       TJFP-001__taijifu_....json
       TJFP-002__taijifu_....json
@@ -103,40 +94,35 @@ pilot-data/
       pilot-observations.json
 ```
 
-Não versionar `pilot-data/` no GitHub. Relatórios reais devem permanecer em armazenamento privado controlado pela Tehkné Solutions.
+Não versionar `pilot-data/`.
 
-## 4. Validar o lote
+## Intake seguro
 
 ```bash
 python tools/playtest/run_first_playable_pilot.py intake \
-  pilot-data/pilot-09-r1/reports \
-  --plan pilot-control/pilot-09-r1/pilot-plan.json \
-  --output-dir pilot-control/pilot-09-r1/intake \
+  pilot-data/pilot-09-r2/reports \
+  --plan playtest/pilots/pilot-09-r2/pilot-plan.json \
+  --output-dir pilot-control/pilot-09-r2/intake \
   --strict
 ```
 
 O intake:
 
-- valida o schema v3;
-- exige build `0.2.1-playtest`;
-- exige código `TJFP-###` no nome;
+- valida schema de telemetria v3;
+- exige build `0.2.2-playtest`;
+- valida o código anônimo no nome e nos metadados;
 - calcula SHA-256;
-- detecta arquivo duplicado;
-- detecta `session_id` duplicado;
+- bloqueia arquivos e sessões duplicadas;
 - bloqueia possível PII;
-- remove caminhos locais do manifesto final;
-- não modifica o JSON original.
+- remove caminhos locais do manifesto;
+- não altera o JSON original.
 
-Um lote rejeitado não deve seguir para consolidação até ser corrigido.
-
-## 5. Consolidar a telemetria
-
-Usar apenas os relatórios aceitos pelo intake:
+## Consolidação
 
 ```bash
 python tools/playtest/aggregate_first_playable_reports.py \
-  pilot-data/pilot-09-r1/reports \
-  --output-dir pilot-control/pilot-09-r1/summary \
+  pilot-data/pilot-09-r2/reports \
+  --output-dir pilot-control/pilot-09-r2/summary \
   --fail-on-invalid
 ```
 
@@ -145,34 +131,11 @@ Saídas:
 - `first-playable-playtest-summary.json`;
 - `first-playable-playtest-summary.md`.
 
-## 6. Registrar observações qualitativas
+## Observações qualitativas
 
-Editar uma cópia privada de `pilot-observations.json`.
+Editar uma cópia privada de `playtest/pilots/pilot-09-r2/pilot-observations.json`.
 
-Exemplo:
-
-```json
-{
-  "schema": "tehkne/taijifu-first-playable-observations/v1",
-  "pilot_id": "pilot-09-r1",
-  "build_version": "0.2.1-playtest",
-  "signature": "Tehkné Solutions",
-  "observations": [
-    {
-      "participant_id": "TJFP-003",
-      "title": "Defesa não ficou clara",
-      "category": "combat_clarity",
-      "description": "Não foi possível perceber quando o bloqueio funcionou.",
-      "reproduction": "Defender três ataques consecutivos no Discípulo.",
-      "severity": "major",
-      "platform": "windows",
-      "difficulty": "disciple"
-    }
-  ]
-}
-```
-
-Severidades aceitas:
+Prioridades:
 
 - `blocker` ou `critical` → P0;
 - `major` ou `high` → P1;
@@ -187,90 +150,43 @@ Categorias sempre P0:
 - `cannot_start`;
 - `telemetry_loss`.
 
-Relatos com mesmo título normalizado e categoria são agrupados e contam ocorrências e participantes.
-
-## 7. Gerar o backlog
+## Triagem
 
 ```bash
 python tools/playtest/run_first_playable_pilot.py triage \
-  --plan pilot-control/pilot-09-r1/pilot-plan.json \
-  --intake pilot-control/pilot-09-r1/intake/pilot-intake-manifest.json \
-  --summary pilot-control/pilot-09-r1/summary/first-playable-playtest-summary.json \
-  --observations pilot-data/pilot-09-r1/qualitative/pilot-observations.json \
-  --decisions pilot-control/pilot-09-r1/pilot-decisions.json \
-  --output-dir pilot-control/pilot-09-r1/triage \
+  --plan playtest/pilots/pilot-09-r2/pilot-plan.json \
+  --intake pilot-control/pilot-09-r2/intake/pilot-intake-manifest.json \
+  --summary pilot-control/pilot-09-r2/summary/first-playable-playtest-summary.json \
+  --observations pilot-data/pilot-09-r2/qualitative/pilot-observations.json \
+  --decisions playtest/pilots/pilot-09-r2/pilot-decisions.json \
+  --output-dir pilot-control/pilot-09-r2/triage \
   --strict \
   --fail-on-p0
 ```
 
-O entrypoint endurecido valida que plano, intake, observações e decisões pertencem ao mesmo piloto e à mesma build. O modo estrito também bloqueia observações rejeitadas, decisões inválidas e IDs de backlog desconhecidos.
+O gate endurecido bloqueia:
 
-Saídas:
+- P0 aberto;
+- observação rejeitada;
+- decisão inválida;
+- ID de backlog desconhecido;
+- mistura entre piloto ou build.
 
-- `pilot-backlog.json`;
-- `pilot-backlog.md`.
+## Gate da Sprint 09
 
-## 8. Registrar decisões
+A rodada só termina quando:
 
-Todos os P1 precisam de decisão explícita. Copiar o `id` do item do backlog para `pilot-decisions.json`.
-
-```json
-{
-  "schema": "tehkne/taijifu-first-playable-decisions/v1",
-  "pilot_id": "pilot-09-r1",
-  "build_version": "0.2.1-playtest",
-  "signature": "Tehkné Solutions",
-  "decisions": [
-    {
-      "backlog_item_id": "signal:abandonment_high",
-      "status": "accepted",
-      "rationale": "Será corrigido antes da próxima rodada.",
-      "target_version": "0.2.2-playtest",
-      "owner_role": "Gameplay Engineering"
-    }
-  ]
-}
-```
-
-Status aceitos:
-
-- `accepted`;
-- `in_progress`;
-- `fixed`;
-- `deferred`;
-- `not_reproducible`;
-- `wont_fix`.
-
-P0 só é considerado resolvido com `fixed` ou `not_reproducible`. `wont_fix` não libera P0.
-
-## Gate para encerrar a Sprint 09
-
-A rodada real só pode ser encerrada quando:
-
-- existem pelo menos 6 participantes com sessão aceita;
+- existem pelo menos 6 participantes válidos;
 - existem pelo menos 24 partidas concluídas;
 - cada dificuldade possui pelo menos 6 partidas;
-- cobertura de feedback é igual ou superior a 70%;
+- a cobertura de feedback é de pelo menos 70%;
 - não existe P0 aberto;
-- todo P1 possui decisão documentada;
-- observações rejeitadas foram corrigidas;
-- decisões inválidas ou desconhecidas foram corrigidas;
+- todos os P1 possuem decisão registrada;
+- não há observação ou decisão inválida;
 - resumo e backlog finais foram anexados à issue #152 sem dados pessoais.
 
 ## Regra de produto
 
-Antes do gate:
-
-- corrigir imediatamente P0 reproduzível;
-- pode corrigir P1 de controles, fluxo ou clareza;
-- não alterar números de balanceamento com amostra insuficiente;
-- não iniciar produção em massa de animações finais para comportamentos ainda instáveis.
-
-Depois do gate:
-
-- congelar os controles aprovados;
-- criar a versão `0.2.2-playtest` com correções;
-- executar uma segunda rodada focada nos P1;
-- iniciar substituição progressiva da arte procedural somente nos sistemas estáveis.
+Antes do gate, corrigir imediatamente P0 reproduzível e P1 de controles, fluxo ou clareza. Não alterar números de balanceamento com amostra insuficiente e não iniciar produção em massa de animações finais para comportamentos ainda instáveis.
 
 Assinatura: Tehkné Solutions

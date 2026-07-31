@@ -6,6 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
+        Piloto ativo: `pilot-09-r2` • Build: `0.2.2-playtest`.
         Use somente o código anônimo `TJFP-###`. Não informe nome, e-mail, telefone, IP ou outros dados pessoais.
 
   - type: input
@@ -75,7 +76,7 @@ body:
     id: build
     attributes:
       label: Versão da build
-      value: 0.2.1-playtest
+      value: 0.2.2-playtest
     validations:
       required: true
 

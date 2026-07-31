@@ -2,7 +2,7 @@ class_name FirstPlayableSession
 extends RefCounted
 
 const VALID_DIFFICULTIES: Array[StringName] = [&"apprentice", &"disciple", &"master"]
-const PILOT_ID := "pilot-09-r1"
+const PILOT_ID := "pilot-09-r2"
 const PARTICIPANT_PREFIX := "TJFP-"
 
 static var selected_difficulty_id: StringName = &"disciple"
