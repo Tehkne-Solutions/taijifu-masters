@@ -179,7 +179,7 @@ jobs:
       - name: Montar pacote privado do coordenador
         run: |
           set -o pipefail
-          python3 tools/playtest/create_first_playable_pilot_coordinator_pack.py \
+          python3 tools/playtest/create_first_playable_pilot_coordinator_pack_r2.py \
             --project-root . \
             --pilot-id pilot-09-r2 \
             --external-kit dist/Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip \
@@ -241,9 +241,12 @@ jobs:
               names = set(archive.namelist())
               observations = json.loads(archive.read("pilot/pilot-observations.json"))
               decisions = json.loads(archive.read("pilot/pilot-decisions.json"))
+              coordinator_readme = archive.read("README-COORDENADOR.txt").decode("utf-8")
           assert required.issubset(names), sorted(required - names)
           assert observations["observations"] == []
           assert decisions["decisions"] == []
+          assert "Não renomeie arquivos corretamente prefixados" in coordinator_readme
+          assert "pilot-09-r2" in coordinator_readme
 
           print(json.dumps({
               "coordinator_pack": zip_path.name,
