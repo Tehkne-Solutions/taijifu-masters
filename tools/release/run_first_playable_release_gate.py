@@ -49,7 +49,7 @@ def run_gate(name: str, command: list[str]) -> GateResult:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--strict-assets", action="store_true", help="Exige Lot 01 real e bloqueia fallbacks procedurais.")
+    parser.add_argument("--strict-assets", action="store_true", help="Exige os lotes reais e bloqueia fallbacks procedurais.")
     parser.add_argument("--report", default="artifacts/first-playable-release-gate.json")
     args = parser.parse_args()
 
@@ -57,8 +57,10 @@ def main() -> int:
         ("arena_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_arena_final_contract.gd"]),
         ("hud_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_hud_final_contract.gd"]),
         ("combat_feedback", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_combat_feedback_contract.gd"]),
-        ("lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_lot01_presenter_contract.gd"]),
-        ("lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_first_playable_lot01_importer.py"]),
+        ("lian_wu_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_lot01_presenter_contract.gd"]),
+        ("lian_wu_lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_first_playable_lot01_importer.py"]),
+        ("training_rival_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/training_rival_lot01_presenter_contract.gd"]),
+        ("training_rival_lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_training_rival_lot01_importer.py"]),
     ]
 
     visual_command = [sys.executable, "tools/asset_forge/audit_first_playable_visuals.py"]
@@ -68,8 +70,9 @@ def main() -> int:
 
     results = [run_gate(name, command) for name, command in gates]
     summary = {
-        "gate_id": "taijifu-first-playable-release-v1",
+        "gate_id": "taijifu-first-playable-release-v2",
         "strict_assets": args.strict_assets,
+        "required_real_fighters": ["lian_wu", "training_rival"],
         "signature": "Tehkné Solutions",
         "passed": all(result.status == "passed" for result in results),
         "results": [asdict(result) for result in results],
