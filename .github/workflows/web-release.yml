@@ -57,11 +57,18 @@ jobs:
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
           assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
           assert manifest["platform"] == "web"
+          assert manifest["channel"] == "external-playtest"
+          assert manifest["version"] == "0.2.1-playtest"
           assert manifest["main_scene"] == "res://scenes/vertical_slice/first_playable_menu.tscn"
           assert manifest["battle_scene"] == "res://scenes/vertical_slice/first_playable.tscn"
           assert manifest["signature"] == "Tehkné Solutions"
-          assert manifest["version"] == "0.2.0-first-playable"
           assert manifest["totals"]["file_count"] > 0
+          telemetry = manifest["telemetry"]
+          assert telemetry["schema"] == "tehkne/taijifu-match-telemetry/v3"
+          assert telemetry["privacy"] == "local_only"
+          assert telemetry["automatic_upload"] is False
+          assert telemetry["post_match_balance_feedback"] is True
+          assert telemetry["report_copy"] is True
 
           validation = json.loads(validation_path.read_text(encoding="utf-8"))
           assert validation["product"] == "Taijifu Masters"
@@ -74,9 +81,11 @@ jobs:
 
           print(json.dumps({
               "build_id": manifest["build_id"],
+              "version": manifest["version"],
               "files": manifest["totals"]["file_count"],
               "size_bytes": manifest["totals"]["size_bytes"],
               "web_validation": "approved",
+              "telemetry": "local-v3",
           }, indent=2))
           PY
 
