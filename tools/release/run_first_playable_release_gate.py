@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Executa os gates canônicos do First Playable.
+
+Assinatura: Tehkné Solutions
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+@dataclass
+class GateResult:
+    name: str
+    command: list[str]
+    status: str
+    returncode: int
+    output: str
+
+
+def run_gate(name: str, command: list[str]) -> GateResult:
+    executable = shutil.which(command[0])
+    if executable is None:
+        return GateResult(name, command, "blocked", 127, f"Executável ausente: {command[0]}")
+    process = subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    return GateResult(
+        name=name,
+        command=command,
+        status="passed" if process.returncode == 0 else "failed",
+        returncode=process.returncode,
+        output=process.stdout[-12000:],
+    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--strict-assets", action="store_true", help="Exige Lot 01 real e bloqueia fallbacks procedurais.")
+    parser.add_argument("--report", default="artifacts/first-playable-release-gate.json")
+    args = parser.parse_args()
+
+    gates: list[tuple[str, list[str]]] = [
+        ("arena_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_arena_final_contract.gd"]),
+        ("hud_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_hud_final_contract.gd"]),
+        ("combat_feedback", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_combat_feedback_contract.gd"]),
+        ("lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_lot01_presenter_contract.gd"]),
+        ("lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_first_playable_lot01_importer.py"]),
+    ]
+
+    visual_command = [sys.executable, "tools/asset_forge/audit_first_playable_visuals.py"]
+    if args.strict_assets:
+        visual_command.append("--strict")
+    gates.append(("visual_assets", visual_command))
+
+    results = [run_gate(name, command) for name, command in gates]
+    summary = {
+        "gate_id": "taijifu-first-playable-release-v1",
+        "strict_assets": args.strict_assets,
+        "signature": "Tehkné Solutions",
+        "passed": all(result.status == "passed" for result in results),
+        "results": [asdict(result) for result in results],
+    }
+
+    report_path = ROOT / args.report
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    for result in results:
+        print(f"[{result.status.upper():7}] {result.name}")
+        if result.status != "passed":
+            print(result.output)
+
+    print(f"Relatório: {report_path.relative_to(ROOT)}")
+    return 0 if summary["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
