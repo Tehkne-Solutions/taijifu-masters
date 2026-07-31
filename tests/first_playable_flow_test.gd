@@ -90,7 +90,7 @@ func _run() -> void:
 		_fail("result overlay did not present player victory")
 		return
 
-	if not _validate_playtest_feedback(battle):
+	if not await _validate_playtest_feedback(battle):
 		return
 
 	var rematch_button := battle.get_node("HUD/ResultOverlay/Panel/Content/RematchButton") as Button
