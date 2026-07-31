@@ -31,7 +31,10 @@ A coleta desta sprint é local. Nenhum relatório é enviado automaticamente par
    - Fácil demais;
    - Equilibrado;
    - Difícil demais.
-12. Pressionar `COPIAR RELATÓRIO DO PLAYTEST` e enviar o JSON junto do feedback textual.
+12. No Web, pressionar `BAIXAR RELATÓRIO JSON` e guardar o arquivo baixado.
+13. No Windows, pressionar `LOCALIZAR RELATÓRIO JSON` para abrir a localização do arquivo já salvo.
+14. Usar `COPIAR RELATÓRIO DO PLAYTEST` somente como alternativa quando o download ou a localização não estiver disponível.
+15. Enviar o arquivo JSON junto do feedback textual.
 
 ## Perguntas qualitativas
 
@@ -61,7 +64,7 @@ Cada sessão pode conter:
 
 Não incluir nome, e-mail, IP, credenciais ou qualquer dado pessoal no relatório.
 
-## Local e nome do arquivo
+## Local, download e nome do arquivo
 
 O jogo grava os arquivos em `user://telemetry` já usando o prefixo esperado pelo intake:
 
@@ -69,9 +72,13 @@ O jogo grava os arquivos em `user://telemetry` já usando o prefixo esperado pel
 TJFP-003__taijifu_1785450000-1234.json
 ```
 
-Não é necessário renomear o arquivo quando o código foi informado corretamente no menu. Builds antigas sem o campo de código ainda podem exigir renomeio manual pelo coordenador.
+Não é necessário renomear o arquivo quando o código foi informado corretamente no menu.
 
-O botão de cópia envia o conteúdo completo da sessão para a área de transferência, facilitando o envio por issue, formulário ou mensagem.
+No Web, o botão de download cria o arquivo inteiramente no navegador usando um `Blob` local. O JSON não é enviado para nenhum servidor. A URL temporária é revogada após o início do download.
+
+No Windows, o botão de localização revela o arquivo já gravado, sem criar uma segunda cópia divergente.
+
+O botão de cópia mantém o conteúdo completo da sessão na área de transferência como fallback.
 
 ## Critérios de bloqueio
 
@@ -84,6 +91,8 @@ Bloquear uma nova release se ocorrer qualquer um destes casos:
 - KO ou timeout não abre o resultado;
 - pausa ou revanche causa soft lock;
 - relatório JSON não é gerado;
+- download Web não produz um JSON com o nome esperado;
+- localização Windows não encontra o arquivo já salvo;
 - feedback altera o resultado ou inicia outra ação;
 - build Web não abre no Chromium;
 - build Windows não inicia após extração.

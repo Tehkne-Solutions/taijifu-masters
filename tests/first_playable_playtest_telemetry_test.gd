@@ -77,7 +77,28 @@ func _run() -> void:
 
 	var events: Array = round_data.get("events", [])
 	assert(events.size() == 4, "Os eventos essenciais devem ser preservados")
-	assert(telemetry.session_json().contains("balance_feedback"))
+	var report_json := telemetry.session_json()
+	assert(report_json.contains("balance_feedback"))
+
+	var sanitized := PlaytestReportExporter.sanitize_file_name(
+		"../../TJFP-007__taijifu_<script>.json"
+	)
+	assert(sanitized == "TJFP-007__taijifu__script_.json")
+	var web_script := PlaytestReportExporter.build_web_download_script(
+		report_json,
+		saved_path.get_file()
+	)
+	assert(web_script.contains("new Blob"))
+	assert(web_script.contains("URL.createObjectURL"))
+	assert(web_script.contains("URL.revokeObjectURL"))
+	assert(web_script.contains("atob("))
+	assert(web_script.contains(saved_path.get_file()))
+	assert(not web_script.contains("balance_feedback"), "O JSON cru não deve ser interpolado no JavaScript")
+	var export_contract := PlaytestReportExporter.contract_signature()
+	assert(bool(export_contract.get("web_blob_download", false)))
+	assert(export_contract.get("web_payload_encoding", "") == "base64")
+	assert(bool(export_contract.get("native_file_reveal", false)))
+	assert(not bool(export_contract.get("automatic_upload", true)))
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(saved_path))
 	FirstPlayableSession.reset()
