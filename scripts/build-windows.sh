@@ -15,6 +15,7 @@ TEMPLATE_DIR="${GODOT_TEMPLATE_DIR:-${XDG_DATA_HOME_VALUE}/godot/export_template
 EDITOR_URL="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
 TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
 EXE_PATH="${OUTPUT_DIR}/Taijifu-Masters-First-Playable.exe"
+PROJECT_VERSION="$(sed -n 's/^config\/version="\([^"]*\)"/\1/p' "${ROOT_DIR}/project.godot" | head -n 1)"
 
 log() { printf '\n[taijifu-windows] %s\n' "$*"; }
 download() { local url="$1" destination="$2"; mkdir -p "$(dirname "${destination}")"; curl --fail --location --retry 3 --retry-delay 2 --output "${destination}" "${url}"; }
@@ -63,16 +64,27 @@ test -s "${EXE_PATH}"
 file "${EXE_PATH}" | tee "${OUTPUT_DIR}/executable-type.txt"
 grep -Eq 'PE32|MS Windows' "${OUTPUT_DIR}/executable-type.txt"
 
-cat > "${OUTPUT_DIR}/LEIA-ME.txt" <<'EOF'
-TAIJIFU MASTERS — FIRST PLAYABLE
+cat > "${OUTPUT_DIR}/LEIA-ME.txt" <<EOF
+TAIJIFU MASTERS — PLAYTEST EXTERNO ${PROJECT_VERSION}
 
+COMO JOGAR
 1. Execute Taijifu-Masters-First-Playable.exe.
-2. Selecione a dificuldade da IA.
+2. Selecione Aprendiz, Discípulo ou Mestre.
 3. Escolha JOGAR CONTRA IA.
-4. Controle Lian Wu e derrote o Rival de Treino.
+4. Controle Lian Wu e enfrente o Rival de Treino.
+5. Após a luta, informe se foi fácil demais, equilibrada ou difícil demais.
+6. Use COPIAR RELATÓRIO DO PLAYTEST e envie somente o JSON técnico.
 
-Controles principais:
+CONTROLES PRINCIPAIS
 A/D mover | W saltar | F atacar | Q esquivar | R defender | Esc pausar
+
+PRIVACIDADE
+A telemetria é gravada localmente em user://telemetry.
+Nenhum relatório é enviado automaticamente.
+Não inclua nome, e-mail, credenciais ou dados pessoais no JSON.
+
+CONSOLIDAÇÃO
+O kit completo inclui aggregate_first_playable_reports.py e documentação.
 
 Assinatura: Tehkné Solutions
 EOF
