@@ -9,9 +9,12 @@ on:
       - "scripts/build-windows.sh"
       - "scripts/create-first-playable-build-manifest.py"
       - "tools/playtest/**"
+      - "playtest/pilots/**"
       - "tests/test_first_playable_report_aggregator.py"
       - "tests/test_first_playable_playtest_kit.py"
+      - "tests/test_first_playable_pilot*.py"
       - "docs/FIRST-PLAYABLE-PLAYTEST*.md"
+      - "docs/FIRST-PLAYABLE-PILOT-09.md"
       - ".github/workflows/first-playable-playtest-kit.yml"
   push:
     branches:
@@ -25,7 +28,9 @@ on:
       - "web/**"
       - "web-tests/**"
       - "tools/playtest/**"
+      - "playtest/pilots/**"
       - "docs/FIRST-PLAYABLE-PLAYTEST*.md"
+      - "docs/FIRST-PLAYABLE-PILOT-09.md"
       - ".github/workflows/first-playable-playtest-kit.yml"
   workflow_dispatch:
 
@@ -38,9 +43,9 @@ concurrency:
 
 jobs:
   build-test-and-package:
-    name: Construir e publicar kit externo
+    name: Construir e publicar kits externos
     runs-on: ubuntu-22.04
-    timeout-minutes: 50
+    timeout-minutes: 55
 
     steps:
       - name: Checkout
@@ -58,6 +63,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_first_playable_report_aggregator.py' -v
           python3 -m unittest discover -s tests -p 'test_first_playable_playtest_kit.py' -v
+          python3 -m unittest discover -s tests -p 'test_first_playable_pilot*.py' -v
 
       - name: Construir Windows x86_64
         env:
@@ -107,7 +113,7 @@ jobs:
             gamepad-web.spec.cjs \
             --reporter=line 2>&1 | tee first-playable-kit-web-test.log
 
-      - name: Montar kit externo
+      - name: Montar kit externo do jogador
         run: |
           set -o pipefail
           python3 tools/playtest/create_first_playable_playtest_kit.py \
@@ -116,7 +122,7 @@ jobs:
             --stage-dir playtest-kit-build \
             2>&1 | tee first-playable-kit-package.log
 
-      - name: Validar artifact final
+      - name: Validar kit externo do jogador
         run: |
           python3 - <<'PY'
           import hashlib
@@ -170,19 +176,100 @@ jobs:
           }, indent=2))
           PY
 
-      - name: Publicar kit de playtest externo
+      - name: Montar pacote privado do coordenador
+        run: |
+          set -o pipefail
+          python3 tools/playtest/create_first_playable_pilot_coordinator_pack.py \
+            --project-root . \
+            --pilot-id pilot-09-r1 \
+            --external-kit dist/Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip \
+            --external-kit-checksum dist/Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip.sha256 \
+            --output-dir dist \
+            --stage-dir pilot-coordinator-build \
+            2>&1 | tee first-playable-pilot-coordinator-package.log
+
+      - name: Validar pacote privado do coordenador
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import zipfile
+          from pathlib import Path
+
+          pilot_id = "pilot-09-r1"
+          version = "0.2.1-playtest"
+          name = f"Taijifu-Masters-Pilot-Coordinator-{pilot_id}-{version}.zip"
+          zip_path = Path("dist") / name
+          checksum_path = Path(str(zip_path) + ".sha256")
+          manifest_path = Path("pilot-coordinator-build/manifests/coordinator-pack-info.json")
+
+          assert zip_path.is_file() and zip_path.stat().st_size > 0
+          assert checksum_path.is_file()
+          assert manifest_path.is_file()
+          expected, referenced = checksum_path.read_text(encoding="utf-8").strip().split(maxsplit=1)
+          assert referenced.lstrip("*") == zip_path.name
+          assert "/" not in referenced and "\\" not in referenced
+          actual = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+          assert actual == expected
+
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          assert manifest["schema"] == "tehkne/taijifu-first-playable-pilot-coordinator-pack/v1"
+          assert manifest["pilot_id"] == pilot_id
+          assert manifest["build_version"] == version
+          assert manifest["signature"] == "Tehkné Solutions"
+          assert manifest["privacy"] == "anonymous_templates_only_no_real_results"
+          assert manifest["templates_empty"] is True
+          assert manifest["participant_count"] == 9
+          assert manifest["expected_total_matches"] == 54
+
+          required = {
+              "README-COORDENADOR.txt",
+              f"game-kit/Taijifu-Masters-External-Playtest-Kit-{version}.zip",
+              f"game-kit/Taijifu-Masters-External-Playtest-Kit-{version}.zip.sha256",
+              "pilot/pilot-plan.json",
+              "pilot/pilot-plan.md",
+              "pilot/pilot-roster.csv",
+              "pilot/pilot-observations.json",
+              "pilot/pilot-decisions.json",
+              "docs/FIRST-PLAYABLE-PILOT-09.md",
+              "tools/run_first_playable_pilot.py",
+              "tools/first_playable_pilot.py",
+              "tools/aggregate_first_playable_reports.py",
+              "manifests/coordinator-pack-info.json",
+          }
+          with zipfile.ZipFile(zip_path) as archive:
+              names = set(archive.namelist())
+              observations = json.loads(archive.read("pilot/pilot-observations.json"))
+              decisions = json.loads(archive.read("pilot/pilot-decisions.json"))
+          assert required.issubset(names), sorted(required - names)
+          assert observations["observations"] == []
+          assert decisions["decisions"] == []
+
+          print(json.dumps({
+              "coordinator_pack": zip_path.name,
+              "size_bytes": zip_path.stat().st_size,
+              "sha256": actual,
+              "files": manifest["totals"]["file_count"],
+              "templates_empty": True,
+          }, indent=2))
+          PY
+
+      - name: Publicar kits de playtest
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: taijifu-external-playtest-kit-${{ github.sha }}
+          name: taijifu-external-playtest-kits-${{ github.sha }}
           path: |
             dist/Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip
             dist/Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip.sha256
             playtest-kit-build/manifests/kit-info.json
+            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r1-0.2.1-playtest.zip
+            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r1-0.2.1-playtest.zip.sha256
+            pilot-coordinator-build/manifests/coordinator-pack-info.json
           if-no-files-found: error
           retention-days: 60
 
-      - name: Publicar logs do kit
+      - name: Publicar logs dos kits
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -193,6 +280,7 @@ jobs:
             first-playable-kit-web-server.log
             first-playable-kit-web-test.log
             first-playable-kit-package.log
+            first-playable-pilot-coordinator-package.log
             web-tests/test-results/
           if-no-files-found: ignore
           retention-days: 14
