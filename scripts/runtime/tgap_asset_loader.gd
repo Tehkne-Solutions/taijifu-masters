@@ -1,5 +1,4 @@
 extends Node
-class_name TgapAssetLoader
 
 signal catalog_reloaded(previous_generation: int, current_generation: int)
 signal pack_invalidated(pack_id: String, version: String)
@@ -16,6 +15,22 @@ signal reload_rejected(reason: String)
 @export var allow_fallbacks: bool = true
 @export var hot_reload_enabled: bool = false
 @export var poll_interval_seconds: float = 1.0
+
+# Compatibilidade temporária da Sprint 0 com os testes TGAP anteriores.
+var install_catalog_path: String:
+	get:
+		return runtime_root.path_join(catalog_filename)
+	set(value):
+		if value.is_empty():
+			return
+		runtime_root = value.get_base_dir()
+		catalog_filename = value.get_file()
+
+var alias_catalog_path: String:
+	get:
+		return aliases_path
+	set(value):
+		aliases_path = value
 
 var _catalog: Dictionary = {}
 var _aliases: Dictionary = {}
@@ -43,6 +58,10 @@ func catalog_path() -> String:
 
 func active_root() -> String:
 	return runtime_root.path_join(active_directory)
+
+func reload_catalog() -> bool:
+	load_aliases()
+	return load_catalog(true)
 
 func load_aliases() -> bool:
 	_aliases = {}
@@ -149,6 +168,9 @@ func get_pack_direct(pack_id: String) -> Dictionary:
 		if typeof(pack) == TYPE_DICTIONARY and str(pack.get("pack_id", "")) == pack_id:
 			return pack
 	return {}
+
+func list_packs() -> Array:
+	return Array(_catalog.get("packs", [])).duplicate(true)
 
 func has_pack(pack_or_alias: String) -> bool:
 	return not get_pack(pack_or_alias).is_empty()
