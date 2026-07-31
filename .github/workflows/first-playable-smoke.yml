@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "project.godot"
+      - "export_presets.cfg"
       - "scenes/vertical_slice/**"
       - "scenes/fighter/**"
       - "scripts/vertical_slice/**"
       - "scripts/fighter/**"
       - "scripts/telemetry/**"
+      - "scripts/create-first-playable-build-manifest.py"
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
       - "scripts/ai/bot_behavior_catalog.gd"
@@ -18,6 +20,7 @@ on:
       - "tools/playtest/**"
       - "tests/first_playable*.gd"
       - "tests/test_first_playable_report_aggregator.py"
+      - "tests/test_first_playable_playtest_kit.py"
       - ".github/workflows/first-playable-smoke.yml"
   workflow_dispatch:
 
@@ -30,6 +33,9 @@ jobs:
 
       - name: Run First Playable report aggregator tests
         run: python3 -m unittest discover -s tests -p 'test_first_playable_report_aggregator.py' -v
+
+      - name: Run external playtest kit tests
+        run: python3 -m unittest discover -s tests -p 'test_first_playable_playtest_kit.py' -v
 
       - name: Install Godot 4.3
         run: |

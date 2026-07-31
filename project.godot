@@ -1,5 +1,5 @@
 ; Engine configuration file.
-; Taijifu Masters — First Playable
+; Taijifu Masters — First Playable External Playtest
 
 config_version=5
 
@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Taijifu Masters"
 config/description="Batalhas técnicas Tai, Ji e Fu em arenas manga 2D."
-config/version="0.2.0-first-playable"
+config/version="0.2.1-playtest"
 run/main_scene="res://scenes/vertical_slice/first_playable_menu.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://web/taijifu-web-icon.svg"

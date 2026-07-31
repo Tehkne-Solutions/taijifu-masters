@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a traceable manifest for Taijifu Masters First Playable builds."""
+"""Generate a traceable manifest for Taijifu Masters external playtest builds."""
 from __future__ import annotations
 
 import argparse
@@ -12,7 +12,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCHEMA = "tehkne/taijifu-first-playable-build/v1"
+TELEMETRY_SCHEMA = "tehkne/taijifu-match-telemetry/v3"
 EXPECTED_MAIN_SCENE = "res://scenes/vertical_slice/first_playable_menu.tscn"
+SIGNATURE = "Tehkné Solutions"
 
 
 def sha256(path: Path) -> str:
@@ -84,8 +86,8 @@ def main() -> int:
     manifest = {
         "schema": SCHEMA,
         "product": "Taijifu Masters",
-        "signature": "Tehkné Solutions",
-        "channel": "first-playable",
+        "signature": SIGNATURE,
+        "channel": "external-playtest",
         "version": version,
         "build_id": f"{version}+{commit[:12]}",
         "git_sha": commit,
@@ -93,12 +95,23 @@ def main() -> int:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "main_scene": main_scene,
         "battle_scene": "res://scenes/vertical_slice/first_playable.tscn",
+        "telemetry": {
+            "schema": TELEMETRY_SCHEMA,
+            "storage": "user://telemetry",
+            "privacy": "local_only",
+            "automatic_upload": False,
+            "post_match_balance_feedback": True,
+            "report_copy": True,
+        },
         "features": [
             "first_playable_menu",
             "lian_wu_vs_training_rival",
             "triple_path_ruins",
             "tactical_ai_three_difficulties",
             "pause_result_rematch_flow",
+            "local_playtest_telemetry",
+            "post_match_balance_feedback",
+            "offline_report_aggregation",
         ],
         "files": files,
         "totals": {
