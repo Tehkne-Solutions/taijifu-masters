@@ -6,6 +6,8 @@ Executar a primeira rodada real do First Playable `0.2.1-playtest` com 6–12 pa
 
 Esta etapa não inventa resultados. Os dados sintéticos existem apenas nos testes automatizados.
 
+O comando operacional oficial é `tools/playtest/run_first_playable_pilot.py`. O módulo `first_playable_pilot.py` contém o núcleo de domínio e não deve ser usado diretamente com dados reais.
+
 ## Tamanho recomendado
 
 A primeira rodada deve usar **9 participantes**:
@@ -36,7 +38,7 @@ O coordenador mantém contatos fora dos relatórios técnicos. Dentro do projeto
 Na raiz do repositório:
 
 ```bash
-python tools/playtest/first_playable_pilot.py plan \
+python tools/playtest/run_first_playable_pilot.py plan \
   --pilot-id pilot-09-r1 \
   --participants 9 \
   --windows-share 0.6666667 \
@@ -47,7 +49,7 @@ python tools/playtest/first_playable_pilot.py plan \
 PowerShell:
 
 ```powershell
-python tools/playtest/first_playable_pilot.py plan `
+python tools/playtest/run_first_playable_pilot.py plan `
   --pilot-id pilot-09-r1 `
   --participants 9 `
   --windows-share 0.6666667 `
@@ -106,7 +108,7 @@ Não versionar `pilot-data/` no GitHub. Relatórios reais devem permanecer em ar
 ## 4. Validar o lote
 
 ```bash
-python tools/playtest/first_playable_pilot.py intake \
+python tools/playtest/run_first_playable_pilot.py intake \
   pilot-data/pilot-09-r1/reports \
   --plan pilot-control/pilot-09-r1/pilot-plan.json \
   --output-dir pilot-control/pilot-09-r1/intake \
@@ -122,6 +124,7 @@ O intake:
 - detecta arquivo duplicado;
 - detecta `session_id` duplicado;
 - bloqueia possível PII;
+- remove caminhos locais do manifesto final;
 - não modifica o JSON original.
 
 Um lote rejeitado não deve seguir para consolidação até ser corrigido.
@@ -189,7 +192,7 @@ Relatos com mesmo título normalizado e categoria são agrupados e contam ocorr�
 ## 7. Gerar o backlog
 
 ```bash
-python tools/playtest/first_playable_pilot.py triage \
+python tools/playtest/run_first_playable_pilot.py triage \
   --plan pilot-control/pilot-09-r1/pilot-plan.json \
   --intake pilot-control/pilot-09-r1/intake/pilot-intake-manifest.json \
   --summary pilot-control/pilot-09-r1/summary/first-playable-playtest-summary.json \
@@ -199,6 +202,8 @@ python tools/playtest/first_playable_pilot.py triage \
   --strict \
   --fail-on-p0
 ```
+
+O entrypoint endurecido valida que plano, intake, observações e decisões pertencem ao mesmo piloto e à mesma build. O modo estrito também bloqueia observações rejeitadas, decisões inválidas e IDs de backlog desconhecidos.
 
 Saídas:
 
@@ -249,6 +254,7 @@ A rodada real só pode ser encerrada quando:
 - não existe P0 aberto;
 - todo P1 possui decisão documentada;
 - observações rejeitadas foram corrigidas;
+- decisões inválidas ou desconhecidas foram corrigidas;
 - resumo e backlog finais foram anexados à issue #152 sem dados pessoais.
 
 ## Regra de produto
