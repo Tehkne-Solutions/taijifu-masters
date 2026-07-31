@@ -1,0 +1,111 @@
+{
+  "schema": "tehkne/taijifu-first-playable-pilot-plan/v1",
+  "generated_at_utc": "2026-07-31T02:06:14.784382+00:00",
+  "signature": "Tehkné Solutions",
+  "pilot_id": "pilot-09-r1",
+  "build_version": "0.2.1-playtest",
+  "privacy": "anonymous_codes_only",
+  "participant_count": 9,
+  "matches_per_difficulty": 2,
+  "expected_total_matches": 54,
+  "platform_targets": {
+    "web": 3,
+    "windows": 6
+  },
+  "starting_difficulty_distribution": {
+    "apprentice": 3,
+    "disciple": 3,
+    "master": 3
+  },
+  "participants": [
+    {
+      "participant_id": "TJFP-001",
+      "platform": "windows",
+      "difficulty_sequence": ["apprentice", "disciple", "master"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-001__"
+    },
+    {
+      "participant_id": "TJFP-002",
+      "platform": "web",
+      "difficulty_sequence": ["disciple", "master", "apprentice"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-002__"
+    },
+    {
+      "participant_id": "TJFP-003",
+      "platform": "windows",
+      "difficulty_sequence": ["master", "apprentice", "disciple"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-003__"
+    },
+    {
+      "participant_id": "TJFP-004",
+      "platform": "windows",
+      "difficulty_sequence": ["apprentice", "master", "disciple"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-004__"
+    },
+    {
+      "participant_id": "TJFP-005",
+      "platform": "web",
+      "difficulty_sequence": ["master", "disciple", "apprentice"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-005__"
+    },
+    {
+      "participant_id": "TJFP-006",
+      "platform": "windows",
+      "difficulty_sequence": ["disciple", "apprentice", "master"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-006__"
+    },
+    {
+      "participant_id": "TJFP-007",
+      "platform": "windows",
+      "difficulty_sequence": ["apprentice", "disciple", "master"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-007__"
+    },
+    {
+      "participant_id": "TJFP-008",
+      "platform": "web",
+      "difficulty_sequence": ["disciple", "master", "apprentice"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-008__"
+    },
+    {
+      "participant_id": "TJFP-009",
+      "platform": "windows",
+      "difficulty_sequence": ["master", "apprentice", "disciple"],
+      "matches_per_difficulty": 2,
+      "expected_matches": 6,
+      "required_checks": ["first_attempt_without_coaching", "movement_jump_attack_defense_dodge_push_grab", "pause_and_resume", "submit_balance_feedback_each_match", "copy_or_export_local_json"],
+      "report_filename_prefix": "TJFP-009__"
+    }
+  ],
+  "completion_gate": {
+    "minimum_valid_participants": 6,
+    "minimum_completed_rounds": 24,
+    "minimum_rounds_per_difficulty": 6,
+    "minimum_feedback_coverage": 0.7,
+    "open_p0_allowed": 0,
+    "all_p1_require_decision": true
+  }
+}

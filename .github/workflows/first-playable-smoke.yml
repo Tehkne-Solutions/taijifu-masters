@@ -18,9 +18,13 @@ on:
       - "scripts/combat/**"
       - "scripts/visual/character_visual_catalog.gd"
       - "tools/playtest/**"
+      - "playtest/pilots/**"
+      - "docs/FIRST-PLAYABLE-PILOT-09.md"
+      - ".github/ISSUE_TEMPLATE/first-playable-playtest.yml"
       - "tests/first_playable*.gd"
       - "tests/test_first_playable_report_aggregator.py"
       - "tests/test_first_playable_playtest_kit.py"
+      - "tests/test_first_playable_pilot*.py"
       - ".github/workflows/first-playable-smoke.yml"
   workflow_dispatch:
 
@@ -36,6 +40,9 @@ jobs:
 
       - name: Run external playtest kit tests
         run: python3 -m unittest discover -s tests -p 'test_first_playable_playtest_kit.py' -v
+
+      - name: Run controlled pilot operations and fixture tests
+        run: python3 -m unittest discover -s tests -p 'test_first_playable_pilot*.py' -v
 
       - name: Install Godot 4.3
         run: |
