@@ -8,6 +8,7 @@ on:
       - "scenes/fighter/**"
       - "scripts/vertical_slice/**"
       - "scripts/fighter/**"
+      - "scripts/telemetry/**"
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
       - "scripts/ai/bot_behavior_catalog.gd"
@@ -21,7 +22,7 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -52,3 +53,6 @@ jobs:
 
       - name: Run First Playable ten-match QA matrix
         run: ./godot --headless --path . --script tests/first_playable_qa_matrix_test.gd
+
+      - name: Run First Playable playtest telemetry contract
+        run: ./godot --headless --path . --script tests/first_playable_playtest_telemetry_test.gd

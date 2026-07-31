@@ -90,6 +90,9 @@ func _run() -> void:
 		_fail("result overlay did not present player victory")
 		return
 
+	if not await _validate_playtest_feedback(battle):
+		return
+
 	var rematch_button := battle.get_node("HUD/ResultOverlay/Panel/Content/RematchButton") as Button
 	rematch_button.emit_signal("pressed")
 	await process_frame
@@ -101,6 +104,11 @@ func _run() -> void:
 		return
 	if battle.difficulty_controller.selected_difficulty_id != &"master":
 		_fail("difficulty was lost after UI rematch")
+		return
+	var previous_round := battle._telemetry.last_round_snapshot()
+	var previous_metadata: Dictionary = previous_round.get("metadata", {})
+	if not bool(previous_metadata.get("rematch_requested", false)):
+		_fail("rematch was not attached to the completed playtest round")
 		return
 
 	print("FIRST_PLAYABLE_FLOW_OK")
@@ -147,6 +155,49 @@ func _validate_resource_bars(battle: FirstPlayableController) -> bool:
 		if not is_instance_valid(bar) or bar.max_value <= 0.0 or bar.value <= 0.0:
 			_fail("resource bar was not initialized")
 			return false
+	return true
+
+func _validate_playtest_feedback(battle: FirstPlayableController) -> bool:
+	var content_path := "HUD/ResultOverlay/Panel/Content/"
+	var balanced_button := battle.get_node_or_null(
+		content_path + "PlaytestFeedbackButtons/FeedbackBalanced"
+	) as Button
+	var copy_button := battle.get_node_or_null(content_path + "CopyPlaytestReportButton") as Button
+	var feedback_status := battle.get_node_or_null(content_path + "PlaytestFeedbackStatus") as Label
+	if not is_instance_valid(balanced_button):
+		_fail("balanced feedback button is missing")
+		return false
+	if not is_instance_valid(copy_button):
+		_fail("copy playtest report button is missing")
+		return false
+	if not is_instance_valid(feedback_status):
+		_fail("playtest feedback status is missing")
+		return false
+
+	var signature := battle.hud_controller.presentation_signature()
+	if not bool(signature.get("playtest_feedback", false)):
+		_fail("HUD signature does not expose playtest feedback")
+		return false
+	if int(signature.get("balance_feedback_options", 0)) != 3:
+		_fail("HUD must expose three balance feedback options")
+		return false
+	if not bool(signature.get("copy_report_button", false)):
+		_fail("HUD signature does not expose report copy")
+		return false
+
+	balanced_button.emit_signal("pressed")
+	await process_frame
+	if not balanced_button.disabled:
+		_fail("feedback button remained enabled after submission")
+		return false
+	var last_round := battle._telemetry.last_round_snapshot()
+	var metadata: Dictionary = last_round.get("metadata", {})
+	if String(metadata.get("balance_feedback", "")) != "balanced":
+		_fail("balance feedback was not attached to the completed round")
+		return false
+	if "SESSÃO" not in feedback_status.text:
+		_fail("feedback status did not expose the local session ID")
+		return false
 	return true
 
 func _wait_for_battle(battle: FirstPlayableController) -> bool:
