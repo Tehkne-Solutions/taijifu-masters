@@ -1,0 +1,127 @@
+name: First Playable — relato de playtest
+description: Registre um bug ou problema observado no piloto sem inserir dados pessoais.
+title: "[PLAYTEST] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use somente o código anônimo `TJFP-###`. Não informe nome, e-mail, telefone, IP ou outros dados pessoais.
+
+  - type: input
+    id: participant
+    attributes:
+      label: Código anônimo
+      description: Código atribuído no plano do piloto.
+      placeholder: TJFP-001
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - Windows
+        - Web / Chromium
+    validations:
+      required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Dificuldade
+      options:
+        - Aprendiz
+        - Discípulo
+        - Mestre
+        - Não se aplica
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categoria
+      options:
+        - cannot_start
+        - crash
+        - soft_lock
+        - telemetry_loss
+        - controls
+        - combat_clarity
+        - ai_behavior
+        - balance
+        - interface
+        - performance
+        - audio_visual_polish
+        - other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Gravidade percebida
+      options:
+        - blocker
+        - major
+        - minor
+        - polish
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: Versão da build
+      value: 0.2.1-playtest
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o comportamento observado sem dados pessoais.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Selecionar Discípulo
+        2. Concluir a partida
+        3. Pressionar Revanche
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidência técnica opcional
+      description: Informe apenas o session_id ou anexe o JSON local já validado pelo intake. Não cole contatos ou credenciais.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidade
+      options:
+        - label: Confirmei que o relato não contém nome, e-mail, telefone, IP, senha, token ou credencial.
+          required: true
+        - label: Usei somente o código anônimo do piloto.
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        Assinatura: Tehkné Solutions
