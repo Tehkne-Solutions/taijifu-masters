@@ -37,6 +37,7 @@ func _ready() -> void:
 	resume_button.pressed.connect(func() -> void: resume_requested.emit())
 	pause_menu_button.pressed.connect(func() -> void: menu_requested.emit())
 	_build_playtest_controls()
+	FirstPlayableHudSkin.apply(self)
 	hide_result()
 	show_pause(false)
 
@@ -50,13 +51,7 @@ func update_fighters(player_one: FighterController, player_two: FighterControlle
 	_update_bar(p2_posture, player_two.posture, player_two.build.max_posture(), "POSTURA")
 	_update_bar(p2_stamina, player_two.stamina, 100.0, "FÔLEGO")
 
-func show_result(
-	winner_name: String,
-	player_won: bool,
-	reason: String,
-	difficulty_label: String,
-	report_file_name: String = ""
-) -> void:
+func show_result(winner_name: String, player_won: bool, reason: String, difficulty_label: String, report_file_name: String = "") -> void:
 	result_overlay.visible = true
 	result_title.text = "VITÓRIA" if player_won else "DERROTA"
 	result_detail.text = "%s VENCEU • %s\nIA %s" % [winner_name.to_upper(), reason, difficulty_label]
@@ -95,14 +90,14 @@ func presentation_signature() -> Dictionary:
 		"browser_json_download": true,
 		"native_file_reveal": true,
 		"mouse_supported": true,
-		"gamepad_focus_supported": true
+		"gamepad_focus_supported": true,
+		"final_skin": FirstPlayableHudSkin.presentation_signature()
 	}
 
 func _build_playtest_controls() -> void:
 	result_panel.offset_top = 78.0
 	result_panel.offset_bottom = 686.0
 	result_detail.custom_minimum_size = Vector2(0.0, 82.0)
-
 	_feedback_prompt = Label.new()
 	_feedback_prompt.name = "PlaytestFeedbackPrompt"
 	_feedback_prompt.custom_minimum_size = Vector2(0.0, 32.0)
@@ -112,17 +107,14 @@ func _build_playtest_controls() -> void:
 	_feedback_prompt.add_theme_font_size_override("font_size", 13)
 	_feedback_prompt.add_theme_color_override("font_color", Color(0.96, 0.80, 0.38))
 	result_content.add_child(_feedback_prompt)
-
 	var feedback_row := HBoxContainer.new()
 	feedback_row.name = "PlaytestFeedbackButtons"
 	feedback_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	feedback_row.add_theme_constant_override("separation", 8)
 	result_content.add_child(feedback_row)
-
 	_add_feedback_button(feedback_row, "FÁCIL DEMAIS", &"too_easy")
 	_add_feedback_button(feedback_row, "EQUILIBRADO", &"balanced")
 	_add_feedback_button(feedback_row, "DIFÍCIL DEMAIS", &"too_hard")
-
 	_feedback_status = Label.new()
 	_feedback_status.name = "PlaytestFeedbackStatus"
 	_feedback_status.custom_minimum_size = Vector2(0.0, 26.0)
@@ -132,7 +124,6 @@ func _build_playtest_controls() -> void:
 	_feedback_status.add_theme_font_size_override("font_size", 10)
 	_feedback_status.add_theme_color_override("font_color", Color(0.67, 0.76, 0.86))
 	result_content.add_child(_feedback_status)
-
 	_copy_report_button = Button.new()
 	_copy_report_button.name = "CopyPlaytestReportButton"
 	_copy_report_button.custom_minimum_size = Vector2(0.0, 40.0)
@@ -140,18 +131,13 @@ func _build_playtest_controls() -> void:
 	_copy_report_button.add_theme_font_size_override("font_size", 12)
 	_copy_report_button.pressed.connect(func() -> void: report_copy_requested.emit())
 	result_content.add_child(_copy_report_button)
-
 	_export_report_button = Button.new()
 	_export_report_button.name = "ExportPlaytestReportButton"
 	_export_report_button.custom_minimum_size = Vector2(0.0, 40.0)
-	_export_report_button.text = (
-		"BAIXAR RELATÓRIO JSON" if OS.has_feature("web")
-		else "LOCALIZAR RELATÓRIO JSON"
-	)
+	_export_report_button.text = "BAIXAR RELATÓRIO JSON" if OS.has_feature("web") else "LOCALIZAR RELATÓRIO JSON"
 	_export_report_button.add_theme_font_size_override("font_size", 12)
 	_export_report_button.pressed.connect(_export_playtest_report)
 	result_content.add_child(_export_report_button)
-
 	result_content.move_child(rematch_button, result_content.get_child_count() - 2)
 	result_content.move_child(result_menu_button, result_content.get_child_count() - 1)
 
@@ -198,12 +184,9 @@ func _export_playtest_report() -> void:
 		set_report_status("NÃO FOI POSSÍVEL EXPORTAR • USE COPIAR RELATÓRIO")
 		return
 	match String(result.get("mode", "")):
-		"browser_download":
-			set_report_status("DOWNLOAD INICIADO • %s" % String(result.get("file_name", file_name)))
-		"native_reveal":
-			set_report_status("ARQUIVO LOCALIZADO • %s" % String(result.get("file_name", file_name)))
-		_:
-			set_report_status("RELATÓRIO PRONTO • %s" % String(result.get("file_name", file_name)))
+		"browser_download": set_report_status("DOWNLOAD INICIADO • %s" % String(result.get("file_name", file_name)))
+		"native_reveal": set_report_status("ARQUIVO LOCALIZADO • %s" % String(result.get("file_name", file_name)))
+		_: set_report_status("RELATÓRIO PRONTO • %s" % String(result.get("file_name", file_name)))
 
 func _update_bar(bar: ProgressBar, current_value: float, maximum_value: float, label: String) -> void:
 	bar.max_value = maxf(1.0, maximum_value)
