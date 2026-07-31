@@ -47,9 +47,41 @@ def run_gate(name: str, command: list[str]) -> GateResult:
     )
 
 
+def art_report_gate(report_path: Path, strict: bool) -> GateResult:
+    command = [
+        sys.executable,
+        "tools/release/validate_art_preflight_report.py",
+        str(report_path),
+    ]
+    if strict:
+        command.append("--strict")
+    if report_path.exists():
+        return run_gate("art_production_report", command)
+    if strict:
+        return GateResult(
+            "art_production_report",
+            command,
+            "failed",
+            2,
+            f"Relatório artístico obrigatório ausente: {report_path}",
+        )
+    return GateResult(
+        "art_production_report",
+        command,
+        "passed",
+        0,
+        f"Relatório artístico não fornecido no modo informativo: {report_path}",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--strict-assets", action="store_true", help="Exige os lotes reais e bloqueia fallbacks procedurais.")
+    parser.add_argument(
+        "--art-report",
+        default="artifacts/first-playable-art-preflight.json",
+        help="Relatório produzido pelo repositório taijifu-masters-assets.",
+    )
     parser.add_argument("--report", default="artifacts/first-playable-release-gate.json")
     args = parser.parse_args()
 
@@ -69,9 +101,15 @@ def main() -> int:
     gates.append(("visual_assets", visual_command))
 
     results = [run_gate(name, command) for name, command in gates]
+    art_report_path = Path(args.art_report)
+    if not art_report_path.is_absolute():
+        art_report_path = ROOT / art_report_path
+    results.append(art_report_gate(art_report_path, args.strict_assets))
+
     summary = {
-        "gate_id": "taijifu-first-playable-release-v2",
+        "gate_id": "taijifu-first-playable-release-v3",
         "strict_assets": args.strict_assets,
+        "art_report": str(art_report_path),
         "required_real_fighters": ["lian_wu", "training_rival"],
         "signature": "Tehkné Solutions",
         "passed": all(result.status == "passed" for result in results),
@@ -84,7 +122,7 @@ def main() -> int:
 
     for result in results:
         print(f"[{result.status.upper():7}] {result.name}")
-        if result.status != "passed":
+        if result.status != "passed" or result.output:
             print(result.output)
 
     print(f"Relatório: {report_path.relative_to(ROOT)}")
