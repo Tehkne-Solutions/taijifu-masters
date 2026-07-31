@@ -1,6 +1,18 @@
 name: First Playable External Playtest Kit
 
 on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "scripts/build-web.sh"
+      - "scripts/build-windows.sh"
+      - "scripts/create-first-playable-build-manifest.py"
+      - "tools/playtest/**"
+      - "tests/test_first_playable_report_aggregator.py"
+      - "tests/test_first_playable_playtest_kit.py"
+      - "docs/FIRST-PLAYABLE-PLAYTEST*.md"
+      - ".github/workflows/first-playable-playtest-kit.yml"
   push:
     branches:
       - main
