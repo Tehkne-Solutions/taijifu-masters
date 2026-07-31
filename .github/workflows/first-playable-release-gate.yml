@@ -7,15 +7,19 @@ on:
       - "scripts/runtime/impact_director.gd"
       - "scenes/vertical_slice/**"
       - "assets/tgap/pack_01_lian_wu/**"
+      - "assets/tgap/training_rival/**"
       - "tests/first_playable_*"
+      - "tests/training_rival_*"
       - "tests/test_first_playable_lot01_importer.py"
+      - "tests/test_training_rival_lot01_importer.py"
+      - "tests/test_art_preflight_report_gate.py"
       - "tools/asset_forge/**"
-      - "tools/release/run_first_playable_release_gate.py"
+      - "tools/release/**"
       - ".github/workflows/first-playable-release-gate.yml"
   workflow_dispatch:
     inputs:
       strict_assets:
-        description: "Bloquear enquanto o Lot 01 real não estiver integrado"
+        description: "Bloquear enquanto os 88 frames reais não estiverem aprovados"
         required: true
         default: false
         type: boolean
@@ -25,7 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout do jogo
+        uses: actions/checkout@v4
+
+      - name: Checkout dos assets
+        uses: actions/checkout@v4
+        with:
+          repository: Tehkne-Solutions/taijifu-masters-assets
+          path: external/taijifu-masters-assets
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -41,6 +52,13 @@ jobs:
           version: "4.3.0"
           use-dotnet: false
 
+      - name: Gerar relatório artístico canônico
+        shell: bash
+        run: |
+          python external/taijifu-masters-assets/tools/validate_first_playable_art_production.py \
+            --allow-incomplete \
+            --report ../../artifacts/first-playable-art-preflight.json
+
       - name: Executar gate de integração
         shell: bash
         run: |
@@ -48,14 +66,18 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.strict_assets }}" == "true" ]]; then
             STRICT="--strict-assets"
           fi
-          python tools/release/run_first_playable_release_gate.py $STRICT
+          python tools/release/run_first_playable_release_gate.py \
+            --art-report artifacts/first-playable-art-preflight.json \
+            $STRICT
 
-      - name: Publicar relatório
+      - name: Publicar relatórios
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: first-playable-release-gate
-          path: artifacts/first-playable-release-gate.json
+          path: |
+            artifacts/first-playable-release-gate.json
+            artifacts/first-playable-art-preflight.json
           if-no-files-found: warn
           retention-days: 14
 
