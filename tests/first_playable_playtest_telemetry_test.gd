@@ -4,6 +4,10 @@ func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	FirstPlayableSession.reset()
+	assert(FirstPlayableSession.set_participant_code("tjfp-007"), "O código anônimo válido deve ser aceito")
+	assert(FirstPlayableSession.participant_code == "TJFP-007")
+
 	var telemetry := MatchTelemetry.new()
 	telemetry.begin_session({
 		"experience": "first_playable",
@@ -36,6 +40,10 @@ func _run() -> void:
 	assert(saved_path != "", "A sessão deve ser gravada")
 	assert(FileAccess.file_exists(saved_path), "O JSON deve existir em user://telemetry")
 	assert(saved_path == telemetry.last_written_path(), "O último caminho deve ser rastreável")
+	assert(
+		saved_path.get_file().begins_with("TJFP-007__taijifu_"),
+		"O arquivo deve nascer com o prefixo anônimo esperado pelo intake"
+	)
 
 	var annotated_path := telemetry.annotate_last_round({
 		"balance_feedback": "balanced",
@@ -54,6 +62,8 @@ func _run() -> void:
 	assert(session_metadata.get("experience", "") == "first_playable")
 	assert(session_metadata.get("privacy", "") == "local_only")
 	assert(session_metadata.get("signature", "") == "Tehkné Solutions")
+	assert(session_metadata.get("participant_code", "") == "TJFP-007")
+	assert(session_metadata.get("pilot_id", "") == FirstPlayableSession.PILOT_ID)
 
 	var rounds: Array = parsed.get("rounds", [])
 	assert(rounds.size() == 1, "A sessão deve conter uma rodada")
@@ -70,5 +80,6 @@ func _run() -> void:
 	assert(telemetry.session_json().contains("balance_feedback"))
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(saved_path))
+	FirstPlayableSession.reset()
 	print("FIRST_PLAYABLE_PLAYTEST_TELEMETRY_OK")
 	quit()

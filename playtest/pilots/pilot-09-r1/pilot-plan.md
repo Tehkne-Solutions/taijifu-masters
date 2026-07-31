@@ -23,11 +23,12 @@
 ## Entrega de cada participante
 
 1. Executar o kit `0.2.1-playtest` na plataforma atribuída.
-2. Seguir a ordem das dificuldades da tabela.
-3. Responder à avaliação de equilíbrio após cada partida.
-4. Copiar/exportar o JSON local.
-5. Renomear o arquivo com o prefixo do código, por exemplo `TJFP-001__taijifu_...json`.
-6. Registrar bugs sem inserir dados pessoais.
+2. Informar no menu o código anônimo atribuído, por exemplo `TJFP-001`.
+3. Seguir a ordem das dificuldades da tabela.
+4. Responder à avaliação de equilíbrio após cada partida.
+5. Copiar/exportar o JSON local.
+6. Confirmar que o arquivo já começa com `TJFP-###__taijifu_`; não renomear quando o prefixo estiver correto.
+7. Registrar bugs sem inserir dados pessoais.
 
 ## Gate da rodada
 

@@ -24,6 +24,7 @@ func begin_session(metadata: Dictionary = {}) -> void:
 	_rounds.clear()
 	_last_round.clear()
 	_session_metadata = metadata.duplicate(true)
+	_attach_first_playable_identity()
 	_last_written_path = ""
 	begin_round()
 
@@ -160,9 +161,29 @@ func _new_player_metrics() -> Dictionary:
 		"counters": {}
 	}
 
+func _attach_first_playable_identity() -> void:
+	if String(_session_metadata.get("experience", "")) != "first_playable":
+		return
+	var participant_code := FirstPlayableSession.normalize_participant_code(
+		FirstPlayableSession.participant_code
+	)
+	if participant_code == "":
+		return
+	_session_metadata["participant_code"] = participant_code
+	_session_metadata["pilot_id"] = FirstPlayableSession.PILOT_ID
+
+func _participant_filename_prefix() -> String:
+	var participant_code := FirstPlayableSession.normalize_participant_code(
+		String(_session_metadata.get("participant_code", ""))
+	)
+	if participant_code == "":
+		return ""
+	return "%s__" % participant_code
+
 func _write_session() -> String:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TELEMETRY_DIR))
-	var path := "%s/taijifu_%s.json" % [TELEMETRY_DIR, _session_id]
+	var filename := "%staijifu_%s.json" % [_participant_filename_prefix(), _session_id]
+	var path := "%s/%s" % [TELEMETRY_DIR, filename]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return ""

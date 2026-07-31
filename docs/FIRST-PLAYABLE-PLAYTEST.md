@@ -8,27 +8,30 @@ A coleta desta sprint é local. Nenhum relatório é enviado automaticamente par
 
 ## Preparação
 
-1. Use uma build identificada como `0.2.0-first-playable` ou posterior.
+1. Use uma build identificada como `0.2.1-playtest` ou posterior.
 2. Extraia o pacote Windows antes de executar.
 3. No Web, use navegador Chromium atualizado e mantenha o jogo em orientação paisagem.
-4. Comece pela dificuldade Aprendiz, depois Discípulo e Mestre.
-5. Faça pelo menos duas partidas em cada dificuldade.
+4. Tenha em mãos o código anônimo `TJFP-###` fornecido pelo coordenador.
+5. Siga a ordem das dificuldades definida no plano do piloto.
+6. Faça pelo menos duas partidas em cada dificuldade.
 
 ## Roteiro do jogador
 
 1. Entrar pelo menu First Playable.
-2. Selecionar a dificuldade.
-3. Jogar sem orientação adicional na primeira tentativa.
-4. Testar movimento, salto, ataque, defesa, esquiva, impulso e agarrão.
-5. Pausar e continuar pelo menos uma vez.
-6. Concluir uma partida por KO.
-7. Concluir ou simular uma partida por tempo quando possível.
-8. Usar revanche e confirmar que a dificuldade permanece selecionada.
-9. Responder à pergunta de equilíbrio após cada partida:
+2. Informar o código anônimo do piloto, por exemplo `TJFP-003` ou somente `003`.
+3. Confirmar que o menu mostra `CÓDIGO VÁLIDO` antes de iniciar.
+4. Selecionar a dificuldade.
+5. Jogar sem orientação adicional na primeira tentativa.
+6. Testar movimento, salto, ataque, defesa, esquiva, impulso e agarrão.
+7. Pausar e continuar pelo menos uma vez.
+8. Concluir uma partida por KO.
+9. Concluir ou simular uma partida por tempo quando possível.
+10. Usar revanche e confirmar que a dificuldade e o código permanecem selecionados.
+11. Responder à pergunta de equilíbrio após cada partida:
    - Fácil demais;
    - Equilibrado;
    - Difícil demais.
-10. Pressionar `COPIAR RELATÓRIO DO PLAYTEST` e enviar o JSON junto do feedback textual.
+12. Pressionar `COPIAR RELATÓRIO DO PLAYTEST` e enviar o JSON junto do feedback textual.
 
 ## Perguntas qualitativas
 
@@ -45,6 +48,8 @@ A coleta desta sprint é local. Nenhum relatório é enviado automaticamente par
 
 Cada sessão pode conter:
 
+- código anônimo `TJFP-###`;
+- identificador do piloto;
 - versão da build;
 - plataforma e localidade;
 - dificuldade usada;
@@ -56,13 +61,15 @@ Cada sessão pode conter:
 
 Não incluir nome, e-mail, IP, credenciais ou qualquer dado pessoal no relatório.
 
-## Local do arquivo
+## Local e nome do arquivo
 
-O jogo grava os arquivos em `user://telemetry` com nomes semelhantes a:
+O jogo grava os arquivos em `user://telemetry` já usando o prefixo esperado pelo intake:
 
 ```text
-taijifu_1785450000-1234.json
+TJFP-003__taijifu_1785450000-1234.json
 ```
+
+Não é necessário renomear o arquivo quando o código foi informado corretamente no menu. Builds antigas sem o campo de código ainda podem exigir renomeio manual pelo coordenador.
 
 O botão de cópia envia o conteúdo completo da sessão para a área de transferência, facilitando o envio por issue, formulário ou mensagem.
 
@@ -70,6 +77,8 @@ O botão de cópia envia o conteúdo completo da sessão para a área de transfe
 
 Bloquear uma nova release se ocorrer qualquer um destes casos:
 
+- código válido não libera o início da partida;
+- arquivo JSON não recebe o prefixo do participante;
 - partida não inicia;
 - IA não executa ações;
 - KO ou timeout não abre o resultado;
@@ -81,7 +90,7 @@ Bloquear uma nova release se ocorrer qualquer um destes casos:
 
 ## Consolidação recomendada
 
-Agrupar os relatórios por versão e dificuldade. Priorizar:
+Agrupar os relatórios por versão, código anônimo e dificuldade. Priorizar:
 
 1. travamentos e bloqueios;
 2. comandos não compreendidos;
