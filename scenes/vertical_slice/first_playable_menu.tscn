@@ -42,11 +42,11 @@ color = Color(0.22, 0.055, 0.035, 0.42)
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
 offset_left = 210.0
-offset_top = 38.0
+offset_top = 28.0
 offset_right = 1070.0
-offset_bottom = 112.0
+offset_bottom = 92.0
 theme_override_colors/font_color = Color(0.98, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 42
+theme_override_font_sizes/font_size = 40
 text = "TAIJIFU MASTERS"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -54,11 +54,11 @@ vertical_alignment = 1
 [node name="Subtitle" type="Label" parent="."]
 layout_mode = 0
 offset_left = 260.0
-offset_top = 108.0
+offset_top = 90.0
 offset_right = 1020.0
-offset_bottom = 150.0
+offset_bottom = 128.0
 theme_override_colors/font_color = Color(0.76, 0.88, 0.98, 0.96)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
 text = "FIRST PLAYABLE • RUÍNAS DO CAMINHO TRIPLO"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -66,58 +66,86 @@ vertical_alignment = 1
 [node name="Content" type="VBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 190.0
-offset_top = 170.0
+offset_top = 138.0
 offset_right = 1090.0
-offset_bottom = 665.0
-theme_override_constants/separation = 14
+offset_bottom = 678.0
+theme_override_constants/separation = 9
 
 [node name="Fighters" type="HBoxContainer" parent="Content"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
 [node name="LianCard" type="PanelContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(440, 124)
+custom_minimum_size = Vector2(440, 104)
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Info" type="Label" parent="Content/Fighters/LianCard"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.88, 1, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 14
 text = "P1 • LIAN WU\nDISCÍPULO DA LÂMINA SERENA\nÁGUA • KATANA • TÉCNICA E FOCO"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Versus" type="Label" parent="Content/Fighters"]
-custom_minimum_size = Vector2(54, 124)
+custom_minimum_size = Vector2(54, 104)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.98, 0.72, 0.24, 1)
-theme_override_font_sizes/font_size = 25
+theme_override_font_sizes/font_size = 24
 text = "VS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RivalCard" type="PanelContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(440, 124)
+custom_minimum_size = Vector2(440, 104)
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Info" type="Label" parent="Content/Fighters/RivalCard"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.72, 0.58, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 14
 text = "CPU • RIVAL DE TREINO\nPUNHO DA FORNALHA\nFOGO • MANOPLAS • PRESSÃO E POSTURA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Participant" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ParticipantLabel" type="Label" parent="Content/Participant"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.91, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "CÓDIGO ANÔNIMO DO PILOTO"
+horizontal_alignment = 1
+
+[node name="ParticipantInput" type="LineEdit" parent="Content/Participant"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+placeholder_text = "TJFP-001"
+max_length = 8
+alignment = 1
+clear_button_enabled = true
+select_all_on_focus = true
+
+[node name="ParticipantStatus" type="Label" parent="Content/Participant"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.78, 0.88, 0.96)
+theme_override_font_sizes/font_size = 11
+text = "OBRIGATÓRIO • INFORME TJFP-001 ATÉ TJFP-999"
+horizontal_alignment = 1
+
 [node name="Difficulty" type="VBoxContainer" parent="Content"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="DifficultyLabel" type="Label" parent="Content/Difficulty"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.8, 0.4, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 17
 text = "DIFICULDADE DA IA • DISCÍPULO"
 horizontal_alignment = 1
 
@@ -127,52 +155,53 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="EasyButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 48)
+custom_minimum_size = Vector2(240, 42)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "○ 1 • APRENDIZ"
 
 [node name="NormalButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 48)
+custom_minimum_size = Vector2(240, 42)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "● 2 • DISCÍPULO"
 
 [node name="HardButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 48)
+custom_minimum_size = Vector2(240, 42)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "○ 3 • MESTRE"
 
 [node name="Actions" type="VBoxContainer" parent="Content"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="PlayButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 62)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.98, 0.88, 0.56, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 text = "JOGAR CONTRA IA"
+disabled = true
 
 [node name="PrototypeButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 46)
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "ABRIR PROTÓTIPO COMPLETO"
 
 [node name="ExitButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "SAIR"
 
 [node name="Help" type="Label" parent="Content"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.68, 0.72, 0.8, 0.95)
-theme_override_font_sizes/font_size = 12
-text = "ENTER iniciar • 1/2/3 dificuldade • teclado, mouse e gamepad"
+theme_override_font_sizes/font_size = 11
+text = "CÓDIGO + ENTER iniciar • 1/2/3 dificuldade • teclado, mouse e gamepad"
 horizontal_alignment = 1
 
 [node name="Signature" type="Label" parent="."]
