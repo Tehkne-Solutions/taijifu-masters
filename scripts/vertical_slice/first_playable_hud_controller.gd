@@ -28,6 +28,7 @@ var _feedback_prompt: Label
 var _feedback_buttons: Array[Button] = []
 var _feedback_status: Label
 var _copy_report_button: Button
+var _export_report_button: Button
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -90,14 +91,17 @@ func presentation_signature() -> Dictionary:
 		"playtest_feedback": true,
 		"balance_feedback_options": 3,
 		"copy_report_button": true,
+		"export_report_button": true,
+		"browser_json_download": true,
+		"native_file_reveal": true,
 		"mouse_supported": true,
 		"gamepad_focus_supported": true
 	}
 
 func _build_playtest_controls() -> void:
-	result_panel.offset_top = 112.0
-	result_panel.offset_bottom = 650.0
-	result_detail.custom_minimum_size = Vector2(0.0, 92.0)
+	result_panel.offset_top = 78.0
+	result_panel.offset_bottom = 686.0
+	result_detail.custom_minimum_size = Vector2(0.0, 82.0)
 
 	_feedback_prompt = Label.new()
 	_feedback_prompt.name = "PlaytestFeedbackPrompt"
@@ -131,11 +135,22 @@ func _build_playtest_controls() -> void:
 
 	_copy_report_button = Button.new()
 	_copy_report_button.name = "CopyPlaytestReportButton"
-	_copy_report_button.custom_minimum_size = Vector2(0.0, 42.0)
+	_copy_report_button.custom_minimum_size = Vector2(0.0, 40.0)
 	_copy_report_button.text = "COPIAR RELATÓRIO DO PLAYTEST"
-	_copy_report_button.add_theme_font_size_override("font_size", 13)
+	_copy_report_button.add_theme_font_size_override("font_size", 12)
 	_copy_report_button.pressed.connect(func() -> void: report_copy_requested.emit())
 	result_content.add_child(_copy_report_button)
+
+	_export_report_button = Button.new()
+	_export_report_button.name = "ExportPlaytestReportButton"
+	_export_report_button.custom_minimum_size = Vector2(0.0, 40.0)
+	_export_report_button.text = (
+		"BAIXAR RELATÓRIO JSON" if OS.has_feature("web")
+		else "LOCALIZAR RELATÓRIO JSON"
+	)
+	_export_report_button.add_theme_font_size_override("font_size", 12)
+	_export_report_button.pressed.connect(_export_playtest_report)
+	result_content.add_child(_export_report_button)
 
 	result_content.move_child(rematch_button, result_content.get_child_count() - 2)
 	result_content.move_child(result_menu_button, result_content.get_child_count() - 1)
@@ -162,6 +177,33 @@ func _on_feedback_button(rating_id: StringName) -> void:
 	_feedback_prompt.text = "FEEDBACK REGISTRADO"
 	_feedback_status.text = "OBRIGADO • A RESPOSTA FOI ANEXADA AO RELATÓRIO LOCAL"
 	feedback_submitted.emit(rating_id)
+
+func _export_playtest_report() -> void:
+	var match_controller := get_parent()
+	if match_controller == null:
+		set_report_status("CONTROLADOR DA PARTIDA NÃO ENCONTRADO")
+		return
+	var telemetry_variant: Variant = match_controller.get("_telemetry")
+	if not telemetry_variant is MatchTelemetry:
+		set_report_status("RELATÓRIO AINDA NÃO DISPONÍVEL")
+		return
+	var telemetry := telemetry_variant as MatchTelemetry
+	var report := telemetry.session_json()
+	var source_path := String(match_controller.get("_last_telemetry_path"))
+	var file_name := source_path.get_file()
+	if file_name == "":
+		file_name = "TJFP-REPORT__taijifu_%s.json" % telemetry.session_id()
+	var result := PlaytestReportExporter.export_report(report, file_name, source_path)
+	if not bool(result.get("ok", false)):
+		set_report_status("NÃO FOI POSSÍVEL EXPORTAR • USE COPIAR RELATÓRIO")
+		return
+	match String(result.get("mode", "")):
+		"browser_download":
+			set_report_status("DOWNLOAD INICIADO • %s" % String(result.get("file_name", file_name)))
+		"native_reveal":
+			set_report_status("ARQUIVO LOCALIZADO • %s" % String(result.get("file_name", file_name)))
+		_:
+			set_report_status("RELATÓRIO PRONTO • %s" % String(result.get("file_name", file_name)))
 
 func _update_bar(bar: ProgressBar, current_value: float, maximum_value: float, label: String) -> void:
 	bar.max_value = maxf(1.0, maximum_value)
