@@ -27,6 +27,28 @@ func _run() -> void:
 
 	if not _validate_menu(menu):
 		return
+	if not menu.play_button.disabled:
+		_fail("play must remain blocked before an anonymous code is entered")
+		return
+	if menu.set_participant_code("000"):
+		_fail("participant code zero must be rejected")
+		return
+	if not menu.play_button.disabled:
+		_fail("invalid participant code did not keep play blocked")
+		return
+	if not menu.set_participant_code("003"):
+		_fail("three participant digits were not normalized")
+		return
+	if FirstPlayableSession.participant_code != "TJFP-003":
+		_fail("participant code was not normalized and persisted")
+		return
+	if menu.play_button.disabled:
+		_fail("valid participant code did not enable play")
+		return
+	if "TJFP-003" not in menu.participant_status.text:
+		_fail("menu did not confirm the anonymous participant code")
+		return
+
 	menu.select_difficulty(&"master")
 	if FirstPlayableSession.selected_difficulty_id != &"master":
 		_fail("menu did not persist master difficulty")
@@ -60,6 +82,13 @@ func _run() -> void:
 	if battle.bot_runtime.difficulty_id != &"master":
 		_fail("bot did not receive menu difficulty")
 		return
+	var session_metadata: Dictionary = battle._telemetry.session_snapshot().get("metadata", {})
+	if String(session_metadata.get("participant_code", "")) != "TJFP-003":
+		_fail("battle telemetry did not inherit participant code")
+		return
+	if String(session_metadata.get("pilot_id", "")) != FirstPlayableSession.PILOT_ID:
+		_fail("battle telemetry did not inherit pilot ID")
+		return
 	if not await _wait_for_battle(battle):
 		_fail("battle did not reach active combat")
 		return
@@ -89,6 +118,9 @@ func _run() -> void:
 	if not result_overlay.visible or result_title.text != "VITÓRIA":
 		_fail("result overlay did not present player victory")
 		return
+	if not battle._last_telemetry_path.get_file().begins_with("TJFP-003__taijifu_"):
+		_fail("telemetry filename did not include the anonymous participant code")
+		return
 
 	if not await _validate_playtest_feedback(battle):
 		return
@@ -105,17 +137,23 @@ func _run() -> void:
 	if battle.difficulty_controller.selected_difficulty_id != &"master":
 		_fail("difficulty was lost after UI rematch")
 		return
+	if FirstPlayableSession.participant_code != "TJFP-003":
+		_fail("participant code was lost after UI rematch")
+		return
 	var previous_round := battle._telemetry.last_round_snapshot()
 	var previous_metadata: Dictionary = previous_round.get("metadata", {})
 	if not bool(previous_metadata.get("rematch_requested", false)):
 		_fail("rematch was not attached to the completed playtest round")
 		return
 
+	FirstPlayableSession.reset()
 	print("FIRST_PLAYABLE_FLOW_OK")
 	quit(0)
 
 func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 	for path in [
+		"Content/Participant/ParticipantInput",
+		"Content/Participant/ParticipantStatus",
 		"Content/Actions/PlayButton",
 		"Content/Actions/PrototypeButton",
 		"Content/Actions/ExitButton",
@@ -136,6 +174,15 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 		return false
 	if String(signature.get("complete_prototype_scene", "")) != "res://scenes/main.tscn":
 		_fail("complete prototype fallback is missing")
+		return false
+	if not bool(signature.get("participant_code_required", false)):
+		_fail("menu signature must require an anonymous participant code")
+		return false
+	if String(signature.get("participant_code_pattern", "")) != "TJFP-###":
+		_fail("menu signature participant pattern is invalid")
+		return false
+	if String(signature.get("pilot_id", "")) != FirstPlayableSession.PILOT_ID:
+		_fail("menu signature pilot ID is invalid")
 		return false
 	if not bool(signature.get("mouse_supported", false)) or not bool(signature.get("gamepad_focus_supported", false)):
 		_fail("menu must support mouse and focused gamepad navigation")
