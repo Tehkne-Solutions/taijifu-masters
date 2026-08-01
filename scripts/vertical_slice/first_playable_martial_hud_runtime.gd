@@ -4,6 +4,7 @@ const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_poli
 
 var _root: Node
 var _combo: FirstPlayableComboRuntime
+var _planner: Node
 var _layer: CanvasLayer
 var _strip: Label
 var _legacy_hidden := false
@@ -14,16 +15,19 @@ func _ready() -> void:
 	_build_strip()
 
 func _process(_delta: float) -> void:
-	_resolve_combo()
+	_resolve_runtime()
 	_hide_legacy_panel()
 	_update_strip()
 
-func _resolve_combo() -> void:
-	if is_instance_valid(_combo) or not is_instance_valid(_root):
+func _resolve_runtime() -> void:
+	if not is_instance_valid(_root):
 		return
-	var candidate := _root.get_node_or_null("FirstPlayableComboRuntime")
-	if candidate is FirstPlayableComboRuntime:
-		_combo = candidate as FirstPlayableComboRuntime
+	if not is_instance_valid(_combo):
+		var candidate := _root.get_node_or_null("FirstPlayableComboRuntime")
+		if candidate is FirstPlayableComboRuntime:
+			_combo = candidate as FirstPlayableComboRuntime
+	if not is_instance_valid(_planner):
+		_planner = _root.get_node_or_null("FirstPlayableMasterMartialPlanner")
 
 func _build_strip() -> void:
 	_layer = CanvasLayer.new()
@@ -67,6 +71,12 @@ func _hide_legacy_panel() -> void:
 func _update_strip() -> void:
 	if not is_instance_valid(_strip):
 		return
+	if _rival_climax_pending():
+		var form_name := String(_planner.get("_climax_name"))
+		var remaining := float(_planner.get("_climax_timer"))
+		_strip.text = "RIVAL • FORMA COMPLETA: %s   •   REAJA Q / R   •   %.2fs" % [form_name, remaining]
+		_strip.add_theme_color_override("font_color", POLICY.EMBER.lightened(0.16))
+		return
 	if not is_instance_valid(_combo):
 		_strip.text = ""
 		return
@@ -91,6 +101,9 @@ func _update_strip() -> void:
 		segments.append(resonance)
 	_strip.text = "   •   ".join(segments)
 	_strip.add_theme_color_override("font_color", POLICY.GOLD if flow >= 60 else POLICY.BONE)
+
+func _rival_climax_pending() -> bool:
+	return is_instance_valid(_planner) and bool(_planner.get("_climax_pending"))
 
 func _resonance_for(code: Array[StringName]) -> String:
 	if code.is_empty():
@@ -127,6 +140,8 @@ func presentation_signature() -> Dictionary:
 		"martial_code_visible": true,
 		"flow_visible": true,
 		"resonance_visible": true,
+		"rival_climax_telegraph_visible": true,
+		"rival_reaction_controls_visible": true,
 		"single_line_fight_ui": true,
 		"site_like_panel": false,
 		"logic_changes": false,
