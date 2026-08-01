@@ -90,6 +90,11 @@ func record_combat_peak(profile_id: StringName, metric_id: StringName, value: fl
 	metrics["combat"] = combat
 	_players[String(profile_id)] = metrics
 
+# Compatibilidade explícita para runtimes do First Playable que usam a nomenclatura
+# anterior. Mantém um único comportamento: máximo observado, nunca soma.
+func record_combat_max(profile_id: StringName, metric_id: StringName, value: float) -> void:
+	record_combat_peak(profile_id, metric_id, value)
+
 func finish_round(
 	winner_profile_id: StringName = &"",
 	result_metadata: Dictionary = {}

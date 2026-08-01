@@ -5,6 +5,7 @@ signal difficulty_changed(difficulty_id: StringName, label: String)
 
 const FIRST_PLAYABLE_DIFFICULTIES: Array[StringName] = [&"apprentice", &"disciple", &"master"]
 const DIFFICULTY_LABELS: Array[String] = ["APRENDIZ", "DISCÍPULO", "ADEPTO", "MESTRE"]
+const MASTER_MARTIAL_PERSONALITY: StringName = &"master_martial"
 
 @onready var bot: TacticalBotRuntime = get_node("../TacticalBotRuntime")
 @onready var difficulty_label: Label = get_node("../HUD/DifficultyInfo")
@@ -56,13 +57,21 @@ func selection_signature() -> Dictionary:
 		"default_id": &"disciple",
 		"selected_id": selected_difficulty_id,
 		"keys": {&"apprentice": "1", &"disciple": "2", &"master": "3"},
+		"master_personality": MASTER_MARTIAL_PERSONALITY,
+		"master_dedicated_push": false,
+		"master_direct_element": false,
 		"persists_across_rematch": true,
 		"persists_from_menu": true
 	}
 
 func _apply_selected_difficulty() -> void:
-	if is_instance_valid(bot):
-		bot.difficulty_id = selected_difficulty_id
+	if not is_instance_valid(bot):
+		return
+	bot.difficulty_id = selected_difficulty_id
+	if selected_difficulty_id == &"master":
+		bot.personality_id = MASTER_MARTIAL_PERSONALITY
+	elif bot.personality_id == MASTER_MARTIAL_PERSONALITY:
+		bot.personality_id = &"technical"
 
 func _update_labels() -> void:
 	if is_instance_valid(difficulty_label):
