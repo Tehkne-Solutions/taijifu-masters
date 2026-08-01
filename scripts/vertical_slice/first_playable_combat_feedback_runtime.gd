@@ -1,4 +1,3 @@
-class_name FirstPlayableCombatFeedbackRuntime
 extends Node
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
@@ -64,22 +63,22 @@ func _on_impact_resolved(
 	match result_id:
 		&"hit":
 			_register_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nHIT" % technique_name, Color(POLICY.GOLD, 1.0))
+			_show_side_feedback(profile_id, "%s\nHIT" % technique_name, POLICY.GOLD)
 		&"posture_break":
 			_register_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nQUEBRA DE POSTURA" % technique_name, Color(POLICY.EMBER, 1.0))
-			_show_center_feedback("QUEBRA DE POSTURA", Color(POLICY.EMBER, 1.0), 1.14)
+			_show_side_feedback(profile_id, "%s\nQUEBRA DE POSTURA" % technique_name, POLICY.EMBER)
+			_show_center_feedback("QUEBRA DE POSTURA", POLICY.EMBER, 1.14)
 		&"blocked":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nBLOQUEADO" % technique_name, Color(POLICY.BONE, 1.0))
+			_show_side_feedback(profile_id, "%s\nBLOQUEADO" % technique_name, POLICY.BONE)
 		&"evaded":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nESQUIVADO" % technique_name, Color(POLICY.JADE, 1.0))
-			_show_center_feedback("ESQUIVA", Color(POLICY.JADE, 1.0), 1.0)
+			_show_side_feedback(profile_id, "%s\nESQUIVADO" % technique_name, POLICY.JADE)
+			_show_center_feedback("ESQUIVA", POLICY.JADE, 1.0)
 		&"parried":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nPARRY" % technique_name, Color(POLICY.ROUTE_TAI, 1.0))
-			_show_center_feedback("PARRY", Color(POLICY.ROUTE_TAI, 1.0), 1.08)
+			_show_side_feedback(profile_id, "%s\nPARRY" % technique_name, POLICY.ROUTE_TAI)
+			_show_center_feedback("PARRY", POLICY.ROUTE_TAI, 1.08)
 
 func _register_combo(profile_id: String) -> void:
 	_combo_counts[profile_id] = int(_combo_counts.get(profile_id, 0)) + 1
@@ -120,15 +119,15 @@ func _build_feedback_layer() -> void:
 	_layer.add_child(p2_combo)
 	_combo_labels["p2"] = p2_combo
 
-func _make_label(node_name: String, position: Vector2, size: Vector2, font_size: int) -> Label:
+func _make_label(node_name: String, label_position: Vector2, label_size: Vector2, font_size: int) -> Label:
 	var label := Label.new()
 	label.name = node_name
-	label.position = position
-	label.size = size
+	label.position = label_position
+	label.size = label_size
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", POLICY.BONE)
-	label.add_theme_color_override("font_shadow_color", Color(POLICY.INK, 0.92))
+	label.add_theme_color_override("font_shadow_color", Color(POLICY.INK.r, POLICY.INK.g, POLICY.INK.b, 0.92))
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	label.text = ""
@@ -155,7 +154,7 @@ func _show_transient(label: Label, text: String, color: Color, scale_factor: flo
 	tween.tween_property(label, "scale", Vector2.ONE, FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func _update_combo_label(profile_id: String) -> void:
-	var label := _combo_labels.get(profile_id) as Label
+	var label: Label = _combo_labels.get(profile_id)
 	if not is_instance_valid(label):
 		return
 	var count := int(_combo_counts.get(profile_id, 0))
@@ -164,7 +163,7 @@ func _update_combo_label(profile_id: String) -> void:
 		label.modulate.a = 0.0
 		return
 	label.text = "%d COMBO" % count
-	label.add_theme_color_override("font_color", Color(POLICY.GOLD, 1.0))
+	label.add_theme_color_override("font_color", POLICY.GOLD)
 	label.modulate.a = 1.0
 
 func presentation_signature() -> Dictionary:
