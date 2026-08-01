@@ -1,19 +1,21 @@
 extends Node
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
-const FEEDBACK_LIFETIME := 0.72
+const FEEDBACK_LIFETIME := 0.62
+const CRITICAL_LIFETIME := 0.52
 const COMBO_RESET_SECONDS := 1.10
+const MAX_ACTIVE_POPUPS := 6
 
 var _root: Node
 var _p1: MasteredWeaponFighterController
 var _p2: MasteredWeaponFighterController
 var _layer: CanvasLayer
 var _center_label: Label
-var _p1_label: Label
-var _p2_label: Label
 var _combo_labels: Dictionary = {}
 var _combo_counts: Dictionary = {"p1": 0, "p2": 0}
 var _combo_timers: Dictionary = {"p1": 0.0, "p2": 0.0}
+var _active_popups: Array[Label] = []
+var _critical_token := 0
 
 func _ready() -> void:
 	process_priority = 35
@@ -53,32 +55,45 @@ func _on_impact_resolved(
 	result_id: StringName,
 	_damage_applied: float,
 	_posture_applied: float,
-	_intensity: float,
-	_world_position: Vector2
+	intensity: float,
+	world_position: Vector2
 ) -> void:
 	if not is_instance_valid(attacker) or not is_instance_valid(technique):
 		return
 	var profile_id := "p1" if attacker.player_index == 1 else "p2"
 	var technique_name := technique.display_name.to_upper()
+	var result_label := "HIT"
+	var color := POLICY.GOLD
+	var critical := false
 	match result_id:
 		&"hit":
 			_register_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nHIT" % technique_name, POLICY.GOLD)
+			result_label = "HIT"
+			color = POLICY.GOLD
 		&"posture_break":
 			_register_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nQUEBRA DE POSTURA" % technique_name, POLICY.EMBER)
-			_show_center_feedback("QUEBRA DE POSTURA", POLICY.EMBER, 1.14)
+			result_label = "QUEBRA DE POSTURA"
+			color = POLICY.EMBER
+			critical = true
 		&"blocked":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nBLOQUEADO" % technique_name, POLICY.BONE)
+			result_label = "BLOQUEADO"
+			color = POLICY.BONE
 		&"evaded":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nESQUIVADO" % technique_name, POLICY.JADE)
-			_show_center_feedback("ESQUIVA", POLICY.JADE, 1.0)
+			result_label = "ESQUIVA"
+			color = POLICY.JADE
+			critical = true
 		&"parried":
 			_break_combo(profile_id)
-			_show_side_feedback(profile_id, "%s\nPARRY" % technique_name, POLICY.ROUTE_TAI)
-			_show_center_feedback("PARRY", POLICY.ROUTE_TAI, 1.08)
+			result_label = "PARRY"
+			color = POLICY.ROUTE_TAI
+			critical = true
+
+	_spawn_impact_popup(world_position, technique_name, result_label, color, profile_id)
+	if critical:
+		_show_center_feedback(result_label, color)
+	_punch_camera(intensity, result_id)
 
 func _register_combo(profile_id: String) -> void:
 	_combo_counts[profile_id] = int(_combo_counts.get(profile_id, 0)) + 1
@@ -96,25 +111,17 @@ func _build_feedback_layer() -> void:
 	_layer.layer = 12
 	add_child(_layer)
 
-	_center_label = _make_label("CenterImpact", Vector2(390.0, 248.0), Vector2(500.0, 84.0), 30)
+	_center_label = _make_label("CriticalImpact", Vector2(430.0, 210.0), Vector2(420.0, 70.0), 28)
 	_center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_center_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_layer.add_child(_center_label)
 
-	_p1_label = _make_label("P1Impact", Vector2(34.0, 188.0), Vector2(360.0, 76.0), 15)
-	_p1_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_layer.add_child(_p1_label)
-
-	_p2_label = _make_label("P2Impact", Vector2(886.0, 188.0), Vector2(360.0, 76.0), 15)
-	_p2_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_layer.add_child(_p2_label)
-
-	var p1_combo := _make_label("P1Combo", Vector2(34.0, 272.0), Vector2(260.0, 54.0), 22)
+	var p1_combo := _make_label("P1Combo", Vector2(34.0, 128.0), Vector2(260.0, 44.0), 20)
 	p1_combo.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_layer.add_child(p1_combo)
 	_combo_labels["p1"] = p1_combo
 
-	var p2_combo := _make_label("P2Combo", Vector2(986.0, 272.0), Vector2(260.0, 54.0), 22)
+	var p2_combo := _make_label("P2Combo", Vector2(986.0, 128.0), Vector2(260.0, 44.0), 20)
 	p2_combo.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_layer.add_child(p2_combo)
 	_combo_labels["p2"] = p2_combo
@@ -127,31 +134,77 @@ func _make_label(node_name: String, label_position: Vector2, label_size: Vector2
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", POLICY.BONE)
-	label.add_theme_color_override("font_shadow_color", Color(POLICY.INK.r, POLICY.INK.g, POLICY.INK.b, 0.92))
+	label.add_theme_color_override("font_shadow_color", Color(POLICY.INK.r, POLICY.INK.g, POLICY.INK.b, 0.94))
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	label.text = ""
 	label.modulate.a = 0.0
 	return label
 
-func _show_side_feedback(profile_id: String, text: String, color: Color) -> void:
-	var label := _p1_label if profile_id == "p1" else _p2_label
-	_show_transient(label, text, color, 1.0)
-
-func _show_center_feedback(text: String, color: Color, scale_factor: float) -> void:
-	_show_transient(_center_label, text, color, scale_factor)
-
-func _show_transient(label: Label, text: String, color: Color, scale_factor: float) -> void:
-	if not is_instance_valid(label):
+func _spawn_impact_popup(world_position: Vector2, technique_name: String, result_label: String, color: Color, profile_id: String) -> void:
+	if not is_instance_valid(_layer):
 		return
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.modulate.a = 1.0
-	label.scale = Vector2.ONE * scale_factor
+	_cleanup_popup_budget()
+	var popup := _make_label("ImpactPopup", Vector2.ZERO, Vector2(240.0, 50.0), 14)
+	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	popup.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	popup.text = "%s  •  %s" % [technique_name, result_label]
+	popup.add_theme_color_override("font_color", color)
+	popup.modulate.a = 1.0
+	var screen_pos := _world_to_screen(world_position)
+	var side_offset := -18.0 if profile_id == "p1" else 18.0
+	popup.position = screen_pos + Vector2(-120.0 + side_offset, -62.0)
+	_layer.add_child(popup)
+	_active_popups.append(popup)
+
+	var tween := popup.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(popup, "position", popup.position + Vector2(0.0, -34.0), FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(popup, "modulate:a", 0.0, FEEDBACK_LIFETIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.chain().tween_callback(func() -> void:
+		_active_popups.erase(popup)
+		if is_instance_valid(popup):
+			popup.queue_free()
+	)
+
+func _world_to_screen(world_position: Vector2) -> Vector2:
+	if not is_instance_valid(_root):
+		return world_position
+	var camera := _root.get_node_or_null("Camera2D") as Camera2D
+	if camera == null:
+		return world_position
+	return camera.get_canvas_transform() * world_position
+
+func _cleanup_popup_budget() -> void:
+	while _active_popups.size() >= MAX_ACTIVE_POPUPS:
+		var oldest := _active_popups.pop_front()
+		if is_instance_valid(oldest):
+			oldest.queue_free()
+
+func _show_center_feedback(text: String, color: Color) -> void:
+	if not is_instance_valid(_center_label):
+		return
+	_critical_token += 1
+	var token := _critical_token
+	_center_label.text = text
+	_center_label.add_theme_color_override("font_color", color)
+	_center_label.modulate.a = 1.0
+	_center_label.scale = Vector2.ONE * 1.08
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(label, "modulate:a", 0.0, FEEDBACK_LIFETIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(label, "scale", Vector2.ONE, FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(_center_label, "modulate:a", 0.0, CRITICAL_LIFETIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(_center_label, "scale", Vector2.ONE, CRITICAL_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.chain().tween_callback(func() -> void:
+		if token == _critical_token and is_instance_valid(_center_label):
+			_center_label.text = ""
+	)
+
+func _punch_camera(intensity: float, result_id: StringName) -> void:
+	if not is_instance_valid(_root):
+		return
+	var composition := _root.get_node_or_null("FightCameraComposition")
+	if composition != null and composition.has_method("impact_punch"):
+		composition.call("impact_punch", clampf(intensity, 0.15, 1.0), result_id)
 
 func _update_combo_label(profile_id: String) -> void:
 	var label: Label = _combo_labels.get(profile_id)
@@ -176,6 +229,10 @@ func presentation_signature() -> Dictionary:
 		"parry_feedback": true,
 		"posture_break_feedback": true,
 		"combo_counter_per_side": true,
+		"world_space_impact_popups": true,
+		"popup_budget": MAX_ACTIVE_POPUPS,
+		"critical_feedback_priority": true,
+		"camera_punch_on_impact": true,
 		"feedback_is_visual_only": true,
 		"damage_changes": false,
 		"frame_data_changes": false,
