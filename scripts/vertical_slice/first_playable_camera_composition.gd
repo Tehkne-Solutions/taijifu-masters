@@ -8,9 +8,13 @@ const VERTICAL_RANGE := 72.0
 const HORIZONTAL_PADDING := 420.0
 const FOCUS_LERP := 5.2
 const ZOOM_LERP := 4.8
+const SHAKE_DECAY := 9.0
+const MAX_SHAKE_PIXELS := 8.0
 
 var _root: Node2D
 var _camera: Camera2D
+var _shake_strength := 0.0
+var _shake_phase := 0.0
 
 func _ready() -> void:
 	process_priority = 100
@@ -47,6 +51,27 @@ func _process(delta: float) -> void:
 	var target := Vector2(target_x, target_y)
 	_camera.global_position = _camera.global_position.lerp(target, 1.0 - exp(-FOCUS_LERP * delta))
 	_camera.zoom = _camera.zoom.lerp(Vector2.ONE * desired_zoom, 1.0 - exp(-ZOOM_LERP * delta))
+	_apply_shake(delta)
+
+func impact_punch(intensity: float, result_id: StringName = &"hit") -> void:
+	var multiplier := 1.0
+	match result_id:
+		&"blocked": multiplier = 0.45
+		&"evaded": multiplier = 0.20
+		&"parried": multiplier = 0.85
+		&"posture_break": multiplier = 1.25
+	_shake_strength = maxf(_shake_strength, clampf(intensity * multiplier, 0.0, 1.0))
+
+func _apply_shake(delta: float) -> void:
+	if _shake_strength <= 0.001:
+		_camera.offset = _camera.offset.lerp(Vector2.ZERO, 1.0 - exp(-12.0 * delta))
+		_shake_strength = 0.0
+		return
+	_shake_phase += delta * 52.0
+	var amplitude := MAX_SHAKE_PIXELS * _shake_strength
+	var shake := Vector2(sin(_shake_phase * 1.7), cos(_shake_phase * 2.3)) * amplitude
+	_camera.offset = shake
+	_shake_strength = maxf(0.0, _shake_strength - delta * SHAKE_DECAY)
 
 func presentation_signature() -> Dictionary:
 	return {
@@ -59,6 +84,9 @@ func presentation_signature() -> Dictionary:
 		"reduced_vertical_motion": true,
 		"focus_lerp": FOCUS_LERP,
 		"zoom_lerp": ZOOM_LERP,
+		"impact_camera_punch": true,
+		"impact_camera_punch_visual_only": true,
+		"max_shake_pixels": MAX_SHAKE_PIXELS,
 		"physics_changes": false,
 		"collision_changes": false,
 		"signature": "Tehkné Solutions"
