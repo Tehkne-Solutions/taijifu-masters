@@ -17,6 +17,16 @@ const EMBER := Color(0.88, 0.30, 0.15, 1.0)
 const GOLD := Color(0.88, 0.68, 0.28, 1.0)
 const BONE := Color(0.92, 0.88, 0.78, 1.0)
 
+# Rotas da arena. FU deixa de usar violeta/roxo para não reintroduzir
+# a leitura tech que foi descartada da identidade canônica.
+const ROUTE_TAI := Color(0.20, 0.62, 0.96, 0.92)
+const ROUTE_JI := Color(0.92, 0.30, 0.16, 0.92)
+const ROUTE_FU := Color(0.28, 0.68, 0.52, 0.92)
+const ROUTE_FU_ACCENT := Color(0.88, 0.68, 0.28, 0.88)
+const PLATFORM_STONE := Color(0.16, 0.17, 0.18, 0.98)
+const PLATFORM_FACE := Color(0.075, 0.080, 0.082, 0.98)
+const PLATFORM_SHADOW := Color(0.015, 0.018, 0.020, 0.62)
+
 const LIAN_WU_INK := Color(0.035, 0.055, 0.09, 1.0)
 const LIAN_WU_ROBE := Color(0.90, 0.94, 0.98, 1.0)
 const LIAN_WU_WATER := Color(0.10, 0.42, 0.88, 1.0)
@@ -26,6 +36,15 @@ const RIVAL_ARMOR := Color(0.24, 0.08, 0.06, 1.0)
 const RIVAL_EMBER := Color(0.96, 0.28, 0.10, 1.0)
 const RIVAL_METAL := Color(0.38, 0.42, 0.48, 1.0)
 const RIVAL_BRASS := Color(0.74, 0.47, 0.16, 1.0)
+
+static func route_color(route_id: StringName) -> Color:
+	match route_id:
+		&"tai":
+			return ROUTE_TAI
+		&"ji":
+			return ROUTE_JI
+		_:
+			return ROUTE_FU
 
 static func signature() -> Dictionary:
 	return {
@@ -40,6 +59,8 @@ static func signature() -> Dictionary:
 		"quick_game_ui": true,
 		"site_like_panels": false,
 		"purple_tech_glow": false,
+		"route_fu_uses_purple": false,
+		"route_palette": ["water_blue", "ember", "jade_gold"],
 		"lian_wu_palette": ["white", "water_blue", "gold", "ink"],
 		"lian_wu_single_katana": true,
 		"training_rival_palette": ["dark_armor", "ember", "metal", "brass"],

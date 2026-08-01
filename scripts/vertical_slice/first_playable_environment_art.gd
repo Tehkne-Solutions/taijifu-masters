@@ -4,6 +4,7 @@ extends TriplePathEnvironmentArt
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FINAL_LAYER := preload("res://scripts/vertical_slice/first_playable_arena_final_layer.gd")
 const PARALLAX_LAYER := preload("res://scripts/vertical_slice/first_playable_parallax_layer.gd")
+const PLATFORM_READABILITY_LAYER := preload("res://scripts/vertical_slice/first_playable_platform_readability_layer.gd")
 const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
 const AUDIO_DIRECTOR := preload("res://scripts/vertical_slice/first_playable_audio_director.gd")
 
@@ -11,6 +12,7 @@ func _ready() -> void:
 	z_index = -10
 	_install_parallax_layers()
 	_install_final_layer()
+	_install_platform_readability()
 	_install_combat_feedback()
 	queue_redraw()
 
@@ -36,6 +38,14 @@ func _install_final_layer() -> void:
 	final_layer.name = "ArenaFinalLayer"
 	root.add_child.call_deferred(final_layer)
 
+func _install_platform_readability() -> void:
+	var root := get_parent()
+	if root == null or root.has_node("ArenaPlatformReadability"):
+		return
+	var readability := PLATFORM_READABILITY_LAYER.new() as FirstPlayablePlatformReadabilityLayer
+	readability.name = "ArenaPlatformReadability"
+	root.add_child.call_deferred(readability)
+
 func _install_combat_feedback() -> void:
 	var root := get_parent()
 	if root == null:
@@ -58,6 +68,7 @@ func presentation_signature() -> Dictionary:
 		"parallax_layers": 3,
 		"layered_parallax": true,
 		"foreground_separation": true,
+		"platform_readability_layer": true,
 		"fighter_first": true,
 		"celestial_body": &"water_moon",
 		"mist_bands": 3,
