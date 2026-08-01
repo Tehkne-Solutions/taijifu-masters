@@ -19,134 +19,131 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.025, 0.04, 0.07, 1)
+color = Color(0.026, 0.03, 0.032, 1)
 
-[node name="SkyBand" type="ColorRect" parent="."]
+[node name="SkyWash" type="ColorRect" parent="."]
 layout_mode = 0
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 1280.0
-offset_bottom = 244.0
+offset_bottom = 250.0
 mouse_filter = 2
-color = Color(0.055, 0.16, 0.25, 0.72)
+color = Color(0.055, 0.12, 0.14, 0.72)
 
-[node name="EmberBand" type="ColorRect" parent="."]
+[node name="EmberWash" type="ColorRect" parent="."]
 layout_mode = 0
 offset_left = 0.0
-offset_top = 518.0
+offset_top = 520.0
 offset_right = 1280.0
 offset_bottom = 720.0
 mouse_filter = 2
-color = Color(0.22, 0.055, 0.035, 0.42)
+color = Color(0.18, 0.055, 0.035, 0.32)
+
+[node name="TopRule" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 410.0
+offset_top = 118.0
+offset_right = 870.0
+offset_bottom = 120.0
+mouse_filter = 2
+color = Color(0.88, 0.68, 0.28, 0.68)
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
-offset_left = 210.0
-offset_top = 28.0
-offset_right = 1070.0
-offset_bottom = 92.0
-theme_override_colors/font_color = Color(0.98, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 40
+offset_left = 260.0
+offset_top = 34.0
+offset_right = 1020.0
+offset_bottom = 84.0
+theme_override_colors/font_color = Color(0.88, 0.68, 0.28, 1)
+theme_override_font_sizes/font_size = 36
 text = "TAIJIFU MASTERS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Subtitle" type="Label" parent="."]
 layout_mode = 0
-offset_left = 260.0
-offset_top = 90.0
-offset_right = 1020.0
-offset_bottom = 128.0
-theme_override_colors/font_color = Color(0.76, 0.88, 0.98, 0.96)
-theme_override_font_sizes/font_size = 16
-text = "FIRST PLAYABLE • RUÍNAS DO CAMINHO TRIPLO"
+offset_left = 330.0
+offset_top = 86.0
+offset_right = 950.0
+offset_bottom = 114.0
+theme_override_colors/font_color = Color(0.92, 0.88, 0.78, 0.9)
+theme_override_font_sizes/font_size = 13
+text = "RUÍNAS DO CAMINHO TRIPLO"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Content" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 190.0
-offset_top = 138.0
-offset_right = 1090.0
-offset_bottom = 678.0
-theme_override_constants/separation = 9
+offset_left = 250.0
+offset_top = 158.0
+offset_right = 1030.0
+offset_bottom = 640.0
+theme_override_constants/separation = 18
 
 [node name="Fighters" type="HBoxContainer" parent="Content"]
+custom_minimum_size = Vector2(0, 138)
 layout_mode = 2
 theme_override_constants/separation = 20
+alignment = 1
 
-[node name="LianCard" type="PanelContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(440, 104)
+[node name="Lian" type="VBoxContainer" parent="Content/Fighters"]
+custom_minimum_size = Vector2(300, 120)
 layout_mode = 2
 size_flags_horizontal = 3
+alignment = 1
 
-[node name="Info" type="Label" parent="Content/Fighters/LianCard"]
+[node name="Name" type="Label" parent="Content/Fighters/Lian"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.72, 0.88, 1, 1)
-theme_override_font_sizes/font_size = 14
-text = "P1 • LIAN WU\nDISCÍPULO DA LÂMINA SERENA\nÁGUA • KATANA • TÉCNICA E FOCO"
+theme_override_colors/font_color = Color(0.48, 0.76, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "LIAN WU"
 horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="Role" type="Label" parent="Content/Fighters/Lian"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.84, 0.84, 0.82)
+theme_override_font_sizes/font_size = 12
+text = "LÂMINA SERENA • ÁGUA"
+horizontal_alignment = 1
 
 [node name="Versus" type="Label" parent="Content/Fighters"]
-custom_minimum_size = Vector2(54, 104)
+custom_minimum_size = Vector2(90, 120)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.98, 0.72, 0.24, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.88, 0.68, 0.28, 1)
+theme_override_font_sizes/font_size = 30
 text = "VS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RivalCard" type="PanelContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(440, 104)
+[node name="Rival" type="VBoxContainer" parent="Content/Fighters"]
+custom_minimum_size = Vector2(300, 120)
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="Info" type="Label" parent="Content/Fighters/RivalCard"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.72, 0.58, 1)
-theme_override_font_sizes/font_size = 14
-text = "CPU • RIVAL DE TREINO\nPUNHO DA FORNALHA\nFOGO • MANOPLAS • PRESSÃO E POSTURA"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Participant" type="VBoxContainer" parent="Content"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ParticipantLabel" type="Label" parent="Content/Participant"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.82, 0.91, 1, 1)
-theme_override_font_sizes/font_size = 15
-text = "CÓDIGO ANÔNIMO DO PILOTO"
-horizontal_alignment = 1
-
-[node name="ParticipantInput" type="LineEdit" parent="Content/Participant"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-placeholder_text = "TJFP-001"
-max_length = 8
 alignment = 1
-clear_button_enabled = true
-select_all_on_focus = true
 
-[node name="ParticipantStatus" type="Label" parent="Content/Participant"]
+[node name="Name" type="Label" parent="Content/Fighters/Rival"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.72, 0.78, 0.88, 0.96)
-theme_override_font_sizes/font_size = 11
-text = "OBRIGATÓRIO • INFORME TJFP-001 ATÉ TJFP-999"
+theme_override_colors/font_color = Color(1, 0.48, 0.32, 1)
+theme_override_font_sizes/font_size = 24
+text = "RIVAL DE TREINO"
+horizontal_alignment = 1
+
+[node name="Role" type="Label" parent="Content/Fighters/Rival"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.78, 0.74, 0.82)
+theme_override_font_sizes/font_size = 12
+text = "PUNHO DA FORNALHA • FOGO"
 horizontal_alignment = 1
 
 [node name="Difficulty" type="VBoxContainer" parent="Content"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 10
 
 [node name="DifficultyLabel" type="Label" parent="Content/Difficulty"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.8, 0.4, 1)
-theme_override_font_sizes/font_size = 17
-text = "DIFICULDADE DA IA • DISCÍPULO"
+theme_override_colors/font_color = Color(0.88, 0.68, 0.28, 1)
+theme_override_font_sizes/font_size = 15
+text = "IA • DISCÍPULO"
 horizontal_alignment = 1
 
 [node name="Options" type="HBoxContainer" parent="Content/Difficulty"]
@@ -155,53 +152,45 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="EasyButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 42)
+custom_minimum_size = Vector2(200, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "○ 1 • APRENDIZ"
+theme_override_font_sizes/font_size = 12
+text = "○ APRENDIZ"
 
 [node name="NormalButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 42)
+custom_minimum_size = Vector2(200, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "● 2 • DISCÍPULO"
+theme_override_font_sizes/font_size = 12
+text = "● DISCÍPULO"
 
 [node name="HardButton" type="Button" parent="Content/Difficulty/Options"]
-custom_minimum_size = Vector2(240, 42)
+custom_minimum_size = Vector2(200, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "○ 3 • MESTRE"
+theme_override_font_sizes/font_size = 12
+text = "○ MESTRE"
 
 [node name="Actions" type="VBoxContainer" parent="Content"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 alignment = 1
 
 [node name="PlayButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.98, 0.88, 0.56, 1)
 theme_override_font_sizes/font_size = 20
-text = "JOGAR CONTRA IA"
-disabled = true
-
-[node name="PrototypeButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 38)
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "ABRIR PROTÓTIPO COMPLETO"
+text = "JOGAR"
 
 [node name="ExitButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 34)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "SAIR"
 
 [node name="Help" type="Label" parent="Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.68, 0.72, 0.8, 0.95)
-theme_override_font_sizes/font_size = 11
-text = "CÓDIGO + ENTER iniciar • 1/2/3 dificuldade • teclado, mouse e gamepad"
+theme_override_colors/font_color = Color(0.72, 0.72, 0.68, 0.68)
+theme_override_font_sizes/font_size = 10
+text = "1 / 2 / 3  dificuldade    •    ENTER  jogar"
 horizontal_alignment = 1
 
 [node name="Signature" type="Label" parent="."]
@@ -210,8 +199,8 @@ offset_left = 940.0
 offset_top = 680.0
 offset_right = 1260.0
 offset_bottom = 710.0
-theme_override_colors/font_color = Color(0.72, 0.74, 0.8, 0.85)
-theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.72, 0.74, 0.8, 0.62)
+theme_override_font_sizes/font_size = 11
 text = "TEHKNÉ SOLUTIONS"
 horizontal_alignment = 2
 vertical_alignment = 1
