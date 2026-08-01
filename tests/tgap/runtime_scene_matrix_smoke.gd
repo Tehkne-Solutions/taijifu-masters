@@ -7,7 +7,10 @@ const PACK_ROOT := ROOT + "/packs/taijifu_smoke"
 var failures: Array[String] = []
 var _loader: Node
 
-func _init() -> void:
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
 	_loader = root.get_node_or_null("TgapAssetLoader")
 	_check(_loader != null, "autoload TgapAssetLoader ausente")
 	if _loader == null:
