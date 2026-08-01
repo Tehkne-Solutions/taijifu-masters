@@ -1,16 +1,40 @@
 class_name FirstPlayableCharacterIdentity
 extends Node2D
 
+const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable_camera_composition.gd")
+const VISUAL_SCALE := Vector2(1.28, 1.28)
+
 var _fighter: FighterController
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
 	z_index = 4
+	scale = VISUAL_SCALE
+	_install_camera_composition()
 	queue_redraw()
+
+func _install_camera_composition() -> void:
+	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
+		return
+	var match_root := _fighter.get_parent()
+	if match_root == null or match_root.has_node("FightCameraComposition"):
+		return
+	var composition := CAMERA_COMPOSITION.new() as FirstPlayableCameraComposition
+	composition.name = "FightCameraComposition"
+	match_root.add_child.call_deferred(composition)
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(_fighter):
 		queue_redraw()
+
+func presentation_signature() -> Dictionary:
+	return {
+		"visual_scale": VISUAL_SCALE.x,
+		"fighter_first_readability": true,
+		"camera_composition": true,
+		"collision_changes": false,
+		"signature": "Tehkné Solutions"
+	}
 
 func _draw() -> void:
 	if not is_instance_valid(_fighter) or not is_instance_valid(_fighter.build):
@@ -76,3 +100,5 @@ func _draw_training_rival() -> void:
 	# Pulso de fogo discreto, sem depender de textura ou VFX externo.
 	var pulse := 14.0 + sin(Time.get_ticks_msec() * 0.008) * 2.0
 	draw_arc(Vector2(0, 17), pulse, PI + 0.25, TAU - 0.25, 16, Color(1.0, 0.34, 0.08, 0.72 * alpha), 3.0)
+
+# Tehkné Solutions
