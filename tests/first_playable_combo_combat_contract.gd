@@ -20,10 +20,19 @@ func _init() -> void:
 	assert(bool(signature.get("legacy_single_attack_unbound", false)))
 	assert(not bool(signature.get("dedicated_push_attack", true)))
 	assert(bool(signature.get("knockback_is_hit_consequence", false)))
-	assert(bool(signature.get("clean_hit_full_knockback", false)))
 	assert(bool(signature.get("guard_reduces_damage_and_knockback", false)))
 	assert(bool(signature.get("dodge_negates_hit", false)))
 	assert(bool(signature.get("parry_negates_hit", false)))
+	assert(bool(signature.get("confirmed_hit_combo_counter", false)))
+	assert(bool(signature.get("martial_code_visible", false)))
+	assert(bool(signature.get("flow_energy_visible", false)))
+	assert(bool(signature.get("technique_name_visible", false)))
+	assert(int(signature.get("elemental_recipes", 0)) == 4)
+	assert(not bool(signature.get("dedicated_magic_button", true)))
+	assert(float(signature.get("climax_reaction_window_seconds", 0.0)) >= 0.40)
+	assert(bool(signature.get("defender_control_during_climax", false)))
+	assert(bool(signature.get("blocked_hit_does_not_advance_recipe", false)))
+	assert(bool(signature.get("evade_or_parry_breaks_code", false)))
 	combo.free()
 
 	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
@@ -34,6 +43,9 @@ func _init() -> void:
 	assert(guide_signature.get("fu_key") == "H")
 	assert(bool(guide_signature.get("repeat_sequences_visible", false)))
 	assert(bool(guide_signature.get("direction_modifiers_visible", false)))
+	assert(bool(guide_signature.get("elemental_recipes_visible", false)))
+	assert(bool(guide_signature.get("climax_reaction_controls_visible", false)))
+	assert(not bool(guide_signature.get("dedicated_magic_button_visible", true)))
 	guide.free()
 
 	var identity := IDENTITY.new() as FirstPlayableCharacterIdentity
