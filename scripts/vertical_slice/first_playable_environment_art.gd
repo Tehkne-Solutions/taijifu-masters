@@ -1,15 +1,32 @@
 class_name FirstPlayableEnvironmentArt
 extends TriplePathEnvironmentArt
 
+const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FINAL_LAYER := preload("res://scripts/vertical_slice/first_playable_arena_final_layer.gd")
+const PARALLAX_LAYER := preload("res://scripts/vertical_slice/first_playable_parallax_layer.gd")
 const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
 const AUDIO_DIRECTOR := preload("res://scripts/vertical_slice/first_playable_audio_director.gd")
 
 func _ready() -> void:
 	z_index = -10
+	_install_parallax_layers()
 	_install_final_layer()
 	_install_combat_feedback()
 	queue_redraw()
+
+func _install_parallax_layers() -> void:
+	var root := get_parent()
+	if root == null or root.has_node("ArenaParallaxFar"):
+		return
+	var far := PARALLAX_LAYER.new().configure(FirstPlayableParallaxLayer.LayerKind.FAR)
+	far.name = "ArenaParallaxFar"
+	root.add_child.call_deferred(far)
+	var mid := PARALLAX_LAYER.new().configure(FirstPlayableParallaxLayer.LayerKind.MID)
+	mid.name = "ArenaParallaxMid"
+	root.add_child.call_deferred(mid)
+	var foreground := PARALLAX_LAYER.new().configure(FirstPlayableParallaxLayer.LayerKind.FOREGROUND)
+	foreground.name = "ArenaParallaxForeground"
+	root.add_child.call_deferred(foreground)
 
 func _install_final_layer() -> void:
 	var root := get_parent()
@@ -34,8 +51,14 @@ func _install_combat_feedback() -> void:
 
 func presentation_signature() -> Dictionary:
 	return {
+		"visual_policy": POLICY.DIRECTION,
+		"arena_read": POLICY.ARENA_READ,
 		"sky_layers": 4,
 		"mountain_layers": 2,
+		"parallax_layers": 3,
+		"layered_parallax": true,
+		"foreground_separation": true,
+		"fighter_first": true,
 		"celestial_body": &"water_moon",
 		"mist_bands": 3,
 		"palette": &"ink_stone_jade_ember_gold",
