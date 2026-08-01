@@ -4,9 +4,7 @@ const ROOT := "user://tgap-smoke"
 const PACK_ID := "pack_smoke_runtime"
 const VERSION := "1.0.0"
 const RESOURCE_PATH := "runtime/smoke_resource.tres"
-const MAIN_SCENES := [
-	"res://scenes/main.tscn",
-]
+const MAIN_SCENES: Array[String] = ["res://scenes/main.tscn"]
 
 var failures: Array[String] = []
 
@@ -15,9 +13,9 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_prepare_fixture()
-	var loader := root.get_node_or_null("TgapAssetLoader")
+	var loader: Node = root.get_node_or_null("TgapAssetLoader")
 	_check(loader != null, "autoload TgapAssetLoader ausente")
-	_check(root.get_node_or_null("AssetPackRegistry") == null, "autoload legado ainda registrado")
+	_check(root.get_node_or_null("AssetPackRegistry") != null, "autoload AssetPackRegistry ausente")
 	if loader != null:
 		loader.runtime_root = ROOT
 		loader.catalog_filename = "tgap-catalog.json"
@@ -31,10 +29,10 @@ func _run() -> void:
 		_check(resource != null, "ResourceLoader não carregou recurso TGAP real")
 	for scene_path in MAIN_SCENES:
 		_check(ResourceLoader.exists(scene_path), "cena principal ausente: %s" % scene_path)
-		var packed := load(scene_path)
+		var packed: Resource = load(scene_path)
 		_check(packed is PackedScene, "cena principal inválida: %s" % scene_path)
 		if packed is PackedScene:
-			var instance := packed.instantiate()
+			var instance: Node = packed.instantiate()
 			_check(instance != null, "cena principal não instancia: %s" % scene_path)
 			if instance != null:
 				instance.free()

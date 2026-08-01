@@ -4,13 +4,14 @@ const MAX_AUTOLOADS := 12
 const REQUIRED := [
 	"TgapAssetLoader",
 	"AssetPackRegistry",
+	"InputBootstrapRuntime",
 	"Pack99BattleVisualRuntime",
 	"Pack99CombatEventRuntime",
 	"Pack08ArenaUnitRuntime",
-	"GameModeRuntime",
 	"TaijifuWebBridge",
 ]
 const FORBIDDEN := [
+	"GameModeRuntime",
 	"SeriesLootProgressionRuntime",
 	"CompleteSeriesModeRuntime",
 	"ModeAwarePreparationRuntime",
