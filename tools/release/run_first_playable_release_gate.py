@@ -15,6 +15,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_GATE_TIMEOUT_SECONDS = 120
 
 
 @dataclass
@@ -26,18 +27,38 @@ class GateResult:
     output: str
 
 
-def run_gate(name: str, command: list[str]) -> GateResult:
+def run_gate(
+    name: str,
+    command: list[str],
+    timeout_seconds: int = DEFAULT_GATE_TIMEOUT_SECONDS,
+) -> GateResult:
     executable = shutil.which(command[0])
     if executable is None:
         return GateResult(name, command, "blocked", 127, f"Executável ausente: {command[0]}")
-    process = subprocess.run(
-        command,
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
+    try:
+        process = subprocess.run(
+            command,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        output = exc.stdout or ""
+        if isinstance(output, bytes):
+            output = output.decode("utf-8", errors="replace")
+        return GateResult(
+            name=name,
+            command=command,
+            status="failed",
+            returncode=124,
+            output=(
+                f"Subgate excedeu {timeout_seconds}s e foi encerrado: {name}\n"
+                f"{output[-12000:]}"
+            ),
+        )
     return GateResult(
         name=name,
         command=command,
@@ -111,6 +132,7 @@ def main() -> int:
     summary = {
         "gate_id": "taijifu-first-playable-release-v3",
         "strict_assets": args.strict_assets,
+        "subgate_timeout_seconds": DEFAULT_GATE_TIMEOUT_SECONDS,
         "art_report": str(art_report_path),
         "required_real_fighters": ["lian_wu", "training_rival"],
         "signature": "Tehkné Solutions",
