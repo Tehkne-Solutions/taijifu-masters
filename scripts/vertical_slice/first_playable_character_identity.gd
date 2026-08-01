@@ -59,6 +59,10 @@ func presentation_signature() -> Dictionary:
 		"training_rival_presenter": true,
 		"procedural_fallback_until_real_assets": true,
 		"procedural_is_fallback_only": true,
+		"lian_wu_recovered_identity": true,
+		"lian_wu_chibi_silhouette": true,
+		"lian_wu_single_sheathed_katana": true,
+		"rejected_turnaround_promoted": false,
 		"collision_changes": false,
 		"signature": "Tehkné Solutions"
 	}
@@ -79,24 +83,49 @@ func _draw_lian_wu() -> void:
 	var robe := Color(POLICY.LIAN_WU_ROBE, alpha)
 	var water_blue := Color(POLICY.LIAN_WU_WATER, alpha)
 	var gold := Color(POLICY.LIAN_WU_GOLD, alpha)
+	var hair := Color(POLICY.LIAN_WU_HAIR, alpha)
+	var skin := Color(POLICY.LIAN_WU_SKIN, alpha)
+	var scabbard := Color(POLICY.LIAN_WU_SCABBARD, alpha)
 
-	draw_colored_polygon(
-		PackedVector2Array([Vector2(-14, -35), Vector2(14, -35), Vector2(16, 4), Vector2(0, 14), Vector2(-16, 4)]),
-		robe
-	)
-	draw_polyline(PackedVector2Array([Vector2(-12, -33), Vector2(2, -18), Vector2(13, -33)]), water_blue, 4.0)
-	draw_line(Vector2(-16, -1), Vector2(16, -1), water_blue, 5.0)
-	draw_line(Vector2(-13, 8), Vector2(13, 8), ink, 2.0)
-	draw_circle(Vector2(0, -1), 3.4, gold)
+	# Silhueta recuperada: leitura chibi, cabeça grande, tronco compacto e pernas curtas.
+	draw_circle(Vector2(0, -43), 17.0, skin)
+	draw_circle(Vector2(0, -50), 18.5, hair)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-15, -55), Vector2(-6, -67), Vector2(5, -72), Vector2(13, -61), Vector2(10, -48), Vector2(-12, -47)
+	]), hair)
+	# Topknot alto + laço azul do turnaround recuperado.
+	draw_circle(Vector2(3, -72), 7.0, hair)
+	draw_line(Vector2(1, -68), Vector2(12, -64), water_blue, 4.0)
+	draw_line(Vector2(4, -67), Vector2(-7, -62), water_blue, 3.0)
 
-	if _fighter._attack_phase == FighterController.AttackPhase.NONE:
-		draw_line(Vector2(-7 * facing, 1), Vector2(-43 * facing, 24), Color(0.06, 0.20, 0.43, alpha), 6.0)
-		draw_line(Vector2(-8 * facing, 0), Vector2(-20 * facing, 7), gold, 4.0)
-	else:
-		draw_line(Vector2(10 * facing, -23), Vector2(58 * facing, -33), Color(0.84, 0.94, 1.0, alpha), 4.0)
-		draw_line(Vector2(7 * facing, -22), Vector2(17 * facing, -24), gold, 5.0)
+	# Roupa branca/azul/preta/dourada preservada do Pack 01.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-18, -30), Vector2(17, -30), Vector2(20, 1), Vector2(12, 15), Vector2(-12, 15), Vector2(-20, 1)
+	]), robe)
+	draw_polyline(PackedVector2Array([Vector2(-14, -28), Vector2(1, -15), Vector2(15, -29)]), water_blue, 4.0)
+	draw_line(Vector2(-18, -2), Vector2(18, -2), water_blue, 5.0)
+	draw_circle(Vector2(0, -3), 3.6, gold)
+	# Ombreira dourada canônica e punhos escuros.
+	draw_circle(Vector2(-17 * facing, -25), 6.0, gold)
+	draw_line(Vector2(-14, 10), Vector2(-9, 22), ink, 5.0)
+	draw_line(Vector2(14, 10), Vector2(9, 22), ink, 5.0)
+	draw_line(Vector2(-9, 20), Vector2(-11, 29), ink, 6.0)
+	draw_line(Vector2(9, 20), Vector2(11, 29), ink, 6.0)
 
-	draw_arc(Vector2(0, 18), 18.0, 0.15, PI - 0.15, 18, Color(0.20, 0.70, 1.0, 0.78 * alpha), 2.5)
+	# Uma única katana embainhada no quadril esquerdo. A arte reprovada não é promovida.
+	var hip := Vector2(-8 * facing, 3)
+	var tip := Vector2(-39 * facing, 27)
+	draw_line(hip, tip, scabbard, 7.0)
+	draw_line(tip, tip + Vector2(-4 * facing, 3), gold, 4.0)
+	draw_line(hip + Vector2(1 * facing, -2), hip + Vector2(-11 * facing, 7), gold, 4.0)
+
+	# Só durante ataque a lâmina aparece desembainhada; neutro permanece embainhado.
+	if _fighter._attack_phase != FighterController.AttackPhase.NONE:
+		draw_line(Vector2(10 * facing, -18), Vector2(56 * facing, -30), Color(0.84, 0.94, 1.0, alpha), 4.0)
+		draw_line(Vector2(7 * facing, -17), Vector2(17 * facing, -20), gold, 5.0)
+
+	# Leitura elemental discreta, sem glow tech.
+	draw_arc(Vector2(0, 23), 18.0, 0.15, PI - 0.15, 18, Color(0.20, 0.70, 1.0, 0.62 * alpha), 2.0)
 
 func _draw_training_rival() -> void:
 	var facing := _fighter.facing
