@@ -89,6 +89,7 @@ def main() -> int:
         ("arena_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_arena_final_contract.gd"]),
         ("hud_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_hud_final_contract.gd"]),
         ("combat_feedback", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_combat_feedback_contract.gd"]),
+        ("real_art_handoff", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_real_art_handoff_contract.gd"]),
         ("lian_wu_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_lot01_presenter_contract.gd"]),
         ("lian_wu_lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_first_playable_lot01_importer.py"]),
         ("training_rival_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/training_rival_lot01_presenter_contract.gd"]),
