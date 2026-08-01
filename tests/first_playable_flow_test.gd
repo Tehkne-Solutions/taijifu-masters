@@ -34,10 +34,7 @@ func _run() -> void:
 		await _fail("play must be enabled on first entry")
 		return
 	if FirstPlayableSession.participant_code != "TJFP-001":
-		await _fail("default anonymous participant code was not applied")
-		return
-	if menu.prototype_button.visible or not menu.prototype_button.disabled:
-		await _fail("legacy prototype button must remain hidden and disabled")
+		await _fail("default anonymous participant code was not applied internally")
 		return
 
 	menu.select_difficulty(&"master")
@@ -122,8 +119,9 @@ func _run() -> void:
 
 func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 	for path in [
+		"Content/Fighters/Lian/Name",
+		"Content/Fighters/Rival/Name",
 		"Content/Actions/PlayButton",
-		"Content/Actions/PrototypeButton",
 		"Content/Actions/ExitButton",
 		"Content/Difficulty/Options/EasyButton",
 		"Content/Difficulty/Options/NormalButton",
@@ -133,6 +131,14 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 		if menu.get_node_or_null(path) == null:
 			call_deferred("_fail", "menu node is missing: %s" % path)
 			return false
+
+	if menu.get_node_or_null("Content/Participant") != null:
+		call_deferred("_fail", "participant form must not exist in player UI")
+		return false
+	if menu.get_node_or_null("Content/Actions/PrototypeButton") != null:
+		call_deferred("_fail", "legacy prototype button must be physically removed")
+		return false
+
 	var signature := menu.flow_signature()
 	if StringName(signature.get("main_action", &"")) != &"play_vs_ai":
 		call_deferred("_fail", "menu main action is invalid")
@@ -145,6 +151,18 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 		return false
 	if bool(signature.get("legacy_prototype_exposed", true)):
 		call_deferred("_fail", "legacy prototype must not be exposed")
+		return false
+	if not bool(signature.get("legacy_nodes_removed", false)):
+		call_deferred("_fail", "legacy menu nodes must be removed")
+		return false
+	if bool(signature.get("site_like_panels", true)):
+		call_deferred("_fail", "menu must not use site-like panels")
+		return false
+	if int(signature.get("form_fields", -1)) != 0:
+		call_deferred("_fail", "menu must not expose form fields")
+		return false
+	if not bool(signature.get("quick_game_ui", false)):
+		call_deferred("_fail", "menu must expose quick game UI")
 		return false
 	if not bool(signature.get("mouse_supported", false)) or not bool(signature.get("gamepad_focus_supported", false)):
 		call_deferred("_fail", "menu must support mouse and focused gamepad navigation")
