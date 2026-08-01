@@ -3,9 +3,12 @@ extends Node
 const PLAN_DELAY := 0.16
 const PLAN_RETRY := 0.20
 const PLAN_RANGE := 182.0
+const PRESSURE_IDLE_DELAY := 0.55
 const FLOW_FOR_CLIMAX := 60.0
 const FLOW_WINDOW := 2.40
 const CLIMAX_TELEGRAPH := 0.48
+const CLIMAX_ARM_MAX_WAIT := 1.60
+const CLIMAX_STAMINA_MARGIN := 0.5
 const MAX_CODE_LENGTH := 4
 
 const RECIPES := {
@@ -28,7 +31,10 @@ var _flow := 0.0
 var _flow_timer := 0.0
 var _plan_pending := false
 var _plan_timer := 0.0
+var _pressure_timer := PRESSURE_IDLE_DELAY
 var _target_recipe := ""
+var _climax_armed := false
+var _climax_arm_timer := 0.0
 var _climax_pending := false
 var _climax_timer := 0.0
 var _climax_technique: StringName = &""
@@ -44,7 +50,9 @@ func _process(delta: float) -> void:
 		return
 	_flow_timer = maxf(0.0, _flow_timer - delta)
 	_plan_timer = maxf(0.0, _plan_timer - delta)
-	if _flow_timer <= 0.0 and not _code.is_empty() and not _climax_pending:
+	_pressure_timer = maxf(0.0, _pressure_timer - delta)
+	_climax_arm_timer = maxf(0.0, _climax_arm_timer - delta)
+	if _flow_timer <= 0.0 and not _code.is_empty() and not _climax_pending and not _climax_armed:
 		_code.clear()
 		_flow = maxf(0.0, _flow - 22.0)
 		_target_recipe = ""
@@ -52,10 +60,16 @@ func _process(delta: float) -> void:
 	if _climax_pending:
 		_update_climax(delta)
 		return
+	if _climax_armed:
+		_update_armed_climax()
+		if _climax_armed:
+			return
 	if _player_climax_active():
 		return
 	if _plan_pending and _plan_timer <= 0.0:
 		_advance_plan()
+	elif not _plan_pending and _pressure_timer <= 0.0:
+		_schedule_pressure_plan()
 
 func _resolve_runtime() -> void:
 	if not is_instance_valid(_root):
@@ -96,6 +110,7 @@ func _on_bot_technique_executed(_fighter: MasteredWeaponFighterController, techn
 		return
 	_last_technique = technique.technique_id
 	_last_family = StringName(technique.path)
+	_pressure_timer = PRESSURE_IDLE_DELAY
 
 func _on_player_impact_resolved(_target: MasteredWeaponFighterController, attacker: FighterController, technique: TechniqueData, result_id: StringName, _damage: float, _posture: float, _intensity: float, _position: Vector2) -> void:
 	if attacker != _bot or not is_instance_valid(technique) or technique.technique_id != _last_technique:
@@ -113,6 +128,7 @@ func _on_player_impact_resolved(_target: MasteredWeaponFighterController, attack
 			_flow = 0.0
 			_target_recipe = ""
 			_plan_pending = false
+			_cancel_armed_climax()
 
 func _register_hit(family: StringName, gain: float) -> void:
 	if family not in [&"tai", &"ji", &"fu"]:
@@ -122,29 +138,57 @@ func _register_hit(family: StringName, gain: float) -> void:
 	_code.append(family)
 	while _code.size() > MAX_CODE_LENGTH:
 		_code.pop_front()
-	if _try_prepare_climax():
+	if _try_arm_climax():
 		return
 	_select_target_recipe()
 	_schedule_plan(PLAN_DELAY)
 
-func _try_prepare_climax() -> bool:
+func _try_arm_climax() -> bool:
 	if _code.size() < 3 or _flow < FLOW_FOR_CLIMAX:
 		return false
 	var key := _last_three_key()
 	if not RECIPES.has(key):
 		return false
 	var recipe: Dictionary = RECIPES[key]
-	_climax_pending = true
-	_climax_timer = CLIMAX_TELEGRAPH
+	_climax_armed = true
+	_climax_arm_timer = CLIMAX_ARM_MAX_WAIT
 	_climax_technique = StringName(recipe["element"])
 	_climax_name = String(recipe["name"])
 	_plan_pending = false
+	_bot_runtime._intent = "MESTRE • FORMA ARMADA • %s" % _climax_name
+	_record(&"martial_plan_complete", StringName(key))
+	_record(&"climax_armed", StringName(_climax_name))
+	return true
+
+func _update_armed_climax() -> void:
+	if not _climax_armed:
+		return
+	if _player_climax_active():
+		return
+	if _climax_arm_timer <= 0.0:
+		_record(&"climax_deferred", &"resource_or_window")
+		_cancel_armed_climax()
+		_schedule_plan(PLAN_RETRY)
+		return
+	if _bot._attack_phase != FighterController.AttackPhase.NONE or _bot._is_blocking or _bot._dodge_timer > 0.0:
+		return
+	var elemental := TechniqueCatalog.get_technique(_climax_technique)
+	if not is_instance_valid(elemental):
+		_cancel_armed_climax()
+		return
+	if _bot.stamina + 0.001 < elemental.stamina_cost + CLIMAX_STAMINA_MARGIN:
+		_bot_runtime._intent = "MESTRE • FORMA ARMADA • RECUPERANDO FÔLEGO"
+		return
+	_start_climax_telegraph()
+
+func _start_climax_telegraph() -> void:
+	_climax_armed = false
+	_climax_pending = true
+	_climax_timer = CLIMAX_TELEGRAPH
 	_bot_runtime._set_movement(0)
 	_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, CLIMAX_TELEGRAPH + 0.18)
 	_bot_runtime._intent = "MESTRE • FORMA COMPLETA • %s" % _climax_name
-	_record(&"martial_plan_complete", StringName(key))
 	_record(&"climax_started", StringName(_climax_name))
-	return true
 
 func _update_climax(delta: float) -> void:
 	_climax_timer = maxf(0.0, _climax_timer - delta)
@@ -152,28 +196,65 @@ func _update_climax(delta: float) -> void:
 	_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, 0.12)
 	if _climax_timer > 0.0 or _bot._attack_phase != FighterController.AttackPhase.NONE:
 		return
+	var elemental := TechniqueCatalog.get_technique(_climax_technique)
+	if not is_instance_valid(elemental) or _bot.stamina + 0.001 < elemental.stamina_cost:
+		# Não anuncia uma forma que não pode concluir: volta ao estado armado e espera recurso real.
+		_climax_pending = false
+		_climax_armed = true
+		_climax_arm_timer = 0.35
+		_bot_runtime._intent = "MESTRE • FORMA ARMADA • RECUPERANDO FÔLEGO"
+		return
 	var began := _bot._begin_technique(_climax_technique)
 	if began:
 		_bot_runtime._intent = "MESTRE • INVOCAÇÃO • %s" % _climax_name
 		_record(&"climax_resolved", StringName(_climax_name))
+		_reset_climax_after_resolution()
 	else:
-		_record(&"climax_failed", &"no_window_or_stamina")
+		# Corrida de estado rara: rearmar em vez de emitir falso Climax failed.
+		_climax_pending = false
+		_climax_armed = true
+		_climax_arm_timer = 0.30
+		_record(&"climax_rearmed", &"runtime_window")
+
+func _reset_climax_after_resolution() -> void:
 	_climax_pending = false
+	_climax_armed = false
 	_climax_technique = &""
 	_climax_name = ""
 	_code.clear()
 	_flow = 0.0
 	_flow_timer = 0.0
 	_target_recipe = ""
+	_pressure_timer = PRESSURE_IDLE_DELAY
+
+func _cancel_armed_climax() -> void:
+	_climax_armed = false
+	_climax_pending = false
+	_climax_arm_timer = 0.0
+	_climax_timer = 0.0
+	_climax_technique = &""
+	_climax_name = ""
 
 func _schedule_plan(delay: float) -> void:
-	if _climax_pending:
+	if _climax_pending or _climax_armed:
 		return
 	_plan_pending = true
 	_plan_timer = delay
 
+func _schedule_pressure_plan() -> void:
+	if not _is_master_active() or _player_climax_active() or _climax_pending or _climax_armed:
+		return
+	if _bot._attack_phase != FighterController.AttackPhase.NONE or _bot._is_blocking or _bot._dodge_timer > 0.0:
+		_pressure_timer = 0.16
+		return
+	_select_target_recipe()
+	_plan_pending = true
+	_plan_timer = 0.0
+	_pressure_timer = PRESSURE_IDLE_DELAY
+	_record(&"martial_pressure", StringName(_target_recipe))
+
 func _advance_plan() -> void:
-	if not _is_master_active() or _climax_pending or _player_climax_active():
+	if not _is_master_active() or _climax_pending or _climax_armed or _player_climax_active():
 		return
 	if _bot._attack_phase != FighterController.AttackPhase.NONE or _bot._is_blocking or _bot._dodge_timer > 0.0:
 		_schedule_plan(PLAN_RETRY)
@@ -200,6 +281,7 @@ func _advance_plan() -> void:
 		_bot_runtime._intent = "MESTRE • FORMA • %s" % String(desired_family).to_upper()
 		_record(&"martial_plan_step", StringName("%s:%s" % [_target_recipe, desired_family]))
 		_plan_pending = false
+		_pressure_timer = PRESSURE_IDLE_DELAY
 	else:
 		_schedule_plan(PLAN_RETRY)
 
@@ -266,8 +348,13 @@ func presentation_signature() -> Dictionary:
 		"plans_from_confirmed_hits": true,
 		"recipe_prefix_recovery": true,
 		"planned_tai_ji_fu_steps": true,
+		"proactive_pressure_planning": true,
+		"pressure_idle_seconds": PRESSURE_IDLE_DELAY,
 		"flow_threshold": FLOW_FOR_CLIMAX,
 		"climax_telegraph_seconds": CLIMAX_TELEGRAPH,
+		"climax_armed_before_telegraph": true,
+		"climax_stamina_preflight": true,
+		"false_climax_failure_removed": true,
 		"element_requires_completed_recipe": true,
 		"dedicated_push_attack": false,
 		"player_climax_has_defensive_priority": true,
