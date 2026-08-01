@@ -6,10 +6,13 @@ const IDENTITY_SCRIPT := preload("res://scripts/vertical_slice/first_playable_ch
 func _init() -> void:
 	var camera := CAMERA_SCRIPT.new() as FirstPlayableCameraComposition
 	var camera_signature := camera.presentation_signature()
-	assert(camera_signature.get("framing") == &"fighter_first")
-	assert(float(camera_signature.get("min_zoom", 0.0)) >= 0.74)
-	assert(float(camera_signature.get("max_zoom", 0.0)) <= 1.05)
-	assert(float(camera_signature.get("vertical_range", 999.0)) <= 120.0)
+	assert(camera_signature.get("framing") == &"both_fighters_priority")
+	assert(float(camera_signature.get("min_zoom", 1.0)) <= 0.60)
+	assert(float(camera_signature.get("max_zoom", 1.0)) <= 0.92)
+	assert(float(camera_signature.get("vertical_range", 999.0)) <= 80.0)
+	assert(float(camera_signature.get("horizontal_padding", 0.0)) >= 400.0)
+	assert(bool(camera_signature.get("both_fighters_visible", false)))
+	assert(bool(camera_signature.get("reduced_vertical_motion", false)))
 	assert(not bool(camera_signature.get("physics_changes", true)))
 	assert(not bool(camera_signature.get("collision_changes", true)))
 	assert(String(camera_signature.get("signature", "")) == "Tehkné Solutions")
