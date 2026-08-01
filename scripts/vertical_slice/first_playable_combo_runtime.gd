@@ -119,8 +119,9 @@ func _technique_for(token: Dictionary) -> StringName:
 		&"ji":
 			if down or step == 1:
 				return &"ji_sweep"
-			if step == 2:
-				return &"ji_shove"
+			# Não existe mais "golpe de empurrão" como ação dedicada.
+			# O terceiro contato volta a um golpe Ji; o deslocamento vem do
+			# horizontal_force/vertical_force da técnica quando ela conecta.
 			return _fighter.build.technique_for("ji", 0)
 		&"fu":
 			if back or step == 1:
@@ -216,6 +217,12 @@ func presentation_signature() -> Dictionary:
 		"low_attack_modifier": true,
 		"reversal_modifier": true,
 		"legacy_single_attack_unbound": true,
+		"dedicated_push_attack": false,
+		"knockback_is_hit_consequence": true,
+		"clean_hit_full_knockback": true,
+		"guard_reduces_damage_and_knockback": true,
+		"dodge_negates_hit": true,
+		"parry_negates_hit": true,
 		"signature": "Tehkné Solutions"
 	}
 
