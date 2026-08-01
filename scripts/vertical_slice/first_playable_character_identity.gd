@@ -3,6 +3,7 @@ extends Node2D
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable_camera_composition.gd")
+const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combo_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
 const VISUAL_SCALE := Vector2(1.28, 1.28)
@@ -14,6 +15,7 @@ func _ready() -> void:
 	z_index = 4
 	scale = VISUAL_SCALE
 	_install_camera_composition()
+	_install_combo_runtime()
 	call_deferred("_install_real_asset_presenter")
 	queue_redraw()
 
@@ -26,6 +28,16 @@ func _install_camera_composition() -> void:
 	var composition := CAMERA_COMPOSITION.new() as FirstPlayableCameraComposition
 	composition.name = "FightCameraComposition"
 	match_root.add_child.call_deferred(composition)
+
+func _install_combo_runtime() -> void:
+	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
+		return
+	var match_root := _fighter.get_parent()
+	if match_root == null or match_root.has_node("FirstPlayableComboRuntime"):
+		return
+	var combo := COMBO_RUNTIME.new() as FirstPlayableComboRuntime
+	combo.name = "FirstPlayableComboRuntime"
+	match_root.add_child.call_deferred(combo)
 
 func _install_real_asset_presenter() -> void:
 	if not is_instance_valid(_fighter) or not is_instance_valid(_fighter.build):
@@ -54,6 +66,7 @@ func presentation_signature() -> Dictionary:
 		"visual_scale": VISUAL_SCALE.x,
 		"fighter_first_readability": true,
 		"camera_composition": true,
+		"combo_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
@@ -87,44 +100,37 @@ func _draw_lian_wu() -> void:
 	var skin := Color(POLICY.LIAN_WU_SKIN, alpha)
 	var scabbard := Color(POLICY.LIAN_WU_SCABBARD, alpha)
 
-	# Silhueta recuperada: leitura chibi, cabeça grande, tronco compacto e pernas curtas.
 	draw_circle(Vector2(0, -43), 17.0, skin)
 	draw_circle(Vector2(0, -50), 18.5, hair)
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(-15, -55), Vector2(-6, -67), Vector2(5, -72), Vector2(13, -61), Vector2(10, -48), Vector2(-12, -47)
 	]), hair)
-	# Topknot alto + laço azul do turnaround recuperado.
 	draw_circle(Vector2(3, -72), 7.0, hair)
 	draw_line(Vector2(1, -68), Vector2(12, -64), water_blue, 4.0)
 	draw_line(Vector2(4, -67), Vector2(-7, -62), water_blue, 3.0)
 
-	# Roupa branca/azul/preta/dourada preservada do Pack 01.
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(-18, -30), Vector2(17, -30), Vector2(20, 1), Vector2(12, 15), Vector2(-12, 15), Vector2(-20, 1)
 	]), robe)
 	draw_polyline(PackedVector2Array([Vector2(-14, -28), Vector2(1, -15), Vector2(15, -29)]), water_blue, 4.0)
 	draw_line(Vector2(-18, -2), Vector2(18, -2), water_blue, 5.0)
 	draw_circle(Vector2(0, -3), 3.6, gold)
-	# Ombreira dourada canônica e punhos escuros.
 	draw_circle(Vector2(-17 * facing, -25), 6.0, gold)
 	draw_line(Vector2(-14, 10), Vector2(-9, 22), ink, 5.0)
 	draw_line(Vector2(14, 10), Vector2(9, 22), ink, 5.0)
 	draw_line(Vector2(-9, 20), Vector2(-11, 29), ink, 6.0)
 	draw_line(Vector2(9, 20), Vector2(11, 29), ink, 6.0)
 
-	# Uma única katana embainhada no quadril esquerdo. A arte reprovada não é promovida.
 	var hip := Vector2(-8 * facing, 3)
 	var tip := Vector2(-39 * facing, 27)
 	draw_line(hip, tip, scabbard, 7.0)
 	draw_line(tip, tip + Vector2(-4 * facing, 3), gold, 4.0)
 	draw_line(hip + Vector2(1 * facing, -2), hip + Vector2(-11 * facing, 7), gold, 4.0)
 
-	# Só durante ataque a lâmina aparece desembainhada; neutro permanece embainhado.
 	if _fighter._attack_phase != FighterController.AttackPhase.NONE:
 		draw_line(Vector2(10 * facing, -18), Vector2(56 * facing, -30), Color(0.84, 0.94, 1.0, alpha), 4.0)
 		draw_line(Vector2(7 * facing, -17), Vector2(17 * facing, -20), gold, 5.0)
 
-	# Leitura elemental discreta, sem glow tech.
 	draw_arc(Vector2(0, 23), 18.0, 0.15, PI - 0.15, 18, Color(0.20, 0.70, 1.0, 0.62 * alpha), 2.0)
 
 func _draw_training_rival() -> void:
