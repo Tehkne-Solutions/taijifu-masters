@@ -52,6 +52,10 @@ jobs:
           version: "4.3.0"
           use-dotnet: false
 
+      - name: Importar projeto Godot
+        shell: bash
+        run: godot --headless --editor --path . --quit-after 3
+
       - name: Gerar relatório artístico canônico
         shell: bash
         run: |
