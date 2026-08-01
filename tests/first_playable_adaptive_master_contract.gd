@@ -2,6 +2,7 @@ extends SceneTree
 
 const TELEMETRY_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_telemetry_runtime.gd")
 const ADAPTIVE_RUNTIME := preload("res://scripts/vertical_slice/first_playable_adaptive_master_runtime.gd")
+const DIFFICULTY_CONTROLLER := preload("res://scripts/vertical_slice/first_playable_difficulty_controller.gd")
 const IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
 
 func _init() -> void:
@@ -36,6 +37,27 @@ func _init() -> void:
 	assert(bool(adaptive_signature.get("apprentice_unchanged", false)))
 	assert(bool(adaptive_signature.get("disciple_unchanged", false)))
 	adaptive.free()
+
+	var master_personality := BotBehaviorCatalog.personality(&"master_martial")
+	assert(float(master_personality.get("push_weight", 1.0)) == 0.0)
+	assert(float(master_personality.get("element_chance", 1.0)) == 0.0)
+	assert(StringName(master_personality.get("preferred_objective", &"")) == &"engage")
+
+	var difficulty_controller := DIFFICULTY_CONTROLLER.new() as FirstPlayableDifficultyController
+	var difficulty_signature := difficulty_controller.selection_signature()
+	assert(StringName(difficulty_signature.get("master_personality", &"")) == &"master_martial")
+	assert(not bool(difficulty_signature.get("master_dedicated_push", true)))
+	assert(not bool(difficulty_signature.get("master_direct_element", true)))
+	difficulty_controller.free()
+
+	var telemetry := MatchTelemetry.new()
+	telemetry.begin_session({"experience": "contract"})
+	telemetry.record_combat_max(&"p2", &"max_flow", 34.0)
+	telemetry.record_combat_max(&"p2", &"max_flow", 68.0)
+	var snapshot := telemetry.current_round_snapshot()
+	var p2: Dictionary = snapshot.get("players", {}).get("p2", {})
+	var combat: Dictionary = p2.get("combat", {})
+	assert(is_equal_approx(float(combat.get("max_flow", 0.0)), 68.0))
 
 	var identity := IDENTITY.new() as FirstPlayableCharacterIdentity
 	var identity_signature := identity.presentation_signature()
