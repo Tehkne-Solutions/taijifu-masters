@@ -44,8 +44,16 @@ func _try_activate_real_assets() -> void:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_using_real_assets = true
+	_hide_procedural_fallback()
 	_active_animation = &"idle"
 	_sprite.play(_active_animation)
+
+func _hide_procedural_fallback() -> void:
+	if not is_instance_valid(_fighter):
+		return
+	var fallback := _fighter.get_node_or_null("FirstPlayableIdentity") as CanvasItem
+	if fallback != null:
+		fallback.visible = false
 
 func _has_required_animations(frames: SpriteFrames) -> bool:
 	for animation_name in [
