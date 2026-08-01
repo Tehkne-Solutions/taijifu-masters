@@ -6,6 +6,7 @@ const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable
 const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combo_runtime.gd")
 const COMBAT_TELEMETRY_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_telemetry_runtime.gd")
 const ADAPTIVE_MASTER_RUNTIME := preload("res://scripts/vertical_slice/first_playable_adaptive_master_runtime.gd")
+const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
 const VISUAL_SCALE := Vector2(1.28, 1.28)
@@ -49,6 +50,10 @@ func _install_first_playable_runtime() -> void:
 		var adaptive_runtime := ADAPTIVE_MASTER_RUNTIME.new() as FirstPlayableAdaptiveMasterRuntime
 		adaptive_runtime.name = "FirstPlayableAdaptiveMasterRuntime"
 		match_root.add_child.call_deferred(adaptive_runtime)
+	if not match_root.has_node("FirstPlayableCombatFeedbackRuntime"):
+		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new() as FirstPlayableCombatFeedbackRuntime
+		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
+		match_root.add_child.call_deferred(feedback_runtime)
 
 func _install_real_asset_presenter() -> void:
 	if not is_instance_valid(_fighter) or not is_instance_valid(_fighter.build):
@@ -80,6 +85,7 @@ func presentation_signature() -> Dictionary:
 		"combo_runtime": true,
 		"combat_telemetry_v4": true,
 		"adaptive_master_runtime": true,
+		"combat_feedback_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
