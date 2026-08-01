@@ -51,38 +51,36 @@ func _prepare_fixture(generation: int, marker: String) -> void:
 	}, "  "))
 
 func _validate_aliases_and_resources(marker: String) -> void:
-	var prep := TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	var prep: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
 	_check(prep != null, "alias preparation_ui não carregou")
 	if prep != null:
 		_check(str(prep.resource_name) == marker + "-preparation", "preparation retornou geração incorreta")
-	var frames := TgapAssetLoader.load_resource("smoke", "arena_animation")
+	var frames: Resource = TgapAssetLoader.load_resource("smoke", "arena_animation")
 	_check(frames is SpriteFrames, "arena_animation não retornou SpriteFrames")
 	if frames is SpriteFrames:
 		_check(frames.has_animation("idle"), "animação idle ausente")
 		_check(frames.get_animation_speed("idle") == 8.0, "fps da animação incorreto")
-	var result := TgapAssetLoader.load_resource("smoke", "result_ui")
+	var result: Resource = TgapAssetLoader.load_resource("smoke", "result_ui")
 	_check(result != null, "alias result_ui não carregou")
 
 func _validate_scene_matrix() -> void:
-	var scenes := [
-		"res://scenes/main.tscn"
-	]
+	var scenes: Array[String] = ["res://scenes/main.tscn"]
 	for path in scenes:
 		_check(ResourceLoader.exists(path), "cena ausente: " + path)
-		var packed := load(path)
+		var packed: Resource = load(path)
 		_check(packed is PackedScene, "recurso não é PackedScene: " + path)
 		if packed is PackedScene:
-			var node := packed.instantiate()
+			var node: Node = packed.instantiate()
 			_check(node != null, "falha ao instanciar: " + path)
 			if node != null:
 				node.free()
 
 func _validate_generation_invalidation() -> void:
-	var first := TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	var first: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
 	_prepare_fixture(2, "v2")
 	TgapAssetLoader.reload_catalog()
 	_check(TgapAssetLoader.generation() == 2, "generation 2 não carregada")
-	var second := TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	var second: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
 	_check(second != null, "recurso não recarregou após troca de geração")
 	if first != null and second != null:
 		_check(str(second.resource_name) == "v2-preparation", "cache não foi invalidado por geração")
