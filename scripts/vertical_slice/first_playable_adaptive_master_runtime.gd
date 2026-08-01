@@ -2,9 +2,11 @@ class_name FirstPlayableAdaptiveMasterRuntime
 extends Node
 
 const MEMORY_SIZE := 5
-const REACTION_DELAY_MIN := 0.085
-const REACTION_DELAY_MAX := 0.145
-const COUNTER_DELAY := 0.20
+const REACTION_DELAY_MIN := 0.070
+const REACTION_DELAY_MAX := 0.120
+const COUNTER_DELAY := 0.16
+const CLIMAX_LATE_REACTION_THRESHOLD := 0.055
+const CLIMAX_GUARD_HOLD := 0.72
 
 var _root: Node
 var _bot_runtime: TacticalBotRuntime
@@ -19,6 +21,8 @@ var _counter_timer := 0.0
 var _reaction_pending := false
 var _counter_pending := false
 var _climax_seen := false
+var _climax_response_pending := false
+var _climax_response_mode: StringName = &""
 
 func _ready() -> void:
 	process_priority = 30
@@ -82,7 +86,7 @@ func _on_player_technique_executed(
 	while _recent_paths.size() > MEMORY_SIZE:
 		_recent_paths.pop_front()
 	_pattern_score = _calculate_pattern_score()
-	if _is_master_active() and _pattern_score >= 2:
+	if _is_master_active() and _pattern_score >= 2 and not _climax_response_pending:
 		_reaction_pending = true
 		_reaction_timer = randf_range(REACTION_DELAY_MIN, REACTION_DELAY_MAX)
 		_record_ai_event(&"pattern_read", StringName(technique.path))
@@ -102,6 +106,7 @@ func _calculate_pattern_score() -> int:
 		score += 3
 	elif same_count == 2:
 		score += 1
+
 	if _recent_paths.size() >= 4:
 		var a := _recent_paths[_recent_paths.size() - 4]
 		var b := _recent_paths[_recent_paths.size() - 3]
@@ -109,6 +114,15 @@ func _calculate_pattern_score() -> int:
 		var d := _recent_paths[_recent_paths.size() - 1]
 		if a == c and b == d:
 			score += 2
+
+	var frequency := {}
+	for family in _recent_paths:
+		frequency[family] = int(frequency.get(family, 0)) + 1
+	var dominant_count := 0
+	for family in frequency:
+		dominant_count = maxi(dominant_count, int(frequency[family]))
+	if _recent_paths.size() >= 5 and dominant_count >= 3:
+		score += 2
 	return score
 
 func _execute_pattern_response() -> void:
@@ -118,15 +132,15 @@ func _execute_pattern_response() -> void:
 	var direction_to_player := int(signf(_player.global_position.x - _bot.global_position.x))
 	if direction_to_player == 0:
 		direction_to_player = 1
-	_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, 0.22)
-	if distance < 150.0 and randf() < 0.58:
+	_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, 0.24)
+	if distance < 175.0 and _can_dodge() and randf() < 0.64:
 		_bot_runtime._set_movement(-direction_to_player)
 		_bot_runtime._tap(&"dodge", 0.11)
 		_bot_runtime._intent = "MESTRE • LEITURA DE PADRÃO • ESQUIVA"
 		_record_ai_event(&"pattern_evade", &"master")
 	else:
 		_bot_runtime._set_movement(0)
-		_bot_runtime._tap(&"block", 0.28)
+		_bot_runtime._tap(&"block", 0.34)
 		_bot_runtime._intent = "MESTRE • LEITURA DE PADRÃO • GUARDA"
 		_record_ai_event(&"pattern_guard", &"master")
 	_counter_pending = true
@@ -137,13 +151,16 @@ func _execute_counter_attack() -> void:
 		return
 	if _bot._attack_phase != FighterController.AttackPhase.NONE:
 		return
-	var distance := absf(_player.global_position.x - _bot.global_position.x)
-	if distance <= 118.0:
+	var delta_x := _player.global_position.x - _bot.global_position.x
+	var distance := absf(delta_x)
+	if distance <= 145.0:
+		_bot_runtime._set_movement(int(signf(delta_x)))
 		_bot_runtime._tap(&"attack", 0.10)
 		_bot_runtime._intent = "MESTRE • CONTRA-ATAQUE APÓS LEITURA"
 		_record_ai_event(&"pattern_counter", &"attack")
-	elif distance <= 210.0:
-		_bot_runtime._set_movement(int(signf(_player.global_position.x - _bot.global_position.x)))
+	elif distance <= 245.0:
+		_bot_runtime._set_movement(int(signf(delta_x)))
+		_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, 0.18)
 
 func _watch_climax() -> void:
 	if not is_instance_valid(_combo):
@@ -151,28 +168,58 @@ func _watch_climax() -> void:
 	var climax_active := bool(_combo.get("_climax_active"))
 	if climax_active and not _climax_seen:
 		_climax_seen = true
-		_react_to_climax()
+		_prepare_climax_response()
 	elif not climax_active:
 		_climax_seen = false
+		_climax_response_pending = false
+		_climax_response_mode = &""
+		return
 
-func _react_to_climax() -> void:
+	if not climax_active or not _climax_response_pending:
+		return
+	var remaining := float(_combo.get("_climax_timer"))
+	if remaining <= CLIMAX_LATE_REACTION_THRESHOLD:
+		_execute_climax_response()
+
+func _prepare_climax_response() -> void:
 	if not _is_master_active():
 		return
 	var distance := absf(_player.global_position.x - _bot.global_position.x)
+	if distance < 225.0 and _can_dodge() and randf() < 0.68:
+		_climax_response_mode = &"dodge"
+	else:
+		_climax_response_mode = &"guard"
+	_climax_response_pending = true
+	_record_ai_event(&"climax_read", _climax_response_mode)
+
+func _execute_climax_response() -> void:
+	if not _is_master_active() or not _climax_response_pending:
+		return
+	_climax_response_pending = false
 	var direction_to_player := int(signf(_player.global_position.x - _bot.global_position.x))
 	if direction_to_player == 0:
 		direction_to_player = 1
-	# O Mestre não lê input oculto: reage apenas ao telegraph público do climax.
-	if distance < 190.0 and randf() < 0.62:
+	_bot_runtime._decision_timer = maxf(_bot_runtime._decision_timer, 0.72)
+	if _climax_response_mode == &"dodge" and _can_dodge():
 		_bot_runtime._set_movement(-direction_to_player)
-		_bot_runtime._tap(&"dodge", 0.12)
-		_bot_runtime._intent = "MESTRE • CLIMAX LIDO • ESQUIVA"
+		_bot_runtime._tap(&"dodge", 0.10)
+		_bot_runtime._intent = "MESTRE • CLIMAX LIDO • ESQUIVA TARDIA"
 		_record_ai_event(&"climax_response", &"dodge")
 	else:
 		_bot_runtime._set_movement(0)
-		_bot_runtime._tap(&"block", 0.34)
+		_bot_runtime._tap(&"block", CLIMAX_GUARD_HOLD)
 		_bot_runtime._intent = "MESTRE • CLIMAX LIDO • GUARDA/PARRY"
 		_record_ai_event(&"climax_response", &"guard")
+	_climax_response_mode = &""
+
+func _can_dodge() -> bool:
+	return (
+		is_instance_valid(_bot)
+		and _bot._dodge_cooldown_timer <= 0.0
+		and _bot.stamina >= 18.0
+		and not _bot._is_blocking
+		and _bot._attack_phase == FighterController.AttackPhase.NONE
+	)
 
 func _record_ai_event(event_id: StringName, value_id: StringName) -> void:
 	if not is_instance_valid(_telemetry):
@@ -185,7 +232,10 @@ func presentation_signature() -> Dictionary:
 		"master_pattern_memory": true,
 		"anti_mash_is_counterplay": true,
 		"pattern_window": MEMORY_SIZE,
+		"dominant_family_detection": true,
 		"climax_telegraph_reaction": true,
+		"climax_late_defense": true,
+		"climax_reaction_threshold": CLIMAX_LATE_REACTION_THRESHOLD,
 		"no_hidden_input_reading": true,
 		"defense_then_counter": true,
 		"apprentice_unchanged": true,
