@@ -7,7 +7,8 @@ var _combo: FirstPlayableComboRuntime
 var _planner: Node
 var _layer: CanvasLayer
 var _strip: Label
-var _legacy_hidden := false
+var _legacy_flow_hidden := false
+var _legacy_climax_hidden := false
 
 func _ready() -> void:
 	process_priority = 40
@@ -16,7 +17,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_resolve_runtime()
-	_hide_legacy_panel()
+	_hide_legacy_panels()
 	_update_strip()
 
 func _resolve_runtime() -> void:
@@ -57,16 +58,22 @@ func _build_strip() -> void:
 	_strip.add_theme_stylebox_override("normal", style)
 	_layer.add_child(_strip)
 
-func _hide_legacy_panel() -> void:
-	if _legacy_hidden or not is_instance_valid(_root):
+func _hide_legacy_panels() -> void:
+	if not is_instance_valid(_root):
 		return
 	var hud := _root.get_node_or_null("HUD") as CanvasLayer
 	if hud == null:
 		return
-	var old_panel := hud.get_node_or_null("MartialFlowPanel") as Control
-	if old_panel:
-		old_panel.visible = false
-		_legacy_hidden = true
+	if not _legacy_flow_hidden:
+		var old_flow := hud.get_node_or_null("MartialFlowPanel") as Control
+		if old_flow:
+			old_flow.visible = false
+			_legacy_flow_hidden = true
+	if not _legacy_climax_hidden:
+		var old_climax := hud.get_node_or_null("ElementalClimaxOverlay") as Control
+		if old_climax:
+			old_climax.visible = false
+			_legacy_climax_hidden = true
 
 func _update_strip() -> void:
 	if not is_instance_valid(_strip):
@@ -74,11 +81,18 @@ func _update_strip() -> void:
 	if _rival_climax_pending():
 		var form_name := String(_planner.get("_climax_name"))
 		var remaining := float(_planner.get("_climax_timer"))
-		_strip.text = "RIVAL • FORMA COMPLETA: %s   •   REAJA Q / R   •   %.2fs" % [form_name, remaining]
+		_strip.text = "RIVAL • FORMA: %s   •   REAJA Q / R   •   %.2fs" % [form_name, remaining]
 		_strip.add_theme_color_override("font_color", POLICY.EMBER.lightened(0.16))
 		return
 	if not is_instance_valid(_combo):
 		_strip.text = ""
+		return
+	if bool(_combo.get("_climax_active")):
+		var player_form := String(_combo.get("_pending_form_name"))
+		var player_element := _element_label(StringName(_combo.get("_pending_element")))
+		var player_remaining := float(_combo.get("_climax_timer"))
+		_strip.text = "FORMA • %s • %s   •   %.2fs" % [player_element, player_form, player_remaining]
+		_strip.add_theme_color_override("font_color", POLICY.GOLD.lightened(0.08))
 		return
 	var hits := int(_combo.get("_combo_hits"))
 	var flow := int(round(float(_combo.get("_flow"))))
@@ -132,10 +146,20 @@ func _family_label(family: StringName) -> String:
 		&"fu": return "FU"
 		_: return "—"
 
+func _element_label(element: StringName) -> String:
+	match element:
+		&"fire": return "FOGO"
+		&"water": return "ÁGUA"
+		&"earth": return "TERRA"
+		&"air": return "AR"
+		_: return "FORMA"
+
 func presentation_signature() -> Dictionary:
 	return {
 		"compact_martial_strip": true,
 		"legacy_debug_panel_hidden": true,
+		"legacy_climax_panel_hidden": true,
+		"player_climax_in_compact_strip": true,
 		"combo_visible_when_relevant": true,
 		"martial_code_visible": true,
 		"flow_visible": true,
