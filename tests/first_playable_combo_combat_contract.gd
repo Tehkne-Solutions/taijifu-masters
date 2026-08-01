@@ -2,6 +2,7 @@ extends SceneTree
 
 const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combo_runtime.gd")
 const COMBAT_GUIDE := preload("res://scripts/vertical_slice/first_playable_combat_guide.gd")
+const COMBAT_FEEDBACK := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
 
 func _init() -> void:
@@ -48,8 +49,26 @@ func _init() -> void:
 	assert(not bool(guide_signature.get("dedicated_magic_button_visible", true)))
 	guide.free()
 
+	var feedback := COMBAT_FEEDBACK.new()
+	var feedback_signature: Dictionary = feedback.presentation_signature()
+	assert(bool(feedback_signature.get("impact_feedback_runtime", false)))
+	assert(bool(feedback_signature.get("technique_name_on_impact", false)))
+	assert(bool(feedback_signature.get("hit_feedback", false)))
+	assert(bool(feedback_signature.get("blocked_feedback", false)))
+	assert(bool(feedback_signature.get("evaded_feedback", false)))
+	assert(bool(feedback_signature.get("parry_feedback", false)))
+	assert(bool(feedback_signature.get("posture_break_feedback", false)))
+	assert(bool(feedback_signature.get("combo_counter_per_side", false)))
+	assert(bool(feedback_signature.get("feedback_is_visual_only", false)))
+	assert(not bool(feedback_signature.get("damage_changes", true)))
+	assert(not bool(feedback_signature.get("frame_data_changes", true)))
+	assert(not bool(feedback_signature.get("ai_changes", true)))
+	feedback.free()
+
 	var identity := IDENTITY.new() as FirstPlayableCharacterIdentity
-	assert(bool(identity.presentation_signature().get("combo_runtime", false)))
+	var identity_signature := identity.presentation_signature()
+	assert(bool(identity_signature.get("combo_runtime", false)))
+	assert(bool(identity_signature.get("combat_feedback_runtime", false)))
 	identity.free()
 
 	print("FIRST_PLAYABLE_COMBO_COMBAT_CONTRACT_OK")
