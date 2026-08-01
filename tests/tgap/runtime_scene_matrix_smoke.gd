@@ -2,7 +2,7 @@ extends SceneTree
 
 const ROOT := "user://tgap-scene-matrix"
 const CATALOG := ROOT + "/install-catalog.json"
-const PACK_ROOT := ROOT + "/packs/taijifu_smoke"
+const PACK_ROOT := ROOT + "/tgap-current/packs/taijifu_smoke"
 
 var failures: Array[String] = []
 var _loader: Node
@@ -42,23 +42,27 @@ func _prepare_fixture(generation: int, marker: String) -> void:
 	_write(PACK_ROOT + "/resources/result.tres", _resource(marker + "-result"))
 	_write(ROOT + "/aliases.json", JSON.stringify({
 		"schema": "tgap/aliases/v1",
-		"pack_aliases": {"smoke": "taijifu_smoke"},
-		"logical_paths": {
-			"preparation_ui": "resources/preparation.tres",
-			"arena_animation": "resources/arena.tres",
-			"result_ui": "resources/result.tres"
+		"aliases": {
+			"smoke": {
+				"pack_id": "taijifu_smoke"
+			}
+		},
+		"path_aliases": {
+			"taijifu_smoke": {
+				"preparation_ui": "resources/preparation.tres",
+				"arena_animation": "resources/arena.tres",
+				"result_ui": "resources/result.tres"
+			}
 		}
 	}, "  "))
 	_write(CATALOG, JSON.stringify({
 		"schema": "tgap/install-catalog/v1",
 		"generation": generation,
-		"active_root": ROOT,
 		"packs": [{
 			"pack_id": "taijifu_smoke",
 			"display_name": "Taijifu Smoke",
 			"version": "1.0.%d" % generation,
-			"state": "integrated",
-			"install_path": PACK_ROOT
+			"state": "integrated"
 		}]
 	}, "  "))
 
