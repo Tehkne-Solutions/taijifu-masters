@@ -18,6 +18,12 @@ func _init() -> void:
 	assert(bool(signature.get("low_attack_modifier", false)))
 	assert(bool(signature.get("reversal_modifier", false)))
 	assert(bool(signature.get("legacy_single_attack_unbound", false)))
+	assert(not bool(signature.get("dedicated_push_attack", true)))
+	assert(bool(signature.get("knockback_is_hit_consequence", false)))
+	assert(bool(signature.get("clean_hit_full_knockback", false)))
+	assert(bool(signature.get("guard_reduces_damage_and_knockback", false)))
+	assert(bool(signature.get("dodge_negates_hit", false)))
+	assert(bool(signature.get("parry_negates_hit", false)))
 	combo.free()
 
 	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
