@@ -8,7 +8,7 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	anchor_top = 1.0
 	offset_left = 18.0
-	offset_top = -112.0
+	offset_top = -138.0
 	offset_right = -18.0
 	offset_bottom = -14.0
 	_build()
@@ -42,6 +42,16 @@ func _build() -> void:
 	_add_chip(attacks, "F", "TAI  •  F-F-F", POLICY.ROUTE_TAI)
 	_add_chip(attacks, "G", "JI  •  G-G-G / S+G", POLICY.ROUTE_JI)
 	_add_chip(attacks, "H", "FU  •  H-H-H / ←+H", POLICY.JADE)
+
+	var invocations := HBoxContainer.new()
+	invocations.name = "ElementalInvocations"
+	invocations.alignment = BoxContainer.ALIGNMENT_CENTER
+	invocations.add_theme_constant_override("separation", 9)
+	column.add_child(invocations)
+	_add_recipe(invocations, "F-H-F", "AR", Color(0.58, 0.92, 1.0))
+	_add_recipe(invocations, "G-G-H", "TERRA", Color(0.58, 0.42, 0.22))
+	_add_recipe(invocations, "H-F-H", "ÁGUA", Color(0.20, 0.62, 1.0))
+	_add_recipe(invocations, "F-G-F", "FOGO", Color(1.0, 0.34, 0.12))
 
 	var utility := HBoxContainer.new()
 	utility.name = "UtilityControls"
@@ -79,6 +89,13 @@ func _add_chip(parent: HBoxContainer, key_text: String, action_text: String, acc
 	action.add_theme_color_override("font_color", Color(POLICY.BONE, 0.92))
 	chip.add_child(action)
 
+func _add_recipe(parent: HBoxContainer, sequence: String, element_name: String, accent: Color) -> void:
+	var label := Label.new()
+	label.text = "%s  %s" % [sequence, element_name]
+	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_color_override("font_color", accent)
+	parent.add_child(label)
+
 func presentation_signature() -> Dictionary:
 	return {
 		"persistent_compact_controls": true,
@@ -88,6 +105,9 @@ func presentation_signature() -> Dictionary:
 		"fu_key": "H",
 		"repeat_sequences_visible": true,
 		"direction_modifiers_visible": true,
+		"elemental_recipes_visible": true,
+		"elemental_recipe_count": 4,
+		"dedicated_magic_button_visible": false,
 		"movement_visible": true,
 		"jump_visible": true,
 		"defense_visible": true,
