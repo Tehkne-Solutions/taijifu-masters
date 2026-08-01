@@ -48,7 +48,7 @@ func _prepare_fixture() -> void:
 	var pack_root := ROOT.path_join("tgap-current/packs").path_join(PACK_ID)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(pack_root.path_join("runtime")))
 	var resource_file := FileAccess.open(pack_root.path_join(RESOURCE_PATH), FileAccess.WRITE)
-	resource_file.store_string("[gd_resource format=3]\n\n[resource]\nresource_name = \"TGAP Smoke Resource\"\n")
+	resource_file.store_string("[gd_resource type=\"Resource\" format=3]\n\n[resource]\nresource_name = \"TGAP Smoke Resource\"\n")
 	resource_file.close()
 	var catalog := {
 		"schema": "tgap/install-catalog/v1",
