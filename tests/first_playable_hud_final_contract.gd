@@ -1,5 +1,7 @@
 extends SceneTree
 
+const COMBAT_GUIDE := preload("res://scripts/vertical_slice/first_playable_combat_guide.gd")
+
 func _init() -> void:
 	var signature := FirstPlayableHudSkin.presentation_signature()
 	assert(signature.get("direction") == &"martial_fantasy_ink")
@@ -16,6 +18,18 @@ func _init() -> void:
 	assert(not bool(signature.get("purple_tech_glow", true)))
 	assert(not bool(signature.get("logic_changes", true)))
 	assert(String(signature.get("signature", "")) == "Tehkné Solutions")
+
+	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
+	var guide_signature := guide.presentation_signature()
+	assert(bool(guide_signature.get("persistent_compact_controls", false)))
+	assert(bool(guide_signature.get("primary_attack_visible", false)))
+	assert(bool(guide_signature.get("movement_visible", false)))
+	assert(bool(guide_signature.get("jump_visible", false)))
+	assert(bool(guide_signature.get("defense_visible", false)))
+	assert(bool(guide_signature.get("stick_fighter_readability", false)))
+	assert(not bool(guide_signature.get("site_panel", true)))
+	guide.free()
+
 	print("FIRST_PLAYABLE_HUD_FINAL_CONTRACT_OK")
 	quit()
 
