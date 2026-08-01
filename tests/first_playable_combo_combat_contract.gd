@@ -49,8 +49,8 @@ func _init() -> void:
 	assert(not bool(guide_signature.get("dedicated_magic_button_visible", true)))
 	guide.free()
 
-	var feedback := COMBAT_FEEDBACK.new() as FirstPlayableCombatFeedbackRuntime
-	var feedback_signature := feedback.presentation_signature()
+	var feedback := COMBAT_FEEDBACK.new()
+	var feedback_signature: Dictionary = feedback.presentation_signature()
 	assert(bool(feedback_signature.get("impact_feedback_runtime", false)))
 	assert(bool(feedback_signature.get("technique_name_on_impact", false)))
 	assert(bool(feedback_signature.get("hit_feedback", false)))
