@@ -29,6 +29,9 @@ var _feedback_buttons: Array[Button] = []
 var _feedback_status: Label
 var _copy_report_button: Button
 var _export_report_button: Button
+var _qa_toggle: Button
+var _qa_controls: Array[Control] = []
+var _qa_visible := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -54,10 +57,9 @@ func update_fighters(player_one: FighterController, player_two: FighterControlle
 func show_result(winner_name: String, player_won: bool, reason: String, difficulty_label: String, report_file_name: String = "") -> void:
 	result_overlay.visible = true
 	result_title.text = "VITÓRIA" if player_won else "DERROTA"
-	result_detail.text = "%s VENCEU • %s\nIA %s" % [winner_name.to_upper(), reason, difficulty_label]
-	if report_file_name != "":
-		result_detail.text += "\nRELATÓRIO %s" % report_file_name
+	result_detail.text = "%s • %s\nIA %s" % [winner_name.to_upper(), reason, difficulty_label]
 	_prepare_feedback_prompt()
+	_set_qa_visible(false)
 	rematch_button.grab_focus()
 
 func hide_result() -> void:
@@ -87,6 +89,7 @@ func presentation_signature() -> Dictionary:
 		"balance_feedback_options": 3,
 		"copy_report_button": true,
 		"export_report_button": true,
+		"qa_controls_collapsed_by_default": true,
 		"browser_json_download": true,
 		"native_file_reveal": true,
 		"mouse_supported": true,
@@ -95,65 +98,99 @@ func presentation_signature() -> Dictionary:
 	}
 
 func _build_playtest_controls() -> void:
-	result_panel.offset_top = 78.0
-	result_panel.offset_bottom = 686.0
-	result_detail.custom_minimum_size = Vector2(0.0, 82.0)
+	result_panel.offset_left = 420.0
+	result_panel.offset_right = 860.0
+	result_detail.custom_minimum_size = Vector2(0.0, 58.0)
+
+	_qa_toggle = Button.new()
+	_qa_toggle.name = "PlaytestToolsToggle"
+	_qa_toggle.custom_minimum_size = Vector2(0.0, 34.0)
+	_qa_toggle.text = "DADOS DO TESTE"
+	_qa_toggle.add_theme_font_size_override("font_size", 10)
+	_qa_toggle.pressed.connect(func() -> void: _set_qa_visible(not _qa_visible))
+	result_content.add_child(_qa_toggle)
+
 	_feedback_prompt = Label.new()
 	_feedback_prompt.name = "PlaytestFeedbackPrompt"
-	_feedback_prompt.custom_minimum_size = Vector2(0.0, 32.0)
+	_feedback_prompt.custom_minimum_size = Vector2(0.0, 30.0)
 	_feedback_prompt.text = "COMO FOI O EQUILÍBRIO DESTA LUTA?"
 	_feedback_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_feedback_prompt.add_theme_font_size_override("font_size", 13)
+	_feedback_prompt.add_theme_font_size_override("font_size", 12)
 	_feedback_prompt.add_theme_color_override("font_color", Color(0.96, 0.80, 0.38))
 	result_content.add_child(_feedback_prompt)
+	_qa_controls.append(_feedback_prompt)
+
 	var feedback_row := HBoxContainer.new()
 	feedback_row.name = "PlaytestFeedbackButtons"
 	feedback_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	feedback_row.add_theme_constant_override("separation", 8)
+	feedback_row.add_theme_constant_override("separation", 6)
 	result_content.add_child(feedback_row)
-	_add_feedback_button(feedback_row, "FÁCIL DEMAIS", &"too_easy")
+	_qa_controls.append(feedback_row)
+	_add_feedback_button(feedback_row, "FÁCIL", &"too_easy")
 	_add_feedback_button(feedback_row, "EQUILIBRADO", &"balanced")
-	_add_feedback_button(feedback_row, "DIFÍCIL DEMAIS", &"too_hard")
+	_add_feedback_button(feedback_row, "DIFÍCIL", &"too_hard")
+
 	_feedback_status = Label.new()
 	_feedback_status.name = "PlaytestFeedbackStatus"
-	_feedback_status.custom_minimum_size = Vector2(0.0, 26.0)
-	_feedback_status.text = "COLETA LOCAL • NENHUM DADO É ENVIADO AUTOMATICAMENTE"
+	_feedback_status.custom_minimum_size = Vector2(0.0, 24.0)
+	_feedback_status.text = "COLETA LOCAL • NADA É ENVIADO AUTOMATICAMENTE"
 	_feedback_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_feedback_status.add_theme_font_size_override("font_size", 10)
+	_feedback_status.add_theme_font_size_override("font_size", 9)
 	_feedback_status.add_theme_color_override("font_color", Color(0.67, 0.76, 0.86))
 	result_content.add_child(_feedback_status)
+	_qa_controls.append(_feedback_status)
+
 	_copy_report_button = Button.new()
 	_copy_report_button.name = "CopyPlaytestReportButton"
-	_copy_report_button.custom_minimum_size = Vector2(0.0, 40.0)
-	_copy_report_button.text = "COPIAR RELATÓRIO DO PLAYTEST"
-	_copy_report_button.add_theme_font_size_override("font_size", 12)
+	_copy_report_button.custom_minimum_size = Vector2(0.0, 34.0)
+	_copy_report_button.text = "COPIAR RELATÓRIO"
+	_copy_report_button.add_theme_font_size_override("font_size", 10)
 	_copy_report_button.pressed.connect(func() -> void: report_copy_requested.emit())
 	result_content.add_child(_copy_report_button)
+	_qa_controls.append(_copy_report_button)
+
 	_export_report_button = Button.new()
 	_export_report_button.name = "ExportPlaytestReportButton"
-	_export_report_button.custom_minimum_size = Vector2(0.0, 40.0)
-	_export_report_button.text = "BAIXAR RELATÓRIO JSON" if OS.has_feature("web") else "LOCALIZAR RELATÓRIO JSON"
-	_export_report_button.add_theme_font_size_override("font_size", 12)
+	_export_report_button.custom_minimum_size = Vector2(0.0, 34.0)
+	_export_report_button.text = "BAIXAR JSON" if OS.has_feature("web") else "LOCALIZAR JSON"
+	_export_report_button.add_theme_font_size_override("font_size", 10)
 	_export_report_button.pressed.connect(_export_playtest_report)
 	result_content.add_child(_export_report_button)
+	_qa_controls.append(_export_report_button)
+
 	result_content.move_child(rematch_button, result_content.get_child_count() - 2)
 	result_content.move_child(result_menu_button, result_content.get_child_count() - 1)
+	_set_qa_visible(false)
+
+func _set_qa_visible(active: bool) -> void:
+	_qa_visible = active
+	for control in _qa_controls:
+		if is_instance_valid(control):
+			control.visible = active
+	if is_instance_valid(_qa_toggle):
+		_qa_toggle.text = "OCULTAR DADOS DO TESTE" if active else "DADOS DO TESTE"
+	if active:
+		result_panel.offset_top = 72.0
+		result_panel.offset_bottom = 688.0
+	else:
+		result_panel.offset_top = 180.0
+		result_panel.offset_bottom = 540.0
 
 func _add_feedback_button(parent: HBoxContainer, label: String, rating_id: StringName) -> void:
 	var button := Button.new()
 	button.name = "Feedback%s" % String(rating_id).to_pascal_case()
-	button.custom_minimum_size = Vector2(142.0, 40.0)
+	button.custom_minimum_size = Vector2(118.0, 36.0)
 	button.text = label
-	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_font_size_override("font_size", 10)
 	button.pressed.connect(_on_feedback_button.bind(rating_id))
 	parent.add_child(button)
 	_feedback_buttons.append(button)
 
 func _prepare_feedback_prompt() -> void:
 	_feedback_prompt.text = "COMO FOI O EQUILÍBRIO DESTA LUTA?"
-	_feedback_status.text = "COLETA LOCAL • NENHUM DADO É ENVIADO AUTOMATICAMENTE"
+	_feedback_status.text = "COLETA LOCAL • NADA É ENVIADO AUTOMATICAMENTE"
 	for button in _feedback_buttons:
 		button.disabled = false
 
@@ -161,7 +198,7 @@ func _on_feedback_button(rating_id: StringName) -> void:
 	for button in _feedback_buttons:
 		button.disabled = true
 	_feedback_prompt.text = "FEEDBACK REGISTRADO"
-	_feedback_status.text = "OBRIGADO • A RESPOSTA FOI ANEXADA AO RELATÓRIO LOCAL"
+	_feedback_status.text = "RESPOSTA ANEXADA AO RELATÓRIO LOCAL"
 	feedback_submitted.emit(rating_id)
 
 func _export_playtest_report() -> void:
