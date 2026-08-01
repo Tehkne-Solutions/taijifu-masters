@@ -24,6 +24,15 @@ func _init() -> void:
 	assert(bool(signature.get("guard_reduces_damage_and_knockback", false)))
 	assert(bool(signature.get("dodge_negates_hit", false)))
 	assert(bool(signature.get("parry_negates_hit", false)))
+	assert(bool(signature.get("elemental_invocations_from_martial_sequences", false)))
+	assert(not bool(signature.get("dedicated_magic_button", true)))
+	assert(int(signature.get("elemental_recipe_count", 0)) == 4)
+	assert(signature.get("air_recipe") == "F-H-F")
+	assert(signature.get("earth_recipe") == "G-G-H")
+	assert(signature.get("water_recipe") == "H-F-H")
+	assert(signature.get("fire_recipe") == "F-G-F")
+	assert(bool(signature.get("invocation_consumes_recipe", false)))
+	assert(bool(signature.get("failed_invocation_falls_back_to_physical", false)))
 	combo.free()
 
 	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
@@ -34,6 +43,9 @@ func _init() -> void:
 	assert(guide_signature.get("fu_key") == "H")
 	assert(bool(guide_signature.get("repeat_sequences_visible", false)))
 	assert(bool(guide_signature.get("direction_modifiers_visible", false)))
+	assert(bool(guide_signature.get("elemental_recipes_visible", false)))
+	assert(int(guide_signature.get("elemental_recipe_count", 0)) == 4)
+	assert(not bool(guide_signature.get("dedicated_magic_button_visible", true)))
 	guide.free()
 
 	var identity := IDENTITY.new() as FirstPlayableCharacterIdentity
