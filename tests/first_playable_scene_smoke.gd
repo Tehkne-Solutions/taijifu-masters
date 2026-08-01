@@ -2,6 +2,8 @@ extends SceneTree
 
 const SCENE_PATH := "res://scenes/vertical_slice/first_playable.tscn"
 
+var _instance: FirstPlayableController
+
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -12,21 +14,21 @@ func _run() -> void:
 		_fail("could not load %s" % SCENE_PATH)
 		return
 
-	var instance := packed.instantiate() as FirstPlayableController
-	if instance == null:
+	_instance = packed.instantiate() as FirstPlayableController
+	if _instance == null:
 		_fail("scene root is not FirstPlayableController")
 		return
-	root.add_child(instance)
+	root.add_child(_instance)
 	await process_frame
 	await process_frame
 
-	if not _validate_scene_nodes(instance):
+	if not _validate_scene_nodes(_instance):
 		return
-	if not _validate_arena_presentation(instance):
+	if not _validate_arena_presentation(_instance):
 		return
-	if not _validate_ai_configuration(instance):
+	if not _validate_ai_configuration(_instance):
 		return
-	if not _validate_hud_configuration(instance):
+	if not _validate_hud_configuration(_instance):
 		return
 
 	var fighters := get_nodes_in_group("fighters")
@@ -44,7 +46,7 @@ func _run() -> void:
 		return
 
 	if not _validate_character(
-		instance.player_one,
+		_instance.player_one,
 		&"lian_wu",
 		"Lian Wu",
 		&"water",
@@ -52,7 +54,7 @@ func _run() -> void:
 	):
 		return
 	if not _validate_character(
-		instance.player_two,
+		_instance.player_two,
 		&"training_rival",
 		"Rival de Treino",
 		&"fire",
@@ -67,8 +69,20 @@ func _run() -> void:
 		_fail("First Playable preset contract is invalid")
 		return
 
+	_cleanup_scene()
+	await process_frame
+	await process_frame
 	print("FIRST_PLAYABLE_SMOKE_OK")
 	quit(0)
+
+func _cleanup_scene() -> void:
+	if is_instance_valid(_instance):
+		var parent := _instance.get_parent()
+		if parent != null:
+			parent.remove_child(_instance)
+		_instance.free()
+	_instance = null
+	FirstPlayableSession.reset()
 
 func _validate_scene_nodes(instance: FirstPlayableController) -> bool:
 	for path in [
@@ -227,5 +241,6 @@ func _validate_character(
 	return true
 
 func _fail(message: String) -> void:
+	_cleanup_scene()
 	printerr("FIRST_PLAYABLE_SMOKE_FAILED: %s" % message)
 	quit(1)
