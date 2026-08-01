@@ -3,13 +3,22 @@ extends Node
 
 const COMBO_WINDOW := 0.82
 const MAX_BUFFERED_INPUTS := 3
+const MAX_FAMILY_HISTORY := 3
 const ACTION_TAI: StringName = &"first_playable_tai"
 const ACTION_JI: StringName = &"first_playable_ji"
 const ACTION_FU: StringName = &"first_playable_fu"
 
+const ELEMENTAL_RECIPES := {
+	"tai,fu,tai": {"element": &"air", "technique": &"element_air_gust", "label": "AR"},
+	"ji,ji,fu": {"element": &"earth", "technique": &"element_earth_anchor", "label": "TERRA"},
+	"fu,tai,fu": {"element": &"water", "technique": &"element_water_wave", "label": "ÁGUA"},
+	"tai,ji,tai": {"element": &"fire", "technique": &"element_fire_burst", "label": "FOGO"},
+}
+
 var _root: Node
 var _fighter: FighterController
 var _queue: Array[Dictionary] = []
+var _family_history: Array[StringName] = []
 var _last_family: StringName = &""
 var _repeat_index := 0
 var _combo_timer := 0.0
@@ -30,11 +39,13 @@ func _physics_process(delta: float) -> void:
 	if _combo_timer <= 0.0:
 		_last_family = &""
 		_repeat_index = 0
+		_family_history.clear()
 		if _queue.is_empty():
 			_set_readout("")
 
 	if not _combat_active():
 		_queue.clear()
+		_family_history.clear()
 		return
 
 	if Input.is_action_just_pressed(ACTION_TAI):
@@ -92,16 +103,44 @@ func _try_consume_buffer() -> void:
 		return
 
 	var token: Dictionary = _queue.pop_front()
-	var technique_id := _technique_for(token)
-	if technique_id == &"":
+	var family := StringName(token["family"])
+	_push_family_history(family)
+	var recipe := _current_elemental_recipe()
+	var normal_technique_id := _normal_technique_for(token)
+
+	if not recipe.is_empty():
+		var elemental_technique_id := StringName(recipe["technique"])
+		_family_history.clear()
+		if _fighter._begin_technique(elemental_technique_id):
+			_set_readout("INVOCAÇÃO • %s" % String(recipe["label"]))
+			return
+		# Sem fôlego para a manifestação: o terceiro gesto ainda fecha como golpe físico.
+		_set_readout("INVOCAÇÃO FALHOU • FÔLEGO")
+
+	if normal_technique_id == &"":
 		return
-	if _fighter._begin_technique(technique_id):
-		var technique := TechniqueCatalog.get_technique(technique_id)
-		_set_readout("%s  •  %s" % [_family_label(StringName(token["family"])), technique.display_name.to_upper()])
+	if _fighter._begin_technique(normal_technique_id):
+		var technique := TechniqueCatalog.get_technique(normal_technique_id)
+		_set_readout("%s  •  %s" % [_family_label(family), technique.display_name.to_upper()])
 	else:
 		_set_readout("SEM JANELA / FÔLEGO")
 
-func _technique_for(token: Dictionary) -> StringName:
+func _push_family_history(family: StringName) -> void:
+	_family_history.append(family)
+	while _family_history.size() > MAX_FAMILY_HISTORY:
+		_family_history.pop_front()
+
+func _current_elemental_recipe() -> Dictionary:
+	if _family_history.size() != MAX_FAMILY_HISTORY:
+		return {}
+	var parts: Array[String] = []
+	for family in _family_history:
+		parts.append(String(family))
+	var key := ",".join(parts)
+	var recipe: Variant = ELEMENTAL_RECIPES.get(key, {})
+	return recipe as Dictionary
+
+func _normal_technique_for(token: Dictionary) -> StringName:
 	var family := StringName(token["family"])
 	var step := int(token["step"])
 	var down := bool(token["down"])
@@ -119,9 +158,7 @@ func _technique_for(token: Dictionary) -> StringName:
 		&"ji":
 			if down or step == 1:
 				return &"ji_sweep"
-			# Não existe mais "golpe de empurrão" como ação dedicada.
-			# O terceiro contato volta a um golpe Ji; o deslocamento vem do
-			# horizontal_force/vertical_force da técnica quando ela conecta.
+			# Não existe golpe de empurrão dedicado: o deslocamento vem do impacto.
 			return _fighter.build.technique_for("ji", 0)
 		&"fu":
 			if back or step == 1:
@@ -148,11 +185,14 @@ func _install_bindings() -> void:
 	_unbind_key(&"p1_attack", KEY_F)
 	_unbind_key(&"p1_push", KEY_G)
 	_unbind_key(&"p1_echo", KEY_H)
+	# No First Playable magia não é botão: nasce da sequência marcial.
+	_unbind_key(&"p1_element", KEY_C)
 
 func _restore_legacy_bindings() -> void:
 	_bind_key(&"p1_attack", KEY_F)
 	_bind_key(&"p1_push", KEY_G)
 	_bind_key(&"p1_echo", KEY_H)
+	_bind_key(&"p1_element", KEY_C)
 
 func _bind_key(action: StringName, keycode: Key) -> void:
 	if not InputMap.has_action(action):
@@ -223,6 +263,15 @@ func presentation_signature() -> Dictionary:
 		"guard_reduces_damage_and_knockback": true,
 		"dodge_negates_hit": true,
 		"parry_negates_hit": true,
+		"elemental_invocations_from_martial_sequences": true,
+		"dedicated_magic_button": false,
+		"elemental_recipe_count": ELEMENTAL_RECIPES.size(),
+		"air_recipe": "F-H-F",
+		"earth_recipe": "G-G-H",
+		"water_recipe": "H-F-H",
+		"fire_recipe": "F-G-F",
+		"invocation_consumes_recipe": true,
+		"failed_invocation_falls_back_to_physical": true,
 		"signature": "Tehkné Solutions"
 	}
 
