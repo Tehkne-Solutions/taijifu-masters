@@ -30,6 +30,8 @@ static func presentation_signature() -> Dictionary:
 		"compact_fight_hud": true,
 		"persistent_help_removed": true,
 		"qa_controls_collapsed": true,
+		"overlay_primary_action_hierarchy": true,
+		"game_language_overlays": true,
 		"generic_dark_strip_removed": true,
 		"site_like_panels": false,
 		"purple_tech_glow": false,
@@ -143,7 +145,7 @@ static func _style_panels(hud: CanvasLayer) -> void:
 		style.bg_color = INK_SOFT
 		style.border_color = Color(GOLD, 0.74)
 		style.set_border_width_all(2)
-		style.set_corner_radius_all(8)
+		style.set_corner_radius_all(6)
 		style.shadow_color = Color(0, 0, 0, 0.62)
 		style.shadow_size = 14
 		style.content_margin_left = 24
@@ -157,14 +159,40 @@ static func _style_buttons(hud: CanvasLayer) -> void:
 		var button := node as Button
 		if button == null:
 			continue
-		button.add_theme_color_override("font_color", BONE)
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_pressed_color", Color.WHITE)
-		button.add_theme_font_size_override("font_size", maxi(11, button.get_theme_font_size("font_size")))
-		button.add_theme_stylebox_override("normal", _button_box(Color(0.10, 0.105, 0.10, 0.98), Color(GOLD, 0.48)))
-		button.add_theme_stylebox_override("hover", _button_box(Color(0.16, 0.17, 0.15, 0.99), GOLD))
-		button.add_theme_stylebox_override("pressed", _button_box(Color(0.10, 0.25, 0.20, 0.99), JADE))
-		button.add_theme_stylebox_override("focus", _button_box(Color(0.14, 0.14, 0.13, 0.99), Color(GOLD, 0.94)))
+		if button.name in [&"RematchButton", &"ResumeButton"]:
+			_style_primary_action(button)
+		elif button.name == &"PlaytestToolsToggle":
+			_style_qa_action(button)
+		else:
+			_style_secondary_action(button)
+
+static func _style_primary_action(button: Button) -> void:
+	button.add_theme_color_override("font_color", Color(0.055, 0.06, 0.05, 1.0))
+	button.add_theme_color_override("font_hover_color", Color(0.02, 0.025, 0.02, 1.0))
+	button.add_theme_color_override("font_pressed_color", Color(0.02, 0.025, 0.02, 1.0))
+	button.add_theme_font_size_override("font_size", maxi(16, button.get_theme_font_size("font_size")))
+	button.add_theme_stylebox_override("normal", _button_box(GOLD, GOLD.lightened(0.18)))
+	button.add_theme_stylebox_override("hover", _button_box(GOLD.lightened(0.10), Color.WHITE))
+	button.add_theme_stylebox_override("pressed", _button_box(JADE, JADE.lightened(0.18)))
+	button.add_theme_stylebox_override("focus", _button_box(GOLD.lightened(0.06), Color.WHITE))
+
+static func _style_secondary_action(button: Button) -> void:
+	button.add_theme_color_override("font_color", BONE)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	button.add_theme_font_size_override("font_size", maxi(11, button.get_theme_font_size("font_size")))
+	button.add_theme_stylebox_override("normal", _button_box(Color(0.10, 0.105, 0.10, 0.94), Color(GOLD, 0.34)))
+	button.add_theme_stylebox_override("hover", _button_box(Color(0.16, 0.17, 0.15, 0.98), Color(GOLD, 0.74)))
+	button.add_theme_stylebox_override("pressed", _button_box(Color(0.10, 0.25, 0.20, 0.98), JADE))
+	button.add_theme_stylebox_override("focus", _button_box(Color(0.14, 0.14, 0.13, 0.98), GOLD))
+
+static func _style_qa_action(button: Button) -> void:
+	button.add_theme_color_override("font_color", Color(BONE, 0.58))
+	button.add_theme_color_override("font_hover_color", Color(BONE, 0.88))
+	button.add_theme_font_size_override("font_size", 9)
+	button.add_theme_stylebox_override("normal", _button_box(Color(0.04, 0.045, 0.042, 0.72), Color(GOLD, 0.12)))
+	button.add_theme_stylebox_override("hover", _button_box(Color(0.07, 0.075, 0.07, 0.88), Color(GOLD, 0.28)))
+	button.add_theme_stylebox_override("focus", _button_box(Color(0.07, 0.075, 0.07, 0.88), Color(GOLD, 0.42)))
 
 static func _button_box(background: Color, border: Color) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
