@@ -2,8 +2,8 @@ class_name MatchTelemetry
 extends RefCounted
 
 const TELEMETRY_DIR := "user://telemetry"
-const TELEMETRY_SCHEMA := "tehkne/taijifu-match-telemetry/v3"
-const TELEMETRY_VERSION := 3
+const TELEMETRY_SCHEMA := "tehkne/taijifu-match-telemetry/v4"
+const TELEMETRY_VERSION := 4
 
 var _session_id := ""
 var _round_index := 0
@@ -73,6 +73,22 @@ func record_event(
 		"value_id": String(value_id),
 		"amount": amount
 	})
+
+func record_combat_metric(profile_id: StringName, metric_id: StringName, amount: float = 1.0) -> void:
+	var metrics := _player_metrics(profile_id)
+	var combat: Dictionary = metrics["combat"]
+	var key := String(metric_id)
+	combat[key] = float(combat.get(key, 0.0)) + amount
+	metrics["combat"] = combat
+	_players[String(profile_id)] = metrics
+
+func record_combat_peak(profile_id: StringName, metric_id: StringName, value: float) -> void:
+	var metrics := _player_metrics(profile_id)
+	var combat: Dictionary = metrics["combat"]
+	var key := String(metric_id)
+	combat[key] = maxf(float(combat.get(key, 0.0)), value)
+	metrics["combat"] = combat
+	_players[String(profile_id)] = metrics
 
 func finish_round(
 	winner_profile_id: StringName = &"",
@@ -158,7 +174,19 @@ func _player_metrics(profile_id: StringName) -> Dictionary:
 func _new_player_metrics() -> Dictionary:
 	return {
 		"route_seconds": {"tai": 0.0, "ji": 0.0, "fu": 0.0},
-		"counters": {}
+		"counters": {},
+		"combat": {
+			"techniques_started": 0.0,
+			"confirmed_hits": 0.0,
+			"damage_dealt": 0.0,
+			"posture_damage_dealt": 0.0,
+			"posture_breaks": 0.0,
+			"max_combo": 0.0,
+			"max_flow": 0.0,
+			"code_steps": 0.0,
+			"climax_started": 0.0,
+			"climax_resolved": 0.0
+		}
 	}
 
 func _attach_first_playable_identity() -> void:

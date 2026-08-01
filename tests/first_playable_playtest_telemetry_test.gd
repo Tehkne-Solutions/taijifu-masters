@@ -17,6 +17,8 @@ func _run() -> void:
 		"signature": "Tehkné Solutions"
 	})
 	assert(telemetry.session_id() != "", "A sessão deve receber um ID")
+	assert(MatchTelemetry.TELEMETRY_VERSION == 4)
+	assert(MatchTelemetry.TELEMETRY_SCHEMA == "tehkne/taijifu-match-telemetry/v4")
 
 	telemetry.set_round_metadata({
 		"match_generation": 1,
@@ -28,6 +30,14 @@ func _run() -> void:
 	telemetry.record_event(&"p1", &"pause")
 	telemetry.record_event(&"p1", &"resume")
 	telemetry.record_event(&"p1", &"match_won", &"ko")
+	telemetry.record_route(&"p1", &"tai", 0.45)
+	telemetry.record_route(&"p1", &"ji", 0.30)
+	telemetry.record_combat_metric(&"p1", &"techniques_started", 3.0)
+	telemetry.record_combat_metric(&"p1", &"confirmed_hits", 2.0)
+	telemetry.record_combat_metric(&"p1", &"damage_dealt", 18.5)
+	telemetry.record_combat_metric(&"p1", &"climax_started", 1.0)
+	telemetry.record_combat_peak(&"p1", &"max_combo", 3.0)
+	telemetry.record_combat_peak(&"p1", &"max_flow", 76.0)
 
 	var saved_path := telemetry.finish_round(&"p1", {
 		"result_reason": "ko",
@@ -75,10 +85,26 @@ func _run() -> void:
 	assert(round_metadata.get("balance_feedback", "") == "balanced")
 	assert(bool(round_metadata.get("player_won", false)))
 
+	var players: Dictionary = round_data.get("players", {})
+	var p1: Dictionary = players.get("p1", {})
+	var routes: Dictionary = p1.get("route_seconds", {})
+	assert(float(routes.get("tai", 0.0)) > 0.0)
+	assert(float(routes.get("ji", 0.0)) > 0.0)
+	var combat: Dictionary = p1.get("combat", {})
+	assert(float(combat.get("techniques_started", 0.0)) == 3.0)
+	assert(float(combat.get("confirmed_hits", 0.0)) == 2.0)
+	assert(float(combat.get("damage_dealt", 0.0)) == 18.5)
+	assert(float(combat.get("max_combo", 0.0)) == 3.0)
+	assert(float(combat.get("max_flow", 0.0)) == 76.0)
+	assert(float(combat.get("climax_started", 0.0)) == 1.0)
+
 	var events: Array = round_data.get("events", [])
 	assert(events.size() == 4, "Os eventos essenciais devem ser preservados")
 	var report_json := telemetry.session_json()
 	assert(report_json.contains("balance_feedback"))
+	assert(report_json.contains("\"combat\""))
+	assert(report_json.contains("max_combo"))
+	assert(report_json.contains("max_flow"))
 
 	var sanitized := PlaytestReportExporter.sanitize_file_name(
 		"../../TJFP-007__taijifu_<script>.json"

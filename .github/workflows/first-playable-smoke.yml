@@ -60,6 +60,9 @@ jobs:
       - name: Run First Playable combo combat contract
         run: ./godot --headless --path . --script tests/first_playable_combo_combat_contract.gd
 
+      - name: Run First Playable adaptive master contract
+        run: ./godot --headless --path . --script tests/first_playable_adaptive_master_contract.gd
+
       - name: Run First Playable scene smoke
         run: ./godot --headless --path . --script tests/first_playable_scene_smoke.gd
 

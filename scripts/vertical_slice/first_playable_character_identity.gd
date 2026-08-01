@@ -4,6 +4,8 @@ extends Node2D
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable_camera_composition.gd")
 const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combo_runtime.gd")
+const COMBAT_TELEMETRY_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_telemetry_runtime.gd")
+const ADAPTIVE_MASTER_RUNTIME := preload("res://scripts/vertical_slice/first_playable_adaptive_master_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
 const VISUAL_SCALE := Vector2(1.28, 1.28)
@@ -15,7 +17,7 @@ func _ready() -> void:
 	z_index = 4
 	scale = VISUAL_SCALE
 	_install_camera_composition()
-	_install_combo_runtime()
+	_install_first_playable_runtime()
 	call_deferred("_install_real_asset_presenter")
 	queue_redraw()
 
@@ -29,15 +31,24 @@ func _install_camera_composition() -> void:
 	composition.name = "FightCameraComposition"
 	match_root.add_child.call_deferred(composition)
 
-func _install_combo_runtime() -> void:
+func _install_first_playable_runtime() -> void:
 	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
 		return
 	var match_root := _fighter.get_parent()
-	if match_root == null or match_root.has_node("FirstPlayableComboRuntime"):
+	if match_root == null:
 		return
-	var combo := COMBO_RUNTIME.new() as FirstPlayableComboRuntime
-	combo.name = "FirstPlayableComboRuntime"
-	match_root.add_child.call_deferred(combo)
+	if not match_root.has_node("FirstPlayableComboRuntime"):
+		var combo := COMBO_RUNTIME.new() as FirstPlayableComboRuntime
+		combo.name = "FirstPlayableComboRuntime"
+		match_root.add_child.call_deferred(combo)
+	if not match_root.has_node("FirstPlayableCombatTelemetryRuntime"):
+		var telemetry_runtime := COMBAT_TELEMETRY_RUNTIME.new() as FirstPlayableCombatTelemetryRuntime
+		telemetry_runtime.name = "FirstPlayableCombatTelemetryRuntime"
+		match_root.add_child.call_deferred(telemetry_runtime)
+	if not match_root.has_node("FirstPlayableAdaptiveMasterRuntime"):
+		var adaptive_runtime := ADAPTIVE_MASTER_RUNTIME.new() as FirstPlayableAdaptiveMasterRuntime
+		adaptive_runtime.name = "FirstPlayableAdaptiveMasterRuntime"
+		match_root.add_child.call_deferred(adaptive_runtime)
 
 func _install_real_asset_presenter() -> void:
 	if not is_instance_valid(_fighter) or not is_instance_valid(_fighter.build):
@@ -67,6 +78,8 @@ func presentation_signature() -> Dictionary:
 		"fighter_first_readability": true,
 		"camera_composition": true,
 		"combo_runtime": true,
+		"combat_telemetry_v4": true,
+		"adaptive_master_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
