@@ -7,6 +7,7 @@ const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_comb
 const COMBAT_TELEMETRY_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_telemetry_runtime.gd")
 const ADAPTIVE_MASTER_RUNTIME := preload("res://scripts/vertical_slice/first_playable_adaptive_master_runtime.gd")
 const MASTER_MARTIAL_PLANNER := preload("res://scripts/vertical_slice/first_playable_master_martial_planner.gd")
+const MASTER_PURSUIT_RUNTIME := preload("res://scripts/vertical_slice/first_playable_master_pursuit_runtime.gd")
 const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
@@ -56,6 +57,10 @@ func _install_first_playable_runtime() -> void:
 		var planner_runtime := MASTER_MARTIAL_PLANNER.new()
 		planner_runtime.name = "FirstPlayableMasterMartialPlanner"
 		match_root.add_child.call_deferred(planner_runtime)
+	if not match_root.has_node("FirstPlayableMasterPursuitRuntime"):
+		var pursuit_runtime := MASTER_PURSUIT_RUNTIME.new()
+		pursuit_runtime.name = "FirstPlayableMasterPursuitRuntime"
+		match_root.add_child.call_deferred(pursuit_runtime)
 	if not match_root.has_node("FirstPlayableMartialHudRuntime"):
 		var martial_hud := MARTIAL_HUD_RUNTIME.new()
 		martial_hud.name = "FirstPlayableMartialHudRuntime"
@@ -96,6 +101,7 @@ func presentation_signature() -> Dictionary:
 		"combat_telemetry_v4": true,
 		"adaptive_master_runtime": true,
 		"master_martial_planner": true,
+		"master_pursuit_runtime": true,
 		"martial_hud_runtime": true,
 		"combat_feedback_runtime": true,
 		"real_asset_handoff": true,
