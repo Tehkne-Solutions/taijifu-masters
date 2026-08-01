@@ -2,6 +2,13 @@ class_name FirstPlayableCombatGuide
 extends Control
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
+const FULL_GUIDE_SECONDS := 7.5
+
+var _panel: PanelContainer
+var _full_column: VBoxContainer
+var _compact_hint: Label
+var _elapsed := 0.0
+var _collapsed := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -13,32 +20,40 @@ func _ready() -> void:
 	offset_bottom = -14.0
 	_build()
 
+func _process(delta: float) -> void:
+	if _collapsed:
+		return
+	_elapsed += delta
+	if _elapsed >= FULL_GUIDE_SECONDS:
+		_set_collapsed(true)
+
 func _build() -> void:
-	var panel := PanelContainer.new()
-	panel.name = "CombatGuidePanel"
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_panel = PanelContainer.new()
+	_panel.name = "CombatGuidePanel"
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(POLICY.INK, 0.82)
-	panel_style.border_color = Color(POLICY.GOLD, 0.30)
+	panel_style.bg_color = Color(POLICY.INK, 0.78)
+	panel_style.border_color = Color(POLICY.GOLD, 0.24)
 	panel_style.set_border_width_all(1)
 	panel_style.set_corner_radius_all(5)
 	panel_style.content_margin_left = 12
 	panel_style.content_margin_right = 12
 	panel_style.content_margin_top = 7
 	panel_style.content_margin_bottom = 7
-	panel.add_theme_stylebox_override("panel", panel_style)
-	add_child(panel)
+	_panel.add_theme_stylebox_override("panel", panel_style)
+	add_child(_panel)
 
-	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 4)
-	panel.add_child(column)
+	_full_column = VBoxContainer.new()
+	_full_column.name = "FullCombatGuide"
+	_full_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	_full_column.add_theme_constant_override("separation", 4)
+	_panel.add_child(_full_column)
 
 	var attacks := HBoxContainer.new()
 	attacks.name = "AttackFamilies"
 	attacks.alignment = BoxContainer.ALIGNMENT_CENTER
 	attacks.add_theme_constant_override("separation", 12)
-	column.add_child(attacks)
+	_full_column.add_child(attacks)
 	_add_chip(attacks, "F", "TAI", POLICY.ROUTE_TAI)
 	_add_chip(attacks, "G", "JI / S+G BAIXO", POLICY.ROUTE_JI)
 	_add_chip(attacks, "H", "FU / ←+H REVERSÃO", POLICY.JADE)
@@ -49,18 +64,43 @@ func _build() -> void:
 	forms.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	forms.add_theme_font_size_override("font_size", 9)
 	forms.add_theme_color_override("font_color", Color(POLICY.GOLD, 0.94))
-	column.add_child(forms)
+	_full_column.add_child(forms)
 
 	var utility := HBoxContainer.new()
 	utility.name = "UtilityControls"
 	utility.alignment = BoxContainer.ALIGNMENT_CENTER
 	utility.add_theme_constant_override("separation", 8)
-	column.add_child(utility)
+	_full_column.add_child(utility)
 	_add_chip(utility, "A/D", "MOVER", POLICY.BONE)
 	_add_chip(utility, "W", "PULAR / W+F AÉREO", POLICY.ROUTE_TAI)
 	_add_chip(utility, "E", "AGARRAR", POLICY.EMBER)
 	_add_chip(utility, "Q", "ESQUIVA / REAÇÃO", POLICY.JADE)
 	_add_chip(utility, "R", "GUARDA / PARRY / REAÇÃO", POLICY.BONE)
+
+	_compact_hint = Label.new()
+	_compact_hint.name = "CompactCombatHint"
+	_compact_hint.text = "F TAI   •   G JI   •   H FU   •   Q ESQUIVA   •   R GUARDA/PARRY"
+	_compact_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_compact_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_compact_hint.add_theme_font_size_override("font_size", 10)
+	_compact_hint.add_theme_color_override("font_color", Color(POLICY.BONE, 0.74))
+	_compact_hint.visible = false
+	_panel.add_child(_compact_hint)
+
+func _set_collapsed(active: bool) -> void:
+	_collapsed = active
+	if not is_instance_valid(_panel):
+		return
+	_full_column.visible = not active
+	_compact_hint.visible = active
+	if active:
+		offset_top = -52.0
+		offset_bottom = -14.0
+		_panel.modulate.a = 0.72
+	else:
+		offset_top = -132.0
+		offset_bottom = -14.0
+		_panel.modulate.a = 1.0
 
 func _add_chip(parent: HBoxContainer, key_text: String, action_text: String, accent: Color) -> void:
 	var chip := HBoxContainer.new()
@@ -90,6 +130,9 @@ func _add_chip(parent: HBoxContainer, key_text: String, action_text: String, acc
 func presentation_signature() -> Dictionary:
 	return {
 		"persistent_compact_controls": true,
+		"full_guide_auto_collapses": true,
+		"full_guide_seconds": FULL_GUIDE_SECONDS,
+		"compact_hint_after_intro": true,
 		"attack_families_visible": true,
 		"tai_key": "F",
 		"ji_key": "G",
