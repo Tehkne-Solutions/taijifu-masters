@@ -114,7 +114,8 @@ func _try_consume_buffer() -> void:
 		if _fighter._begin_technique(elemental_technique_id):
 			_set_readout("INVOCAÇÃO • %s" % String(recipe["label"]))
 			return
-		# Sem fôlego para a manifestação: o terceiro gesto ainda fecha como golpe físico.
+		# Sem fôlego para a manifestação: a receita é consumida e o gesto final
+		# ainda tenta fechar como golpe físico para não quebrar o ritmo da luta.
 		_set_readout("INVOCAÇÃO FALHOU • FÔLEGO")
 
 	if normal_technique_id == &"":
@@ -138,7 +139,9 @@ func _current_elemental_recipe() -> Dictionary:
 		parts.append(String(family))
 	var key := ",".join(parts)
 	var recipe: Variant = ELEMENTAL_RECIPES.get(key, {})
-	return recipe as Dictionary
+	if recipe is Dictionary:
+		return (recipe as Dictionary).duplicate(true)
+	return {}
 
 func _normal_technique_for(token: Dictionary) -> StringName:
 	var family := StringName(token["family"])
@@ -158,7 +161,6 @@ func _normal_technique_for(token: Dictionary) -> StringName:
 		&"ji":
 			if down or step == 1:
 				return &"ji_sweep"
-			# Não existe golpe de empurrão dedicado: o deslocamento vem do impacto.
 			return _fighter.build.technique_for("ji", 0)
 		&"fu":
 			if back or step == 1:
@@ -185,7 +187,6 @@ func _install_bindings() -> void:
 	_unbind_key(&"p1_attack", KEY_F)
 	_unbind_key(&"p1_push", KEY_G)
 	_unbind_key(&"p1_echo", KEY_H)
-	# No First Playable magia não é botão: nasce da sequência marcial.
 	_unbind_key(&"p1_element", KEY_C)
 
 func _restore_legacy_bindings() -> void:
