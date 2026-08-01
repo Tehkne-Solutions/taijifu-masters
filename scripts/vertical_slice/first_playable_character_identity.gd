@@ -6,6 +6,8 @@ const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable
 const COMBO_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combo_runtime.gd")
 const COMBAT_TELEMETRY_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_telemetry_runtime.gd")
 const ADAPTIVE_MASTER_RUNTIME := preload("res://scripts/vertical_slice/first_playable_adaptive_master_runtime.gd")
+const MASTER_MARTIAL_PLANNER := preload("res://scripts/vertical_slice/first_playable_master_martial_planner.gd")
+const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
@@ -50,6 +52,14 @@ func _install_first_playable_runtime() -> void:
 		var adaptive_runtime := ADAPTIVE_MASTER_RUNTIME.new() as FirstPlayableAdaptiveMasterRuntime
 		adaptive_runtime.name = "FirstPlayableAdaptiveMasterRuntime"
 		match_root.add_child.call_deferred(adaptive_runtime)
+	if not match_root.has_node("FirstPlayableMasterMartialPlanner"):
+		var planner_runtime := MASTER_MARTIAL_PLANNER.new()
+		planner_runtime.name = "FirstPlayableMasterMartialPlanner"
+		match_root.add_child.call_deferred(planner_runtime)
+	if not match_root.has_node("FirstPlayableMartialHudRuntime"):
+		var martial_hud := MARTIAL_HUD_RUNTIME.new()
+		martial_hud.name = "FirstPlayableMartialHudRuntime"
+		match_root.add_child.call_deferred(martial_hud)
 	if not match_root.has_node("FirstPlayableCombatFeedbackRuntime"):
 		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new()
 		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
@@ -85,6 +95,8 @@ func presentation_signature() -> Dictionary:
 		"combo_runtime": true,
 		"combat_telemetry_v4": true,
 		"adaptive_master_runtime": true,
+		"master_martial_planner": true,
+		"martial_hud_runtime": true,
 		"combat_feedback_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
