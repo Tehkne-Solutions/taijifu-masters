@@ -86,6 +86,7 @@ def main() -> int:
     args = parser.parse_args()
 
     gates: list[tuple[str, list[str]]] = [
+        ("visual_policy", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_visual_policy_contract.gd"]),
         ("arena_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_arena_final_contract.gd"]),
         ("hud_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_hud_final_contract.gd"]),
         ("combat_feedback", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_combat_feedback_contract.gd"]),
