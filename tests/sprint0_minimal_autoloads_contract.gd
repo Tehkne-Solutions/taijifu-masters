@@ -1,17 +1,22 @@
 extends SceneTree
 
-const MAX_AUTOLOADS := 12
+const MAX_AUTOLOADS := 9
 const REQUIRED := [
 	"TgapAssetLoader",
 	"AssetPackRegistry",
 	"InputBootstrapRuntime",
-	"Pack99BattleVisualRuntime",
-	"Pack99CombatEventRuntime",
-	"Pack08ArenaUnitRuntime",
+	"ProceduralArenaPickupRuntime",
+	"PickupSynergyRuntime",
+	"MedievalUIThemeRuntime",
+	"CombatAttributeIntegrationRuntime",
+	"ElementalAdvantageRuntime",
 	"TaijifuWebBridge",
 ]
 const FORBIDDEN := [
 	"GameModeRuntime",
+	"Pack99BattleVisualRuntime",
+	"Pack99CombatEventRuntime",
+	"Pack08ArenaUnitRuntime",
 	"SeriesLootProgressionRuntime",
 	"CompleteSeriesModeRuntime",
 	"ModeAwarePreparationRuntime",
