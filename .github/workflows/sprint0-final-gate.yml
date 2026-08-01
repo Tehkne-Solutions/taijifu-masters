@@ -1,0 +1,51 @@
+name: Sprint 0 Final Gate
+
+on:
+  pull_request:
+    paths:
+      - "project.godot"
+      - "scenes/**"
+      - "scripts/**"
+      - "tests/**"
+      - "web/**"
+      - ".github/workflows/sprint0-final-gate.yml"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: sprint0-final-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  first-playable-sanity:
+    name: First Playable sanity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip curl ca-certificates
+
+      - name: Run Sprint 0 gate
+        run: bash scripts/ci/run-sprint0-gate.sh
+
+      - name: Upload Web build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint0-web-build
+          path: |
+            web-build/build-info.json
+            web-build/web-validation-info.json
+            web-build/index.html
+          if-no-files-found: warn
+          retention-days: 7
