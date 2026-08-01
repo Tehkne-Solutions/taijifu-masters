@@ -51,7 +51,7 @@ func _install_first_playable_runtime() -> void:
 		adaptive_runtime.name = "FirstPlayableAdaptiveMasterRuntime"
 		match_root.add_child.call_deferred(adaptive_runtime)
 	if not match_root.has_node("FirstPlayableCombatFeedbackRuntime"):
-		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new() as FirstPlayableCombatFeedbackRuntime
+		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new()
 		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
 		match_root.add_child.call_deferred(feedback_runtime)
 
