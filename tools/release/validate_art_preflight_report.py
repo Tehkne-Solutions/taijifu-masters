@@ -29,14 +29,27 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _extract_counts(payload: dict[str, Any]) -> tuple[int, dict[str, int]]:
+    # Schema atual do repositório de assets (art-preflight-v2).
+    if isinstance(payload.get("present_total"), int) and isinstance(payload.get("counts"), dict):
+        total = int(payload["present_total"])
+        counts_raw = payload["counts"]
+        counts: dict[str, int] = {}
+        for fighter_id in EXPECTED_FIGHTERS:
+            present = counts_raw.get(fighter_id)
+            if not isinstance(present, int):
+                raise ValueError(f"Contagem inválida para {fighter_id}")
+            counts[fighter_id] = present
+        return total, counts
+
+    # Compatibilidade com o schema legado usado pelo jogo antes do v2.
     total = payload.get("total_present")
     fighters_raw = payload.get("fighters")
     if not isinstance(total, int):
-        raise ValueError("Campo total_present ausente ou inválido")
+        raise ValueError("Campo present_total/total_present ausente ou inválido")
     if not isinstance(fighters_raw, dict):
-        raise ValueError("Campo fighters ausente ou inválido")
+        raise ValueError("Campo counts/fighters ausente ou inválido")
 
-    counts: dict[str, int] = {}
+    counts = {}
     for fighter_id in EXPECTED_FIGHTERS:
         fighter = fighters_raw.get(fighter_id)
         if not isinstance(fighter, dict):
@@ -45,7 +58,7 @@ def _extract_counts(payload: dict[str, Any]) -> tuple[int, dict[str, int]]:
         if not isinstance(present, int):
             raise ValueError(f"Contagem inválida para {fighter_id}")
         counts[fighter_id] = present
-    return total, counts
+    return int(total), counts
 
 
 def validate(payload: dict[str, Any], *, strict: bool) -> list[str]:
@@ -59,7 +72,7 @@ def validate(payload: dict[str, Any], *, strict: bool) -> list[str]:
         return [str(exc)]
 
     if total != sum(counts.values()):
-        errors.append("total_present diverge da soma por lutador")
+        errors.append("contagem total diverge da soma por lutador")
 
     for fighter_id, expected in EXPECTED_FIGHTERS.items():
         present = counts[fighter_id]
@@ -71,6 +84,9 @@ def validate(payload: dict[str, Any], *, strict: bool) -> list[str]:
     if strict and total != EXPECTED_TOTAL:
         errors.append(f"produção incompleta: {total}/{EXPECTED_TOTAL}")
 
+    # No modo informativo, o produtor pode aprovar tecnicamente um relatório
+    # incompleto com --allow-incomplete. Em modo estrito, arte incompleta ou
+    # preflight não aprovado continua bloqueando a release.
     if strict and payload.get("passed") is not True:
         errors.append("preflight artístico não aprovado")
 
@@ -100,6 +116,8 @@ def main() -> int:
     print(f"- lian_wu: {counts['lian_wu']}/44")
     print(f"- training_rival: {counts['training_rival']}/44")
     print(f"- total: {total}/88")
+    if total != EXPECTED_TOTAL:
+        print("- estado: incompleto, permitido apenas no modo informativo")
     return 0
 
 
