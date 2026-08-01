@@ -5,16 +5,25 @@ const CATALOG := ROOT + "/install-catalog.json"
 const PACK_ROOT := ROOT + "/packs/taijifu_smoke"
 
 var failures: Array[String] = []
+var _loader: Node
 
 func _init() -> void:
+	_loader = root.get_node_or_null("TgapAssetLoader")
+	_check(_loader != null, "autoload TgapAssetLoader ausente")
+	if _loader == null:
+		_finish()
+		return
 	_prepare_fixture(1, "v1")
-	TgapAssetLoader.install_catalog_path = CATALOG
-	TgapAssetLoader.alias_catalog_path = ROOT + "/aliases.json"
-	TgapAssetLoader.reload_catalog()
-	_check(TgapAssetLoader.generation() == 1, "generation 1 não carregada")
+	_loader.install_catalog_path = CATALOG
+	_loader.alias_catalog_path = ROOT + "/aliases.json"
+	_loader.reload_catalog()
+	_check(_loader.generation() == 1, "generation 1 não carregada")
 	_validate_aliases_and_resources("v1")
 	_validate_scene_matrix()
 	_validate_generation_invalidation()
+	_finish()
+
+func _finish() -> void:
 	if failures.is_empty():
 		print("TGAP_SCENE_MATRIX_SMOKE_OK")
 		quit(0)
@@ -51,16 +60,16 @@ func _prepare_fixture(generation: int, marker: String) -> void:
 	}, "  "))
 
 func _validate_aliases_and_resources(marker: String) -> void:
-	var prep: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	var prep: Resource = _loader.load_resource("smoke", "preparation_ui")
 	_check(prep != null, "alias preparation_ui não carregou")
 	if prep != null:
 		_check(str(prep.resource_name) == marker + "-preparation", "preparation retornou geração incorreta")
-	var frames: Resource = TgapAssetLoader.load_resource("smoke", "arena_animation")
+	var frames: Resource = _loader.load_resource("smoke", "arena_animation")
 	_check(frames is SpriteFrames, "arena_animation não retornou SpriteFrames")
 	if frames is SpriteFrames:
 		_check(frames.has_animation("idle"), "animação idle ausente")
 		_check(frames.get_animation_speed("idle") == 8.0, "fps da animação incorreto")
-	var result: Resource = TgapAssetLoader.load_resource("smoke", "result_ui")
+	var result: Resource = _loader.load_resource("smoke", "result_ui")
 	_check(result != null, "alias result_ui não carregou")
 
 func _validate_scene_matrix() -> void:
@@ -76,11 +85,11 @@ func _validate_scene_matrix() -> void:
 				node.free()
 
 func _validate_generation_invalidation() -> void:
-	var first: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	var first: Resource = _loader.load_resource("smoke", "preparation_ui")
 	_prepare_fixture(2, "v2")
-	TgapAssetLoader.reload_catalog()
-	_check(TgapAssetLoader.generation() == 2, "generation 2 não carregada")
-	var second: Resource = TgapAssetLoader.load_resource("smoke", "preparation_ui")
+	_loader.reload_catalog()
+	_check(_loader.generation() == 2, "generation 2 não carregada")
+	var second: Resource = _loader.load_resource("smoke", "preparation_ui")
 	_check(second != null, "recurso não recarregou após troca de geração")
 	if first != null and second != null:
 		_check(str(second.resource_name) == "v2-preparation", "cache não foi invalidado por geração")
