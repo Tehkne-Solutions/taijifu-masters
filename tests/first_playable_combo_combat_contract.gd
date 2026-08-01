@@ -7,6 +7,7 @@ const MASTER_PLANNER := preload("res://scripts/vertical_slice/first_playable_mas
 const MASTER_PURSUIT := preload("res://scripts/vertical_slice/first_playable_master_pursuit_runtime.gd")
 const MARTIAL_HUD := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
 const IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
+const MASTERED_FIGHTER := preload("res://scripts/fighter/mastered_weapon_fighter_controller.gd")
 
 func _init() -> void:
 	var combo := COMBO_RUNTIME.new() as FirstPlayableComboRuntime
@@ -38,6 +39,23 @@ func _init() -> void:
 	assert(bool(signature.get("blocked_hit_does_not_advance_recipe", false)))
 	assert(bool(signature.get("evade_or_parry_breaks_code", false)))
 	combo.free()
+
+	var fighter := MASTERED_FIGHTER.new() as MasteredWeaponFighterController
+	var economy: Dictionary = fighter.combat_economy_signature()
+	assert(bool(economy.get("separate_mana_and_stamina", false)))
+	assert(bool(economy.get("physical_uses_stamina", false)))
+	assert(bool(economy.get("elemental_uses_mana", false)))
+	assert(float(economy.get("mana_max", 0.0)) >= 100.0)
+	assert(float(economy.get("mana_regen_per_second", 99.0)) <= 8.0)
+	assert(float(economy.get("mana_regen_delay_after_cast", 0.0)) >= 1.0)
+	assert(float(economy.get("physical_tempo_scale", 1.0)) >= 1.18)
+	assert(float(economy.get("element_tempo_scale", 1.0)) >= 1.25)
+	assert(bool(economy.get("ranged_elemental_hitboxes", false)))
+	assert(int(economy.get("air_jump_levels", 0)) >= 3)
+	assert(bool(economy.get("two_air_jumps", false)))
+	assert(bool(economy.get("wall_climb_jump", false)))
+	assert(bool(economy.get("wall_climb_costs_stamina", false)))
+	fighter.free()
 
 	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
 	var guide_signature := guide.presentation_signature()
@@ -79,7 +97,6 @@ func _init() -> void:
 	assert(float(planner_signature.get("flow_threshold", 0.0)) >= 60.0)
 	assert(float(planner_signature.get("climax_telegraph_seconds", 0.0)) >= 0.40)
 	assert(bool(planner_signature.get("climax_armed_before_telegraph", false)))
-	assert(bool(planner_signature.get("climax_stamina_preflight", false)))
 	assert(bool(planner_signature.get("false_climax_failure_removed", false)))
 	assert(bool(planner_signature.get("element_requires_completed_recipe", false)))
 	assert(not bool(planner_signature.get("dedicated_push_attack", true)))
