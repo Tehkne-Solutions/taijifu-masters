@@ -114,6 +114,20 @@ const PERSONALITIES := {
 		"element_chance": 0.46,
 		"defense_multiplier": 0.92,
 		"preferred_objective": &"contest"
+	},
+	# Política interna do First Playable MESTRE: nenhuma ação contorna a linguagem
+	# Tai/Ji/Fu. Knockback nasce de impactos e magia nasce de forma/climax.
+	&"master_martial": {
+		"label": "MESTRE MARCIAL",
+		"route_bias": &"ji",
+		"route_bias_amount": 10.0,
+		"recovery_threshold": 0.29,
+		"contest_chance": 0.66,
+		"grab_weight": 0.23,
+		"push_weight": 0.0,
+		"element_chance": 0.0,
+		"defense_multiplier": 1.12,
+		"preferred_objective": &"engage"
 	}
 }
 
