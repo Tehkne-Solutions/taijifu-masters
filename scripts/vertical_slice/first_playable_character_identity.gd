@@ -1,6 +1,7 @@
 class_name FirstPlayableCharacterIdentity
 extends Node2D
 
+const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const CAMERA_COMPOSITION := preload("res://scripts/vertical_slice/first_playable_camera_composition.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
@@ -48,6 +49,8 @@ func _process(_delta: float) -> void:
 
 func presentation_signature() -> Dictionary:
 	return {
+		"visual_policy": POLICY.DIRECTION,
+		"character_read": POLICY.CHARACTER_READ,
 		"visual_scale": VISUAL_SCALE.x,
 		"fighter_first_readability": true,
 		"camera_composition": true,
@@ -55,6 +58,7 @@ func presentation_signature() -> Dictionary:
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
 		"procedural_fallback_until_real_assets": true,
+		"procedural_is_fallback_only": true,
 		"collision_changes": false,
 		"signature": "Tehkné Solutions"
 	}
@@ -71,10 +75,10 @@ func _draw() -> void:
 func _draw_lian_wu() -> void:
 	var facing := _fighter.facing
 	var alpha := 0.52 if _fighter._dodge_timer > 0.0 else 1.0
-	var ink := Color(0.035, 0.055, 0.09, alpha)
-	var robe := Color(0.90, 0.94, 0.98, alpha)
-	var water_blue := Color(0.10, 0.42, 0.88, alpha)
-	var gold := Color(0.88, 0.66, 0.22, alpha)
+	var ink := Color(POLICY.LIAN_WU_INK, alpha)
+	var robe := Color(POLICY.LIAN_WU_ROBE, alpha)
+	var water_blue := Color(POLICY.LIAN_WU_WATER, alpha)
+	var gold := Color(POLICY.LIAN_WU_GOLD, alpha)
 
 	draw_colored_polygon(
 		PackedVector2Array([Vector2(-14, -35), Vector2(14, -35), Vector2(16, 4), Vector2(0, 14), Vector2(-16, 4)]),
@@ -97,10 +101,10 @@ func _draw_lian_wu() -> void:
 func _draw_training_rival() -> void:
 	var facing := _fighter.facing
 	var alpha := 0.52 if _fighter._dodge_timer > 0.0 else 1.0
-	var armor := Color(0.24, 0.08, 0.06, alpha)
-	var ember := Color(0.96, 0.28, 0.10, alpha)
-	var metal := Color(0.38, 0.42, 0.48, alpha)
-	var brass := Color(0.74, 0.47, 0.16, alpha)
+	var armor := Color(POLICY.RIVAL_ARMOR, alpha)
+	var ember := Color(POLICY.RIVAL_EMBER, alpha)
+	var metal := Color(POLICY.RIVAL_METAL, alpha)
+	var brass := Color(POLICY.RIVAL_BRASS, alpha)
 
 	draw_colored_polygon(
 		PackedVector2Array([Vector2(-17, -35), Vector2(17, -35), Vector2(20, 8), Vector2(-20, 8)]),
@@ -115,6 +119,6 @@ func _draw_training_rival() -> void:
 	draw_arc(Vector2(29 * facing, -13), 12.0, -0.9, 0.9, 12, ember, 3.0)
 
 	var pulse := 14.0 + sin(Time.get_ticks_msec() * 0.008) * 2.0
-	draw_arc(Vector2(0, 17), pulse, PI + 0.25, TAU - 0.25, 16, Color(1.0, 0.34, 0.08, 0.72 * alpha), 3.0)
+	draw_arc(Vector2(0, 17), pulse, PI + 0.25, TAU - 0.25, 16, Color(POLICY.RIVAL_EMBER, 0.72 * alpha), 3.0)
 
 # Tehkné Solutions
