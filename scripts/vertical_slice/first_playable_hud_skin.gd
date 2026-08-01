@@ -1,12 +1,13 @@
 class_name FirstPlayableHudSkin
 extends RefCounted
 
-const INK := Color(0.026, 0.030, 0.032, 0.94)
-const INK_SOFT := Color(0.055, 0.058, 0.055, 0.96)
-const JADE := Color(0.26, 0.72, 0.58, 1.0)
-const EMBER := Color(0.88, 0.30, 0.15, 1.0)
-const GOLD := Color(0.88, 0.68, 0.28, 1.0)
-const BONE := Color(0.92, 0.88, 0.78, 1.0)
+const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
+const INK := POLICY.INK
+const INK_SOFT := POLICY.INK_SOFT
+const JADE := POLICY.JADE
+const EMBER := POLICY.EMBER
+const GOLD := POLICY.GOLD
+const BONE := POLICY.BONE
 
 static func apply(root: Node) -> void:
 	var hud := root.get_node_or_null("../HUD") as CanvasLayer
@@ -21,7 +22,8 @@ static func apply(root: Node) -> void:
 
 static func presentation_signature() -> Dictionary:
 	return {
-		"direction": &"martial_fantasy_ink",
+		"direction": POLICY.UI_READ,
+		"visual_policy": POLICY.DIRECTION,
 		"fighter_identity_colors": 2,
 		"resource_bar_roles": 3,
 		"ornamental_panels": true,
@@ -29,6 +31,7 @@ static func presentation_signature() -> Dictionary:
 		"persistent_help_removed": true,
 		"qa_controls_collapsed": true,
 		"generic_dark_strip_removed": true,
+		"site_like_panels": false,
 		"purple_tech_glow": false,
 		"logic_changes": false,
 		"signature": "Tehkné Solutions"
