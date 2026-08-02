@@ -88,6 +88,31 @@ function Invoke-GodotCaptured {
   }
 }
 
+function Get-GodotFatalLines {
+  param([object[]]$Lines)
+  return @($Lines | Where-Object {
+    $_ -match "SCRIPT ERROR:" -or
+    $_ -match "Parse Error:" -or
+    $_ -match "Compile Error:" -or
+    $_ -match "Failed to load script" -or
+    $_ -match "Failed to compile depended scripts"
+  })
+}
+
+function Write-RootErrors {
+  param([object[]]$Lines)
+  Write-Host "VM01_A3_ROOT_ERROR_BEGIN"
+  $rootLines = Get-GodotFatalLines -Lines $Lines | Select-Object -First 30
+  if ($rootLines.Count -eq 0) {
+    $rootLines = $Lines | Where-Object { $_ -match "ERROR:" } | Select-Object -First 30
+  }
+  if ($rootLines.Count -eq 0) {
+    $rootLines = $Lines | Select-Object -First 30
+  }
+  foreach ($line in $rootLines) { Write-Host $line }
+  Write-Host "VM01_A3_ROOT_ERROR_END"
+}
+
 $godot = Resolve-GodotExecutable -Explicit $GodotExe
 if (-not $godot) {
   Write-Host "VM01_A3_GODOT_RESOLVE=BLOCKED"
@@ -106,27 +131,24 @@ Push-Location $RepoRoot
 try {
   Write-Host "VM01_A3_GODOT_BOOTSTRAP=RUNNING"
   $bootstrap = Invoke-GodotCaptured -Exe $godotCli -Arguments @("--editor", "--headless", "--path", ".", "--quit", "--verbose") -LogPrefix "bootstrap"
-  if ($bootstrap.ExitCode -ne 0) {
+  $bootstrapFatal = Get-GodotFatalLines -Lines $bootstrap.Combined
+  if ($bootstrap.ExitCode -ne 0 -or $bootstrapFatal.Count -gt 0) {
     Write-Host "VM01_A3_GODOT_BOOTSTRAP=BLOCKED"
     Write-Host "BOOTSTRAP_STDOUT=$($bootstrap.Stdout)"
     Write-Host "BOOTSTRAP_STDERR=$($bootstrap.Stderr)"
-    Write-Host "VM01_A3_ROOT_ERROR_BEGIN"
-    $rootLines = $bootstrap.Combined | Where-Object { $_ -match "SCRIPT ERROR|Parse Error|ERROR:" } | Select-Object -First 30
-    if ($rootLines.Count -eq 0) {
-      $rootLines = $bootstrap.Combined | Select-Object -First 30
-    }
-    foreach ($line in $rootLines) { Write-Host $line }
-    Write-Host "VM01_A3_ROOT_ERROR_END"
-    throw "VM01_A3_GODOT_BOOTSTRAP failed with exit code $($bootstrap.ExitCode)"
+    Write-RootErrors -Lines $bootstrap.Combined
+    throw "VM01_A3_GODOT_BOOTSTRAP failed: exit=$($bootstrap.ExitCode) fatal_lines=$($bootstrapFatal.Count)"
   }
   Write-Host "VM01_A3_GODOT_BOOTSTRAP=PASS"
 
   $contract = Invoke-GodotCaptured -Exe $godotCli -Arguments @("--headless", "--path", ".", "--script", "res://tests/lian_wu_character_lock_bench_contract.gd") -LogPrefix "contract"
-  if ($contract.ExitCode -ne 0) {
+  $contractFatal = Get-GodotFatalLines -Lines $contract.Combined
+  if ($contract.ExitCode -ne 0 -or $contractFatal.Count -gt 0) {
     Write-Host "VM01_A3_GODOT_BENCH_CONTRACT=BLOCKED_PROCESS_EXIT"
     Write-Host "CONTRACT_STDOUT=$($contract.Stdout)"
     Write-Host "CONTRACT_STDERR=$($contract.Stderr)"
-    throw "VM01_A3_GODOT_BENCH_CONTRACT failed with exit code $($contract.ExitCode)"
+    Write-RootErrors -Lines $contract.Combined
+    throw "VM01_A3_GODOT_BENCH_CONTRACT failed: exit=$($contract.ExitCode) fatal_lines=$($contractFatal.Count)"
   }
   Write-Host "VM01_A3_GODOT_BENCH_RUNNER=PASS"
 } finally {
