@@ -1,0 +1,60 @@
+{
+  "schema": "tehkne/taijifu-lian-wu-locomotion-core/v1",
+  "signature": "Tehkné Solutions",
+  "character_id": "lian_wu",
+  "source_milestone": "LIAN_WU_CHARACTER_LOCK=PASS",
+  "source_character_lock": {
+    "neutral_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "combat_stance_sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c",
+    "pivot_policy": "alpha_bounds_bottom_center",
+    "visual_bench_sha256": "cff39c65941544693bc1eeac2fa01bccb56c9f2bb10c207668d1368a5fc5c45c"
+  },
+  "scope": {
+    "animation_count": 7,
+    "frame_count": 36,
+    "animations": {
+      "idle": 6,
+      "walk": 8,
+      "run": 8,
+      "jump_start": 4,
+      "jump_loop": 3,
+      "fall": 3,
+      "land": 4
+    },
+    "excluded_from_this_gate": {
+      "dash": 5,
+      "reason": "Dash is present in Pack 01 but is promoted in the next movement/combat bridge gate, not VM02-A1."
+    }
+  },
+  "frame_contract": {
+    "format": "PNG RGBA",
+    "canvas": [1024, 1024],
+    "native_facing": "right",
+    "embedded_text": false,
+    "embedded_logo": false,
+    "pivot_policy": "alpha_bounds_bottom_center",
+    "naming_pattern": "frames/<animation>/char_lian_wu__<animation>__f<frame_2d>.png",
+    "metadata_pattern": "metadata/<animation>.json"
+  },
+  "identity_constraints": [
+    "preserve canonical head/hair/topknot/ribbon identity",
+    "preserve white-blue-black-gold outfit",
+    "preserve one katana and left-hip sheath continuity",
+    "do not independently redraw character identity per frame",
+    "do not mutate weapon count, clothing, hair, accessories or body proportions",
+    "all frames must derive from the approved Character Lock / Rig lineage"
+  ],
+  "gates": {
+    "all_36_frames_present": false,
+    "rgba_1024": false,
+    "naming": false,
+    "pivot_continuity": false,
+    "baseline_continuity": false,
+    "identity_continuity": false,
+    "frame_to_frame_motion_review": false,
+    "godot_spriteframes_import": false,
+    "runtime_locomotion_bench": false,
+    "promotion_allowed": false
+  },
+  "status": "contract_ready_frames_missing"
+}
