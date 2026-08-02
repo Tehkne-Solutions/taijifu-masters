@@ -6,7 +6,7 @@ Tehkné Solutions
 Non-looping landing sequence: impact -> deep compression -> recovery -> neutral.
 """
 from __future__ import annotations
-import argparse, hashlib, json, sys
+import argparse, hashlib, json, shutil, sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -49,8 +49,6 @@ def build_masks(size,b):
     return {k:mask(size,v) for k,v in regs.items()}
 
 def compose(src,b,masks,index):
-    # F04 is the exact Character Lock neutral frame. This guarantees a clean
-    # runtime handoff back to Idle/Walk and avoids residual composite shrinkage.
     if index == 3:
         return src.copy()
 
@@ -72,7 +70,6 @@ def compose(src,b,masks,index):
     layers['leg_front']=offset(layers['leg_front'],q['front'],q['pelvis_y']-2)
     out=Image.new('RGBA',src.size,(0,0,0,0))
     for key in ('leg_back','arm_back','torso','pelvis','leg_front','arm_front'): out.alpha_composite(layers[key])
-    # All landing frames are grounded: re-anchor to canonical baseline.
     fb=alpha_bounds(out)
     if fb!=(0,0,0,0):
         dy=(b[3]-1)-(fb[3]-1)
@@ -92,7 +89,15 @@ def main()->int:
     for stale in frames_dir.glob('char_lian_wu__land__f*.png'): stale.unlink()
     records=[]; heights=[]
     for i in range(FRAME_COUNT):
-        frame=compose(image,b,masks,i); path=frames_dir/f'char_lian_wu__land__f{i+1:02d}.png'; frame.save(path,format='PNG',compress_level=9)
+        frame=compose(image,b,masks,i); path=frames_dir/f'char_lian_wu__land__f{i+1:02d}.png'
+        if i == 3:
+            # Preserve the canonical PNG byte-for-byte. Saving via Pillow would
+            # re-encode the same pixels and legitimately change the file hash.
+            shutil.copyfile(source, path)
+            with Image.open(path) as copied:
+                frame = copied.convert('RGBA')
+        else:
+            frame.save(path,format='PNG',compress_level=9)
         fb=alpha_bounds(frame); baseline=fb[3]-1 if fb!=(0,0,0,0) else -1
         if baseline!=base: print(f'VM02_A8_LAND4=BLOCKED baseline_drift frame={i+1} baseline={baseline} source={base}'); return 5
         height=fb[3]-fb[1]; heights.append(height)
@@ -101,7 +106,7 @@ def main()->int:
         print(f'VM02_A8_LAND4=BLOCKED compression_profile={heights}'); return 6
     if records[3]['sha256'] != actual:
         print(f"VM02_A8_LAND4=BLOCKED neutral_hash_mismatch frame4={records[3]['sha256']} source={actual}"); return 7
-    meta={'schema':'tehkne/taijifu-animation-metadata/v1','signature':'Tehkné Solutions','character_id':'lian_wu','animation':'land','status':'candidate_pending_godot_review','source_character_lock':{'file':str(source.relative_to(repo)).replace('\\','/'),'sha256':actual,'source_alpha_bounds':list(b),'baseline_y':base},'generation':{'method':'articulated_land_recovery_v2','frame_count':4,'frame_numbering':'one_based_f01_to_f04','loop':False,'fps':FPS,'semantic_phases':['impact','deep_compression','recovery','neutral'],'transition_source':'fall','transition_target':'idle_or_locomotion','f04_exact_character_lock':True,'global_warp':False,'redraw':False},'frames':records,'gates':{'identity_source_hash':'pass','canvas':'pass','transparent_background':'pass','grounded_all_frames':'pass','compression_profile':'pass','neutral_handoff_hash':'pass','godot_visual_review':'pending','runtime_promotion':'blocked'}}
+    meta={'schema':'tehkne/taijifu-animation-metadata/v1','signature':'Tehkné Solutions','character_id':'lian_wu','animation':'land','status':'candidate_pending_godot_review','source_character_lock':{'file':str(source.relative_to(repo)).replace('\\','/'),'sha256':actual,'source_alpha_bounds':list(b),'baseline_y':base},'generation':{'method':'articulated_land_recovery_v3','frame_count':4,'frame_numbering':'one_based_f01_to_f04','loop':False,'fps':FPS,'semantic_phases':['impact','deep_compression','recovery','neutral'],'transition_source':'fall','transition_target':'idle_or_locomotion','f04_exact_character_lock_bytes':True,'global_warp':False,'redraw':False},'frames':records,'gates':{'identity_source_hash':'pass','canvas':'pass','transparent_background':'pass','grounded_all_frames':'pass','compression_profile':'pass','neutral_handoff_hash':'pass','godot_visual_review':'pending','runtime_promotion':'blocked'}}
     mp=meta_dir/'land.json'; mp.write_text(json.dumps(meta,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
     print('VM02_A8_LAND4=GENERATED'); print(f'source_sha256={actual}'); print(f'source_alpha_bounds={b}'); print(f'baseline_y={base}'); print('frames=4')
     for r in records: print(f"FRAME_PASS {r['index']:02d} {r['sha256']} height={r['silhouette_height_px']} {r['file']}")
