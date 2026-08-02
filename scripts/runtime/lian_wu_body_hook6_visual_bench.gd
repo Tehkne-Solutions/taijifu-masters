@@ -19,13 +19,14 @@ var _bounds: Array[Rect2i] = []
 func _ready() -> void:
 	for index in range(1, 7):
 		var path: String = "%s/char_lian_wu__ji_body_hook__f%02d.png" % [FRAME_DIR, index]
-		var texture: Texture2D = load(path) as Texture2D
-		if texture == null:
+		var image: Image = Image.load_from_file(ProjectSettings.globalize_path(path))
+		if image == null or image.is_empty():
 			push_error("missing C2 frame: %s" % path)
 			get_tree().quit(2)
 			return
+		var texture: Texture2D = ImageTexture.create_from_image(image)
 		_frames.append(texture)
-		_bounds.append(_alpha_bounds(texture.get_image()))
+		_bounds.append(_alpha_bounds(image))
 	queue_redraw()
 	for _i in range(6):
 		await get_tree().process_frame
