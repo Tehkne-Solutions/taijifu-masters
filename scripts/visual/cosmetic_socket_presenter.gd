@@ -174,7 +174,7 @@ func _draw_pet(item_id: StringName, position: Vector2, facing: float, alpha: flo
 			draw_circle(position + Vector2(-3.0, -2.0), 1.5, Color(0.96, 0.78, 0.28, alpha))
 			draw_circle(position + Vector2(3.0, -2.0), 1.5, Color(0.96, 0.78, 0.28, alpha))
 		&"flame_salamander":
-			draw_ellipse(position, Vector2(10.0, 5.5), Color(1.0, 0.32, 0.10, alpha * 0.90))
+			_draw_ellipse_polygon(position, Vector2(10.0, 5.5), Color(1.0, 0.32, 0.10, alpha * 0.90))
 			draw_circle(position + Vector2(8.0 * facing, -1.0), 4.5, Color(1.0, 0.54, 0.18, alpha))
 			draw_polyline(PackedVector2Array([
 				position + Vector2(-8.0 * facing, 1.0),
@@ -182,7 +182,7 @@ func _draw_pet(item_id: StringName, position: Vector2, facing: float, alpha: flo
 				position + Vector2(-20.0 * facing, 2.0)
 			]), Color(1.0, 0.25, 0.08, alpha), 3.0, true)
 
-func draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
+func _draw_ellipse_polygon(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
 	for index in range(16):
 		var angle := TAU * float(index) / 16.0
