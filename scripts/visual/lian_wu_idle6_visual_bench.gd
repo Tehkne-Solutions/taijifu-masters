@@ -52,11 +52,22 @@ func _build_header() -> void:
 func _frame_path(frame_number: int) -> String:
 	return "%s/char_lian_wu__idle__f%02d.png" % [FRAME_DIR, frame_number]
 
+func _load_png_texture(path: String) -> Texture2D:
+	# Generated pipeline assets may exist before Godot's import cache is refreshed.
+	# Load the PNG bytes directly so the visual gate never depends on .godot/imported state.
+	var absolute_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(absolute_path):
+		return null
+	var image := Image.load_from_file(absolute_path)
+	if image == null or image.is_empty():
+		return null
+	return ImageTexture.create_from_image(image)
+
 func _add_frame(frame_number: int, origin: Vector2) -> void:
 	var path := _frame_path(frame_number)
-	var texture := load(path) as Texture2D
+	var texture := _load_png_texture(path)
 	if texture == null:
-		_entries.append({"index": frame_number, "origin": origin, "path": path, "status": "missing"})
+		_entries.append({"index": frame_number, "origin": origin, "path": path, "status": "missing_or_invalid_png"})
 		return
 
 	var bounds := _alpha_bounds(texture)
