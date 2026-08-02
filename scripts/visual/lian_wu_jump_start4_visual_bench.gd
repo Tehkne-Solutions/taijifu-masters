@@ -8,8 +8,11 @@ const OUTPUT_SIZE := Vector2i(1920, 1080)
 const OUTPUT_PATH := "res://artifacts/vm02-a5/lian-wu-jump-start4-bench-1920x1080.png"
 const FRAME_DIR := "res://assets/pack_01_characters/lian_wu/frames/jump_start"
 const FRAME_COUNT := 4
-const VISUAL_HEIGHT := 132.0
 const ALPHA_THRESHOLD := 0.01
+const CANONICAL_BASELINE_Y := 969.0
+const CANONICAL_VISUAL_HEIGHT := 900.0
+const VISUAL_HEIGHT := 132.0
+const VISUAL_SCALE := VISUAL_HEIGHT / CANONICAL_VISUAL_HEIGHT
 
 var _entries: Array[Dictionary] = []
 var _capture_and_quit := false
@@ -63,12 +66,18 @@ func _alpha_bounds(texture: Texture2D) -> Rect2i:
 	var image := texture.get_image()
 	if image == null or image.is_empty():
 		return Rect2i()
-	var min_x := image.get_width(); var min_y := image.get_height(); var max_x := -1; var max_y := -1
+	var min_x := image.get_width()
+	var min_y := image.get_height()
+	var max_x := -1
+	var max_y := -1
 	for y in range(image.get_height()):
 		for x in range(image.get_width()):
 			if image.get_pixel(x, y).a <= ALPHA_THRESHOLD:
 				continue
-			min_x = mini(min_x, x); min_y = mini(min_y, y); max_x = maxi(max_x, x); max_y = maxi(max_y, y)
+			min_x = mini(min_x, x)
+			min_y = mini(min_y, y)
+			max_x = maxi(max_x, x)
+			max_y = maxi(max_y, y)
 	if max_x < min_x or max_y < min_y:
 		return Rect2i()
 	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
@@ -87,13 +96,13 @@ func _add_frame(frame_number: int, origin: Vector2) -> void:
 		_entries.append({"index": frame_number, "origin": origin, "status": "empty_alpha"})
 		return
 	var pivot := _pivot_from_bounds(bounds)
-	var scale_factor := VISUAL_HEIGHT / maxf(1.0, float(bounds.size.y))
 	var sprite := Sprite2D.new()
 	sprite.centered = false
 	sprite.texture = texture
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * scale_factor
-	sprite.position = origin - pivot * scale_factor
+	sprite.scale = Vector2.ONE * VISUAL_SCALE
+	# Use the canonical source baseline for every frame so F04 retains its real airborne offset.
+	sprite.position = origin - Vector2(pivot.x, CANONICAL_BASELINE_Y) * VISUAL_SCALE
 	sprite.z_index = 4
 	add_child(sprite)
 	var label := Label.new()
@@ -124,7 +133,8 @@ func _validate_entries() -> Dictionary:
 		if String(entry.get("status", "missing")) != "loaded":
 			failures.append("frame %02d not loaded" % entry.get("index", -1))
 			continue
-		var baseline: float = entry["pivot"].y
+		var pivot: Vector2 = entry["pivot"]
+		var baseline := pivot.y
 		if int(entry["index"]) <= 3:
 			if ground_baseline < 0.0:
 				ground_baseline = baseline
