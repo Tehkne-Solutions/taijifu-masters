@@ -49,12 +49,16 @@ def build_masks(size,b):
     return {k:mask(size,v) for k,v in regs.items()}
 
 def compose(src,b,masks,index):
+    # F04 is the exact Character Lock neutral frame. This guarantees a clean
+    # runtime handoff back to Idle/Walk and avoids residual composite shrinkage.
+    if index == 3:
+        return src.copy()
+
     p=lambda x,y:norm(b,x,y)
     presets=[
       dict(body_y=8,pelvis_y=10,torso=8,arm=16,leg=13,front=5,back=-4),
       dict(body_y=24,pelvis_y=29,torso=12,arm=22,leg=21,front=8,back=-7),
       dict(body_y=11,pelvis_y=14,torso=5,arm=10,leg=9,front=4,back=-3),
-      dict(body_y=0,pelvis_y=0,torso=0,arm=0,leg=0,front=0,back=0),
     ]
     q=presets[index]; layers={k:extract(src,masks[k]) for k in masks}
     layers['torso']=rotate(layers['torso'],q['torso'],p(.50,.48))
@@ -62,8 +66,8 @@ def compose(src,b,masks,index):
     layers['arm_front']=rotate(layers['arm_front'],q['arm'],p(.66,.34))
     layers['leg_back']=rotate(layers['leg_back'],-q['leg'],p(.40,.64))
     layers['leg_front']=rotate(layers['leg_front'],q['leg'],p(.60,.64))
-    layers['torso']=offset(layers['torso'],1 if index<3 else 0,q['body_y'])
-    layers['pelvis']=offset(layers['pelvis'],1 if index<3 else 0,q['pelvis_y'])
+    layers['torso']=offset(layers['torso'],1,q['body_y'])
+    layers['pelvis']=offset(layers['pelvis'],1,q['pelvis_y'])
     layers['leg_back']=offset(layers['leg_back'],q['back'],q['pelvis_y']-2)
     layers['leg_front']=offset(layers['leg_front'],q['front'],q['pelvis_y']-2)
     out=Image.new('RGBA',src.size,(0,0,0,0))
@@ -95,10 +99,12 @@ def main()->int:
         records.append({'index':i+1,'file':str(path.relative_to(repo)).replace('\\','/'),'sha256':sha256(path),'alpha_bounds':list(fb),'baseline_y':baseline,'silhouette_height_px':height})
     if not (heights[1] < heights[0] and heights[1] < heights[2] and heights[3] >= heights[2]):
         print(f'VM02_A8_LAND4=BLOCKED compression_profile={heights}'); return 6
-    meta={'schema':'tehkne/taijifu-animation-metadata/v1','signature':'Tehkné Solutions','character_id':'lian_wu','animation':'land','status':'candidate_pending_godot_review','source_character_lock':{'file':str(source.relative_to(repo)).replace('\\','/'),'sha256':actual,'source_alpha_bounds':list(b),'baseline_y':base},'generation':{'method':'articulated_land_recovery_v1','frame_count':4,'frame_numbering':'one_based_f01_to_f04','loop':False,'fps':FPS,'semantic_phases':['impact','deep_compression','recovery','neutral'],'transition_source':'fall','transition_target':'idle_or_locomotion','global_warp':False,'redraw':False},'frames':records,'gates':{'identity_source_hash':'pass','canvas':'pass','transparent_background':'pass','grounded_all_frames':'pass','compression_profile':'pass','godot_visual_review':'pending','runtime_promotion':'blocked'}}
+    if records[3]['sha256'] != actual:
+        print(f"VM02_A8_LAND4=BLOCKED neutral_hash_mismatch frame4={records[3]['sha256']} source={actual}"); return 7
+    meta={'schema':'tehkne/taijifu-animation-metadata/v1','signature':'Tehkné Solutions','character_id':'lian_wu','animation':'land','status':'candidate_pending_godot_review','source_character_lock':{'file':str(source.relative_to(repo)).replace('\\','/'),'sha256':actual,'source_alpha_bounds':list(b),'baseline_y':base},'generation':{'method':'articulated_land_recovery_v2','frame_count':4,'frame_numbering':'one_based_f01_to_f04','loop':False,'fps':FPS,'semantic_phases':['impact','deep_compression','recovery','neutral'],'transition_source':'fall','transition_target':'idle_or_locomotion','f04_exact_character_lock':True,'global_warp':False,'redraw':False},'frames':records,'gates':{'identity_source_hash':'pass','canvas':'pass','transparent_background':'pass','grounded_all_frames':'pass','compression_profile':'pass','neutral_handoff_hash':'pass','godot_visual_review':'pending','runtime_promotion':'blocked'}}
     mp=meta_dir/'land.json'; mp.write_text(json.dumps(meta,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
     print('VM02_A8_LAND4=GENERATED'); print(f'source_sha256={actual}'); print(f'source_alpha_bounds={b}'); print(f'baseline_y={base}'); print('frames=4')
     for r in records: print(f"FRAME_PASS {r['index']:02d} {r['sha256']} height={r['silhouette_height_px']} {r['file']}")
-    print(f'metadata={mp.relative_to(repo)}'); print('VM02_A8_LAND4_GODOT_REVIEW=PENDING'); return 0
+    print(f'compression_profile={heights}'); print('neutral_handoff_hash=PASS'); print(f'metadata={mp.relative_to(repo)}'); print('VM02_A8_LAND4_GODOT_REVIEW=PENDING'); return 0
 
 if __name__=='__main__': sys.exit(main())
