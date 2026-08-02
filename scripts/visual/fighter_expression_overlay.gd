@@ -128,8 +128,8 @@ func _draw_expression(expression_id: StringName) -> void:
 		draw_line(Vector2(2.0, -1.5), Vector2(7.0, 2.0), ink, 2.0)
 		draw_line(Vector2(7.0, -1.5), Vector2(2.0, 2.0), ink, 2.0)
 	else:
-		draw_ellipse(Vector2(-4.3, 0.0), Vector2(2.0, 2.8 * eye_scale), accent)
-		draw_ellipse(Vector2(4.3, 0.0), Vector2(2.0, 2.8 * eye_scale), accent)
+		_draw_ellipse_polygon(Vector2(-4.3, 0.0), Vector2(2.0, 2.8 * eye_scale), accent)
+		_draw_ellipse_polygon(Vector2(4.3, 0.0), Vector2(2.0, 2.8 * eye_scale), accent)
 
 	if mouth_curve >= 0.0:
 		draw_arc(Vector2(0.0, 5.0 - mouth_curve * 0.25), 4.5, 0.12, PI - 0.12, 10, ink, 1.8)
@@ -147,7 +147,7 @@ func _draw_expression(expression_id: StringName) -> void:
 			var direction := Vector2.from_angle(angle)
 			draw_line(Vector2(12.0, -10.0) + direction * 3.0, Vector2(12.0, -10.0) + direction * 7.0, accent, 1.8)
 
-func draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
+func _draw_ellipse_polygon(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
 	for index in range(14):
 		var angle := TAU * float(index) / 14.0
