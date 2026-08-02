@@ -19,8 +19,9 @@ func _ready() -> void:
 	_build_background()
 	_build_header()
 	var xs := [125.0, 330.0, 535.0, 740.0, 945.0, 1150.0]
-	for index in range(FRAME_COUNT):
-		_add_frame(index, Vector2(xs[index], 390.0))
+	for zero_index in range(FRAME_COUNT):
+		var frame_number := zero_index + 1
+		_add_frame(frame_number, Vector2(xs[zero_index], 390.0))
 	queue_redraw()
 	if _capture_and_quit:
 		call_deferred("_capture_after_frames")
@@ -48,19 +49,19 @@ func _build_header() -> void:
 	subtitle.modulate = Color(0.72, 0.76, 0.82, 1.0)
 	add_child(subtitle)
 
-func _frame_path(index: int) -> String:
-	return "%s/char_lian_wu__idle__f%02d.png" % [FRAME_DIR, index]
+func _frame_path(frame_number: int) -> String:
+	return "%s/char_lian_wu__idle__f%02d.png" % [FRAME_DIR, frame_number]
 
-func _add_frame(index: int, origin: Vector2) -> void:
-	var path := _frame_path(index)
+func _add_frame(frame_number: int, origin: Vector2) -> void:
+	var path := _frame_path(frame_number)
 	var texture := load(path) as Texture2D
 	if texture == null:
-		_entries.append({"index": index, "origin": origin, "path": path, "status": "missing"})
+		_entries.append({"index": frame_number, "origin": origin, "path": path, "status": "missing"})
 		return
 
 	var bounds := _alpha_bounds(texture)
 	if bounds.size == Vector2i.ZERO:
-		_entries.append({"index": index, "origin": origin, "path": path, "status": "empty_alpha"})
+		_entries.append({"index": frame_number, "origin": origin, "path": path, "status": "empty_alpha"})
 		return
 
 	var source_pivot := _pivot_from_bounds(bounds)
@@ -76,7 +77,7 @@ func _add_frame(index: int, origin: Vector2) -> void:
 	add_child(sprite)
 
 	var label := Label.new()
-	label.text = "F%02d" % index
+	label.text = "F%02d" % frame_number
 	label.position = origin + Vector2(-40, 58)
 	label.size = Vector2(80, 24)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -84,7 +85,7 @@ func _add_frame(index: int, origin: Vector2) -> void:
 	add_child(label)
 
 	_entries.append({
-		"index": index,
+		"index": frame_number,
 		"origin": origin,
 		"path": path,
 		"status": "loaded",
