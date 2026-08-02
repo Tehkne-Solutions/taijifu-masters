@@ -26,6 +26,7 @@ function Resolve-GodotExecutable {
     "$env:USERPROFILE\Downloads",
     "$env:USERPROFILE\Desktop",
     "$env:LOCALAPPDATA\Programs",
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Packages",
     "$env:ProgramFiles",
     "${env:ProgramFiles(x86)}",
     "C:\Godot",
@@ -62,9 +63,20 @@ Write-Host "GODOT_EXE=$godot"
 
 Push-Location $RepoRoot
 try {
+  Write-Host "VM01_A3_GODOT_BOOTSTRAP=RUNNING"
+  & $godot --editor --headless --path . --quit
+  $bootstrapExit = $LASTEXITCODE
+  if ($bootstrapExit -ne 0) {
+    Write-Host "VM01_A3_GODOT_BOOTSTRAP=BLOCKED"
+    throw "VM01_A3_GODOT_BOOTSTRAP failed with exit code $bootstrapExit"
+  }
+  Write-Host "VM01_A3_GODOT_BOOTSTRAP=PASS"
+
   & $godot --headless --path . --script res://tests/lian_wu_character_lock_bench_contract.gd
-  if ($LASTEXITCODE -ne 0) {
-    throw "VM01_A3_GODOT_BENCH_CONTRACT failed with exit code $LASTEXITCODE"
+  $contractExit = $LASTEXITCODE
+  if ($contractExit -ne 0) {
+    Write-Host "VM01_A3_GODOT_BENCH_CONTRACT=BLOCKED_PROCESS_EXIT"
+    throw "VM01_A3_GODOT_BENCH_CONTRACT failed with exit code $contractExit"
   }
   Write-Host "VM01_A3_GODOT_BENCH_RUNNER=PASS"
 } finally {
