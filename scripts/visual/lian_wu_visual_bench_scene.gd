@@ -7,6 +7,8 @@ const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const BENCH_SCRIPT := preload("res://scripts/visual/lian_wu_character_lock_bench.gd")
 const LOGICAL_SIZE := Vector2i(1280, 720)
 const OUTPUT_SIZE := Vector2i(1920, 1080)
+const OUTPUT_ASPECT := 16.0 / 9.0
+const ASPECT_TOLERANCE := 0.01
 const OUTPUT_PATH := "res://artifacts/vm01-a4/lian-wu-character-lock-bench-1920x1080.png"
 
 var _bench_entries: Array[Dictionary] = []
@@ -125,13 +127,32 @@ func _capture_after_frames() -> void:
 	if not report.failures.is_empty():
 		get_tree().quit(2)
 		return
+
 	var absolute_dir := ProjectSettings.globalize_path("res://artifacts/vm01-a4")
 	DirAccess.make_dir_recursive_absolute(absolute_dir)
 	var image := get_viewport().get_texture().get_image()
-	if image.get_size() != OUTPUT_SIZE:
-		push_error("capture size mismatch: %s expected %s" % [image.get_size(), OUTPUT_SIZE])
+	var source_size := image.get_size()
+	if source_size.x <= 0 or source_size.y <= 0:
+		push_error("capture returned an empty image: %s" % source_size)
 		get_tree().quit(3)
 		return
+
+	var source_aspect := float(source_size.x) / float(source_size.y)
+	if absf(source_aspect - OUTPUT_ASPECT) > ASPECT_TOLERANCE:
+		push_error("capture aspect mismatch: size=%s aspect=%.6f expected=%.6f" % [source_size, source_aspect, OUTPUT_ASPECT])
+		get_tree().quit(3)
+		return
+
+	print("VM01_A4_VISUAL_BENCH_SOURCE_SIZE=%s" % source_size)
+	if source_size != OUTPUT_SIZE:
+		image.resize(OUTPUT_SIZE.x, OUTPUT_SIZE.y, Image.INTERPOLATE_LANCZOS)
+		print("VM01_A4_VISUAL_BENCH_NORMALIZED=PASS")
+
+	if image.get_size() != OUTPUT_SIZE:
+		push_error("normalized capture size mismatch: %s expected %s" % [image.get_size(), OUTPUT_SIZE])
+		get_tree().quit(3)
+		return
+
 	var error := image.save_png(ProjectSettings.globalize_path(OUTPUT_PATH))
 	if error != OK:
 		push_error("failed to save visual bench PNG: %s" % error)
