@@ -183,25 +183,39 @@ func _snapshot_state(state_name: String) -> void:
 	var frames: Array = _textures[state_name]
 	var state_bounds: Array = _bounds[state_name]
 	if frames.is_empty(): return
+
+	# Evidence timeline is intentionally decoupled from the physical actor path.
+	# This prevents the short airborne phases from stacking labels/ghosts on top
+	# of one another while the real actor and metrics still prove runtime motion.
+	var slot := _visited.size() - 1
+	var slot_x := 95.0 + float(slot) * 150.0
+	var slot_y := 650.0
+	match state_name:
+		"jump_start": slot_y = 630.0
+		"jump_loop": slot_y = 610.0
+		"fall": slot_y = 625.0
+		_: slot_y = 650.0
+
 	var ghost := Sprite2D.new()
 	ghost.centered = false
 	ghost.texture = frames[0]
 	ghost.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ghost.scale = Vector2.ONE * (_scale_factor * 0.72)
+	ghost.scale = Vector2.ONE * (_scale_factor * 0.42)
 	var b: Rect2i = state_bounds[0]
 	var pivot := Vector2(float(b.position.x) + float(b.size.x - 1) * 0.5, float(b.position.y + b.size.y - 1))
-	var snap_pos := _actor_pos
+	var snap_pos := Vector2(slot_x, slot_y)
 	ghost.position = snap_pos - pivot * ghost.scale.x
-	ghost.modulate = Color(1.0, 1.0, 1.0, 0.34)
+	ghost.modulate = Color(1.0, 1.0, 1.0, 0.72)
 	ghost.z_index = 3
 	add_child(ghost)
+
 	var label := Label.new()
 	label.text = state_name.replace("_", " ").to_upper()
-	label.position = Vector2(snap_pos.x - 55.0, GROUND_Y + 32.0)
-	label.size = Vector2(110, 20)
+	label.position = Vector2(slot_x - 67.0, 675.0)
+	label.size = Vector2(134, 20)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 9)
-	label.modulate = Color(0.72, 0.78, 0.86, 0.78)
+	label.modulate = Color(0.78, 0.84, 0.92, 0.95)
 	add_child(label)
 
 func _current_frame_index() -> int:
@@ -301,3 +315,5 @@ func _draw() -> void:
 	draw_line(Vector2(50, GROUND_Y), Vector2(1230, GROUND_Y), Color(0.38, 0.72, 0.95, 0.5), 1.5)
 	for x in range(80, 1240, 80):
 		draw_line(Vector2(x, GROUND_Y - 4), Vector2(x, GROUND_Y + 4), Color(0.35, 0.42, 0.50, 0.35), 1.0)
+	# Dedicated evidence baseline for the fixed eight-slot state timeline.
+	draw_line(Vector2(55, 650), Vector2(1225, 650), Color(0.30, 0.38, 0.48, 0.35), 1.0)
