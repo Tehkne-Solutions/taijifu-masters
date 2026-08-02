@@ -8,7 +8,9 @@ extends Node2D
 const OUTPUT_SIZE := Vector2i(1920, 1080)
 const OUTPUT_PATH := "res://artifacts/vm02-b2/lian-wu-player-controlled-1920x1080.png"
 
-@onready var player: LianWuPlayerLocomotionController = $Player
+# Intentionally untyped: the Player node owns the controller script in the scene.
+# This avoids depending on Godot's global class cache during isolated gate startup.
+@onready var player = $Player
 @onready var state_label: Label = $CanvasLayer/HUD/State
 @onready var metric_label: Label = $CanvasLayer/HUD/Metrics
 @onready var help_label: Label = $CanvasLayer/HUD/Help
@@ -34,7 +36,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	_autoplay = args.has("--autoplay")
 	_capture = args.has("--capture-and-quit")
-	_start_x = player.global_position.x
+	_start_x = float(player.global_position.x)
 	_rightmost_x = _start_x
 	player.locomotion_state_changed.connect(_on_state_changed)
 	player.landed.connect(_on_landed)
@@ -46,12 +48,12 @@ func _physics_process(delta: float) -> void:
 	if _autoplay:
 		_phase_elapsed += delta
 		_drive_autoplay()
-	_rightmost_x = maxf(_rightmost_x, player.global_position.x)
+	_rightmost_x = maxf(_rightmost_x, float(player.global_position.x))
 	if _phase >= 4:
-		_leftmost_after_turn = minf(_leftmost_after_turn, player.global_position.x)
-	_saw_left_facing = _saw_left_facing or player.facing < 0.0
-	state_label.text = "STATE: %s · FACING: %s" % [player.locomotion_state.to_upper(), "RIGHT" if player.facing > 0.0 else "LEFT"]
-	metric_label.text = "x=%.1f  vx=%.1f  vy=%.1f  air=%.1f  landings=%d" % [player.global_position.x, player.velocity.x, player.velocity.y, player.max_air_height, _landing_count]
+		_leftmost_after_turn = minf(_leftmost_after_turn, float(player.global_position.x))
+	_saw_left_facing = _saw_left_facing or float(player.facing) < 0.0
+	state_label.text = "STATE: %s · FACING: %s" % [String(player.locomotion_state).to_upper(), "RIGHT" if float(player.facing) > 0.0 else "LEFT"]
+	metric_label.text = "x=%.1f  vx=%.1f  vy=%.1f  air=%.1f  landings=%d" % [float(player.global_position.x), float(player.velocity.x), float(player.velocity.y), float(player.max_air_height), _landing_count]
 
 func _drive_autoplay() -> void:
 	match _phase:
@@ -70,7 +72,7 @@ func _drive_autoplay() -> void:
 		3:
 			# Let full airborne chain and landing resolve.
 			player.set_test_input(0.45, false, false)
-			if _landing_count >= 1 and player.locomotion_state == "idle": _next_phase()
+			if _landing_count >= 1 and String(player.locomotion_state) == "idle": _next_phase()
 			elif _phase_elapsed >= 2.5 and _landing_count >= 1: _next_phase()
 		4:
 			# Turn and walk left to prove facing + mirrored animation.
@@ -101,8 +103,8 @@ func _finish_gate() -> void:
 	_finished = true
 	player.set_test_input(0.0, false, false)
 	var failures: Array[String] = []
-	var right_displacement := _rightmost_x - _start_x
-	var left_return := _rightmost_x - player.global_position.x
+	var right_displacement: float = _rightmost_x - _start_x
+	var left_return: float = _rightmost_x - float(player.global_position.x)
 	if not _saw_walk: failures.append("walk state not observed")
 	if not _saw_run: failures.append("run state not observed")
 	if not _saw_jump_start: failures.append("jump_start not observed")
@@ -113,8 +115,8 @@ func _finish_gate() -> void:
 	if right_displacement < 160.0: failures.append("right displacement too small: %.2f" % right_displacement)
 	if left_return < 45.0: failures.append("left return too small: %.2f" % left_return)
 	if not _saw_left_facing: failures.append("left facing not observed")
-	if player.max_air_height < 45.0: failures.append("jump apex too low: %.2f" % player.max_air_height)
-	if player.locomotion_state != "idle": failures.append("final state not idle")
+	if float(player.max_air_height) < 45.0: failures.append("jump apex too low: %.2f" % float(player.max_air_height))
+	if String(player.locomotion_state) != "idle": failures.append("final state not idle")
 	if not player.is_on_floor(): failures.append("final player not grounded")
 
 	print("VM02_B2_PLAYER_CONTROL_RUNTIME=%s" % ("PASS" if failures.is_empty() else "BLOCKED"))
@@ -124,7 +126,7 @@ func _finish_gate() -> void:
 	print("VM02_B2_FACING_FLIP=%s" % ("PASS" if _saw_left_facing else "BLOCKED"))
 	print("VM02_B2_RIGHT_DISPLACEMENT=%.2f" % right_displacement)
 	print("VM02_B2_LEFT_RETURN=%.2f" % left_return)
-	print("VM02_B2_MAX_AIR_HEIGHT=%.2f" % player.max_air_height)
+	print("VM02_B2_MAX_AIR_HEIGHT=%.2f" % float(player.max_air_height))
 	for failure in failures: push_error(failure)
 	if not failures.is_empty():
 		if _capture: get_tree().quit(3)
