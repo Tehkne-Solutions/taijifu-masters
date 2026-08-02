@@ -49,6 +49,45 @@ function Resolve-GodotExecutable {
   return $null
 }
 
+function Resolve-ConsoleExecutable {
+  param([string]$ResolvedGodot)
+  if ([string]::IsNullOrWhiteSpace($ResolvedGodot)) { return $ResolvedGodot }
+  if ($ResolvedGodot -match "_console\.exe$") { return $ResolvedGodot }
+  $console = $ResolvedGodot -replace "\.exe$", "_console.exe"
+  if (Test-Path $console) { return (Resolve-Path $console).Path }
+  return $ResolvedGodot
+}
+
+function Invoke-GodotCaptured {
+  param(
+    [string]$Exe,
+    [string[]]$Arguments,
+    [string]$LogPrefix
+  )
+
+  $logDir = Join-Path $RepoRoot ".godot\vm01-a3"
+  New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+  $stdout = Join-Path $logDir "$LogPrefix.stdout.log"
+  $stderr = Join-Path $logDir "$LogPrefix.stderr.log"
+  Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+
+  $process = Start-Process -FilePath $Exe -ArgumentList $Arguments -WorkingDirectory $RepoRoot -NoNewWindow -Wait -PassThru `
+    -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+  $combined = @()
+  if (Test-Path $stdout) { $combined += Get-Content $stdout }
+  if (Test-Path $stderr) { $combined += Get-Content $stderr }
+
+  foreach ($line in $combined) { Write-Host $line }
+
+  return @{
+    ExitCode = $process.ExitCode
+    Stdout = $stdout
+    Stderr = $stderr
+    Combined = $combined
+  }
+}
+
 $godot = Resolve-GodotExecutable -Explicit $GodotExe
 if (-not $godot) {
   Write-Host "VM01_A3_GODOT_RESOLVE=BLOCKED"
@@ -58,25 +97,36 @@ if (-not $godot) {
   exit 2
 }
 
+$godotCli = Resolve-ConsoleExecutable -ResolvedGodot $godot
 Write-Host "VM01_A3_GODOT_RESOLVE=PASS"
 Write-Host "GODOT_EXE=$godot"
+Write-Host "GODOT_CLI_EXE=$godotCli"
 
 Push-Location $RepoRoot
 try {
   Write-Host "VM01_A3_GODOT_BOOTSTRAP=RUNNING"
-  & $godot --editor --headless --path . --quit
-  $bootstrapExit = $LASTEXITCODE
-  if ($bootstrapExit -ne 0) {
+  $bootstrap = Invoke-GodotCaptured -Exe $godotCli -Arguments @("--editor", "--headless", "--path", ".", "--quit", "--verbose") -LogPrefix "bootstrap"
+  if ($bootstrap.ExitCode -ne 0) {
     Write-Host "VM01_A3_GODOT_BOOTSTRAP=BLOCKED"
-    throw "VM01_A3_GODOT_BOOTSTRAP failed with exit code $bootstrapExit"
+    Write-Host "BOOTSTRAP_STDOUT=$($bootstrap.Stdout)"
+    Write-Host "BOOTSTRAP_STDERR=$($bootstrap.Stderr)"
+    Write-Host "VM01_A3_ROOT_ERROR_BEGIN"
+    $rootLines = $bootstrap.Combined | Where-Object { $_ -match "SCRIPT ERROR|Parse Error|ERROR:" } | Select-Object -First 30
+    if ($rootLines.Count -eq 0) {
+      $rootLines = $bootstrap.Combined | Select-Object -First 30
+    }
+    foreach ($line in $rootLines) { Write-Host $line }
+    Write-Host "VM01_A3_ROOT_ERROR_END"
+    throw "VM01_A3_GODOT_BOOTSTRAP failed with exit code $($bootstrap.ExitCode)"
   }
   Write-Host "VM01_A3_GODOT_BOOTSTRAP=PASS"
 
-  & $godot --headless --path . --script res://tests/lian_wu_character_lock_bench_contract.gd
-  $contractExit = $LASTEXITCODE
-  if ($contractExit -ne 0) {
+  $contract = Invoke-GodotCaptured -Exe $godotCli -Arguments @("--headless", "--path", ".", "--script", "res://tests/lian_wu_character_lock_bench_contract.gd") -LogPrefix "contract"
+  if ($contract.ExitCode -ne 0) {
     Write-Host "VM01_A3_GODOT_BENCH_CONTRACT=BLOCKED_PROCESS_EXIT"
-    throw "VM01_A3_GODOT_BENCH_CONTRACT failed with exit code $contractExit"
+    Write-Host "CONTRACT_STDOUT=$($contract.Stdout)"
+    Write-Host "CONTRACT_STDERR=$($contract.Stderr)"
+    throw "VM01_A3_GODOT_BENCH_CONTRACT failed with exit code $($contract.ExitCode)"
   }
   Write-Host "VM01_A3_GODOT_BENCH_RUNNER=PASS"
 } finally {
