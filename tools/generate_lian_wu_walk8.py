@@ -16,14 +16,14 @@ from pathlib import Path
 import sys
 
 try:
-    from PIL import Image, ImageChops, ImageDraw, ImageFilter
+    from PIL import Image, ImageDraw, ImageFilter
 except ImportError as exc:
     raise SystemExit("VM02_A3_WALK8=BLOCKED missing dependency Pillow. Install with: python -m pip install Pillow") from exc
 
 EXPECTED_SOURCE_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS = (1024, 1024)
 FRAME_COUNT = 8
-ALPHA_THRESHOLD = 3  # mirrors Godot ALPHA_THRESHOLD=0.01 (>2.55/255)
+ALPHA_THRESHOLD = 3
 FPS = 10.0
 
 
@@ -37,9 +37,6 @@ def sha256(path: Path) -> str:
 
 def alpha_bounds(image: Image.Image) -> tuple[int, int, int, int]:
     alpha = image.convert("RGBA").getchannel("A")
-    # Normalize to a binary mask using the same effective visibility threshold
-    # as the Godot bench. This prevents faint rotated edge pixels (alpha 1-2)
-    # from becoming a false contact baseline in Python only.
     visible = alpha.point(lambda value: 255 if value >= ALPHA_THRESHOLD else 0)
     return visible.getbbox() or (0, 0, 0, 0)
 
@@ -60,12 +57,12 @@ def polygon_mask(size, points, dilation=9):
 def build_region_masks(size, bounds):
     p = lambda x, y: norm_point(bounds, x, y)
     regions = {
-        "torso": [p(0.16, 0.00), p(0.84, 0.00), p(0.84, 0.66), p(0.16, 0.66)],
-        "arm_back": [p(0.03, 0.26), p(0.48, 0.27), p(0.47, 0.72), p(0.00, 0.73)],
-        "arm_front": [p(0.52, 0.25), p(0.97, 0.25), p(1.00, 0.74), p(0.53, 0.72)],
-        "pelvis": [p(0.24, 0.53), p(0.76, 0.53), p(0.76, 0.76), p(0.24, 0.76)],
-        "leg_back": [p(0.18, 0.61), p(0.52, 0.61), p(0.55, 1.00), p(0.12, 1.00)],
-        "leg_front": [p(0.48, 0.61), p(0.82, 0.61), p(0.88, 1.00), p(0.45, 1.00)],
+        "torso": [p(0.14, 0.00), p(0.86, 0.00), p(0.84, 0.65), p(0.16, 0.65)],
+        "arm_back": [p(0.00, 0.25), p(0.48, 0.26), p(0.47, 0.72), p(0.00, 0.74)],
+        "arm_front": [p(0.52, 0.24), p(1.00, 0.24), p(1.00, 0.74), p(0.53, 0.72)],
+        "pelvis": [p(0.22, 0.52), p(0.78, 0.52), p(0.78, 0.77), p(0.22, 0.77)],
+        "leg_back": [p(0.14, 0.60), p(0.52, 0.60), p(0.55, 1.00), p(0.08, 1.00)],
+        "leg_front": [p(0.48, 0.60), p(0.86, 0.60), p(0.92, 1.00), p(0.45, 1.00)],
     }
     return {name: polygon_mask(size, pts) for name, pts in regions.items()}
 
@@ -86,9 +83,16 @@ def safe_offset(layer, dx, dy):
     return out
 
 
-def composite_walk_frame(source, bounds, masks, phase):
+def composite_walk_frame(source, bounds, masks, theta):
     p = lambda x, y: norm_point(bounds, x, y)
     out = Image.new("RGBA", source.size, (0, 0, 0, 0))
+
+    phase = math.sin(theta)
+    stride = math.sin(theta)
+    lift_front = max(0.0, math.sin(theta + math.pi * 0.5))
+    lift_back = max(0.0, math.sin(theta - math.pi * 0.5))
+    double_support = abs(math.cos(theta))
+
     torso = extract_region(source, masks["torso"])
     arm_back = extract_region(source, masks["arm_back"])
     arm_front = extract_region(source, masks["arm_front"])
@@ -96,27 +100,33 @@ def composite_walk_frame(source, bounds, masks, phase):
     leg_back = extract_region(source, masks["leg_back"])
     leg_front = extract_region(source, masks["leg_front"])
 
-    bob = -int(round(2.0 * abs(phase)))
-    torso = safe_offset(torso, 0, bob)
-    pelvis = safe_offset(pelvis, 0, bob)
+    # Walk needs readable contact/pass/extension poses, not an idle-like sway.
+    bob = -int(round(4.0 * double_support))
+    torso = safe_offset(torso, int(round(1.5 * phase)), bob)
+    pelvis = safe_offset(pelvis, int(round(2.0 * phase)), bob + 1)
 
-    arm_deg = 5.5 * phase
+    # Arms counter-swing clearly enough to read at gameplay scale.
+    arm_deg = 10.0 * stride
     arm_back = rotate_about(arm_back, arm_deg, p(0.34, 0.34))
     arm_front = rotate_about(arm_front, -arm_deg, p(0.66, 0.34))
 
-    leg_deg = 7.5 * phase
+    # Legs use larger hip arcs plus explicit foot clearance for passing poses.
+    leg_deg = 15.0 * stride
     leg_back = rotate_about(leg_back, -leg_deg, p(0.40, 0.64))
     leg_front = rotate_about(leg_front, leg_deg, p(0.60, 0.64))
-    if phase > 0.15:
-        leg_front = safe_offset(leg_front, 2, -int(round(3.0 * phase)))
-        leg_back = safe_offset(leg_back, -1, 0)
-    elif phase < -0.15:
-        leg_back = safe_offset(leg_back, 2, -int(round(3.0 * -phase)))
-        leg_front = safe_offset(leg_front, -1, 0)
 
+    front_dx = int(round(6.0 * stride))
+    back_dx = -int(round(6.0 * stride))
+    front_dy = -int(round(10.0 * lift_front))
+    back_dy = -int(round(10.0 * lift_back))
+    leg_front = safe_offset(leg_front, front_dx, front_dy)
+    leg_back = safe_offset(leg_back, back_dx, back_dy)
+
+    # Back-to-front ordering keeps the silhouette coherent while allowing a readable crossover.
     for layer in (leg_back, arm_back, torso, pelvis, leg_front, arm_front):
         out.alpha_composite(layer)
 
+    # Canonical contact baseline remains fixed across every generated frame.
     fb = alpha_bounds(out)
     if fb != (0, 0, 0, 0):
         source_baseline = bounds[3] - 1
@@ -156,9 +166,10 @@ def main() -> int:
     frame_records, phases = [], []
     for zero_index in range(FRAME_COUNT):
         frame_number = zero_index + 1
-        phase = math.sin((2.0 * math.pi * zero_index) / FRAME_COUNT)
+        theta = (2.0 * math.pi * zero_index) / FRAME_COUNT
+        phase = math.sin(theta)
         phases.append(round(phase, 6))
-        frame = composite_walk_frame(image, bounds, masks, phase)
+        frame = composite_walk_frame(image, bounds, masks, theta)
         frame_path = frames_dir / f"char_lian_wu__walk__f{frame_number:02d}.png"
         frame.save(frame_path, format="PNG", optimize=False, compress_level=9)
         fb = alpha_bounds(frame)
@@ -170,7 +181,7 @@ def main() -> int:
     metadata = {
         "schema": "tehkne/taijifu-animation-metadata/v1", "signature": "Tehkné Solutions", "character_id": "lian_wu", "animation": "walk", "status": "candidate_pending_godot_review",
         "source_character_lock": {"file": str(source.relative_to(repo)).replace("\\", "/"), "sha256": actual_source_sha, "pivot_policy": "alpha_bounds_bottom_center", "source_alpha_bounds": list(bounds), "baseline_y": source_baseline},
-        "generation": {"method": "articulated_region_composite_v1", "redraw": False, "global_warp": False, "interpolation": False, "frame_count": FRAME_COUNT, "frame_numbering": "one_based_f01_to_f08", "phases": phases, "loop": True, "fps": FPS, "regions": ["torso", "arm_back", "arm_front", "pelvis", "leg_back", "leg_front"], "alpha_visibility_threshold_8bit": ALPHA_THRESHOLD},
+        "generation": {"method": "articulated_region_composite_v2_readable_gait", "redraw": False, "global_warp": False, "interpolation": False, "frame_count": FRAME_COUNT, "frame_numbering": "one_based_f01_to_f08", "phases": phases, "loop": True, "fps": FPS, "regions": ["torso", "arm_back", "arm_front", "pelvis", "leg_back", "leg_front"], "alpha_visibility_threshold_8bit": ALPHA_THRESHOLD, "visual_review_target": "readable_contact_pass_extension_cycle"},
         "frames": frame_records,
         "gates": {"identity_source_hash": "pass", "canvas": "pass", "transparent_background": "pass", "baseline_continuity": "pass", "articulated_motion_generated": "pass", "godot_visual_review": "pending", "runtime_promotion": "blocked"},
     }
