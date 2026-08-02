@@ -1,11 +1,22 @@
 {
   "pack_id": "pack_01_characters_lian_wu",
-  "status": "specified",
+  "status": "in_production_character_lock_pass",
   "expected": 163,
   "present": 0,
   "approved": 0,
   "missing": 163,
   "progress_percent": 0.0,
+  "milestones": {
+    "character_lock": {
+      "status": "pass",
+      "runtime": "godot_4.7.1",
+      "pivot_policy": "alpha_bounds_bottom_center",
+      "visual_bench": "artifacts/vm01-a4/lian-wu-character-lock-bench-1920x1080.png",
+      "visual_bench_sha256": "cff39c65941544693bc1eeac2fa01bccb56c9f2bb10c207668d1368a5fc5c45c",
+      "fallback_replacement_ready": true,
+      "animation_pack_01_unblocked": true
+    }
+  },
   "gates": {
     "files": false,
     "dimensions": false,
@@ -19,7 +30,6 @@
   },
   "promotion_blocked": true,
   "blocking_reasons": [
-    "modelo mestre ausente",
     "113 frames de animação ausentes",
     "retratos, ícones e VFX ausentes",
     "atlas e metadados ausentes",
