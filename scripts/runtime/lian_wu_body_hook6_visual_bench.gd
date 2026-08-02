@@ -7,11 +7,6 @@ const OUTPUT_SIZE := Vector2i(1920, 1080)
 const OUTPUT_PATH := "res://artifacts/vm02-c2/lian-wu-body-hook6-bench-1920x1080.png"
 const FRAME_DIR := "res://assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook"
 const LABELS := ["F01 GUARD", "F02 CHAMBER", "F03 TORQUE", "F04 IMPACT · ACTIVE", "F05 RECOIL", "F06 RECOVER"]
-const POSITIONS := [
-	Vector2(240, 440), Vector2(720, 440), Vector2(1200, 440),
-	Vector2(240, 810), Vector2(720, 810), Vector2(1200, 810)
-]
-const VISUAL_HEIGHT := 185.0
 
 var _frames: Array[Texture2D] = []
 var _bounds: Array[Rect2i] = []
@@ -50,23 +45,42 @@ func _alpha_bounds(image: Image) -> Rect2i:
 	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 func _draw() -> void:
-	draw_string(ThemeDB.fallback_font, Vector2(70, 72), "VM02-C2 — LIAN WU / JI_BODY_HOOK 6 KEYPOSES", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(0.95,0.96,0.98))
-	draw_string(ThemeDB.fallback_font, Vector2(72, 108), "Tehkné Solutions · guard → chamber → torque → impact → recoil → recover", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color(0.65,0.72,0.82))
-	for row_y: float in [520.0, 890.0]:
-		draw_line(Vector2(70, row_y), Vector2(1850, row_y), Color(0.30,0.65,0.88,0.75), 2.0)
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var sx: float = viewport_size.x / 1280.0
+	var sy: float = viewport_size.y / 720.0
+	var unit: float = minf(sx, sy)
+	var margin_x: float = 48.0 * sx
+	var title_y: float = 48.0 * sy
+	var subtitle_y: float = 76.0 * sy
+	var row_baselines: Array[float] = [350.0 * sy, 610.0 * sy]
+	var column_centers: Array[float] = [210.0 * sx, 640.0 * sx, 1070.0 * sx]
+	var visual_height: float = 150.0 * unit
+	var title_font: int = maxi(18, int(round(24.0 * unit)))
+	var subtitle_font: int = maxi(15, int(round(19.0 * unit)))
+	var label_font: int = maxi(13, int(round(16.0 * unit)))
+
+	draw_string(ThemeDB.fallback_font, Vector2(margin_x, title_y), "VM02-C2 — LIAN WU / JI_BODY_HOOK 6 KEYPOSES", HORIZONTAL_ALIGNMENT_LEFT, -1, title_font, Color(0.95, 0.96, 0.98))
+	draw_string(ThemeDB.fallback_font, Vector2(margin_x + 2.0 * sx, subtitle_y), "Tehkné Solutions · guard → chamber → torque → impact → recoil → recover", HORIZONTAL_ALIGNMENT_LEFT, -1, subtitle_font, Color(0.65, 0.72, 0.82))
+
+	for baseline_y: float in row_baselines:
+		draw_line(Vector2(margin_x, baseline_y), Vector2(viewport_size.x - margin_x, baseline_y), Color(0.30, 0.65, 0.88, 0.75), maxf(1.0, 1.5 * unit))
+
 	for i in range(_frames.size()):
 		var bounds: Rect2i = _bounds[i]
 		if bounds.size == Vector2i.ZERO:
 			continue
-		var scale_factor: float = VISUAL_HEIGHT / float(bounds.size.y)
+		var row: int = i / 3
+		var col: int = i % 3
+		var center_x: float = column_centers[col]
+		var baseline_y: float = row_baselines[row]
+		var scale_factor: float = visual_height / float(bounds.size.y)
 		var size: Vector2 = Vector2(bounds.size) * scale_factor
-		var baseline_y: float = 520.0 if i < 3 else 890.0
-		var slot_position: Vector2 = POSITIONS[i] as Vector2
-		var center_x: float = slot_position.x + 100.0
 		var dest: Rect2 = Rect2(Vector2(center_x - size.x * 0.5, baseline_y - size.y), size)
 		draw_texture_rect_region(_frames[i], dest, Rect2(bounds), Color.WHITE)
-		var label_color: Color = Color(1.0,0.72,0.28) if i == 3 else Color(0.88,0.90,0.94)
-		draw_string(ThemeDB.fallback_font, Vector2(center_x - 92, baseline_y + 48), LABELS[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 22, label_color)
+		var label_color: Color = Color(1.0, 0.72, 0.28) if i == 3 else Color(0.88, 0.90, 0.94)
+		var label_width: float = 220.0 * sx
+		var label_x: float = center_x - label_width * 0.5
+		draw_string(ThemeDB.fallback_font, Vector2(label_x, baseline_y + 34.0 * sy), LABELS[i], HORIZONTAL_ALIGNMENT_CENTER, label_width, label_font, label_color)
 
 func _capture_and_quit() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://artifacts/vm02-c2"))
