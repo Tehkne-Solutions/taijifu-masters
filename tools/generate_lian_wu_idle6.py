@@ -44,11 +44,7 @@ def alpha_bounds(image: Image.Image) -> tuple[int, int, int, int]:
 
 
 def breathing_offset(y: int, phase: int, bounds: tuple[int, int, int, int]) -> int:
-    """Piecewise integer-pixel breathing offset; feet remain fixed.
-
-    Upper body receives full phase. Lower torso tapers to zero, and the final
-    contact region remains untouched so the approved baseline cannot drift.
-    """
+    """Piecewise integer-pixel breathing offset; feet remain fixed."""
     _x0, y0, _x1, y1 = bounds
     height = max(1, y1 - y0)
     upper_end = y0 + int(height * 0.58)
@@ -59,7 +55,6 @@ def breathing_offset(y: int, phase: int, bounds: tuple[int, int, int, int]) -> i
         return 0
     span = max(1, taper_end - upper_end)
     remain = taper_end - y
-    # Integer taper, deterministic on every platform/Pillow version.
     return int(round((-phase) * (remain / span)))
 
 
@@ -69,9 +64,6 @@ def warp_idle(source: Image.Image, phase: int, bounds: tuple[int, int, int, int]
     src_px = src.load()
     out_px = out.load()
     width, height = src.size
-
-    # Forward map each non-transparent source pixel to a deterministic integer destination.
-    # Later rows overwrite earlier rows only on the same x/y; no interpolation or color synthesis occurs.
     for y in range(height):
         dy = breathing_offset(y, phase, bounds)
         dest_y = y + dy
@@ -82,7 +74,6 @@ def warp_idle(source: Image.Image, phase: int, bounds: tuple[int, int, int, int]
             if px[3] < ALPHA_THRESHOLD:
                 continue
             out_px[x, dest_y] = px
-
     return out
 
 
@@ -123,23 +114,31 @@ def main() -> int:
     frames_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
+    # Remove stale zero-based candidates from an earlier local run so the canonical
+    # directory cannot contain two numbering schemes.
+    for stale_index in range(FRAME_COUNT):
+        stale = frames_dir / f"char_lian_wu__idle__f{stale_index:02d}.png"
+        if stale.exists() and stale_index == 0:
+            stale.unlink()
+
     frame_records = []
     source_baseline = bounds[3] - 1
-    for index, phase in enumerate(FRAME_PHASES):
+    for zero_index, phase in enumerate(FRAME_PHASES):
+        frame_number = zero_index + 1
         frame = warp_idle(image, phase, bounds)
-        frame_name = f"char_lian_wu__idle__f{index:02d}.png"
+        frame_name = f"char_lian_wu__idle__f{frame_number:02d}.png"
         frame_path = frames_dir / frame_name
         frame.save(frame_path, format="PNG", optimize=False, compress_level=9)
         fb = alpha_bounds(frame)
         baseline = fb[3] - 1 if fb != (0, 0, 0, 0) else -1
         if baseline != source_baseline:
             print(
-                f"VM02_A2_IDLE6=BLOCKED baseline_drift frame={index} baseline={baseline} source={source_baseline}"
+                f"VM02_A2_IDLE6=BLOCKED baseline_drift frame={frame_number} baseline={baseline} source={source_baseline}"
             )
             return 6
         frame_records.append(
             {
-                "index": index,
+                "index": frame_number,
                 "phase": phase,
                 "file": str(frame_path.relative_to(repo)).replace("\\", "/"),
                 "sha256": sha256(frame_path),
@@ -166,6 +165,7 @@ def main() -> int:
             "redraw": False,
             "interpolation": False,
             "frame_count": FRAME_COUNT,
+            "frame_numbering": "one_based_f01_to_f06",
             "phases": list(FRAME_PHASES),
             "loop": True,
             "fps": 8.0,
