@@ -24,6 +24,7 @@ var _active_observed := false
 var _recovery_observed := false
 var _hit_registered := false
 var _hitbox_enabled_outside_active := false
+var _hitbox_audit_skip_frames := 0
 var _initial_health := 0.0
 var _capture := false
 var _finished := false
@@ -61,7 +62,11 @@ func _physics_process(delta: float) -> void:
 	elif _phase == "recovery" and _phase_timer <= 0.0:
 		_end_attack()
 
-	if _phase != "active" and not attack_shape.disabled:
+	# CollisionShape2D.set_deferred() applies at the end of the current frame.
+	# Skip only the transition frame, then verify the actual physical shape state.
+	if _hitbox_audit_skip_frames > 0:
+		_hitbox_audit_skip_frames -= 1
+	elif _phase != "active" and not attack_shape.disabled:
 		_hitbox_enabled_outside_active = true
 
 	phase_label.text = "PHASE: %s" % _phase.to_upper()
@@ -75,14 +80,14 @@ func _begin_attack() -> void:
 	_phase = "startup"
 	_phase_timer = float(_technique.startup_seconds())
 	_configure_hitbox()
-	attack_shape.set_deferred("disabled", true)
+	_set_hitbox_enabled(false)
 	print("VM02_C1_PHASE=startup")
 
 func _enter_active() -> void:
 	_phase = "active"
 	_phase_timer = float(_technique.active_seconds())
 	_active_observed = true
-	attack_shape.set_deferred("disabled", false)
+	_set_hitbox_enabled(true)
 	print("VM02_C1_PHASE=active")
 	call_deferred("_probe_active_overlaps")
 
@@ -90,13 +95,17 @@ func _enter_recovery() -> void:
 	_phase = "recovery"
 	_phase_timer = float(_technique.recovery_seconds())
 	_recovery_observed = true
-	attack_shape.set_deferred("disabled", true)
+	_set_hitbox_enabled(false)
 	print("VM02_C1_PHASE=recovery")
 
 func _end_attack() -> void:
 	_phase = "idle"
-	attack_shape.set_deferred("disabled", true)
+	_set_hitbox_enabled(false)
 	print("VM02_C1_PHASE=idle")
+
+func _set_hitbox_enabled(enabled: bool) -> void:
+	attack_shape.set_deferred("disabled", not enabled)
+	_hitbox_audit_skip_frames = 1
 
 func _configure_hitbox() -> void:
 	var rectangle := attack_shape.shape as RectangleShape2D
