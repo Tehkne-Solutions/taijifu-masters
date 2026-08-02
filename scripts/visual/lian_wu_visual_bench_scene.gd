@@ -53,6 +53,11 @@ func _add_fighter(world_position: Vector2, stance: bool, facing: float, visual_h
 	fighter.position = world_position
 	fighter.set("facing", facing)
 	add_child(fighter)
+	# The bench must inspect a stable pose, not simulate a falling fighter in an arena with no floor.
+	# Disable only the FighterController's physics callback; child visual processing remains active.
+	fighter.set_physics_process(false)
+	if fighter is CharacterBody2D:
+		(fighter as CharacterBody2D).velocity = Vector2.ZERO
 	_hide_procedural_visuals(fighter)
 
 	var bench := BENCH_SCRIPT.new()
@@ -81,7 +86,7 @@ func _add_fighter(world_position: Vector2, stance: bool, facing: float, visual_h
 	_bench_entries.append({
 		"fighter": fighter,
 		"bench": bench,
-		"position": world_position,
+		"initial_position": world_position,
 		"label": label_text,
 		"visual_height": visual_height,
 		"facing": facing,
@@ -98,9 +103,10 @@ func _hide_procedural_visuals(fighter: Node) -> void:
 
 func _draw() -> void:
 	# Global ground/contact line in logical 1280x720 coordinates.
-	draw_line(Vector2(36, 362), Vector2(1244, 362), Color(0.38, 0.72, 0.95, 0.45), 1.5)
+	draw_line(Vector2(36, 360), Vector2(1244, 360), Color(0.38, 0.72, 0.95, 0.45), 1.5)
 	for entry in _bench_entries:
-		var p: Vector2 = entry["position"]
+		var fighter: Node2D = entry["fighter"]
+		var p := fighter.position
 		# Fighter capsule: radius 16, height 78, local position (0,-16).
 		draw_arc(p + Vector2(0, -16), 16.0, 0.0, TAU, 32, Color(0.15, 0.92, 0.55, 0.85), 2.0)
 		draw_rect(Rect2(p + Vector2(-16, -55), Vector2(32, 78)), Color(0.15, 0.92, 0.55, 0.22), false, 2.0)
@@ -167,11 +173,15 @@ func _validate_entries() -> Dictionary:
 	if _bench_entries.size() != 4:
 		failures.append("bench must contain 4 comparison states")
 	for entry in _bench_entries:
-		var p: Vector2 = entry["position"]
+		var fighter: Node2D = entry["fighter"]
+		var p := fighter.position
+		var initial: Vector2 = entry["initial_position"]
+		if p.distance_to(initial) > 0.01:
+			failures.append("fighter drifted during visual bench: %s initial=%s current=%s" % [entry["label"], initial, p])
 		if p.x < 40.0 or p.x > 1240.0 or p.y < 100.0 or p.y > 680.0:
 			failures.append("bench state outside logical canvas: %s at %s" % [entry["label"], p])
 		var bench = entry["bench"]
-		var report: Dictionary = bench.bench_report()
-		if String(report.get("status", "blocked")) != "pass":
-			failures.append("bench state failed: %s -> %s" % [entry["label"], report.get("failures", [])])
+		var bench_report: Dictionary = bench.bench_report()
+		if String(bench_report.get("status", "blocked")) != "pass":
+			failures.append("bench state failed: %s -> %s" % [entry["label"], bench_report.get("failures", [])])
 	return {"failures": failures}
