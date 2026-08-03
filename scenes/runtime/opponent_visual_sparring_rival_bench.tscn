@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime/opponent_visual_sparring_rival_bench.gd" id="1_bench"]
+[ext_resource type="Script" path="res://scripts/runtime/opponent_visual_sparring_rival.gd" id="2_rival"]
+
+[sub_resource type="StyleBoxFlat" id="hud_style"]
+bg_color = Color(0.055, 0.065, 0.085, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.20, 0.28, 0.36, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="VM02C9VisualSparringRivalBench" type="Node2D"]
+script = ExtResource("1_bench")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.035, 0.043, 0.058, 1)
+mouse_filter = 2
+
+[node name="GroundTop" type="ColorRect" parent="."]
+offset_left = 50.0
+offset_top = 338.0
+offset_right = 1230.0
+offset_bottom = 340.0
+color = Color(0.34, 0.68, 0.92, 0.65)
+mouse_filter = 2
+
+[node name="IdleRival" type="Sprite2D" parent="."]
+position = Vector2(190, 338)
+scale = Vector2(0.20, 0.20)
+script = ExtResource("2_rival")
+
+[node name="ApproachRival" type="Sprite2D" parent="."]
+position = Vector2(490, 338)
+scale = Vector2(0.20, 0.20)
+script = ExtResource("2_rival")
+
+[node name="AttackRival" type="Sprite2D" parent="."]
+position = Vector2(790, 338)
+scale = Vector2(0.20, 0.20)
+script = ExtResource("2_rival")
+
+[node name="HitstunRival" type="Sprite2D" parent="."]
+position = Vector2(1090, 338)
+scale = Vector2(0.20, 0.20)
+script = ExtResource("2_rival")
+
+[node name="IdleLabel" type="Label" parent="."]
+offset_left = 125.0
+offset_top = 370.0
+offset_right = 255.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 15
+text = "IDLE"
+horizontal_alignment = 1
+
+[node name="ApproachLabel" type="Label" parent="."]
+offset_left = 415.0
+offset_top = 370.0
+offset_right = 565.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 15
+text = "APPROACH"
+horizontal_alignment = 1
+
+[node name="AttackLabel" type="Label" parent="."]
+offset_left = 720.0
+offset_top = 370.0
+offset_right = 860.0
+offset_bottom = 400.0
+theme_override_colors/font_color = Color(1, 0.72, 0.28, 1)
+theme_override_font_sizes/font_size = 15
+text = "ATTACK"
+horizontal_alignment = 1
+
+[node name="HitstunLabel" type="Label" parent="."]
+offset_left = 1010.0
+offset_top = 370.0
+offset_right = 1170.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 15
+text = "HITSTUN"
+horizontal_alignment = 1
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Panel" parent="CanvasLayer"]
+offset_left = 36.0
+offset_top = 28.0
+offset_right = 930.0
+offset_bottom = 155.0
+theme_override_styles/panel = SubResource("hud_style")
+
+[node name="Title" type="Label" parent="CanvasLayer/HUD"]
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 850.0
+offset_bottom = 42.0
+theme_override_font_sizes/font_size = 20
+text = "VM02-C9 — VISUAL SPARRING RIVAL"
+
+[node name="Subtitle" type="Label" parent="CanvasLayer/HUD"]
+offset_left = 20.0
+offset_top = 49.0
+offset_right = 850.0
+offset_bottom = 72.0
+theme_override_colors/font_color = Color(0.72, 0.78, 0.86, 1)
+text = "provisional mirrored Character Lock · idle → approach → attack → hitstun"
+
+[node name="Note" type="Label" parent="CanvasLayer/HUD"]
+offset_left = 20.0
+offset_top = 82.0
+offset_right = 850.0
+offset_bottom = 108.0
+theme_override_colors/font_color = Color(1, 0.72, 0.28, 1)
+text = "Training rival only — replaceable by second canonical fighter pack without changing AI contract"
+
+[node name="Signature" type="Label" parent="CanvasLayer"]
+offset_left = 1040.0
+offset_top = 676.0
+offset_right = 1232.0
+offset_bottom = 704.0
+theme_override_colors/font_color = Color(0.58, 0.64, 0.72, 0.8)
+theme_override_font_sizes/font_size = 11
+text = "Tehkné Solutions"
+horizontal_alignment = 2
