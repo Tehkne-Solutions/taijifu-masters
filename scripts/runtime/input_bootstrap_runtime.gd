@@ -11,6 +11,7 @@ const KEY_BINDINGS := {
 	&"p1_grab": KEY_E,
 	&"p1_echo": KEY_H,
 	&"p1_block": KEY_R,
+	&"p1_parry": KEY_V,
 	&"p1_element": KEY_C,
 	&"p1_swap": KEY_T,
 	&"first_playable_restart": KEY_ENTER,
@@ -19,7 +20,7 @@ const KEY_BINDINGS := {
 
 const CPU_ACTION_SUFFIXES := [
 	"left", "right", "down", "jump", "dodge", "attack",
-	"push", "grab", "echo", "block", "element", "swap"
+	"push", "grab", "echo", "block", "parry", "element", "swap"
 ]
 
 func _ready() -> void:
