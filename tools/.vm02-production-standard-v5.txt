@@ -1,0 +1,2 @@
+Tehkné Solutions
+Canonical validation entrypoint: tools/RUN-CURRENT-VM02-GATE.ps1
