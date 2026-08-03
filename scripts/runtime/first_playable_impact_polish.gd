@@ -23,10 +23,15 @@ func _ready() -> void:
 	base_rival_local_position = rival_visual.position
 	print("VM02_C14_IMPACT_POLISH_READY=PASS")
 
+func _impact_forward() -> float:
+	# Do not depend on a controller-specific facing_right property.
+	# The opponent position is the authoritative combat-space direction.
+	return 1.0 if opponent.global_position.x >= player.global_position.x else -1.0
+
 func _trigger_player_impact() -> void:
 	super._trigger_player_impact()
 	contact_core_events += 1
-	impact_origin = player.global_position + Vector2(10.0 if player.facing_right else -10.0, -43.0)
+	impact_origin = player.global_position + Vector2(10.0 * _impact_forward(), -43.0)
 	impact_strength = maxf(impact_strength, 0.82)
 	print("VM02_C14_CONTACT_CORE=PASS target=player count=%d" % contact_core_events)
 
@@ -39,12 +44,12 @@ func _trigger_rival_impact() -> void:
 	if technique == "ji_body_hook":
 		body_hook_readability = true
 		impact_strength = 1.15
-		reaction_offset = Vector2(5.0, -1.0)
+		reaction_offset = Vector2(5.0 * _impact_forward(), -1.0)
 		reaction_remaining = 0.10
 	else:
 		sweep_readability = true
 		impact_strength = 1.38
-		reaction_offset = Vector2(9.0, 3.0)
+		reaction_offset = Vector2(9.0 * _impact_forward(), 3.0)
 		reaction_remaining = 0.14
 	rival_visual.position = base_rival_local_position + reaction_offset
 	print("VM02_C14_REACTION_READABILITY=PASS technique=%s count=%d" % [technique, reaction_readability_events])
@@ -61,7 +66,6 @@ func _update_game_feel(delta: float) -> void:
 		rival_visual.position = rival_visual.position.lerp(base_rival_local_position, minf(1.0, delta * 24.0))
 
 func _capture_impact_evidence() -> void:
-	# C14 capture intentionally freezes on the enhanced contact core.
 	await get_tree().process_frame
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://artifacts/vm02-c14"))
 	var image := get_viewport().get_texture().get_image()
@@ -84,17 +88,25 @@ func _finish_gate() -> void:
 			await get_tree().process_frame
 			if c14_impact_evidence_captured:
 				break
+	# C13 completes combo bookkeeping a few physics frames after victory.
+	if combo_count < 2 and victory_observed:
+		for _i in range(40):
+			await get_tree().physics_frame
+			if combo_count >= 2:
+				break
 	var local_failures: Array[String] = []
 	if contact_core_events < 5: local_failures.append("contact core coverage missing")
 	if reaction_readability_events < 4: local_failures.append("reaction readability missing")
 	if not body_hook_readability: local_failures.append("body hook contrast missing")
 	if not sweep_readability: local_failures.append("sweep contrast missing")
 	if not c14_impact_evidence_captured: local_failures.append("C14 impact evidence missing")
+	var c13_contract_ok := player_hit_events >= 4 and combo_count >= 2 and victory_observed
+	if not c13_contract_ok: local_failures.append("C13 combat contract regressed")
 	print("VM02_C14_CONTACT_CORE_COVERAGE=%s count=%d" % [("PASS" if contact_core_events >= 5 else "BLOCKED"), contact_core_events])
 	print("VM02_C14_REACTION_READABILITY=%s count=%d" % [("PASS" if reaction_readability_events >= 4 else "BLOCKED"), reaction_readability_events])
 	print("VM02_C14_TECHNIQUE_CONTRAST=%s body_hook=%s sweep=%s" % [("PASS" if body_hook_readability and sweep_readability else "BLOCKED"), str(body_hook_readability), str(sweep_readability)])
 	print("VM02_C14_IMPACT_EVIDENCE_COVERAGE=%s" % ("PASS" if c14_impact_evidence_captured else "BLOCKED"))
-	print("VM02_C14_C13_CONTRACT=%s" % ("PASS" if player_hit_events >= 4 and combo_count >= 2 and victory_observed else "BLOCKED"))
+	print("VM02_C14_C13_CONTRACT=%s" % ("PASS" if c13_contract_ok else "BLOCKED"))
 	print("VM02_C14_RUNTIME=%s" % ("PASS" if local_failures.is_empty() else "BLOCKED"))
 	for failure in local_failures:
 		push_error(failure)
@@ -127,11 +139,10 @@ func _draw() -> void:
 		return
 	var alpha := 1.0 - impact_age
 	var core_radius := 7.0 + impact_age * 8.0
-	# Bright contact core: readable even in a still capture.
 	draw_circle(impact_origin, core_radius, Color(1.0, 0.96, 0.78, 0.95 * alpha), true)
 	draw_circle(impact_origin, 15.0 + impact_age * 30.0 * impact_strength, Color(1.0, 0.42, 0.10, 0.72 * alpha), false, 4.0)
 	draw_circle(impact_origin, 24.0 + impact_age * 46.0 * impact_strength, Color(1.0, 0.78, 0.28, 0.38 * alpha), false, 2.0)
-	var forward := 1.0 if player.facing_right else -1.0
+	var forward := _impact_forward()
 	for i in range(5):
 		var spread := float(i - 2) * 0.18
 		var direction := Vector2(forward, spread).normalized()
