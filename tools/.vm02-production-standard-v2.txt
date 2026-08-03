@@ -1,2 +1,0 @@
-Tehkné Solutions
-Streamlined VM02 workflow enabled: one current-branch gate command, full log persistence, compact clipboard report.
