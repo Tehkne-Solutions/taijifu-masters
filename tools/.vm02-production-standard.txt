@@ -1,0 +1,2 @@
+Tehkné Solutions
+VM02 production standard: current-branch gate runner + compact clipboard report + persisted full gate log.
