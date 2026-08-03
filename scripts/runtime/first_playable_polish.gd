@@ -6,6 +6,7 @@ extends "res://scripts/runtime/first_playable_level.gd"
 
 const C12_OUTPUT_SIZE := Vector2i(1920, 1080)
 const C12_OUTPUT_PATH := "res://artifacts/vm02-c12/first-playable-polish-1920x1080.png"
+const C12_COMBO_SETTLE_FRAMES := 90
 
 var c12_visual_contract_ready := false
 
@@ -33,7 +34,19 @@ func _validate_visual_contract() -> bool:
 	return true
 
 func _finish_gate() -> void:
+	# Victory can occur on the active frame of the final ji_sweep, before the
+	# combo controller emits combo_completed at the end of recovery. Let that
+	# already-valid final link settle instead of evaluating the contract early.
 	finished = true
+	var settle_frames := 0
+	while combo_count < 2 and settle_frames < C12_COMBO_SETTLE_FRAMES:
+		await get_tree().physics_frame
+		settle_frames += 1
+	if combo_count >= 2:
+		print("VM02_C12_FINAL_COMBO_SETTLE=PASS frames=%d combos=%d" % [settle_frames, combo_count])
+	else:
+		print("VM02_C12_FINAL_COMBO_SETTLE=BLOCKED frames=%d combos=%d" % [settle_frames, combo_count])
+
 	var failures: Array[String] = []
 	if not round_start_observed: failures.append("round never started")
 	if not ai_attack_observed: failures.append("AI never attacked")
