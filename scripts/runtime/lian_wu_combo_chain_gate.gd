@@ -20,6 +20,7 @@ var idle_between_hits := false
 var seen_first_hit := false
 var initial_health := 0.0
 var capture := false
+var completed_combo_hits := 0
 
 func _ready() -> void:
 	capture = OS.get_cmdline_user_args().has("--capture-and-quit")
@@ -52,24 +53,28 @@ func _physics_process(delta: float) -> void:
 		hit_latch = false
 	if seen_first_hit and not combo_done and int(dummy.hit_count) < 2 and player.attack_phase == "idle" and player.combo_index == 0:
 		idle_between_hits = true
-	metric_label.text = "combo=%d  hits=%d  hp=%.1f  buffered=%s  idle_gap=%s" % [int(player.combo_index),int(dummy.hit_count),float(dummy.health),str(second_buffered),str(idle_between_hits)]
+	var combo_display: int = completed_combo_hits if combo_done else int(player.combo_index)
+	metric_label.text = "combo=%d  hits=%d  hp=%.1f  buffered=%s  idle_gap=%s" % [combo_display,int(dummy.hit_count),float(dummy.health),str(second_buffered),str(idle_between_hits)]
 	if combo_done and player.attack_phase == "idle": _finish()
 	if elapsed > 5.0 and not combo_done:
 		push_error("VM02_C5_WATCHDOG=BLOCKED")
 		get_tree().quit(3)
 
 func _on_combo_completed(hits: int) -> void:
+	completed_combo_hits = hits
 	combo_done = true
 	print("VM02_C5_COMBO_SIGNAL=%d" % hits)
 
 func _finish() -> void:
 	set_physics_process(false)
+	metric_label.text = "combo=%d  hits=%d  hp=%.1f  buffered=%s  idle_gap=%s" % [completed_combo_hits,int(dummy.hit_count),float(dummy.health),str(second_buffered),str(idle_between_hits)]
 	var expected_damage := float(TechniqueCatalog.get_technique(&"ji_body_hook").damage) * 2.0
 	var damage := initial_health - float(dummy.health)
-	var ok := int(dummy.hit_count) == 2 and absf(damage-expected_damage) < 0.01 and not idle_between_hits and second_buffered
+	var ok := int(dummy.hit_count) == 2 and completed_combo_hits == 2 and absf(damage-expected_damage) < 0.01 and not idle_between_hits and second_buffered
 	print("VM02_C5_TWO_HIT_CHAIN=%s" % ("PASS" if int(dummy.hit_count)==2 else "BLOCKED"))
 	print("VM02_C5_BUFFER_WINDOW=%s" % ("PASS" if second_buffered else "BLOCKED"))
 	print("VM02_C5_NO_IDLE_GAP=%s" % ("PASS" if not idle_between_hits else "BLOCKED"))
+	print("VM02_C5_COMPLETED_COMBO_COUNT=%s hits=%d" % [("PASS" if completed_combo_hits == 2 else "BLOCKED"), completed_combo_hits])
 	print("VM02_C5_DAMAGE_APPLIED=%.2f" % damage)
 	print("VM02_C5_RUNTIME=%s" % ("PASS" if ok else "BLOCKED"))
 	if not ok:
