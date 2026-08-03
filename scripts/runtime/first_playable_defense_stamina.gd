@@ -169,6 +169,6 @@ func _draw() -> void:
 	if block_effect_remaining <= 0.0:
 		return
 	var alpha := clampf(block_effect_remaining / 0.18, 0.0, 1.0)
-	var center := player.global_position + Vector2(0.0, -44.0)
+	var center: Vector2 = player.global_position + Vector2(0.0, -44.0)
 	draw_arc(center, 38.0, -2.1, 2.1, 28, Color(0.45, 0.78, 1.0, 0.9 * alpha), 5.0)
 	draw_arc(center, 46.0, -2.0, 2.0, 28, Color(0.92, 0.84, 0.48, 0.55 * alpha), 2.0)
