@@ -22,6 +22,7 @@ var previous_player_damage_events := 0
 var previous_player_hit_events := 0
 var previous_player_x := 0.0
 var previous_rival_x := 0.0
+var normal_hit_wait_observed := false
 
 func _ready() -> void:
 	super._ready()
@@ -37,6 +38,15 @@ func _physics_process(delta: float) -> void:
 		return
 	_observe_and_apply_player_reaction()
 	_observe_and_apply_rival_reaction()
+
+func _drive_autoplay() -> void:
+	# C21 creates more distance than the inherited combat gates. After the first
+	# complete combo, give the AI one deterministic unblocked contact before the
+	# next player combo starts so C15's normal-damage contract remains exercised.
+	if combo_count >= 1 and unblocked_hits < 1:
+		normal_hit_wait_observed = true
+		return
+	super._drive_autoplay()
 
 func _observe_and_apply_player_reaction() -> void:
 	if player_damage_events <= previous_player_damage_events:
@@ -105,10 +115,12 @@ func _finish_gate() -> void:
 	if not rival_separation_observed: failures.append("rival separation missing")
 	if not technique_separation_observed: failures.append("technique separation contrast missing")
 	if not spatial_evidence_captured: failures.append("spatial reaction evidence missing")
+	if autoplay and not normal_hit_wait_observed: failures.append("inherited normal-hit wait was not exercised")
 	print("VM02_C21_SPATIAL_REACTION=%s" % ("PASS" if spatial_reaction_observed else "BLOCKED"))
 	print("VM02_C21_PLAYER_SEPARATION=%s" % ("PASS" if player_separation_observed else "BLOCKED"))
 	print("VM02_C21_RIVAL_SEPARATION=%s" % ("PASS" if rival_separation_observed else "BLOCKED"))
 	print("VM02_C21_TECHNIQUE_SEPARATION=%s" % ("PASS" if technique_separation_observed else "BLOCKED"))
+	print("VM02_C21_NORMAL_HIT_WAIT=%s" % ("PASS" if normal_hit_wait_observed else "BLOCKED"))
 	print("VM02_C21_SPATIAL_EVIDENCE_COVERAGE=%s" % ("PASS" if spatial_evidence_captured else "BLOCKED"))
 	print("VM02_C21_C20_CONTRACT=%s" % ("PASS" if riposte_visual_binding_observed and hud_cleanup_observed and riposte_visual_evidence_captured else "BLOCKED"))
 	print("VM02_C21_RUNTIME=%s" % ("PASS" if failures.is_empty() else "BLOCKED"))
