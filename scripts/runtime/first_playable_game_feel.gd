@@ -6,6 +6,7 @@ extends "res://scripts/runtime/first_playable_polish.gd"
 
 const C13_OUTPUT_SIZE := Vector2i(1920, 1080)
 const C13_OUTPUT_PATH := "res://artifacts/vm02-c13/first-playable-game-feel-1920x1080.png"
+const C13_IMPACT_OUTPUT_PATH := "res://artifacts/vm02-c13/impact-game-feel-1920x1080.png"
 const SHAKE_DURATION := 0.11
 const FLASH_DURATION := 0.085
 const HITSTOP_DURATION := 0.045
@@ -26,6 +27,8 @@ var impact_origin := Vector2.ZERO
 var impact_strength := 0.0
 var impact_age := 1.0
 var c13_contract_ready := false
+var impact_evidence_requested := false
+var impact_evidence_captured := false
 var base_camera_position := Vector2.ZERO
 var base_player_modulate := Color.WHITE
 var base_rival_modulate := Color.WHITE
@@ -84,14 +87,35 @@ func _trigger_rival_impact() -> void:
 	flash_remaining = FLASH_DURATION
 	hitstop_remaining = HITSTOP_DURATION
 	impact_origin = opponent.global_position + Vector2(0, -40)
-	impact_strength = 1.0 if String(player.current_technique_id) == "ji_body_hook" else 1.18
+	var technique := String(player.current_technique_id)
+	impact_strength = 1.0 if technique == "ji_body_hook" else 1.18
 	impact_age = 0.0
 	rival_visual.modulate = Color(1.0, 0.78, 0.38, 1.0)
-	print("VM02_C13_RIVAL_HIT_FLASH=PASS count=%d technique=%s" % [rival_flash_events, String(player.current_technique_id)])
+	print("VM02_C13_RIVAL_HIT_FLASH=PASS count=%d technique=%s" % [rival_flash_events, technique])
 	print("VM02_C13_HITSTOP=PASS count=%d duration=%.3f" % [hitstop_events, HITSTOP_DURATION])
 	print("VM02_C13_SCREEN_SHAKE=PASS count=%d" % shake_events)
 	print("VM02_C13_IMPACT_BURST=PASS count=%d target=rival strength=%.2f" % [impact_burst_events, impact_strength])
 	queue_redraw()
+	if capture and technique == "ji_sweep" and not impact_evidence_requested:
+		impact_evidence_requested = true
+		call_deferred("_capture_impact_evidence")
+
+func _capture_impact_evidence() -> void:
+	# Wait one rendered frame so the flash, radial burst and camera shake are visible.
+	await get_tree().process_frame
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://artifacts/vm02-c13"))
+	var image := get_viewport().get_texture().get_image()
+	if image == null or image.is_empty():
+		print("VM02_C13_IMPACT_EVIDENCE=BLOCKED empty_image")
+		return
+	if image.get_size() != C13_OUTPUT_SIZE:
+		image.resize(C13_OUTPUT_SIZE.x, C13_OUTPUT_SIZE.y, Image.INTERPOLATE_LANCZOS)
+	if image.save_png(ProjectSettings.globalize_path(C13_IMPACT_OUTPUT_PATH)) != OK:
+		print("VM02_C13_IMPACT_EVIDENCE=BLOCKED save_failed")
+		return
+	impact_evidence_captured = true
+	print("VM02_C13_IMPACT_EVIDENCE=PASS")
+	print("VM02_C13_IMPACT_OUTPUT=%s" % C13_IMPACT_OUTPUT_PATH)
 
 func _update_game_feel(delta: float) -> void:
 	if shake_remaining > 0.0:
@@ -125,6 +149,12 @@ func _finish_gate() -> void:
 			await get_tree().physics_frame
 			if combo_count >= 2:
 				break
+	# Also allow the asynchronous impact-evidence capture to finish.
+	if impact_evidence_requested and not impact_evidence_captured:
+		for _i in range(20):
+			await get_tree().process_frame
+			if impact_evidence_captured:
+				break
 	var failures: Array[String] = []
 	if not c13_contract_ready: failures.append("game feel layer not ready")
 	if player_flash_events < 1: failures.append("player hit flash missing")
@@ -134,12 +164,14 @@ func _finish_gate() -> void:
 	if impact_burst_events < 5: failures.append("impact bursts missing")
 	if round_pulse_events < 1: failures.append("round presentation missing")
 	if victory_pulse_events < 1: failures.append("victory presentation missing")
+	if not impact_evidence_captured: failures.append("impact evidence missing")
 	if player_hit_events < 4 or combo_count < 2: failures.append("C12 combat contract regressed")
 	if not victory_observed or float(opponent.health) > 0.0: failures.append("win condition regressed")
 	print("VM02_C13_HIT_FLASH=%s player=%d rival=%d" % [("PASS" if player_flash_events >= 1 and rival_flash_events >= 4 else "BLOCKED"), player_flash_events, rival_flash_events])
 	print("VM02_C13_HITSTOP_COVERAGE=%s count=%d" % [("PASS" if hitstop_events >= 5 else "BLOCKED"), hitstop_events])
 	print("VM02_C13_SCREEN_SHAKE_COVERAGE=%s count=%d" % [("PASS" if shake_events >= 5 else "BLOCKED"), shake_events])
 	print("VM02_C13_PARTICLE_BURST_COVERAGE=%s count=%d" % [("PASS" if impact_burst_events >= 5 else "BLOCKED"), impact_burst_events])
+	print("VM02_C13_IMPACT_EVIDENCE_COVERAGE=%s" % ("PASS" if impact_evidence_captured else "BLOCKED"))
 	print("VM02_C13_ROUND_PRESENTATION=%s" % ("PASS" if round_pulse_events >= 1 and victory_pulse_events >= 1 else "BLOCKED"))
 	print("VM02_C13_C12_COMBAT_CONTRACT=%s" % ("PASS" if player_hit_events >= 4 and combo_count >= 2 and victory_observed else "BLOCKED"))
 	print("VM02_C13_RUNTIME=%s" % ("PASS" if failures.is_empty() else "BLOCKED"))
