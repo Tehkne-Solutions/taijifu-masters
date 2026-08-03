@@ -27,7 +27,6 @@ $bootstrapStdout = Join-Path $logDir "bootstrap.stdout.log"
 $bootstrapStderr = Join-Path $logDir "bootstrap.stderr.log"
 Remove-Item $stdout,$stderr,$bootstrapStdout,$bootstrapStderr -Force -ErrorAction SilentlyContinue
 
-# Warm the Godot import/cache without allowing benign stderr warnings to become PowerShell NativeCommandError.
 $bootstrap = Start-Process -FilePath $godotExe -ArgumentList @("--path", $RepoRoot, "--editor", "--headless", "--quit-after", "3") -WorkingDirectory $RepoRoot -Wait -PassThru -RedirectStandardOutput $bootstrapStdout -RedirectStandardError $bootstrapStderr
 if ($bootstrap.ExitCode -ne 0) {
   Write-Host "VM02_C4_GODOT_BOOTSTRAP=BLOCKED exit=$($bootstrap.ExitCode)"
@@ -37,7 +36,15 @@ if ($bootstrap.ExitCode -ne 0) {
 }
 Write-Host "VM02_C4_GODOT_BOOTSTRAP=PASS"
 
-$run = Start-Process -FilePath $godotExe -ArgumentList @("--path", $RepoRoot, "--headless", "res://scenes/runtime/lian_wu_hit_reaction_gate.tscn", "--", "--capture-and-quit") -WorkingDirectory $RepoRoot -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+$run = Start-Process -FilePath $godotExe -ArgumentList @("--path", $RepoRoot, "--headless", "res://scenes/runtime/lian_wu_hit_reaction_gate.tscn", "--", "--capture-and-quit") -WorkingDirectory $RepoRoot -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+$timeoutSeconds = 15
+if (-not $run.WaitForExit($timeoutSeconds * 1000)) {
+  try { $run.Kill() } catch {}
+  Write-Host "VM02_C4_PROCESS_TIMEOUT=BLOCKED seconds=$timeoutSeconds"
+  if (Test-Path $stdout) { Get-Content $stdout }
+  if (Test-Path $stderr) { Get-Content $stderr }
+  throw "VM02_C4_HIT_REACTION_GATE=BLOCKED process_timeout"
+}
 if (Test-Path $stdout) { Get-Content $stdout }
 if (Test-Path $stderr) { Get-Content $stderr }
 if ($run.ExitCode -ne 0) { throw "VM02_C4_HIT_REACTION_GATE=BLOCKED godot_exit=$($run.ExitCode)" }
