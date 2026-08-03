@@ -5,6 +5,7 @@ extends Node2D
 
 const OUTPUT_SIZE := Vector2i(1920, 1080)
 const OUTPUT_PATH := "res://artifacts/vm02-c4/lian-wu-hit-reaction-1920x1080.png"
+const WATCHDOG_SECONDS := 5.0
 
 @onready var player: Node = $Player
 @onready var attack_area: Area2D = $Player/AttackArea
@@ -33,6 +34,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _finished: return
 	_elapsed += delta
+	if _elapsed >= WATCHDOG_SECONDS:
+		_watchdog_abort()
+		return
 	if not _attack_requested and _elapsed >= 0.55 and player.attack_phase == "idle":
 		_attack_requested = true
 		player.set_test_attack_edge(true)
@@ -58,6 +62,14 @@ func _on_attack_completed() -> void:
 
 func _on_reaction_phase_changed(phase: String) -> void:
 	if phase not in _reaction_phases: _reaction_phases.append(phase)
+
+func _watchdog_abort() -> void:
+	_finished = true
+	print("VM02_C4_WATCHDOG=BLOCKED elapsed=%.2f attack=%s attack_completed=%s hit=%s reaction=%s hits=%d reactions=%d knockbacks=%d recoveries=%d dummy_x=%.2f" % [
+		_elapsed, String(player.attack_phase), str(_attack_completed), str(_hit_registered), String(dummy.reaction_phase), int(dummy.hit_count), int(dummy.reaction_count), int(dummy.knockback_count), int(dummy.recovery_count), float(dummy.global_position.x)
+	])
+	push_error("C4 runtime watchdog expired")
+	get_tree().quit(9)
 
 func _finish_gate() -> void:
 	_finished = true
