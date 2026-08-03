@@ -85,8 +85,8 @@ position = Vector2(880, 550)
 script = ExtResource("3_ai")
 max_health = 29.0
 approach_speed = 88.0
-preferred_distance = 76.0
-disengage_distance = 48.0
+preferred_distance = 54.0
+disengage_distance = 38.0
 draw_debug_body = false
 [node name="VisualRival" type="Sprite2D" parent="Opponent"]
 scale = Vector2(0.167, 0.167)
