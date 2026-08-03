@@ -1,7 +1,7 @@
 class_name OpponentAIFoundation
 extends Node2D
 
-## VM02-C8 — deterministic opponent AI foundation.
+## VM02-C8/C10 — deterministic opponent AI foundation with optional visual rival binding.
 ## Tehkné Solutions
 
 signal ai_state_changed(state: String)
@@ -16,6 +16,7 @@ const TECHNIQUE_ID := &"ji_shove"
 @export var disengage_distance := 46.0
 @export var max_health := 100.0
 @export var hitstun_seconds := 0.16
+@export var draw_debug_body := true
 
 var target: Node2D
 var health := 100.0
@@ -31,11 +32,13 @@ var _hitstun_elapsed := 0.0
 
 @onready var attack_area: Area2D = $AttackArea
 @onready var attack_shape: CollisionShape2D = $AttackArea/CollisionShape2D
+@onready var visual_rival: Node = get_node_or_null("VisualRival")
 
 func _ready() -> void:
 	health = max_health
 	_technique = TechniqueCatalog.get_technique(TECHNIQUE_ID)
 	attack_shape.disabled = true
+	_sync_visual_state()
 	queue_redraw()
 
 func set_target(value: Node2D) -> void:
@@ -46,9 +49,11 @@ func _physics_process(delta: float) -> void:
 		_hitstun_elapsed += delta
 		if _hitstun_elapsed >= hitstun_seconds:
 			_set_state("idle")
+		_sync_visual_facing()
 		return
 	if attack_phase != "idle":
 		_advance_attack(delta)
+		_sync_visual_facing()
 		return
 	if target == null:
 		_set_state("idle")
@@ -65,6 +70,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_set_state("hold")
 		_begin_attack()
+	_sync_visual_facing()
 	queue_redraw()
 
 func _begin_attack() -> void:
@@ -116,9 +122,24 @@ func receive_combat_hit(damage: float) -> void:
 func _set_state(next_state: String) -> void:
 	if ai_state == next_state: return
 	ai_state = next_state
+	_sync_visual_state()
 	ai_state_changed.emit(ai_state)
 	print("VM02_C8_AI_STATE=%s" % ai_state)
 	queue_redraw()
+
+func _sync_visual_state() -> void:
+	if visual_rival == null or not visual_rival.has_method("set_visual_state"): return
+	var state_name := "idle"
+	match ai_state:
+		"approach": state_name = "approach"
+		"attack": state_name = "attack"
+		"hitstun": state_name = "hitstun"
+		_: state_name = "idle"
+	visual_rival.call("set_visual_state", state_name)
+
+func _sync_visual_facing() -> void:
+	if visual_rival == null: return
+	visual_rival.set("flip_h", facing < 0.0)
 
 func _set_hitbox(enabled: bool) -> void:
 	attack_shape.set_deferred("disabled", not enabled)
@@ -129,11 +150,12 @@ func _configure_hitbox() -> void:
 	attack_area.position = Vector2(_technique.hitbox_offset.x * facing, _technique.hitbox_offset.y)
 
 func _draw() -> void:
-	var c := Color(0.55,0.60,0.68,1.0)
-	if ai_state == "approach": c = Color(0.32,0.55,0.78,1.0)
-	elif ai_state == "attack": c = Color(0.82,0.34,0.25,1.0)
-	elif ai_state == "hitstun": c = Color(0.95,0.68,0.24,1.0)
-	draw_rect(Rect2(-22,-72,44,72),c)
-	draw_circle(Vector2(0,-88),16.0,c.lightened(0.08))
+	if draw_debug_body:
+		var c := Color(0.55,0.60,0.68,1.0)
+		if ai_state == "approach": c = Color(0.32,0.55,0.78,1.0)
+		elif ai_state == "attack": c = Color(0.82,0.34,0.25,1.0)
+		elif ai_state == "hitstun": c = Color(0.95,0.68,0.24,1.0)
+		draw_rect(Rect2(-22,-72,44,72),c)
+		draw_circle(Vector2(0,-88),16.0,c.lightened(0.08))
 	draw_rect(Rect2(-34,-116,68,6),Color(0.08,0.09,0.11,0.95))
 	draw_rect(Rect2(-34,-116,68.0*(health/maxf(1.0,max_health)),6),Color(0.88,0.24,0.22,0.95))
