@@ -23,10 +23,24 @@ $logDir = Join-Path $RepoRoot ".godot\vm02-c4"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $stdout = Join-Path $logDir "hit-reaction.stdout.log"
 $stderr = Join-Path $logDir "hit-reaction.stderr.log"
-& $godotExe --path $RepoRoot --editor --headless --quit-after 3 2>&1 | Out-Null
-& $godotExe --path $RepoRoot --headless "res://scenes/runtime/lian_wu_hit_reaction_gate.tscn" -- --capture-and-quit 1>$stdout 2>$stderr
-Get-Content $stdout
+$bootstrapStdout = Join-Path $logDir "bootstrap.stdout.log"
+$bootstrapStderr = Join-Path $logDir "bootstrap.stderr.log"
+Remove-Item $stdout,$stderr,$bootstrapStdout,$bootstrapStderr -Force -ErrorAction SilentlyContinue
+
+# Warm the Godot import/cache without allowing benign stderr warnings to become PowerShell NativeCommandError.
+$bootstrap = Start-Process -FilePath $godotExe -ArgumentList @("--path", $RepoRoot, "--editor", "--headless", "--quit-after", "3") -WorkingDirectory $RepoRoot -Wait -PassThru -RedirectStandardOutput $bootstrapStdout -RedirectStandardError $bootstrapStderr
+if ($bootstrap.ExitCode -ne 0) {
+  Write-Host "VM02_C4_GODOT_BOOTSTRAP=BLOCKED exit=$($bootstrap.ExitCode)"
+  if (Test-Path $bootstrapStdout) { Get-Content $bootstrapStdout }
+  if (Test-Path $bootstrapStderr) { Get-Content $bootstrapStderr }
+  exit 3
+}
+Write-Host "VM02_C4_GODOT_BOOTSTRAP=PASS"
+
+$run = Start-Process -FilePath $godotExe -ArgumentList @("--path", $RepoRoot, "--headless", "res://scenes/runtime/lian_wu_hit_reaction_gate.tscn", "--", "--capture-and-quit") -WorkingDirectory $RepoRoot -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+if (Test-Path $stdout) { Get-Content $stdout }
 if (Test-Path $stderr) { Get-Content $stderr }
+if ($run.ExitCode -ne 0) { throw "VM02_C4_HIT_REACTION_GATE=BLOCKED godot_exit=$($run.ExitCode)" }
 
 $markers = @("VM02_C4_HIT_REACTION=PASS","VM02_C4_HITSTUN=PASS","VM02_C4_KNOCKBACK=PASS","VM02_C4_RECOVERY=PASS","VM02_C4_RETURN_IDLE=PASS","VM02_C4_RUNTIME=PASS","VM02_C4_CAPTURE=PASS")
 $text = (Get-Content $stdout -Raw) + "`n" + (Get-Content $stderr -Raw)
