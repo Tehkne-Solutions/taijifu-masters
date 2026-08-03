@@ -3,28 +3,46 @@ function Write-TehkneGateReport {
         [Parameter(Mandatory=$true)][string]$Gate,
         [Parameter(Mandatory=$true)][ValidateSet('PASS','BLOCKED')][string]$Status,
         [string[]]$Checks = @(),
+        [System.Collections.IDictionary]$Values = $null,
         [string]$Artifact = '',
         [string]$Sha256 = '',
         [string]$RepoRoot = (Get-Location).Path,
+        [string]$Branch = '',
+        [string]$Commit = '',
         [switch]$CopyToClipboard
     )
 
-    $branch = ''
-    $commit = ''
-    try { $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null).Trim() } catch {}
-    try { $commit = (& git -C $RepoRoot rev-parse --short=12 HEAD 2>$null).Trim() } catch {}
+    $resolvedBranch = $Branch
+    $resolvedCommit = $Commit
+    if ([string]::IsNullOrWhiteSpace($resolvedBranch)) {
+        try { $resolvedBranch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null).Trim() } catch {}
+    }
+    if ([string]::IsNullOrWhiteSpace($resolvedCommit)) {
+        try { $resolvedCommit = (& git -C $RepoRoot rev-parse --short=12 HEAD 2>$null).Trim() } catch {}
+    }
 
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add('COPY_REPORT_BEGIN')
     $lines.Add("GATE=$Gate")
     $lines.Add("STATUS=$Status")
-    if ($branch) { $lines.Add("BRANCH=$branch") }
-    if ($commit) { $lines.Add("COMMIT=$commit") }
+    if ($resolvedBranch) { $lines.Add("BRANCH=$resolvedBranch") }
+    if ($resolvedCommit) { $lines.Add("COMMIT=$resolvedCommit") }
+
     foreach ($check in $Checks) {
         if (-not [string]::IsNullOrWhiteSpace($check)) { $lines.Add($check.Trim()) }
     }
-    if ($Artifact) { $lines.Add("ARTIFACT=$Artifact") }
-    if ($Sha256) { $lines.Add("SHA256=$Sha256") }
+
+    if ($Values -ne $null) {
+        foreach ($key in $Values.Keys) {
+            $value = $Values[$key]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+                $lines.Add("$key=$value")
+            }
+        }
+    }
+
+    if ($Artifact -and ($Values -eq $null -or -not $Values.Contains('ARTIFACT'))) { $lines.Add("ARTIFACT=$Artifact") }
+    if ($Sha256 -and ($Values -eq $null -or -not $Values.Contains('SHA256'))) { $lines.Add("SHA256=$Sha256") }
     $lines.Add('COPY_REPORT_END')
 
     $report = $lines -join [Environment]::NewLine
