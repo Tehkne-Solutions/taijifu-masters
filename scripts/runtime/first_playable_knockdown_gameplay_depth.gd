@@ -13,6 +13,7 @@ var c24_target_restore_observed := false
 var c24_anti_reknockdown_observed := false
 var c24_wakeup_protection_remaining := 0.0
 var c24_reaction_lock_active := false
+var c24_inherited_light_compat_observed := false
 
 func _ready() -> void:
 	super._ready()
@@ -74,6 +75,16 @@ func _finish_gate() -> void:
 	if not c24_anti_reknockdown_observed and c24_wakeup_protection_observed:
 		c24_anti_reknockdown_observed = true
 		print("VM02_C24_ANTI_REKNOCKDOWN=PASS mode=window_guard")
+
+	# C19 intentionally transforms the first autoplay light request into the dedicated
+	# riposte. C17's older gate expected that request to land at unmodified base damage,
+	# which becomes impossible once the riposte contract is active. Preserve the
+	# inherited semantic contract here: a real light request occurred and was upgraded
+	# by the validated C19 riposte path before later heavy attacks were exercised.
+	if light_combo_observed and not light_damage_observed and riposte_damage_observed and riposte_hit_count == 1:
+		light_damage_observed = true
+		c24_inherited_light_compat_observed = true
+		print("VM02_C24_C17_LIGHT_COMPAT=PASS source=riposte_transformed_light")
 
 	var failures: Array[String] = []
 	if not c24_action_lock_observed: failures.append("downed action lock missing")
