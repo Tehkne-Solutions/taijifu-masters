@@ -54,9 +54,17 @@ if (-not $run.WaitForExit($timeoutSeconds * 1000)) {
   if (Test-Path $stderr) { Get-Content $stderr }
   throw "VM02_C4_HIT_REACTION_GATE=BLOCKED process_timeout"
 }
+
+# PowerShell/.NET can leave ExitCode unmaterialized after the timed WaitForExit overload.
+# Complete the wait and refresh the process object before reading ExitCode.
+$run.WaitForExit()
+$run.Refresh()
+$exitCode = $run.ExitCode
+Write-Host "VM02_C4_GODOT_RUNTIME_EXIT=$exitCode"
+
 if (Test-Path $stdout) { Get-Content $stdout }
 if (Test-Path $stderr) { Get-Content $stderr }
-if ($run.ExitCode -ne 0) { throw "VM02_C4_HIT_REACTION_GATE=BLOCKED godot_exit=$($run.ExitCode)" }
+if ($exitCode -ne 0) { throw "VM02_C4_HIT_REACTION_GATE=BLOCKED godot_exit=$exitCode" }
 
 $markers = @(
   "VM02_C4_HIT_REACTION=PASS",
