@@ -2,6 +2,8 @@ param([string]$RepoRoot = (Resolve-Path "$PSScriptRoot\.."))
 $ErrorActionPreference = "Stop"
 Set-Location $RepoRoot
 
+. (Join-Path $RepoRoot "tools\lib\Write-TehkneGateReport.ps1")
+
 $required = @(
   "scripts/runtime/opponent_ai_foundation.gd",
   "scripts/runtime/opponent_visual_sparring_rival.gd",
@@ -56,7 +58,18 @@ if ($text -match "SCRIPT ERROR|Parse Error|Failed to load script") { throw "VM02
 
 $output = Join-Path $RepoRoot "artifacts\vm02-c10\visual-rival-ai-integration-1920x1080.png"
 if (-not (Test-Path $output)) { throw "VM02_C10_VISUAL_RIVAL_AI_GATE=BLOCKED missing_capture" }
+$sha256 = (Get-FileHash $output -Algorithm SHA256).Hash.ToLower()
 Write-Host "VM02_C10_VISUAL_RIVAL_AI_GATE=PASS"
 Write-Host "VM02_C10_VISUAL_RIVAL_AI_GATE_OUTPUT=$output"
-Write-Host "VM02_C10_VISUAL_RIVAL_AI_GATE_SHA256=$((Get-FileHash $output -Algorithm SHA256).Hash.ToLower())"
+Write-Host "VM02_C10_VISUAL_RIVAL_AI_GATE_SHA256=$sha256"
 Write-Host "VM02_C10_REVIEW=PENDING_VISUAL_REVIEW"
+
+$compactChecks = @(
+  "VISUAL_BOUND_TO_AI=PASS",
+  "GEOMETRIC_PLACEHOLDER=OFF",
+  "VISUAL_STATE_COVERAGE=PASS",
+  "AI_COMBAT_CONTRACT=PASS",
+  "RUNTIME=PASS",
+  "CAPTURE=PASS"
+)
+Write-TehkneGateReport -Gate "VM02-C10-VISUAL-RIVAL-AI" -Status PASS -Checks $compactChecks -Artifact $output -Sha256 $sha256 -RepoRoot $RepoRoot -CopyToClipboard | Out-Null
