@@ -1,0 +1,2 @@
+Tehkné Solutions
+Use RUN-CURRENT-VM02-GATE.ps1 as the default local validation entrypoint for vm02-cXX branches.
