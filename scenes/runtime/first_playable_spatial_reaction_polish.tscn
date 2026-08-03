@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/runtime/first_playable_riposte_visual_polish.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/runtime/first_playable_spatial_reaction_polish.gd" id="2_level"]
+
+[node name="FirstPlayableSpatialReactionPolish" instance=ExtResource("1_base")]
+script = ExtResource("2_level")
