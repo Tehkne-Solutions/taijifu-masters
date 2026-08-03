@@ -25,6 +25,7 @@ var recovery_observed := false
 var recovery_invulnerability_observed := false
 var reaction_evidence_captured := false
 var reaction_cycles_completed := 0
+var c22_normal_damage_gate_released := false
 
 func _ready() -> void:
 	super._ready()
@@ -36,6 +37,21 @@ func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_observe_c22_hit_reaction_trigger()
 	_update_c22_reaction(delta)
+
+## C22 adds longer interruption windows to the rival. Without a deterministic
+## pre-offense hold, the inherited C15 normal-damage path can be starved by
+## parry -> guard-break -> immediate player offense. Keep autoplay defensive
+## until one genuine unblocked AI hit has occurred, then hand control back to
+## the established C11+ autoplay combo driver.
+func _drive_autoplay() -> void:
+	if unblocked_hits < 1:
+		if not c22_normal_damage_gate_released and blocked_hits >= 1:
+			print("VM02_C22_WAIT_NORMAL_DAMAGE=PASS blocked_hits=%d" % blocked_hits)
+		return
+	if not c22_normal_damage_gate_released:
+		c22_normal_damage_gate_released = true
+		print("VM02_C22_NORMAL_DAMAGE_HANDOFF=PASS hits=%d" % unblocked_hits)
+	super._drive_autoplay()
 
 func _observe_c22_hit_reaction_trigger() -> void:
 	if player_hit_events <= c22_previous_player_hit_events:
