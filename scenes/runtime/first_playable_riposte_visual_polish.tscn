@@ -1,0 +1,11 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/runtime/first_playable_dedicated_riposte.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/runtime/first_playable_riposte_visual_polish.gd" id="2_level"]
+[ext_resource type="Script" path="res://scripts/runtime/lian_wu_riposte_visual_controller.gd" id="3_player"]
+
+[node name="FirstPlayableRiposteVisualPolish" instance=ExtResource("1_base")]
+script = ExtResource("2_level")
+
+[node name="Player" parent="." index="1"]
+script = ExtResource("3_player")
