@@ -1,0 +1,33 @@
+{
+  "schema": "tehkne/taijifu-v2-arena-intake/v1",
+  "signature": "Tehkné Solutions",
+  "arena_id": "mountain_dojo_night",
+  "display_name": "Mountain Dojo Night",
+  "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
+  "source_root": "packs/stages/mountain_dojo_night/v1",
+  "source_manifest": "packs/stages/mountain_dojo_night/v1/manifest.json",
+  "destination_root": "assets/pack_03_stages/mountain_dojo_night",
+  "required_files": [
+    "background.png",
+    "midground.png",
+    "foreground.png",
+    "collision.json",
+    "lighting.json",
+    "manifest.json"
+  ],
+  "runtime_contract": {
+    "viewport": "1920x1080",
+    "parallax_layers": 3,
+    "ground_y": 820,
+    "camera_bounds_required": true,
+    "transparent_foreground_required": true,
+    "no_visible_grid": true,
+    "no_procedural_placeholder": true
+  },
+  "import_policy": {
+    "auto_clone_assets_repo": true,
+    "auto_fast_forward_assets_repo": true,
+    "auto_import_when_complete": true,
+    "atomic_replace": true
+  }
+}
