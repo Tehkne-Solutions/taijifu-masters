@@ -1,29 +1,29 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C30-V2-ARENA-INTAKE-BRIDGE",
+  "updated_by_gate": "VM02-C34-V2-ARENA-RUNTIME-BINDING",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 52,
+    "progress_percent": 53,
     "runtime_combat_core": 100,
     "round_match_loop": 100,
     "canonical_player": 70,
     "canonical_second_fighter": 20,
-    "canonical_arena": 30,
+    "canonical_arena": 40,
     "vfx_presentation": 55,
     "audio": 0,
     "playtest_packaging": 20
   },
   "project": {
-    "progress_percent": 41
+    "progress_percent": 42
   },
   "next_priority": [
+    "materialize and approve the three Mountain Dojo Night PNG layers; C30 imports automatically and C34 activates canonical parallax runtime",
     "materialize and approve independent Training Rival canonical art pack; C28 imports automatically when 44/44 frames are valid",
-    "materialize canonical Mountain Dojo Night arena pack; C30 imports automatically when all required stage files validate",
     "complete Lian Wu canonical animation coverage",
     "integrate combat SFX and music after visual content stabilizes",
     "package repeatable V.2 playtest build"
