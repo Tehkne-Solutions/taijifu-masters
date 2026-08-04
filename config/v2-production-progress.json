@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C43-V2-INTERACTIVE-PLAYTEST-HANDOFF",
+  "updated_by_gate": "VM02-C45-V2-PRESENTATION-CLEANUP",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 66,
+    "progress_percent": 71,
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
@@ -16,14 +16,16 @@
     "canonical_player": 70,
     "canonical_second_fighter": 20,
     "canonical_arena": 100,
-    "vfx_presentation": 55,
+    "canonical_arena_export_runtime": 100,
+    "vfx_presentation": 68,
     "audio": 0,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
-    "interactive_playtest_handoff": 100
+    "interactive_playtest_handoff": 100,
+    "presentation_cleanup": 100
   },
   "project": {
-    "progress_percent": 49
+    "progress_percent": 52
   },
   "blocked_art_dependencies": [
     "training_rival_master",
@@ -31,10 +33,10 @@
     "remaining_lian_wu_canonical_animation_coverage"
   ],
   "next_priority": [
-    "run the packaged Windows build interactively through the C43 one-click launcher and review the real gameplay experience",
-    "capture playtest findings for controls, combat, AI, camera, HUD, canonical arena and visual regressions",
-    "fix gameplay/runtime issues before resuming non-blocking art production",
-    "resume Training Rival P01 only from a clean canonical master through C39; never from a contact sheet",
-    "complete Lian Wu canonical animation coverage and integrate combat SFX/music after interactive stability"
+    "run the fresh C45 Windows build interactively and confirm Mountain Dojo Night dominates the actual fight presentation",
+    "confirm legacy colored platforms, shrines and route beacons no longer paint over canonical arena art",
+    "verify combat feedback is readable with at most two transient popups and compact combo counters",
+    "perform HUD compacting/camera polish only from fresh playtest evidence",
+    "resume Training Rival P01 only from a clean canonical master after the exported presentation is stable"
   ]
 }
