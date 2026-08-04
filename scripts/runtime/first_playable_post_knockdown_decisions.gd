@@ -55,9 +55,16 @@ func _update_c22_reaction(delta: float) -> void:
 
 func _finish_gate() -> void:
 	for _i in range(180):
-		if c25_neutral_wakeup_observed and c25_backstep_wakeup_observed and c25_defensive_reset_observed and c25_defensive_target_restore_observed:
+		if c25_neutral_wakeup_observed and c25_backstep_wakeup_observed and c25_defensive_reset_observed and c25_defensive_target_restore_observed and c24_wakeup_protection_remaining <= 0.0:
 			break
 		await get_tree().physics_frame
+
+	# C24 finalizes its anti re-knockdown semantic inside its own _finish_gate().
+	# C25 must validate the inherited contract before delegating to super, so mirror
+	# that finalized semantic here once the wake-up protection window has completed.
+	if not c24_anti_reknockdown_observed and c24_wakeup_protection_observed and c24_wakeup_protection_remaining <= 0.0:
+		c24_anti_reknockdown_observed = true
+		print("VM02_C25_C24_ANTI_REKNOCKDOWN_HANDOFF=PASS mode=window_guard")
 
 	var failures: Array[String] = []
 	if not c25_neutral_wakeup_observed: failures.append("neutral wake-up missing")
@@ -66,10 +73,13 @@ func _finish_gate() -> void:
 	if not c25_defensive_target_restore_observed: failures.append("AI target restore after defensive reset missing")
 	if not c24_action_lock_observed: failures.append("C24 action lock missing")
 	if not c24_wakeup_protection_observed: failures.append("C24 wake-up protection missing")
+	if not c24_target_restore_observed: failures.append("C24 AI target restore missing")
+	if not c24_anti_reknockdown_observed: failures.append("C24 anti re-knockdown guard missing")
 
+	var c24_contract_ok := c24_action_lock_observed and c24_wakeup_protection_observed and c24_target_restore_observed and c24_anti_reknockdown_observed
 	print("VM02_C25_WAKEUP_VARIETY_CONTRACT=%s" % ("PASS" if c25_neutral_wakeup_observed and c25_backstep_wakeup_observed else "BLOCKED"))
 	print("VM02_C25_AI_DEFENSIVE_RESET_CONTRACT=%s" % ("PASS" if c25_defensive_reset_observed and c25_defensive_target_restore_observed else "BLOCKED"))
-	print("VM02_C25_C24_CONTRACT=%s" % ("PASS" if c24_action_lock_observed and c24_wakeup_protection_observed and c24_target_restore_observed and c24_anti_reknockdown_observed else "BLOCKED"))
+	print("VM02_C25_C24_CONTRACT=%s" % ("PASS" if c24_contract_ok else "BLOCKED"))
 	print("VM02_C25_RUNTIME=%s" % ("PASS" if failures.is_empty() else "BLOCKED"))
 	for failure in failures:
 		push_error(failure)
