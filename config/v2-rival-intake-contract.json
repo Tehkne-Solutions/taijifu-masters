@@ -1,0 +1,48 @@
+{
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "gate": "VM02-C28-V2-RIVAL-INTAKE-BRIDGE",
+  "character_id": "training_rival",
+  "display_name": "Sparring Rival",
+  "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
+  "source_lot": "production/first_playable/training_rival/first_playable_lot_01",
+  "source_manifest": "production/first_playable/training_rival/first_playable_lot_01/work-manifest.json",
+  "destination_root": "assets/pack_02_characters/training_rival/first_playable_lot_01",
+  "runtime_identity": {
+    "independent_from_lian_wu": true,
+    "native_facing": "left",
+    "pivot": "bottom_center",
+    "style": "comic_manga_2_5d",
+    "palette": ["charcoal", "ember", "bone", "muted_gold"],
+    "silhouette": "compact_guarded_fighter",
+    "weapon": "wooden_training_saber",
+    "weapon_count": 1,
+    "forbidden": [
+      "mirrored_lian_wu_proxy",
+      "second_weapon",
+      "purple_tech_glow",
+      "embedded_background",
+      "embedded_text"
+    ]
+  },
+  "required_animations": {
+    "idle": 6,
+    "run": 8,
+    "jump_start": 3,
+    "airborne": 2,
+    "fall": 2,
+    "attack_light": 6,
+    "guard": 3,
+    "dodge": 5,
+    "hit": 3,
+    "ko": 6
+  },
+  "required_total_frames": 44,
+  "import_policy": {
+    "auto_clone_assets_repo": true,
+    "auto_fast_forward_assets_repo": true,
+    "auto_import_when_complete": true,
+    "overwrite_destination_only_after_full_validation": true,
+    "preserve_gameplay_contract": true
+  }
+}
