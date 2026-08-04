@@ -10,7 +10,8 @@ $required = @(
   "scripts\vertical_slice\first_playable_environment_art.gd",
   "scripts\vertical_slice\canonical_arena_parallax.gd",
   "tools\RUN-VM02-C38-TRAINING-RIVAL-P01-INTAKE-GATE.ps1",
-  "tools\RUN-VM02-C39-TRAINING-RIVAL-P01-MATERIALIZER-GATE.ps1",
+  "tools\RUN-VM02-C39-TRAINING-RIVAL-P01-MATERIALIZER.ps1",
+  "tools\materialize_training_rival_p01.py",
   "config\v2-production-progress.json"
 )
 
@@ -43,8 +44,8 @@ if (Test-Path $rivalMaster) {
   Write-Host "VM02_C40_TRAINING_RIVAL_MASTER=PENDING_NON_BLOCKING"
 }
 
-# C40 intentionally allows the existing rival proxy so runtime packaging can advance.
-# Canonical art promotion remains governed by C39 -> C38 -> C28 -> C36.
+# Runtime can continue with an explicit proxy while canonical art is isolated.
+# Canonical promotion remains C39 -> C38 -> C28 -> C36 and never becomes implicit.
 Write-Host "VM02_C40_PROXY_POLICY=PASS explicit_noncanonical_runtime_placeholder"
 Write-Host "VM02_C40_RIVAL_ART_PIPELINE=PASS isolated_dependency"
 Write-Host "VM02_C40_RUNTIME_CONSOLIDATION=PASS"
