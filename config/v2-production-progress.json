@@ -1,31 +1,38 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C34-V2-ARENA-RUNTIME-BINDING",
+  "updated_by_gate": "VM02-C40-V2-RUNTIME-CONSOLIDATION",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 53,
+    "progress_percent": 57,
+    "runtime_ready": true,
+    "art_complete": false,
     "runtime_combat_core": 100,
     "round_match_loop": 100,
     "canonical_player": 70,
     "canonical_second_fighter": 20,
-    "canonical_arena": 40,
+    "canonical_arena": 100,
     "vfx_presentation": 55,
     "audio": 0,
-    "playtest_packaging": 20
+    "playtest_packaging": 30
   },
   "project": {
-    "progress_percent": 42
+    "progress_percent": 44
   },
+  "blocked_art_dependencies": [
+    "training_rival_master",
+    "training_rival_p01_to_p05",
+    "remaining_lian_wu_canonical_animation_coverage"
+  ],
   "next_priority": [
-    "materialize and approve the three Mountain Dojo Night PNG layers; C30 imports automatically and C34 activates canonical parallax runtime",
-    "materialize and approve independent Training Rival canonical art pack; C28 imports automatically when 44/44 frames are valid",
+    "consolidate the playable runtime flow with canonical Mountain Dojo Night active and explicit proxy allowance for the Training Rival",
+    "package a repeatable V.2 runtime playtest while keeping V2_ART_COMPLETE=false",
+    "resume Training Rival P01 only from a clean canonical master through C39; never from a contact sheet",
     "complete Lian Wu canonical animation coverage",
-    "integrate combat SFX and music after visual content stabilizes",
-    "package repeatable V.2 playtest build"
+    "integrate combat SFX and music after the runtime consolidation is stable"
   ]
 }
