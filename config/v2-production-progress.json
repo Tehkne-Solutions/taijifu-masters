@@ -1,18 +1,18 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C27-V2-CONTENT-PREFLIGHT",
+  "updated_by_gate": "VM02-C28-V2-RIVAL-INTAKE-BRIDGE",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
-    "progress_percent": 97
+    "progress_percent": 98
   },
   "v2_playable": {
-    "progress_percent": 49,
+    "progress_percent": 50,
     "runtime_combat_core": 100,
     "round_match_loop": 100,
     "canonical_player": 70,
-    "canonical_second_fighter": 10,
+    "canonical_second_fighter": 15,
     "canonical_arena": 20,
     "vfx_presentation": 55,
     "audio": 0,
@@ -22,7 +22,7 @@
     "progress_percent": 40
   },
   "next_priority": [
-    "integrate independent canonical second fighter pack",
+    "materialize and approve independent Training Rival canonical art pack; C28 imports automatically when 44/44 frames are valid",
     "replace procedural training stage with canonical V.2 arena",
     "complete Lian Wu canonical animation coverage",
     "integrate combat SFX and music after visual content stabilizes",
