@@ -4,6 +4,7 @@ extends Control
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FIRST_PLAYABLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const DEFAULT_PARTICIPANT_CODE := "TJFP-001"
+const RUNTIME_PROOF_FLAGS := ["--v2-c44-runtime-proof", "--v2-c45-runtime-proof"]
 
 @onready var play_button: Button = $Content/Actions/PlayButton
 @onready var exit_button: Button = $Content/Actions/ExitButton
@@ -25,7 +26,23 @@ func _ready() -> void:
 	play_button.disabled = false
 	_apply_visual_policy()
 	_update_difficulty_ui()
+
+	# Gates exportados C44/C45 precisam provar o runtime dentro da luta real, não apenas o menu.
+	# Este bypass só é ativado por flags técnicas e não altera o fluxo normal do jogador.
+	if _runtime_proof_requested():
+		print("V2_RUNTIME_PROOF=ENTER_COMBAT")
+		call_deferred("_start_first_playable")
+		return
+
 	play_button.grab_focus()
+
+func _runtime_proof_requested() -> bool:
+	var args := OS.get_cmdline_args()
+	var user_args := OS.get_cmdline_user_args()
+	for flag in RUNTIME_PROOF_FLAGS:
+		if flag in args or flag in user_args:
+			return true
+	return false
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
@@ -64,6 +81,7 @@ func flow_signature() -> Dictionary:
 		"keyboard_shortcuts": {"play": "Enter", "easy": "1", "normal": "2", "hard": "3"},
 		"mouse_supported": true,
 		"gamepad_focus_supported": true,
+		"runtime_proof_route": true,
 		"signature": "Tehkné Solutions"
 	}
 
