@@ -21,19 +21,26 @@ $workspace = Split-Path $RepoRoot -Parent
 $assetsRepo = Join-Path $workspace "taijifu-masters-assets"
 if (-not (Test-Path (Join-Path $assetsRepo ".git"))) {
   Write-Host "VM02_C37_ASSETS_REPO_CLONE=BEGIN"
-  git clone "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git" $assetsRepo
+  & git clone --quiet "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git" $assetsRepo 2>$null
   if ($LASTEXITCODE -ne 0) { throw "VM02_C37_ASSETS_REPO=BLOCKED clone_failed" }
   Write-Host "VM02_C37_ASSETS_REPO_CLONE=PASS"
 }
 Write-Host "VM02_C37_ASSETS_REPO=PASS path=$assetsRepo"
 
+# Windows PowerShell 5.1 promotes native stderr into ErrorRecord when the
+# parent gate captures 2>&1. Git writes normal status messages such as
+# "Switched to branch 'main'" to stderr, which previously aborted C37 even
+# though git returned exit code 0. Keep git quiet and trust LASTEXITCODE.
 Push-Location $assetsRepo
 try {
-  git fetch origin | Out-Host
+  Write-Host "VM02_C37_ASSETS_SYNC=BEGIN"
+  & git fetch --quiet origin 2>$null
   if ($LASTEXITCODE -ne 0) { throw "VM02_C37_ASSETS_SYNC=BLOCKED fetch" }
-  git switch main | Out-Host
+
+  & git switch --quiet main 2>$null
   if ($LASTEXITCODE -ne 0) { throw "VM02_C37_ASSETS_SYNC=BLOCKED switch_main" }
-  git pull --ff-only origin main | Out-Host
+
+  & git pull --quiet --ff-only origin main 2>$null
   if ($LASTEXITCODE -ne 0) { throw "VM02_C37_ASSETS_SYNC=BLOCKED pull" }
 } finally {
   Pop-Location
