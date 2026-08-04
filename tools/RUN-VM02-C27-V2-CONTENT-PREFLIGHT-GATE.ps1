@@ -3,9 +3,13 @@ $ErrorActionPreference = "Stop"
 Set-Location $RepoRoot
 
 $contractPath = Join-Path $RepoRoot "config\v2-playable-content-contract.json"
+$progressPath = Join-Path $RepoRoot "config\v2-production-progress.json"
+$progressScript = Join-Path $RepoRoot "tools\SHOW-V2-PROGRESS.ps1"
 $reportLib = Join-Path $RepoRoot "tools\lib\Write-TehkneGateReport.ps1"
 $required = @(
   $contractPath,
+  $progressPath,
+  $progressScript,
   $reportLib,
   (Join-Path $RepoRoot "scripts\runtime\first_playable_round_match_runtime.gd"),
   (Join-Path $RepoRoot "scenes\runtime\first_playable_round_match_runtime.tscn")
@@ -17,6 +21,7 @@ Write-Host "VM02_C27_REQUIRED_FILES=PASS"
 
 try {
   $contract = Get-Content $contractPath -Raw | ConvertFrom-Json
+  $progress = Get-Content $progressPath -Raw | ConvertFrom-Json
 } catch {
   throw "VM02_C27_CONTRACT_PARSE=BLOCKED"
 }
@@ -76,4 +81,11 @@ Write-TehkneGateReport -Gate "VM02-C27-V2-CONTENT-PREFLIGHT" -Status "PASS" -Bra
   V2_CONTENT_READY=$(if ($v2ContentReady) { "PASS" } else { "BLOCKED" })
   BLOCKER_COUNT=$blockerCount
   BLOCKERS=($blockers -join ',')
+  PHASE_PROGRESS="$($progress.phase.progress_percent)%"
+  V2_PLAYABLE_PROGRESS="$($progress.v2_playable.progress_percent)%"
+  PROJECT_PROGRESS="$($progress.project.progress_percent)%"
 }) -CopyToClipboard
+
+& powershell -ExecutionPolicy Bypass -File $progressScript -RepoRoot $RepoRoot
+if ($LASTEXITCODE -ne 0) { throw "VM02_C27_PROGRESS_REPORT=BLOCKED" }
+Write-Host "VM02_C27_PROGRESS_REPORT=PASS"
