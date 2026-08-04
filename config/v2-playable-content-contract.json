@@ -1,0 +1,81 @@
+{
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "milestone": "v.2 playable",
+  "contract_version": 1,
+  "goal": "Playable build with complete canonical fighters and a complete production-ready arena while preserving the validated VM02 combat runtime.",
+  "baseline_runtime": {
+    "gate": "VM02-C26-ROUND-MATCH-RUNTIME",
+    "status": "validated",
+    "required_branch_base": "main"
+  },
+  "player": {
+    "id": "lian_wu",
+    "role": "canonical_player",
+    "status": "canonical_integration_in_progress",
+    "required": {
+      "identity_source": "assets/pack_01_characters/lian_wu",
+      "locomotion": true,
+      "light_attack": true,
+      "heavy_attack": true,
+      "sweep": true,
+      "riposte": true,
+      "hit_reaction": true,
+      "knockdown": true,
+      "getup": true
+    }
+  },
+  "rival": {
+    "id": "sparring_rival",
+    "role": "canonical_second_fighter",
+    "status": "blocked_by_canonical_pack",
+    "current_runtime_visual": "provisional_mirrored_proxy",
+    "must_replace_proxy": true,
+    "required": {
+      "independent_identity": true,
+      "idle": true,
+      "locomotion": true,
+      "attack": true,
+      "hit_reaction": true,
+      "knockdown": true,
+      "getup": true
+    }
+  },
+  "arena": {
+    "id": "v2_primary_arena",
+    "status": "prototype_composition",
+    "current_runtime_visual": "procedural_training_stage",
+    "must_replace_prototype": true,
+    "required": {
+      "canonical_background": true,
+      "canonical_foreground": true,
+      "ground_collision": true,
+      "camera_bounds": true,
+      "lighting_pass": true,
+      "ambient_animation": true,
+      "combat_readability": true
+    }
+  },
+  "presentation": {
+    "status": "foundation_ready",
+    "required": {
+      "hud": true,
+      "round_flow": true,
+      "victory_defeat": true,
+      "rematch": true,
+      "impact_vfx": true,
+      "combat_sfx": true,
+      "music": true
+    }
+  },
+  "definition_of_done": {
+    "canonical_fighters": 2,
+    "canonical_arenas": 1,
+    "no_geometric_character_placeholder": true,
+    "no_mirrored_character_proxy": true,
+    "no_prototype_stage": true,
+    "runtime_gate_pass": true,
+    "visual_review_pass": true,
+    "playtest_pass": true
+  }
+}
