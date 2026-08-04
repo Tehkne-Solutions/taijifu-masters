@@ -4,6 +4,7 @@ extends Control
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FIRST_PLAYABLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const DEFAULT_PARTICIPANT_CODE := "TJFP-001"
+const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
 
 @onready var play_button: Button = $Content/Actions/PlayButton
 @onready var exit_button: Button = $Content/Actions/ExitButton
@@ -26,6 +27,13 @@ func _ready() -> void:
 	_apply_visual_policy()
 	_update_difficulty_ui()
 	play_button.grab_focus()
+
+	# C44 needs to prove the exported package enters the exact combat scene where
+	# the canonical arena is selected. This opt-in user argument is inert during
+	# normal interactive play and avoids treating a successful menu boot as arena proof.
+	if C44_RUNTIME_PROOF_ARG in OS.get_cmdline_user_args():
+		print("V2_C44_RUNTIME_PROOF=ENTER_COMBAT")
+		call_deferred("_start_first_playable")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
