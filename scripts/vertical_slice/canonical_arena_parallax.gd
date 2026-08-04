@@ -20,10 +20,18 @@ func _ready() -> void:
 	_build_layer(MIDGROUND, "Midground", -12, 0.48)
 	_build_layer(FOREGROUND, "Foreground", 3, 1.0)
 
+func _load_texture_from_png(path: String) -> Texture2D:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(absolute_path):
+		return null
+	var image := Image.new()
+	var err := image.load(absolute_path)
+	if err != OK or image.is_empty():
+		return null
+	return ImageTexture.create_from_image(image)
+
 func _build_layer(path: String, layer_name: String, layer_z: int, ratio: float) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var texture := load(path) as Texture2D
+	var texture := _load_texture_from_png(path)
 	if texture == null:
 		return
 	var sprite := Sprite2D.new()
@@ -42,7 +50,6 @@ func _process(_delta: float) -> void:
 	var camera_delta := _camera.global_position - _camera_origin
 	for sprite in _layers:
 		var ratio := float(sprite.get_meta("parallax_ratio", 1.0))
-		# ratio=1 follows world foreground; lower values move more slowly.
 		sprite.position = Vector2(camera_delta.x * (1.0 - ratio), camera_delta.y * (1.0 - ratio))
 
 func canonical_ready() -> bool:
