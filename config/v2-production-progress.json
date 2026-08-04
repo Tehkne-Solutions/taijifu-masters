@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C40-V2-RUNTIME-CONSOLIDATION",
+  "updated_by_gate": "VM02-C42-V2-PACKAGED-BUILD-SMOKE",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 57,
+    "progress_percent": 64,
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
@@ -18,10 +18,11 @@
     "canonical_arena": 100,
     "vfx_presentation": 55,
     "audio": 0,
-    "playtest_packaging": 30
+    "playtest_packaging": 100,
+    "packaged_build_smoke": 100
   },
   "project": {
-    "progress_percent": 44
+    "progress_percent": 48
   },
   "blocked_art_dependencies": [
     "training_rival_master",
@@ -29,10 +30,10 @@
     "remaining_lian_wu_canonical_animation_coverage"
   ],
   "next_priority": [
-    "consolidate the playable runtime flow with canonical Mountain Dojo Night active and explicit proxy allowance for the Training Rival",
-    "package a repeatable V.2 runtime playtest while keeping V2_ART_COMPLETE=false",
+    "prove the exported Windows build boots cleanly from the C41 package and that the Web package has the complete static runtime payload",
+    "run an external playtest against the packaged V.2 build and capture gameplay regressions instead of validating only editor scenes",
     "resume Training Rival P01 only from a clean canonical master through C39; never from a contact sheet",
     "complete Lian Wu canonical animation coverage",
-    "integrate combat SFX and music after the runtime consolidation is stable"
+    "integrate combat SFX and music after packaged runtime stability is proven"
   ]
 }
