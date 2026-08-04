@@ -41,48 +41,93 @@ $winDir = Join-Path $artifacts "windows"
 $logDir = Join-Path $artifacts "logs"
 New-Item -ItemType Directory -Force -Path $webDir,$winDir,$logDir | Out-Null
 
-function Invoke-GodotProcess {
+function Invoke-GodotCaptured {
   param(
-    [string[]]$Arguments,
-    [string]$LogName
+    [string]$Label,
+    [string[]]$Arguments
   )
-
-  $stdout = Join-Path $logDir "$LogName.stdout.log"
-  $stderr = Join-Path $logDir "$LogName.stderr.log"
+  $stdout = Join-Path $logDir "$Label.stdout.log"
+  $stderr = Join-Path $logDir "$Label.stderr.log"
   Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
-
-  # Start-Process keeps native stderr as plain process output. This prevents harmless
-  # Godot warnings (for example "Scan thread aborted...") from becoming terminating
-  # PowerShell NativeCommandError records when ErrorActionPreference=Stop.
-  $proc = Start-Process -FilePath $godot `
-    -ArgumentList $Arguments `
-    -WorkingDirectory $RepoRoot `
-    -NoNewWindow `
-    -Wait `
-    -PassThru `
-    -RedirectStandardOutput $stdout `
-    -RedirectStandardError $stderr
-
+  $proc = Start-Process -FilePath $godot -ArgumentList $Arguments -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
   if (Test-Path $stdout) { Get-Content $stdout | ForEach-Object { Write-Host $_ } }
   if (Test-Path $stderr) { Get-Content $stderr | ForEach-Object { Write-Host $_ } }
-
-  return [int]$proc.ExitCode
+  return $proc.ExitCode
 }
 
-$bootstrapExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--editor","--quit-after","2") -LogName "bootstrap"
+function Ensure-GodotExportTemplates {
+  $versionOutput = (& $godot --version 2>$null | Select-Object -First 1).Trim()
+  if ($versionOutput -notmatch '^(\d+\.\d+\.\d+)\.stable') {
+    Write-Host "VM02_C41_TEMPLATE_VERSION=BLOCKED raw=$versionOutput"
+    return $false
+  }
+
+  $semver = $Matches[1]
+  $templateVersion = "$semver.stable"
+  $templateRoot = Join-Path $env:APPDATA "Godot\export_templates\$templateVersion"
+  $requiredTemplates = @(
+    "web_nothreads_release.zip",
+    "windows_release_x86_64.exe"
+  )
+
+  $present = @($requiredTemplates | Where-Object { Test-Path (Join-Path $templateRoot $_) })
+  if ($present.Count -eq $requiredTemplates.Count) {
+    Write-Host "VM02_C41_EXPORT_TEMPLATES=PASS existing=$templateRoot"
+    return $true
+  }
+
+  Write-Host "VM02_C41_EXPORT_TEMPLATES=INSTALL_BEGIN version=$templateVersion"
+  $releaseTag = "$semver-stable"
+  $fileName = "Godot_v$semver-stable_export_templates.tpz"
+  $url = "https://github.com/godotengine/godot/releases/download/$releaseTag/$fileName"
+  $download = Join-Path $artifacts $fileName
+  $extract = Join-Path $artifacts "template-extract"
+  Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
+  New-Item -ItemType Directory -Force -Path $extract,$templateRoot | Out-Null
+
+  try {
+    Invoke-WebRequest -Uri $url -OutFile $download -UseBasicParsing
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($download, $extract)
+
+    $source = Join-Path $extract "templates"
+    if (-not (Test-Path $source)) {
+      throw "templates directory missing in tpz"
+    }
+    Copy-Item (Join-Path $source "*") $templateRoot -Recurse -Force
+  } catch {
+    Write-Host "VM02_C41_EXPORT_TEMPLATES=BLOCKED install_error=$($_.Exception.Message)"
+    return $false
+  }
+
+  $presentAfter = @($requiredTemplates | Where-Object { Test-Path (Join-Path $templateRoot $_) })
+  if ($presentAfter.Count -ne $requiredTemplates.Count) {
+    Write-Host "VM02_C41_EXPORT_TEMPLATES=BLOCKED present=$($presentAfter.Count)/$($requiredTemplates.Count) root=$templateRoot"
+    return $false
+  }
+
+  Write-Host "VM02_C41_EXPORT_TEMPLATES=PASS installed=$templateRoot"
+  return $true
+}
+
+$bootstrapExit = Invoke-GodotCaptured -Label "bootstrap" -Arguments @("--headless","--path",$RepoRoot,"--editor","--quit-after","2")
 if ($bootstrapExit -ne 0) { throw "VM02_C41_GODOT_BOOTSTRAP=BLOCKED exit=$bootstrapExit" }
 Write-Host "VM02_C41_GODOT_BOOTSTRAP=PASS"
+
+if (-not (Ensure-GodotExportTemplates)) {
+  throw "VM02_C41_EXPORT_TEMPLATES=BLOCKED"
+}
 
 $webOut = Join-Path $webDir "index.html"
 $winOut = Join-Path $winDir "Taijifu-Masters-V2-Playtest.exe"
 $webStatus = "BLOCKED"
 $winStatus = "BLOCKED"
 
-$webExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--export-release","Web",$webOut) -LogName "web-export"
+$webExit = Invoke-GodotCaptured -Label "web-export" -Arguments @("--headless","--path",$RepoRoot,"--export-release","Web",$webOut)
 if ($webExit -eq 0 -and (Test-Path $webOut)) { $webStatus = "PASS" }
 Write-Host "VM02_C41_WEB_EXPORT=$webStatus exit=$webExit"
 
-$winExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--export-release","Windows Desktop",$winOut) -LogName "windows-export"
+$winExit = Invoke-GodotCaptured -Label "windows-export" -Arguments @("--headless","--path",$RepoRoot,"--export-release","Windows Desktop",$winOut)
 if ($winExit -eq 0 -and (Test-Path $winOut)) { $winStatus = "PASS" }
 Write-Host "VM02_C41_WINDOWS_EXPORT=$winStatus exit=$winExit"
 
@@ -130,6 +175,7 @@ $report = @(
   "BRANCH=$branch",
   "COMMIT=$commit",
   "RUNTIME_READY=PASS",
+  "EXPORT_TEMPLATES=PASS",
   "WEB_EXPORT=$webStatus",
   "WINDOWS_EXPORT=$winStatus",
   "DISTRIBUTABLE=PASS",
