@@ -35,11 +35,25 @@ if (-not $godot) { throw "VM02_C41_GODOT_RESOLVE=BLOCKED" }
 Write-Host "VM02_C41_GODOT_RESOLVE=PASS"
 Write-Host "GODOT_EXE=$godot"
 
-$artifacts = Join-Path $RepoRoot "artifacts\vm02-c41"
+# Build outputs must stay OUTSIDE res://. Keeping exports under the Godot project made
+# previous C41 outputs get re-imported and even packed into the next build.
+$workspaceRoot = Split-Path $RepoRoot -Parent
+$artifacts = Join-Path $workspaceRoot "taijifu-masters-builds\vm02-c41"
 $webDir = Join-Path $artifacts "web"
 $winDir = Join-Path $artifacts "windows"
 $logDir = Join-Path $artifacts "logs"
 New-Item -ItemType Directory -Force -Path $webDir,$winDir,$logDir | Out-Null
+Write-Host "VM02_C41_BUILD_ROOT=$artifacts"
+
+# Remove only stale local C41 generated outputs from inside the project. This prevents
+# UID duplication and recursive packaging from older runs.
+$legacyInsideProject = Join-Path $RepoRoot "artifacts\vm02-c41"
+if (Test-Path $legacyInsideProject) {
+  Remove-Item $legacyInsideProject -Recurse -Force -ErrorAction SilentlyContinue
+  Write-Host "VM02_C41_LEGACY_INPROJECT_OUTPUT=CLEANED"
+} else {
+  Write-Host "VM02_C41_LEGACY_INPROJECT_OUTPUT=ABSENT"
+}
 
 function Invoke-GodotCaptured {
   param(
@@ -49,7 +63,14 @@ function Invoke-GodotCaptured {
   $stdout = Join-Path $logDir "$Label.stdout.log"
   $stderr = Join-Path $logDir "$Label.stderr.log"
   Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
-  $proc = Start-Process -FilePath $godot -ArgumentList $Arguments -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+  # Windows PowerShell 5 Start-Process flattens ArgumentList. Quote arguments containing
+  # spaces explicitly so Godot receives preset names such as "Windows Desktop" intact.
+  $safeArgs = @($Arguments | ForEach-Object {
+    if ($_ -match '\s' -and $_ -notmatch '^".*"$') { '"' + ($_ -replace '"','\"') + '"' } else { $_ }
+  })
+
+  $proc = Start-Process -FilePath $godot -ArgumentList $safeArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
   if (Test-Path $stdout) { Get-Content $stdout | ForEach-Object { Write-Host $_ } }
   if (Test-Path $stderr) { Get-Content $stderr | ForEach-Object { Write-Host $_ } }
   return $proc.ExitCode
