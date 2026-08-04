@@ -38,10 +38,39 @@ Write-Host "GODOT_EXE=$godot"
 $artifacts = Join-Path $RepoRoot "artifacts\vm02-c41"
 $webDir = Join-Path $artifacts "web"
 $winDir = Join-Path $artifacts "windows"
-New-Item -ItemType Directory -Force -Path $webDir,$winDir | Out-Null
+$logDir = Join-Path $artifacts "logs"
+New-Item -ItemType Directory -Force -Path $webDir,$winDir,$logDir | Out-Null
 
-& $godot --headless --path $RepoRoot --editor --quit-after 2 2>&1 | Out-Host
-if ($LASTEXITCODE -ne 0) { throw "VM02_C41_GODOT_BOOTSTRAP=BLOCKED exit=$LASTEXITCODE" }
+function Invoke-GodotProcess {
+  param(
+    [string[]]$Arguments,
+    [string]$LogName
+  )
+
+  $stdout = Join-Path $logDir "$LogName.stdout.log"
+  $stderr = Join-Path $logDir "$LogName.stderr.log"
+  Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+
+  # Start-Process keeps native stderr as plain process output. This prevents harmless
+  # Godot warnings (for example "Scan thread aborted...") from becoming terminating
+  # PowerShell NativeCommandError records when ErrorActionPreference=Stop.
+  $proc = Start-Process -FilePath $godot `
+    -ArgumentList $Arguments `
+    -WorkingDirectory $RepoRoot `
+    -NoNewWindow `
+    -Wait `
+    -PassThru `
+    -RedirectStandardOutput $stdout `
+    -RedirectStandardError $stderr
+
+  if (Test-Path $stdout) { Get-Content $stdout | ForEach-Object { Write-Host $_ } }
+  if (Test-Path $stderr) { Get-Content $stderr | ForEach-Object { Write-Host $_ } }
+
+  return [int]$proc.ExitCode
+}
+
+$bootstrapExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--editor","--quit-after","2") -LogName "bootstrap"
+if ($bootstrapExit -ne 0) { throw "VM02_C41_GODOT_BOOTSTRAP=BLOCKED exit=$bootstrapExit" }
 Write-Host "VM02_C41_GODOT_BOOTSTRAP=PASS"
 
 $webOut = Join-Path $webDir "index.html"
@@ -49,20 +78,16 @@ $winOut = Join-Path $winDir "Taijifu-Masters-V2-Playtest.exe"
 $webStatus = "BLOCKED"
 $winStatus = "BLOCKED"
 
-try {
-  & $godot --headless --path $RepoRoot --export-release "Web" $webOut 2>&1 | Out-Host
-  if ($LASTEXITCODE -eq 0 -and (Test-Path $webOut)) { $webStatus = "PASS" }
-} catch { }
-Write-Host "VM02_C41_WEB_EXPORT=$webStatus"
+$webExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--export-release","Web",$webOut) -LogName "web-export"
+if ($webExit -eq 0 -and (Test-Path $webOut)) { $webStatus = "PASS" }
+Write-Host "VM02_C41_WEB_EXPORT=$webStatus exit=$webExit"
 
-try {
-  & $godot --headless --path $RepoRoot --export-release "Windows Desktop" $winOut 2>&1 | Out-Host
-  if ($LASTEXITCODE -eq 0 -and (Test-Path $winOut)) { $winStatus = "PASS" }
-} catch { }
-Write-Host "VM02_C41_WINDOWS_EXPORT=$winStatus"
+$winExit = Invoke-GodotProcess -Arguments @("--headless","--path",$RepoRoot,"--export-release","Windows Desktop",$winOut) -LogName "windows-export"
+if ($winExit -eq 0 -and (Test-Path $winOut)) { $winStatus = "PASS" }
+Write-Host "VM02_C41_WINDOWS_EXPORT=$winStatus exit=$winExit"
 
 if ($webStatus -ne "PASS" -and $winStatus -ne "PASS") {
-  throw "VM02_C41_DISTRIBUTABLE=BLOCKED no_export_target_succeeded"
+  throw "VM02_C41_DISTRIBUTABLE=BLOCKED no_export_target_succeeded web_exit=$webExit windows_exit=$winExit"
 }
 Write-Host "VM02_C41_DISTRIBUTABLE=PASS"
 
