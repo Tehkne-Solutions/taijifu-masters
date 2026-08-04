@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C42-V2-PACKAGED-BUILD-SMOKE",
+  "updated_by_gate": "VM02-C43-V2-INTERACTIVE-PLAYTEST-HANDOFF",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 64,
+    "progress_percent": 66,
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
@@ -19,10 +19,11 @@
     "vfx_presentation": 55,
     "audio": 0,
     "playtest_packaging": 100,
-    "packaged_build_smoke": 100
+    "packaged_build_smoke": 100,
+    "interactive_playtest_handoff": 100
   },
   "project": {
-    "progress_percent": 48
+    "progress_percent": 49
   },
   "blocked_art_dependencies": [
     "training_rival_master",
@@ -30,10 +31,10 @@
     "remaining_lian_wu_canonical_animation_coverage"
   ],
   "next_priority": [
-    "prove the exported Windows build boots cleanly from the C41 package and that the Web package has the complete static runtime payload",
-    "run an external playtest against the packaged V.2 build and capture gameplay regressions instead of validating only editor scenes",
+    "run the packaged Windows build interactively through the C43 one-click launcher and review the real gameplay experience",
+    "capture playtest findings for controls, combat, AI, camera, HUD, canonical arena and visual regressions",
+    "fix gameplay/runtime issues before resuming non-blocking art production",
     "resume Training Rival P01 only from a clean canonical master through C39; never from a contact sheet",
-    "complete Lian Wu canonical animation coverage",
-    "integrate combat SFX and music after packaged runtime stability is proven"
+    "complete Lian Wu canonical animation coverage and integrate combat SFX/music after interactive stability"
   ]
 }
