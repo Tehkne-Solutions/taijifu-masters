@@ -21,6 +21,7 @@ var _canonical_arena_active := false
 func _ready() -> void:
 	z_index = -10
 	_canonical_arena_active = _canonical_arena_ready()
+	print("V2_CANONICAL_ARENA_SELECTION=", "PASS" if _canonical_arena_active else "BLOCKED")
 	if _canonical_arena_active:
 		_install_canonical_arena()
 	else:
@@ -31,8 +32,9 @@ func _ready() -> void:
 	queue_redraw()
 
 func _canonical_arena_ready() -> bool:
+	# Export-safe: source PNGs are remapped to imported Texture2D resources in packaged builds.
 	for path in CANONICAL_FILES:
-		if not FileAccess.file_exists(ProjectSettings.globalize_path(path)):
+		if not ResourceLoader.exists(path, "Texture2D"):
 			return false
 	return true
 
@@ -108,6 +110,7 @@ func presentation_signature() -> Dictionary:
 		"impact_director": true,
 		"procedural_combat_audio": true,
 		"balance_changes": false,
+		"export_safe_resource_loading": true,
 		"signature": "Tehkné Solutions"
 	}
 

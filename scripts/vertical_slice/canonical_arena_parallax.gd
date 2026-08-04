@@ -19,20 +19,19 @@ func _ready() -> void:
 	_build_layer(BACKGROUND, "Background", -20, 0.18)
 	_build_layer(MIDGROUND, "Midground", -12, 0.48)
 	_build_layer(FOREGROUND, "Foreground", 3, 1.0)
+	print("V2_CANONICAL_ARENA_RUNTIME=", "PASS" if canonical_ready() else "BLOCKED", " layers=", _layers.size())
 
-func _load_texture_from_png(path: String) -> Texture2D:
-	var absolute_path := ProjectSettings.globalize_path(path)
-	if not FileAccess.file_exists(absolute_path):
+func _load_texture(path: String) -> Texture2D:
+	# Export-safe: PNG source files are remapped to imported textures in packaged builds.
+	# ResourceLoader resolves the remap; FileAccess/Image.load on the raw source path does not.
+	if not ResourceLoader.exists(path, "Texture2D"):
 		return null
-	var image := Image.new()
-	var err := image.load(absolute_path)
-	if err != OK or image.is_empty():
-		return null
-	return ImageTexture.create_from_image(image)
+	return ResourceLoader.load(path, "Texture2D") as Texture2D
 
 func _build_layer(path: String, layer_name: String, layer_z: int, ratio: float) -> void:
-	var texture := _load_texture_from_png(path)
+	var texture := _load_texture(path)
 	if texture == null:
+		push_error("Canonical arena texture unavailable: %s" % path)
 		return
 	var sprite := Sprite2D.new()
 	sprite.name = layer_name
@@ -64,6 +63,7 @@ func presentation_signature() -> Dictionary:
 		"foreground_ratio": 1.0,
 		"procedural_placeholder": false,
 		"visible_grid": false,
+		"export_safe_resource_loading": true,
 		"signature": "Tehkné Solutions"
 	}
 
