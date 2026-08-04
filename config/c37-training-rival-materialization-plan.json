@@ -1,0 +1,64 @@
+{
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "gate": "VM02-C37-TRAINING-RIVAL-MATERIALIZATION",
+  "character_id": "training_rival",
+  "source_lot": "production/first_playable/training_rival/first_playable_lot_01",
+  "required_total_frames": 44,
+  "native_facing": "left",
+  "pivot": "bottom_center",
+  "identity": {
+    "style": "comic_manga_2_5d",
+    "palette": ["charcoal", "ember", "bone", "muted_gold"],
+    "silhouette": "compact_guarded_fighter",
+    "weapon": "wooden_training_saber",
+    "weapon_count": 1,
+    "forbidden": ["mirrored_lian_wu_proxy", "second_weapon", "purple_tech_glow", "embedded_background", "embedded_text"]
+  },
+  "packs": [
+    {
+      "id": "P01",
+      "name": "identity-locomotion",
+      "frame_count": 14,
+      "animations": {"idle": 6, "run": 8}
+    },
+    {
+      "id": "P02",
+      "name": "air-mobility",
+      "frame_count": 7,
+      "animations": {"jump_start": 3, "airborne": 2, "fall": 2}
+    },
+    {
+      "id": "P03",
+      "name": "light-offense",
+      "frame_count": 6,
+      "animations": {"attack_light": 6}
+    },
+    {
+      "id": "P04",
+      "name": "defense-evasion",
+      "frame_count": 8,
+      "animations": {"guard": 3, "dodge": 5}
+    },
+    {
+      "id": "P05",
+      "name": "damage-ko",
+      "frame_count": 9,
+      "animations": {"hit": 3, "ko": 6}
+    }
+  ],
+  "frame_contract": {
+    "format": "PNG",
+    "alpha": true,
+    "background": "transparent",
+    "filename": "fNNN.png",
+    "directory_pattern": "<animation>/fNNN.png",
+    "approval_requires": ["identity_consistency", "native_left_facing", "bottom_center_pivot", "single_weapon", "transparent_background", "runtime_readability"]
+  },
+  "production_policy": {
+    "approve_by_pack": true,
+    "never_promote_partial_pack_to_runtime": true,
+    "c28_auto_import_only_at_44_of_44": true,
+    "c36_auto_retire_proxy_only_after_canonical_import": true
+  }
+}
