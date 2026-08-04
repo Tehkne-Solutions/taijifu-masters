@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime/v2_canonical_arena_visual_proof.gd" id="1"]
+
+[node name="V2CanonicalArenaVisualProof" type="Node"]
+script = ExtResource("1")
+
+# Tehkné Solutions
