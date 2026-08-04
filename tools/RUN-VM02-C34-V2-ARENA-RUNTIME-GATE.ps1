@@ -8,13 +8,27 @@ Set-Location $RepoRoot
 $arenaRoot = Join-Path $RepoRoot "assets\pack_03_stages\mountain_dojo_night"
 $runtimeScript = Join-Path $RepoRoot "scripts\vertical_slice\canonical_arena_parallax.gd"
 $environmentScript = Join-Path $RepoRoot "scripts\vertical_slice\first_playable_environment_art.gd"
+$intakeScript = Join-Path $RepoRoot "tools\RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
 $progressPath = Join-Path $RepoRoot "config\v2-production-progress.json"
 $reportLib = Join-Path $RepoRoot "tools\lib\Write-TehkneGateReport.ps1"
 
-foreach ($file in @($runtimeScript, $environmentScript, $progressPath, $reportLib)) {
+foreach ($file in @($runtimeScript, $environmentScript, $intakeScript, $progressPath, $reportLib)) {
   if (-not (Test-Path $file)) { throw "VM02_C34_REQUIRED_FILES=BLOCKED missing=$file" }
 }
 Write-Host "VM02_C34_REQUIRED_FILES=PASS"
+
+# C34 owns the operator flow from intake to runtime. This removes the need to
+# manually switch back to C30 before validating newly published arena content.
+Write-Host "VM02_C34_AUTO_INTAKE=BEGIN"
+$intakeOutput = & powershell -ExecutionPolicy Bypass -File $intakeScript -RepoRoot $RepoRoot 2>&1
+if ($LASTEXITCODE -ne 0) {
+  $intakeOutput | ForEach-Object { Write-Host $_ }
+  throw "VM02_C34_AUTO_INTAKE=BLOCKED exit=$LASTEXITCODE"
+}
+$intakeOutput |
+  Where-Object { $_ -match '^VM02_C30_(SOURCE_MANIFEST|ARENA_FILE_COUNT|ARENA_FILE_CONTRACT|ARENA_IMPORT|ARENA_CANONICAL_READY|PIPELINE_READY)=' } |
+  ForEach-Object { Write-Host $_ }
+Write-Host "VM02_C34_AUTO_INTAKE=PASS"
 
 $required = @("background.png", "midground.png", "foreground.png", "collision.json", "lighting.json", "manifest.json")
 $missing = @()
@@ -78,6 +92,7 @@ $progress = Get-Content $progressPath -Raw | ConvertFrom-Json
 $branchName = (git branch --show-current).Trim()
 $commit = (git rev-parse --short=12 HEAD).Trim()
 Write-TehkneGateReport -Gate "VM02-C34-V2-ARENA-RUNTIME-BINDING" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
+  AUTO_INTAKE="PASS"
   ARENA_IMPORTED=$(if ($arenaImported) { "PASS" } else { "BLOCKED" })
   FILE_COUNT="$($required.Count - $missing.Count)/$($required.Count)"
   PARALLAX_CONTRACT=$(if ($layerContract) { "PASS" } else { "BLOCKED" })
