@@ -40,7 +40,10 @@ func _install_canonical_arena() -> void:
 	var root := get_parent()
 	if root == null or root.has_node("CanonicalArenaParallax"):
 		return
-	var canonical := CANONICAL_ARENA.new() as CanonicalArenaParallax
+	# Instantiate from the preloaded script instead of relying on the global
+	# class cache. Fresh clones/headless runs may not have indexed a newly
+	# introduced class_name yet, while preload is deterministic.
+	var canonical = CANONICAL_ARENA.new()
 	canonical.name = "CanonicalArenaParallax"
 	root.add_child.call_deferred(canonical)
 
