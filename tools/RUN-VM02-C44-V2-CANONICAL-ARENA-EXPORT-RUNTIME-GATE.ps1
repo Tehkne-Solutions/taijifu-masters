@@ -8,6 +8,7 @@ Set-Location $RepoRoot
 $required = @(
   "project.godot",
   "export_presets.cfg",
+  "scripts\vertical_slice\first_playable_menu.gd",
   "scripts\vertical_slice\first_playable_environment_art.gd",
   "scripts\vertical_slice\canonical_arena_parallax.gd",
   "assets\pack_03_stages\mountain_dojo_night\background.png",
@@ -21,11 +22,14 @@ if ($missing.Count -gt 0) {
 }
 Write-Host "VM02_C44_REQUIRED_FILES=PASS"
 
+$menuSource = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_menu.gd") -Raw
 $envSource = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_environment_art.gd") -Raw
 $parallaxSource = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\canonical_arena_parallax.gd") -Raw
+if ($menuSource -notmatch 'C44_RUNTIME_PROOF_ARG') { throw "VM02_C44_RUNTIME_PROOF_ROUTE=BLOCKED" }
 if ($envSource -notmatch 'ResourceLoader\.exists\(path, "Texture2D"\)') { throw "VM02_C44_EXPORT_SAFE_SELECTION=BLOCKED" }
 if ($parallaxSource -notmatch 'ResourceLoader\.load\(path, "Texture2D"\)') { throw "VM02_C44_EXPORT_SAFE_TEXTURE_LOAD=BLOCKED" }
 if ($parallaxSource -match 'image\.load\(absolute_path\)') { throw "VM02_C44_RAW_IMAGE_LOAD_RETIRED=BLOCKED" }
+Write-Host "VM02_C44_RUNTIME_PROOF_ROUTE=PASS"
 Write-Host "VM02_C44_EXPORT_SAFE_SELECTION=PASS"
 Write-Host "VM02_C44_EXPORT_SAFE_TEXTURE_LOAD=PASS"
 Write-Host "VM02_C44_RAW_IMAGE_LOAD_RETIRED=PASS"
@@ -61,13 +65,18 @@ Write-Host "VM02_C44_WINDOWS_EXPORT=PASS exit=0"
 
 $runtimeStdout = Join-Path $logDir "runtime.stdout.log"
 $runtimeStderr = Join-Path $logDir "runtime.stderr.log"
-$runtimeProc = Start-Process -FilePath $winOut -ArgumentList @("--headless","--quit-after","5") -Wait -PassThru -NoNewWindow -RedirectStandardOutput $runtimeStdout -RedirectStandardError $runtimeStderr
+# Important: exported games boot into first_playable_menu.tscn. The proof argument
+# deliberately enters the combat scene before the arena assertions are evaluated.
+$runtimeArgs = @("--headless","--quit-after","8","--","--v2-c44-runtime-proof")
+$runtimeProc = Start-Process -FilePath $winOut -ArgumentList $runtimeArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput $runtimeStdout -RedirectStandardError $runtimeStderr
 $runtimeText = ""
 if (Test-Path $runtimeStdout) { $runtimeText += (Get-Content $runtimeStdout -Raw); Get-Content $runtimeStdout | ForEach-Object { Write-Host $_ } }
 if (Test-Path $runtimeStderr) { $runtimeText += "`n" + (Get-Content $runtimeStderr -Raw); Get-Content $runtimeStderr | ForEach-Object { Write-Host $_ } }
 if ($runtimeProc.ExitCode -ne 0) { throw "VM02_C44_EXPORTED_RUNTIME_BOOT=BLOCKED exit=$($runtimeProc.ExitCode)" }
 Write-Host "VM02_C44_EXPORTED_RUNTIME_BOOT=PASS exit=0"
 
+if ($runtimeText -notmatch 'V2_C44_RUNTIME_PROOF=ENTER_COMBAT') { throw "VM02_C44_RUNTIME_PROOF_ENTRY=BLOCKED" }
+Write-Host "VM02_C44_RUNTIME_PROOF_ENTRY=PASS"
 if ($runtimeText -notmatch 'V2_CANONICAL_ARENA_SELECTION=PASS') { throw "VM02_C44_CANONICAL_SELECTION_IN_EXPORT=BLOCKED" }
 if ($runtimeText -notmatch 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3') { throw "VM02_C44_CANONICAL_LAYERS_IN_EXPORT=BLOCKED" }
 if ($runtimeText -match 'V2_CANONICAL_ARENA_SELECTION=BLOCKED') { throw "VM02_C44_PROCEDURAL_FALLBACK_RETIRED=BLOCKED" }
@@ -84,6 +93,7 @@ $report = @(
   "STATUS=PASS",
   "BRANCH=$branch",
   "COMMIT=$commit",
+  "RUNTIME_PROOF_ENTRY=PASS",
   "EXPORT_SAFE_SELECTION=PASS",
   "EXPORT_SAFE_TEXTURE_LOAD=PASS",
   "WINDOWS_EXPORT=PASS",
