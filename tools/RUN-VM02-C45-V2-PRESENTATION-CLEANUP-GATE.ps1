@@ -24,12 +24,16 @@ Write-Host "VM02_C45_REQUIRED_FILES=PASS"
 
 $dressing = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_arena_dressing.gd") -Raw
 $feedback = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_combat_feedback_runtime.gd") -Raw
+$menu = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_menu.gd") -Raw
 if ($dressing -notmatch 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED') { throw "VM02_C45_LEGACY_DRESSING_RETIREMENT_CONTRACT=BLOCKED" }
 if ($dressing -notmatch 'visible = false') { throw "VM02_C45_LEGACY_DRESSING_VISIBILITY_CONTRACT=BLOCKED" }
 if ($feedback -notmatch 'MAX_ACTIVE_POPUPS := 2') { throw "VM02_C45_POPUP_BUDGET_CONTRACT=BLOCKED" }
 if ($feedback -notmatch 'V2_PRESENTATION_FEEDBACK_BUDGET=PASS') { throw "VM02_C45_FEEDBACK_MARKER_CONTRACT=BLOCKED" }
+if ($menu -notmatch 'v2-c45-runtime-proof') { throw "VM02_C45_RUNTIME_PROOF_ROUTE_CONTRACT=BLOCKED" }
+if ($menu -notmatch 'V2_RUNTIME_PROOF=ENTER_COMBAT') { throw "VM02_C45_RUNTIME_PROOF_MARKER_CONTRACT=BLOCKED" }
 Write-Host "VM02_C45_LEGACY_DRESSING_RETIREMENT_CONTRACT=PASS"
 Write-Host "VM02_C45_POPUP_BUDGET_CONTRACT=PASS max=2"
+Write-Host "VM02_C45_RUNTIME_PROOF_ROUTE_CONTRACT=PASS"
 
 $godotCandidates = @()
 if ($env:GODOT_EXE) { $godotCandidates += $env:GODOT_EXE }
@@ -62,7 +66,7 @@ Write-Host "VM02_C45_WINDOWS_EXPORT=PASS exit=0"
 
 $runtimeStdout = Join-Path $logDir "runtime.stdout.log"
 $runtimeStderr = Join-Path $logDir "runtime.stderr.log"
-$runtimeArgs = @("--headless","--v2-c44-runtime-proof","--quit-after","5")
+$runtimeArgs = @("--headless","--v2-c45-runtime-proof","--quit-after","8")
 $runtimeProc = Start-Process -FilePath $winOut -ArgumentList $runtimeArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput $runtimeStdout -RedirectStandardError $runtimeStderr
 $runtimeText = ""
 if (Test-Path $runtimeStdout) { $runtimeText += (Get-Content $runtimeStdout -Raw); Get-Content $runtimeStdout | ForEach-Object { Write-Host $_ } }
@@ -70,10 +74,12 @@ if (Test-Path $runtimeStderr) { $runtimeText += "`n" + (Get-Content $runtimeStde
 if ($runtimeProc.ExitCode -ne 0) { throw "VM02_C45_EXPORTED_RUNTIME_BOOT=BLOCKED exit=$($runtimeProc.ExitCode)" }
 Write-Host "VM02_C45_EXPORTED_RUNTIME_BOOT=PASS exit=0"
 
+if ($runtimeText -notmatch 'V2_RUNTIME_PROOF=ENTER_COMBAT') { throw "VM02_C45_RUNTIME_PROOF_ENTRY=BLOCKED" }
 if ($runtimeText -notmatch 'V2_CANONICAL_ARENA_SELECTION=PASS') { throw "VM02_C45_CANONICAL_ARENA_IN_EXPORT=BLOCKED" }
 if ($runtimeText -notmatch 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3') { throw "VM02_C45_CANONICAL_LAYERS_IN_EXPORT=BLOCKED" }
 if ($runtimeText -notmatch 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED') { throw "VM02_C45_LEGACY_DRESSING_IN_EXPORT=BLOCKED" }
 if ($runtimeText -notmatch 'V2_PRESENTATION_FEEDBACK_BUDGET=PASS max=2') { throw "VM02_C45_FEEDBACK_BUDGET_IN_EXPORT=BLOCKED" }
+Write-Host "VM02_C45_RUNTIME_PROOF_ENTRY=PASS"
 Write-Host "VM02_C45_CANONICAL_ARENA_IN_EXPORT=PASS"
 Write-Host "VM02_C45_LEGACY_DRESSING_IN_EXPORT=PASS"
 Write-Host "VM02_C45_FEEDBACK_BUDGET_IN_EXPORT=PASS max=2"
