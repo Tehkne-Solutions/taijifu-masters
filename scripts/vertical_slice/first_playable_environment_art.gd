@@ -4,17 +4,45 @@ extends TriplePathEnvironmentArt
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FINAL_LAYER := preload("res://scripts/vertical_slice/first_playable_arena_final_layer.gd")
 const PARALLAX_LAYER := preload("res://scripts/vertical_slice/first_playable_parallax_layer.gd")
+const CANONICAL_ARENA := preload("res://scripts/vertical_slice/canonical_arena_parallax.gd")
 const PLATFORM_READABILITY_LAYER := preload("res://scripts/vertical_slice/first_playable_platform_readability_layer.gd")
 const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
 const AUDIO_DIRECTOR := preload("res://scripts/vertical_slice/first_playable_audio_director.gd")
 
+const CANONICAL_ROOT := "res://assets/pack_03_stages/mountain_dojo_night"
+const CANONICAL_FILES := [
+	CANONICAL_ROOT + "/background.png",
+	CANONICAL_ROOT + "/midground.png",
+	CANONICAL_ROOT + "/foreground.png"
+]
+
+var _canonical_arena_active := false
+
 func _ready() -> void:
 	z_index = -10
-	_install_parallax_layers()
-	_install_final_layer()
-	_install_platform_readability()
+	_canonical_arena_active = _canonical_arena_ready()
+	if _canonical_arena_active:
+		_install_canonical_arena()
+	else:
+		_install_parallax_layers()
+		_install_final_layer()
+		_install_platform_readability()
 	_install_combat_feedback()
 	queue_redraw()
+
+func _canonical_arena_ready() -> bool:
+	for path in CANONICAL_FILES:
+		if not ResourceLoader.exists(path):
+			return false
+	return true
+
+func _install_canonical_arena() -> void:
+	var root := get_parent()
+	if root == null or root.has_node("CanonicalArenaParallax"):
+		return
+	var canonical := CANONICAL_ARENA.new() as CanonicalArenaParallax
+	canonical.name = "CanonicalArenaParallax"
+	root.add_child.call_deferred(canonical)
 
 func _install_parallax_layers() -> void:
 	var root := get_parent()
@@ -63,16 +91,18 @@ func presentation_signature() -> Dictionary:
 	return {
 		"visual_policy": POLICY.DIRECTION,
 		"arena_read": POLICY.ARENA_READ,
-		"sky_layers": 4,
-		"mountain_layers": 2,
+		"canonical_arena": _canonical_arena_active,
+		"canonical_arena_id": &"mountain_dojo_night" if _canonical_arena_active else &"",
+		"sky_layers": 0 if _canonical_arena_active else 4,
+		"mountain_layers": 0 if _canonical_arena_active else 2,
 		"parallax_layers": 3,
 		"layered_parallax": true,
 		"foreground_separation": true,
-		"platform_readability_layer": true,
+		"platform_readability_layer": not _canonical_arena_active,
 		"fighter_first": true,
-		"celestial_body": &"water_moon",
-		"mist_bands": 3,
-		"palette": &"ink_stone_jade_ember_gold",
+		"celestial_body": &"canonical_art" if _canonical_arena_active else &"water_moon",
+		"mist_bands": 0 if _canonical_arena_active else 3,
+		"palette": &"canonical_mountain_dojo_night" if _canonical_arena_active else &"ink_stone_jade_ember_gold",
 		"purple_tech_glow": false,
 		"collision_changes": false,
 		"impact_director": true,
@@ -82,6 +112,8 @@ func presentation_signature() -> Dictionary:
 	}
 
 func _draw() -> void:
+	if _canonical_arena_active:
+		return
 	_draw_sky_wash()
 	_draw_water_moon()
 	_draw_ink_mountains()
