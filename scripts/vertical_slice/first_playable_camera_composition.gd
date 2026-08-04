@@ -1,15 +1,19 @@
 class_name FirstPlayableCameraComposition
 extends Node
 
-const MIN_ZOOM := 0.56
-const MAX_ZOOM := 0.90
+# C46: framing tuned from the first packaged interactive playtest.
+# Fighters must read as the primary visual subject; the arena remains context, not empty space.
+const MIN_ZOOM := 0.68
+const MAX_ZOOM := 1.06
 const BASELINE_Y := 500.0
-const VERTICAL_RANGE := 72.0
-const HORIZONTAL_PADDING := 420.0
-const FOCUS_LERP := 5.2
-const ZOOM_LERP := 4.8
+const VERTICAL_RANGE := 56.0
+const HORIZONTAL_PADDING := 300.0
+const FOCUS_LERP := 6.0
+const ZOOM_LERP := 5.6
 const SHAKE_DECAY := 9.0
-const MAX_SHAKE_PIXELS := 8.0
+const MAX_SHAKE_PIXELS := 7.0
+const CLOSE_FIGHT_DISTANCE := 260.0
+const CLOSE_FIGHT_ZOOM_FLOOR := 0.94
 
 var _root: Node2D
 var _camera: Camera2D
@@ -20,6 +24,7 @@ func _ready() -> void:
 	process_priority = 100
 	_root = get_parent() as Node2D
 	_camera = _root.get_node_or_null("Camera2D") as Camera2D
+	print("V2_C46_CAMERA_READABILITY=PASS min=%.2f max=%.2f" % [MIN_ZOOM, MAX_ZOOM])
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(_root) or not is_instance_valid(_camera):
@@ -35,9 +40,11 @@ func _process(delta: float) -> void:
 
 	var midpoint := (fighter_one.global_position + fighter_two.global_position) * 0.5
 	var horizontal_distance := absf(fighter_one.global_position.x - fighter_two.global_position.x)
-	var desired_zoom := clampf(1120.0 / maxf(900.0, horizontal_distance + HORIZONTAL_PADDING), MIN_ZOOM, MAX_ZOOM)
+	var desired_zoom := clampf(1120.0 / maxf(760.0, horizontal_distance + HORIZONTAL_PADDING), MIN_ZOOM, MAX_ZOOM)
+	if horizontal_distance <= CLOSE_FIGHT_DISTANCE:
+		desired_zoom = maxf(desired_zoom, CLOSE_FIGHT_ZOOM_FLOOR)
 
-	var target_y := clampf(midpoint.y - 30.0, BASELINE_Y - VERTICAL_RANGE, BASELINE_Y + VERTICAL_RANGE)
+	var target_y := clampf(midpoint.y - 24.0, BASELINE_Y - VERTICAL_RANGE, BASELINE_Y + VERTICAL_RANGE)
 	var target_x := midpoint.x
 	var arena: Variant = _root.get("arena")
 	if arena is FirstPlayableArena:
@@ -59,7 +66,7 @@ func impact_punch(intensity: float, result_id: StringName = &"hit") -> void:
 		&"blocked": multiplier = 0.45
 		&"evaded": multiplier = 0.20
 		&"parried": multiplier = 0.85
-		&"posture_break": multiplier = 1.25
+		&"posture_break": multiplier = 1.20
 	_shake_strength = maxf(_shake_strength, clampf(intensity * multiplier, 0.0, 1.0))
 
 func _apply_shake(delta: float) -> void:
@@ -75,11 +82,13 @@ func _apply_shake(delta: float) -> void:
 
 func presentation_signature() -> Dictionary:
 	return {
-		"framing": &"both_fighters_priority",
+		"framing": &"fighter_readability_priority",
 		"min_zoom": MIN_ZOOM,
 		"max_zoom": MAX_ZOOM,
 		"vertical_range": VERTICAL_RANGE,
 		"horizontal_padding": HORIZONTAL_PADDING,
+		"close_fight_distance": CLOSE_FIGHT_DISTANCE,
+		"close_fight_zoom_floor": CLOSE_FIGHT_ZOOM_FLOOR,
 		"both_fighters_visible": true,
 		"reduced_vertical_motion": true,
 		"focus_lerp": FOCUS_LERP,

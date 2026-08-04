@@ -28,41 +28,43 @@ const DIFFICULTIES := {
 		"escape_dodge_chance": 0.18,
 		"navigation_multiplier": 1.30
 	},
+	# C46 packaged-playtest rebalance: DISCÍPULO previously produced only 4 confirmed hits,
+	# no combo and was KO'd in 39.3s. Keep it fair, but make it meaningfully contest the player.
 	&"disciple": {
 		"label": "DISCÍPULO",
-		"reaction_multiplier": 1.20,
-		"decision_min": 0.30,
-		"decision_max": 0.50,
-		"defense_chance": 0.52,
-		"mistake_chance": 0.16,
-		"escape_interval_min": 0.13,
-		"escape_interval_max": 0.21,
-		"escape_dodge_chance": 0.30,
-		"navigation_multiplier": 1.10
+		"reaction_multiplier": 0.98,
+		"decision_min": 0.24,
+		"decision_max": 0.39,
+		"defense_chance": 0.62,
+		"mistake_chance": 0.09,
+		"escape_interval_min": 0.11,
+		"escape_interval_max": 0.18,
+		"escape_dodge_chance": 0.40,
+		"navigation_multiplier": 0.94
 	},
 	&"adept": {
 		"label": "ADEPTO",
-		"reaction_multiplier": 0.96,
-		"decision_min": 0.22,
-		"decision_max": 0.38,
-		"defense_chance": 0.64,
-		"mistake_chance": 0.08,
-		"escape_interval_min": 0.10,
-		"escape_interval_max": 0.17,
-		"escape_dodge_chance": 0.42,
-		"navigation_multiplier": 0.92
+		"reaction_multiplier": 0.88,
+		"decision_min": 0.20,
+		"decision_max": 0.34,
+		"defense_chance": 0.68,
+		"mistake_chance": 0.055,
+		"escape_interval_min": 0.095,
+		"escape_interval_max": 0.155,
+		"escape_dodge_chance": 0.47,
+		"navigation_multiplier": 0.86
 	},
 	&"master": {
 		"label": "MESTRE",
-		"reaction_multiplier": 0.82,
-		"decision_min": 0.18,
-		"decision_max": 0.31,
-		"defense_chance": 0.72,
-		"mistake_chance": 0.035,
-		"escape_interval_min": 0.09,
-		"escape_interval_max": 0.145,
-		"escape_dodge_chance": 0.52,
-		"navigation_multiplier": 0.80
+		"reaction_multiplier": 0.76,
+		"decision_min": 0.16,
+		"decision_max": 0.28,
+		"defense_chance": 0.76,
+		"mistake_chance": 0.025,
+		"escape_interval_min": 0.08,
+		"escape_interval_max": 0.13,
+		"escape_dodge_chance": 0.58,
+		"navigation_multiplier": 0.74
 	}
 }
 
