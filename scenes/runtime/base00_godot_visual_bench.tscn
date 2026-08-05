@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime/base00_godot_visual_bench.gd" id="1_c54"]
+
+[node name="Base00GodotVisualBench" type="Node2D"]
+script = ExtResource("1_c54")
+
+# Tehkné Solutions
