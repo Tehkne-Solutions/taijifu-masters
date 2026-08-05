@@ -1,0 +1,37 @@
+{
+  "schema": "tehkne/taijifu-modular-fighter-preset/v1",
+  "signature": "Tehkné Solutions",
+  "profile_id": "preset_training_rival",
+  "display_name": "Rival de Treino",
+  "base_body_id": "base_fighter_v1",
+  "authored_facing": -1,
+  "status": "awaiting_clean_master_materialization",
+  "modules": {
+    "body_base": "base_fighter_v1",
+    "skin": "skin_training_rival",
+    "face": "face_training_rival",
+    "eyes": "eyes_training_rival",
+    "brows": "brows_training_rival",
+    "hair_back": "hair_training_rival_back",
+    "hair_front": "hair_training_rival_front_white_streak",
+    "torso_inner": "uniform_training_rival_inner",
+    "torso_outer": "uniform_training_rival_outer_dark",
+    "shoulders": "shoulders_training_rival_light_armor",
+    "arms": "arms_training_rival_wraps",
+    "hands": "hands_training_rival_gloves",
+    "waist": "waist_training_rival_red_sash",
+    "legs": "legs_training_rival_dark",
+    "feet": "feet_training_rival",
+    "back_accessory": "scarf_training_rival_red",
+    "weapon_main": "bokken_training_rival"
+  },
+  "combat_loadout_id": "combat_training_rival_first_playable",
+  "materialization": {
+    "clean_master_required": true,
+    "expected_master": "production/first_playable/training_rival/source/training_rival_master.png",
+    "procedural_visual_allowed": false,
+    "contact_sheet_source_allowed": false,
+    "lian_wu_source_reuse_allowed": false,
+    "spriteframes_target": "res://assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres"
+  }
+}
