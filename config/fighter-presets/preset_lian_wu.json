@@ -1,0 +1,33 @@
+{
+  "schema": "tehkne/taijifu-modular-fighter-preset/v1",
+  "signature": "Tehkné Solutions",
+  "profile_id": "preset_lian_wu",
+  "display_name": "Lian Wu",
+  "base_body_id": "base_fighter_v1",
+  "authored_facing": 1,
+  "status": "migration_in_progress",
+  "modules": {
+    "body_base": "base_fighter_v1",
+    "skin": "skin_lian_wu",
+    "face": "face_lian_wu",
+    "eyes": "eyes_lian_wu",
+    "brows": "brows_lian_wu",
+    "hair_back": "hair_lian_wu_back",
+    "hair_front": "hair_lian_wu_front",
+    "torso_inner": "uniform_lian_wu_inner",
+    "torso_outer": "uniform_lian_wu_outer",
+    "arms": "arms_lian_wu",
+    "hands": "hands_lian_wu",
+    "waist": "waist_lian_wu_blue_sash",
+    "legs": "legs_lian_wu",
+    "feet": "feet_lian_wu",
+    "weapon_main": "katana_lian_wu",
+    "weapon_back": "sheath_lian_wu_blue"
+  },
+  "combat_loadout_id": "combat_lian_wu_first_playable",
+  "migration": {
+    "reuse_existing_canonical_frames": true,
+    "procedural_visual_allowed": false,
+    "spriteframes_target": "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres"
+  }
+}
