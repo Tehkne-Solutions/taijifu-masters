@@ -1,0 +1,24 @@
+{
+  "schema": "tehkne/taijifu-base00-master/v1",
+  "signature": "Tehkné Solutions",
+  "asset_id": "base_fighter_v1",
+  "version": "1.0.1",
+  "style": "chibi_manga_comic",
+  "file": "base_fighter_v1_master_v1.0.1.png",
+  "sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+  "canvas": [
+    1024,
+    1024
+  ],
+  "mode": "RGBA",
+  "pivot": [
+    0.5,
+    0.92
+  ],
+  "root_anchor": "bottom_center",
+  "hair": "none",
+  "weapon": "none",
+  "production_status": "approved_canonical_master",
+  "qa_status": "PASS",
+  "canonical_destination": "assets/modular_fighters/base_00/base_fighter_v1_master.png"
+}
