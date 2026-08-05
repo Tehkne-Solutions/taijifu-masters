@@ -46,8 +46,20 @@ $c52Output | Where-Object { $_ -match '^VM02_C52_(SHA256|CANVAS|RGBA_TRANSPARENC
 Write-Host "VM02_C54_C52_PREFLIGHT=PASS"
 
 $benchScript = Get-Content (Join-Path $RepoRoot $script) -Raw
-if ($benchScript -notmatch 'ModularFighterAssembler' -or $benchScript -notmatch 'attach_visual_module\(&"body_base"' -or $benchScript -notmatch 'TARGET_VISUAL_HEIGHT := 132\.0') {
-  throw "VM02_C54_BENCH_CONTRACT=BLOCKED"
+$benchContract = [ordered]@{
+  ASSEMBLER_PRELOAD = 'preload("res://scripts/characters/modular_fighter_assembler.gd")'
+  PROFILE_PRELOAD = 'preload("res://scripts/characters/modular_fighter_profile.gd")'
+  PROFILE_CONFIGURE = 'assembler.configure(profile)'
+  BODY_SLOT_ATTACH = 'assembler.attach_visual_module(&"body_base", sprite)'
+  TARGET_HEIGHT = 'const TARGET_VISUAL_HEIGHT := 132.0'
+  BASELINE = 'const BENCH_BASELINE_Y := 790.0'
+  HORIZONTAL_FLIP = 'sprite.flip_h = flipped'
+}
+foreach ($entry in $benchContract.GetEnumerator()) {
+  if (-not $benchScript.Contains([string]$entry.Value)) {
+    throw "VM02_C54_BENCH_CONTRACT=BLOCKED missing=$($entry.Key)"
+  }
+  Write-Host "VM02_C54_BENCH_CONTRACT_$($entry.Key)=PASS"
 }
 if ($benchScript -match 'draw_circle\(' -or $benchScript -match 'draw_colored_polygon\(') {
   throw "VM02_C54_PROCEDURAL_FIGHTER_RENDERER=BLOCKED"
