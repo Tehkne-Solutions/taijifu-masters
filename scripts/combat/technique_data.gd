@@ -34,14 +34,18 @@ extends Resource
 @export var can_turn_during_startup: bool = false
 @export var causes_disarm_pressure: bool = false
 
+const STARTUP_FEEL_SCALE := 1.28
+const ACTIVE_FEEL_SCALE := 1.12
+const RECOVERY_FEEL_SCALE := 1.38
+
 func startup_seconds() -> float:
-	return startup_frames / 60.0
+	return (startup_frames / 60.0) * STARTUP_FEEL_SCALE
 
 func active_seconds() -> float:
-	return active_frames / 60.0
+	return (active_frames / 60.0) * ACTIVE_FEEL_SCALE
 
 func recovery_seconds() -> float:
-	return recovery_frames / 60.0
+	return (recovery_frames / 60.0) * RECOVERY_FEEL_SCALE
 
 func total_seconds() -> float:
 	return startup_seconds() + active_seconds() + recovery_seconds()
@@ -58,3 +62,12 @@ func is_grab() -> bool:
 
 func has_element() -> bool:
 	return element_id != "" and element_power > 0.0
+
+func presentation_signature() -> Dictionary:
+	return {
+		"startup_feel_scale": STARTUP_FEEL_SCALE,
+		"active_feel_scale": ACTIVE_FEEL_SCALE,
+		"recovery_feel_scale": RECOVERY_FEEL_SCALE,
+		"attack_commitment": true,
+		"signature": "Tehkné Solutions"
+	}
