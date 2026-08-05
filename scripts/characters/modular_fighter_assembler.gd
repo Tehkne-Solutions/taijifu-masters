@@ -8,18 +8,25 @@ extends Node2D
 const STANDARD_PATH := "res://config/modular-fighter-standard-v1.json"
 const BASE_PATH := "res://config/fighter-bases/base_fighter_v1.json"
 
-var _profile: ModularFighterProfile
+var _profile
 var _layers: Dictionary = {}
 var _ready_for_render := false
 
-func configure(profile: ModularFighterProfile) -> PackedStringArray:
+func configure(profile) -> PackedStringArray:
 	_clear_layers()
 	_profile = profile
 	var failures := PackedStringArray()
 	if _profile == null:
 		failures.append("profile_missing")
 		return failures
-	failures.append_array(_profile.validate_against_standard())
+	if not _profile.has_method("validate_against_standard"):
+		failures.append("profile_validation_contract_missing")
+		return failures
+	var validation_result = _profile.call("validate_against_standard")
+	if typeof(validation_result) != TYPE_PACKED_STRING_ARRAY:
+		failures.append("profile_validation_contract_invalid")
+		return failures
+	failures.append_array(validation_result)
 	if not failures.is_empty():
 		return failures
 	if not FileAccess.file_exists(BASE_PATH):
@@ -56,13 +63,16 @@ func is_ready_for_render() -> bool:
 	return _ready_for_render
 
 func profile_id() -> StringName:
-	return _profile.profile_id if _profile != null else &""
+	if _profile == null:
+		return &""
+	return StringName(String(_profile.get("profile_id")))
 
 func _clear_layers() -> void:
 	for node in _layers.values():
 		if is_instance_valid(node):
 			node.queue_free()
 	_layers.clear()
+	_profile = null
 	_ready_for_render = false
 
 func _allowed_slots() -> PackedStringArray:
@@ -75,6 +85,9 @@ func _allowed_slots() -> PackedStringArray:
 	var parsed = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return result
-	for slot in parsed.get("slots", []):
+	var slots = parsed.get("slots", [])
+	if typeof(slots) != TYPE_ARRAY:
+		return result
+	for slot in slots:
 		result.append(String(slot))
 	return result
