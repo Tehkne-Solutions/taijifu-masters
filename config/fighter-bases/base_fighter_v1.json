@@ -1,0 +1,77 @@
+{
+  "schema": "tehkne/taijifu-fighter-base/v1",
+  "signature": "Tehkné Solutions",
+  "id": "base_fighter_v1",
+  "status": "approved_foundation_contract",
+  "visual_style": "chibi_manga_comic",
+  "source": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "native_transparency_required": true,
+    "expected_master": "assets/modular_fighters/base_00/base_fighter_v1_master.png",
+    "background_allowed": false,
+    "text_allowed": false,
+    "equipment_baked_into_body_allowed": false,
+    "hair_baked_into_body_allowed": false,
+    "weapon_baked_into_body_allowed": false
+  },
+  "body": {
+    "presentation": "neutral_inner_training_layer",
+    "root_anchor": "bottom_center",
+    "authored_facing": 1,
+    "target_gameplay_height_px": 132,
+    "silhouette": "compact_chibi_martial_artist",
+    "head_body_ratio": "chibi_readable",
+    "hands_feet": "combat_readable"
+  },
+  "rig_contract": {
+    "root": "root",
+    "bones": [
+      "pelvis",
+      "torso",
+      "chest",
+      "neck",
+      "head",
+      "upper_arm_l",
+      "forearm_l",
+      "hand_l",
+      "upper_arm_r",
+      "forearm_r",
+      "hand_r",
+      "thigh_l",
+      "shin_l",
+      "foot_l",
+      "thigh_r",
+      "shin_r",
+      "foot_r",
+      "weapon_main_anchor",
+      "weapon_back_anchor",
+      "hair_back_anchor",
+      "head_accessory_anchor",
+      "back_accessory_anchor"
+    ],
+    "shared_animation_source": true,
+    "module_attachment_by_slot": true
+  },
+  "required_runtime_families": [
+    "idle",
+    "run",
+    "jump_start",
+    "airborne",
+    "fall",
+    "attack_light",
+    "guard",
+    "dodge",
+    "hit",
+    "ko"
+  ],
+  "quality_gate": {
+    "no_procedural_runtime_renderer": true,
+    "no_contact_sheet_runtime_source": true,
+    "no_background_removal_pipeline": true,
+    "clean_alpha": true,
+    "stable_baseline": true,
+    "stable_scale": true,
+    "visual_review_required": true
+  }
+}
