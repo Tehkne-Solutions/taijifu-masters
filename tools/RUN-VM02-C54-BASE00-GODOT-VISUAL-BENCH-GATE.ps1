@@ -49,8 +49,11 @@ $benchScript = Get-Content (Join-Path $RepoRoot $script) -Raw
 $benchContract = [ordered]@{
   ASSEMBLER_PRELOAD = 'preload("res://scripts/characters/modular_fighter_assembler.gd")'
   PROFILE_PRELOAD = 'preload("res://scripts/characters/modular_fighter_profile.gd")'
-  PROFILE_CONFIGURE = 'assembler.configure(profile)'
-  BODY_SLOT_ATTACH = 'assembler.attach_visual_module(&"body_base", sprite)'
+  IMAGE_RUNTIME_LOAD = 'Image.load_from_file(ProjectSettings.globalize_path(BASE_ASSET_PATH))'
+  IMAGE_TEXTURE_RUNTIME = 'ImageTexture.create_from_image(image)'
+  ALPHA_BOUNDS = '_alpha_used_rect(image)'
+  PROFILE_CONFIGURE = 'assembler.call("configure", profile)'
+  BODY_SLOT_ATTACH = 'assembler.call("attach_visual_module", &"body_base", sprite)'
   TARGET_HEIGHT = 'const TARGET_VISUAL_HEIGHT := 132.0'
   BASELINE = 'const BENCH_BASELINE_Y := 790.0'
   HORIZONTAL_FLIP = 'sprite.flip_h = flipped'
@@ -61,6 +64,10 @@ foreach ($entry in $benchContract.GetEnumerator()) {
   }
   Write-Host "VM02_C54_BENCH_CONTRACT_$($entry.Key)=PASS"
 }
+if ($benchScript.Contains('preload("res://assets/modular_fighters/base_00/base_fighter_v1_master.png")')) {
+  throw "VM02_C54_PNG_PRELOAD=BLOCKED"
+}
+Write-Host "VM02_C54_PNG_PRELOAD=RETIRED"
 if ($benchScript -match 'draw_circle\(' -or $benchScript -match 'draw_colored_polygon\(') {
   throw "VM02_C54_PROCEDURAL_FIGHTER_RENDERER=BLOCKED"
 }
@@ -89,7 +96,7 @@ $stdout = Join-Path $logDir "base00-godot-visual-bench.stdout.log"
 $stderr = Join-Path $logDir "base00-godot-visual-bench.stderr.log"
 Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
 
-$args = @("--path",$RepoRoot,"--resolution","1920x1080","res://$scene")
+$args = @("--path",$RepoRoot,"--resolution","1920x1080","--quit-after","900","res://$scene")
 $process = Start-Process -FilePath $godotExe -ArgumentList $args -WorkingDirectory $RepoRoot -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 if (-not $process.WaitForExit(30000)) {
   try { $process.Kill() } catch {}
@@ -108,6 +115,7 @@ foreach ($fatal in @(
   "Compile Error",
   "Failed to load script",
   "VM02_C54_BASE00_IMAGE=BLOCKED",
+  "VM02_C54_BASE00_TEXTURE=BLOCKED",
   "VM02_C54_CANVAS=BLOCKED",
   "VM02_C54_ALPHA_BOUNDS=BLOCKED",
   "VM02_C54_MODULAR_ASSEMBLY=BLOCKED",
