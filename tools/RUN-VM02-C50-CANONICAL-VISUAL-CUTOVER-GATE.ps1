@@ -8,10 +8,17 @@ Set-Location $RepoRoot
 $required = @(
   "project.godot",
   "export_presets.cfg",
+  "docs\TAIJIFU-MODULAR-FIGHTER-SYSTEM.md",
+  "config\modular-fighter-standard-v1.json",
+  "config\fighter-presets\preset_lian_wu.json",
+  "config\fighter-presets\preset_training_rival.json",
+  "scripts\characters\modular_fighter_profile.gd",
   "scripts\vertical_slice\first_playable_character_identity.gd",
   "scripts\vertical_slice\first_playable_lot01_presenter.gd",
   "scripts\vertical_slice\training_rival_lot01_presenter.gd",
   "scripts\vertical_slice\first_playable_arena_dressing.gd",
+  "tools\MATERIALIZE-VM02-C50-LIAN-CANONICAL.ps1",
+  "tools\materialize_c50_lian_spriteframes.py",
   "assets\pack_03_stages\mountain_dojo_night\background.png",
   "assets\pack_03_stages\mountain_dojo_night\midground.png",
   "assets\pack_03_stages\mountain_dojo_night\foreground.png"
@@ -22,6 +29,39 @@ if ($missing.Count -gt 0) {
   throw "VM02_C50_REQUIRED_FILES=BLOCKED"
 }
 Write-Host "VM02_C50_REQUIRED_FILES=PASS"
+
+$standardPath = Join-Path $RepoRoot "config\modular-fighter-standard-v1.json"
+$standard = Get-Content $standardPath -Raw | ConvertFrom-Json
+if ($standard.status -ne "approved_project_standard") { throw "VM02_C50_MODULAR_STANDARD=BLOCKED status" }
+if ($standard.visual_target.style -ne "chibi_manga_comic") { throw "VM02_C50_MODULAR_STANDARD=BLOCKED style" }
+if ($standard.authoring.procedural_fighter_fallback_allowed_in_production -ne $false) { throw "VM02_C50_MODULAR_STANDARD=BLOCKED procedural_policy" }
+$requiredSlots = @("body_base","skin","face","eyes","brows","hair_back","hair_front","torso_inner","torso_outer","arms","hands","waist","legs","feet","weapon_main")
+foreach ($slot in $requiredSlots) {
+  if ($standard.slots -notcontains $slot) { throw "VM02_C50_MODULAR_STANDARD=BLOCKED missing_slot=$slot" }
+}
+Write-Host "VM02_C50_MODULAR_FIGHTER_STANDARD=PASS"
+Write-Host "VM02_C50_VISUAL_STYLE_STANDARD=PASS style=chibi_manga_comic"
+Write-Host "VM02_C50_PRODUCTION_PROXY_POLICY=PASS disabled"
+
+foreach ($presetFile in @("preset_lian_wu.json","preset_training_rival.json")) {
+  $presetPath = Join-Path $RepoRoot "config\fighter-presets\$presetFile"
+  $preset = Get-Content $presetPath -Raw | ConvertFrom-Json
+  if (-not $preset.profile_id -or $preset.base_body_id -ne "base_fighter_v1") {
+    throw "VM02_C50_PRESET_CONTRACT=BLOCKED preset=$presetFile"
+  }
+  foreach ($module in $preset.modules.PSObject.Properties.Name) {
+    if ($standard.slots -notcontains $module) {
+      throw "VM02_C50_PRESET_CONTRACT=BLOCKED preset=$presetFile unknown_slot=$module"
+    }
+  }
+}
+Write-Host "VM02_C50_PRESET_CONTRACT=PASS count=2/2"
+
+$profileScript = Get-Content (Join-Path $RepoRoot "scripts\characters\modular_fighter_profile.gd") -Raw
+if ($profileScript -notmatch 'class_name ModularFighterProfile' -or $profileScript -notmatch 'validate_against_standard') {
+  throw "VM02_C50_MODULAR_PROFILE_RUNTIME=BLOCKED"
+}
+Write-Host "VM02_C50_MODULAR_PROFILE_RUNTIME=PASS"
 
 $identityPath = Join-Path $RepoRoot "scripts\vertical_slice\first_playable_character_identity.gd"
 $identity = Get-Content $identityPath -Raw
@@ -44,6 +84,17 @@ Write-Host "VM02_C50_ARENA_PROCEDURAL_RETIREMENT=PASS"
 $lianFrames = Join-Path $RepoRoot "assets\tgap\pack_01_lian_wu\first_playable_lot_01\lian_wu_first_playable_frames.tres"
 $rivalFrames = Join-Path $RepoRoot "assets\tgap\training_rival\first_playable_lot_01\training_rival_first_playable_frames.tres"
 
+if (-not (Test-Path $lianFrames)) {
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=BEGIN"
+  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools\MATERIALIZE-VM02-C50-LIAN-CANONICAL.ps1") -RepoRoot $RepoRoot
+  if ($LASTEXITCODE -ne 0) {
+    throw "VM02_C50_LIAN_AUTO_MATERIALIZE=BLOCKED exit=$LASTEXITCODE"
+  }
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=PASS"
+} else {
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=SKIP_ALREADY_PRESENT"
+}
+
 $lianReady = Test-Path $lianFrames
 $rivalReady = Test-Path $rivalFrames
 Write-Host ("VM02_C50_LIAN_CANONICAL_FRAMES=" + $(if ($lianReady) { "PASS" } else { "BLOCKED" }))
@@ -55,6 +106,9 @@ if (-not $lianReady -or -not $rivalReady) {
   Write-Host "VM02_C50_EXPECTED_LIAN=$lianFrames"
   Write-Host "VM02_C50_EXPECTED_RIVAL=$rivalFrames"
   Write-Host "VM02_C50_NO_PROGRESS_PROMOTION=PASS"
+  if ($lianReady -and -not $rivalReady) {
+    Write-Host "VM02_C50_NEXT_BLOCKER=TRAINING_RIVAL_CANONICAL_ART"
+  }
   throw "VM02_C50_CANONICAL_CHARACTER_ART=BLOCKED"
 }
 
@@ -99,6 +153,9 @@ $report = @(
   "STATUS=PASS",
   "BRANCH=$branch",
   "COMMIT=$commit",
+  "MODULAR_FIGHTER_STANDARD=PASS",
+  "VISUAL_STYLE_STANDARD=chibi_manga_comic",
+  "PRESET_CONTRACT=PASS",
   "PROCEDURAL_CHARACTER_RENDERER=RETIRED",
   "CANONICAL_ARENA=PASS",
   "LIAN_CANONICAL_FRAMES=PASS",
