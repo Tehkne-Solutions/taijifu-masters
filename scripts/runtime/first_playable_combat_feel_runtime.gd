@@ -1,4 +1,3 @@
-class_name FirstPlayableCombatFeelRuntime
 extends Node
 
 const REARM_SECONDS := 0.18
