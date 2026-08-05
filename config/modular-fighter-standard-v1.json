@@ -1,0 +1,84 @@
+{
+  "schema": "tehkne/taijifu-modular-fighter-standard/v1",
+  "signature": "Tehkné Solutions",
+  "status": "approved_project_standard",
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "native_transparency_required": true,
+    "root_anchor": "bottom_center",
+    "procedural_fighter_fallback_allowed_in_production": false
+  },
+  "slots": [
+    "body_base",
+    "skin",
+    "face",
+    "eyes",
+    "brows",
+    "hair_back",
+    "hair_front",
+    "head_accessory",
+    "torso_inner",
+    "torso_outer",
+    "shoulders",
+    "arms",
+    "hands",
+    "waist",
+    "legs",
+    "feet",
+    "back_accessory",
+    "weapon_main",
+    "weapon_offhand",
+    "weapon_back",
+    "fx_aura"
+  ],
+  "required_animation_families": [
+    "idle",
+    "run",
+    "jump_start",
+    "airborne",
+    "fall",
+    "attack_light",
+    "guard",
+    "dodge",
+    "hit",
+    "ko"
+  ],
+  "extended_animation_families": [
+    "walk",
+    "land",
+    "crouch",
+    "parry",
+    "attack_heavy",
+    "attack_special"
+  ],
+  "initial_presets": [
+    "preset_lian_wu",
+    "preset_training_rival"
+  ],
+  "creator_v1_editable_slots": [
+    "skin",
+    "face",
+    "eyes",
+    "brows",
+    "hair_back",
+    "hair_front",
+    "torso_inner",
+    "torso_outer",
+    "arms",
+    "hands",
+    "waist",
+    "legs",
+    "feet",
+    "head_accessory",
+    "back_accessory",
+    "weapon_main"
+  ],
+  "visual_target": {
+    "style": "chibi_manga_comic",
+    "silhouette": "strong_readable",
+    "linework": "clean_inked",
+    "shading": "controlled_cel_anime",
+    "gameplay_scale_readability": "required"
+  }
+}
