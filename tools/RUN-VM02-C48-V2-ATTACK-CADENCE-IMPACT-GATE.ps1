@@ -63,8 +63,42 @@ if (-not $godot) { throw "VM02_C48_GODOT_RESOLVE=BLOCKED" }
 Write-Host "VM02_C48_GODOT_RESOLVE=PASS"
 Write-Host "GODOT_EXE=$godot"
 
-$proc = Start-Process -FilePath $godot -ArgumentList @("--headless","--path",('"' + $RepoRoot + '"'),"--editor","--quit-after","2") -Wait -PassThru -NoNewWindow
+$logDir = Join-Path $RepoRoot "artifacts\vm02-c48\logs"
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+$stdoutLog = Join-Path $logDir "godot-bootstrap.stdout.log"
+$stderrLog = Join-Path $logDir "godot-bootstrap.stderr.log"
+Remove-Item $stdoutLog,$stderrLog -Force -ErrorAction SilentlyContinue
+
+$proc = Start-Process `
+  -FilePath $godot `
+  -ArgumentList @("--headless","--path",('"' + $RepoRoot + '"'),"--editor","--quit-after","2") `
+  -RedirectStandardOutput $stdoutLog `
+  -RedirectStandardError $stderrLog `
+  -Wait `
+  -PassThru `
+  -NoNewWindow
+
+if (Test-Path $stdoutLog) {
+  Get-Content $stdoutLog | ForEach-Object { Write-Host $_ }
+}
+if (Test-Path $stderrLog) {
+  $stderrLines = @(Get-Content $stderrLog)
+  foreach ($line in $stderrLines) {
+    if ($line -match 'SCRIPT ERROR|Parse Error|Compile Error|ERROR:') {
+      Write-Host $line
+    } elseif ($line -match 'WARNING:') {
+      Write-Host "VM02_C48_GODOT_WARNING=$line"
+    } elseif ($line.Trim()) {
+      Write-Host $line
+    }
+  }
+}
+
 if ($proc.ExitCode -ne 0) { throw "VM02_C48_GODOT_BOOTSTRAP=BLOCKED exit=$($proc.ExitCode)" }
+$fatalPattern = 'SCRIPT ERROR|Parse Error|Compile Error|ERROR:'
+if ((Test-Path $stderrLog) -and ((Get-Content $stderrLog -Raw) -match $fatalPattern)) {
+  throw "VM02_C48_GODOT_BOOTSTRAP=BLOCKED fatal_script_or_engine_error"
+}
 Write-Host "VM02_C48_GODOT_BOOTSTRAP=PASS"
 
 $branch = (git -C $RepoRoot branch --show-current).Trim()
