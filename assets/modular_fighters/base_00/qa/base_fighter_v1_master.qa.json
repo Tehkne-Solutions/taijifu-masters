@@ -1,0 +1,55 @@
+{
+  "schema": "tehkne/base00-art-master-qa/v1",
+  "signature": "Tehkné Solutions",
+  "status": "PASS",
+  "asset": "base_fighter_v1_master_v1.0.1.png",
+  "sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+  "canvas": [
+    1024,
+    1024
+  ],
+  "mode": "RGBA",
+  "alpha_bbox": [
+    335,
+    131,
+    688,
+    942
+  ],
+  "first_visible_y": 131,
+  "last_visible_y": 941,
+  "pivot": {
+    "x": 0.5,
+    "y": 0.92
+  },
+  "computed_center_x": 511.0,
+  "visible_components": 1,
+  "component_areas": [
+    193251
+  ],
+  "nonzero_alpha_pixels": 195912,
+  "semi_transparent_pixels": 13799,
+  "checks": {
+    "single_character_component": "PASS",
+    "canvas_1024x1024": "PASS",
+    "mode_rgba": "PASS",
+    "transparent_corners": "PASS",
+    "alpha_present": "PASS",
+    "baseline_y_0_92": "PASS",
+    "pivot_x_centered": "PASS",
+    "no_embedded_text_logo_frame": "PASS",
+    "bald_base_design": "PASS",
+    "no_weapon_or_specific_uniform": "PASS",
+    "human_visual_review": "PASS"
+  },
+  "source": "Approved BASE-00 visual reference isolated and normalized into a technical runtime candidate.",
+  "promotion_rule": "Promote to canonical master only after human inspection of edges, feet, residual halo and silhouette.",
+  "visual_review": {
+    "edges_and_halo": "PASS",
+    "feet_and_baseline": "PASS",
+    "single_character": "PASS",
+    "no_fixed_shadow": "PASS",
+    "no_text_logo_frame_or_scenario": "PASS",
+    "silhouette_readability": "PASS",
+    "review_result": "APPROVED_FOR_C51_INTEGRATION"
+  }
+}
