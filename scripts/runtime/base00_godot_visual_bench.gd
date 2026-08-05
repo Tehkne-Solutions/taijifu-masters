@@ -4,6 +4,7 @@ const ProfileClass := preload("res://scripts/characters/modular_fighter_profile.
 const AssemblerClass := preload("res://scripts/characters/modular_fighter_assembler.gd")
 const BASE_ASSET_PATH := "res://assets/modular_fighters/base_00/base_fighter_v1_master.png"
 const OUTPUT := "res://artifacts/vm02-c54/base00-godot-bench-1920x1080.png"
+const BENCH_CANVAS_SIZE := Vector2(1920.0, 1080.0)
 const TARGET_VISUAL_HEIGHT := 132.0
 const BENCH_BASELINE_Y := 790.0
 const LEFT_ROOT_X := 650.0
@@ -12,6 +13,8 @@ const RIGHT_ROOT_X := 1270.0
 var _source_used_rect := Rect2i()
 var _gameplay_scale := 1.0
 var _baseline_offset_y := 0.0
+var _layout_scale := 1.0
+var _logical_viewport_size := Vector2.ZERO
 var _base_texture: Texture2D
 var _left_assembler: Node2D
 var _right_assembler: Node2D
@@ -20,22 +23,26 @@ func _ready() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	if not _configure_layout_transform():
+		_fail("VM02_C54_VIEWPORT_LAYOUT=BLOCKED", 2)
+		return
+
 	var image := Image.load_from_file(ProjectSettings.globalize_path(BASE_ASSET_PATH))
 	if image == null or image.is_empty():
-		_fail("VM02_C54_BASE00_IMAGE=BLOCKED", 2)
+		_fail("VM02_C54_BASE00_IMAGE=BLOCKED", 3)
 		return
 	if image.get_width() != 1024 or image.get_height() != 1024:
-		_fail("VM02_C54_CANVAS=BLOCKED size=%dx%d" % [image.get_width(), image.get_height()], 3)
+		_fail("VM02_C54_CANVAS=BLOCKED size=%dx%d" % [image.get_width(), image.get_height()], 4)
 		return
 
 	_source_used_rect = _alpha_used_rect(image)
 	if _source_used_rect.size.y <= 0:
-		_fail("VM02_C54_ALPHA_BOUNDS=BLOCKED empty", 4)
+		_fail("VM02_C54_ALPHA_BOUNDS=BLOCKED empty", 5)
 		return
 
 	_base_texture = ImageTexture.create_from_image(image)
 	if _base_texture == null:
-		_fail("VM02_C54_BASE00_TEXTURE=BLOCKED image_texture_unavailable", 5)
+		_fail("VM02_C54_BASE00_TEXTURE=BLOCKED image_texture_unavailable", 6)
 		return
 
 	_gameplay_scale = TARGET_VISUAL_HEIGHT / float(_source_used_rect.size.y)
@@ -45,7 +52,7 @@ func _run() -> void:
 	var left_ok := _build_fighter(LEFT_ROOT_X, false, "BASE-00 / authored facing")
 	var right_ok := _build_fighter(RIGHT_ROOT_X, true, "BASE-00 / horizontal flip")
 	if not left_ok or not right_ok:
-		_fail("VM02_C54_MODULAR_ASSEMBLY=BLOCKED", 6)
+		_fail("VM02_C54_MODULAR_ASSEMBLY=BLOCKED", 7)
 		return
 
 	_install_labels()
@@ -55,21 +62,25 @@ func _run() -> void:
 		await get_tree().process_frame
 
 	if _left_assembler == null or _right_assembler == null:
-		_fail("VM02_C54_MODULAR_ASSEMBLY=BLOCKED missing_assembler", 7)
+		_fail("VM02_C54_MODULAR_ASSEMBLY=BLOCKED missing_assembler", 8)
 		return
 	if _left_assembler.get_node_or_null("Module_body_base") == null or _right_assembler.get_node_or_null("Module_body_base") == null:
-		_fail("VM02_C54_BODY_SLOT=BLOCKED", 8)
+		_fail("VM02_C54_BODY_SLOT=BLOCKED", 9)
 		return
 
 	var computed_height := float(_source_used_rect.size.y) * _gameplay_scale
 	if abs(computed_height - TARGET_VISUAL_HEIGHT) > 0.05:
-		_fail("VM02_C54_GAMEPLAY_HEIGHT=BLOCKED actual=%.4f" % computed_height, 9)
+		_fail("VM02_C54_GAMEPLAY_HEIGHT=BLOCKED actual=%.4f" % computed_height, 10)
 		return
 
 	var left_bottom := _left_assembler.position.y
 	var right_bottom := _right_assembler.position.y
 	if abs(left_bottom - BENCH_BASELINE_Y) > 0.01 or abs(right_bottom - BENCH_BASELINE_Y) > 0.01:
-		_fail("VM02_C54_BASELINE=BLOCKED left=%.3f right=%.3f" % [left_bottom, right_bottom], 10)
+		_fail("VM02_C54_BASELINE=BLOCKED left=%.3f right=%.3f" % [left_bottom, right_bottom], 11)
+		return
+
+	if not _safe_frame_contract_passes():
+		_fail("VM02_C54_SAFE_FRAME=BLOCKED", 12)
 		return
 
 	var output_dir := OUTPUT.get_base_dir()
@@ -77,15 +88,19 @@ func _run() -> void:
 	await RenderingServer.frame_post_draw
 	var capture := get_viewport().get_texture().get_image()
 	if capture == null or capture.is_empty():
-		_fail("VM02_C54_CAPTURE=BLOCKED viewport_unavailable", 11)
+		_fail("VM02_C54_CAPTURE=BLOCKED viewport_unavailable", 13)
 		return
 	if capture.get_width() != 1920 or capture.get_height() != 1080:
 		capture.resize(1920, 1080, Image.INTERPOLATE_LANCZOS)
 	var save_error := capture.save_png(OUTPUT)
 	if save_error != OK:
-		_fail("VM02_C54_CAPTURE=BLOCKED save_error=%s" % save_error, 12)
+		_fail("VM02_C54_CAPTURE=BLOCKED save_error=%s" % save_error, 14)
 		return
 
+	print("VM02_C54_LOGICAL_VIEWPORT=PASS size=%dx%d" % [roundi(_logical_viewport_size.x), roundi(_logical_viewport_size.y)])
+	print("VM02_C54_AUTHORED_CANVAS=PASS size=1920x1080")
+	print("VM02_C54_LAYOUT_SCALE=PASS scale=%.8f" % _layout_scale)
+	print("VM02_C54_SAFE_FRAME=PASS")
 	print("VM02_C54_BASE00_TEXTURE=PASS")
 	print("VM02_C54_CANVAS=PASS size=1024x1024")
 	print("VM02_C54_ALPHA_BBOX=%d,%d,%d,%d" % [_source_used_rect.position.x, _source_used_rect.position.y, _source_used_rect.size.x, _source_used_rect.size.y])
@@ -100,6 +115,30 @@ func _run() -> void:
 	print("VM02_C54_OUTPUT=" + OUTPUT)
 	print("VM02_C54_RUNTIME=PASS")
 	get_tree().quit(0)
+
+func _configure_layout_transform() -> bool:
+	_logical_viewport_size = get_viewport().get_visible_rect().size
+	if _logical_viewport_size.x <= 0.0 or _logical_viewport_size.y <= 0.0:
+		return false
+	var scale_x := _logical_viewport_size.x / BENCH_CANVAS_SIZE.x
+	var scale_y := _logical_viewport_size.y / BENCH_CANVAS_SIZE.y
+	if scale_x <= 0.0 or scale_y <= 0.0:
+		return false
+	_layout_scale = minf(scale_x, scale_y)
+	if _layout_scale <= 0.0:
+		return false
+	scale = Vector2.ONE * _layout_scale
+	position = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5
+	return true
+
+func _safe_frame_contract_passes() -> bool:
+	if LEFT_ROOT_X - 52.0 < 0.0 or LEFT_ROOT_X + 52.0 > BENCH_CANVAS_SIZE.x:
+		return false
+	if RIGHT_ROOT_X - 52.0 < 0.0 or RIGHT_ROOT_X + 52.0 > BENCH_CANVAS_SIZE.x:
+		return false
+	if BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT < 0.0 or BENCH_BASELINE_Y > BENCH_CANVAS_SIZE.y:
+		return false
+	return true
 
 func _build_fighter(root_x: float, flipped: bool, caption: String) -> bool:
 	var profile = ProfileClass.new()
@@ -184,7 +223,7 @@ func _add_label(text_value: String, at: Vector2, font_size: int, color: Color) -
 	add_child(label)
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 1920, 1080), Color("0a0e14"), true)
+	draw_rect(Rect2(Vector2.ZERO, BENCH_CANVAS_SIZE), Color("0a0e14"), true)
 	draw_rect(Rect2(130, 235, 1660, 710), Color("111923"), true)
 	draw_rect(Rect2(130, 235, 1660, 710), Color("a88435"), false, 2.0)
 	draw_rect(Rect2(210, BENCH_BASELINE_Y, 1500, 72), Color("171c24"), true)

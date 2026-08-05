@@ -54,6 +54,11 @@ $benchContract = [ordered]@{
   ALPHA_BOUNDS = '_alpha_used_rect(image)'
   PROFILE_CONFIGURE = 'assembler.call("configure", profile)'
   BODY_SLOT_ATTACH = 'assembler.call("attach_visual_module", &"body_base", sprite)'
+  AUTHORED_CANVAS = 'const BENCH_CANVAS_SIZE := Vector2(1920.0, 1080.0)'
+  VIEWPORT_DISCOVERY = 'get_viewport().get_visible_rect().size'
+  LAYOUT_SCALE = 'scale = Vector2.ONE * _layout_scale'
+  LAYOUT_CENTER = 'position = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5'
+  SAFE_FRAME = '_safe_frame_contract_passes()'
   TARGET_HEIGHT = 'const TARGET_VISUAL_HEIGHT := 132.0'
   BASELINE = 'const BENCH_BASELINE_Y := 790.0'
   HORIZONTAL_FLIP = 'sprite.flip_h = flipped'
@@ -114,6 +119,8 @@ foreach ($fatal in @(
   "Parse Error",
   "Compile Error",
   "Failed to load script",
+  "VM02_C54_VIEWPORT_LAYOUT=BLOCKED",
+  "VM02_C54_SAFE_FRAME=BLOCKED",
   "VM02_C54_BASE00_IMAGE=BLOCKED",
   "VM02_C54_BASE00_TEXTURE=BLOCKED",
   "VM02_C54_CANVAS=BLOCKED",
@@ -129,7 +136,16 @@ foreach ($fatal in @(
   }
 }
 
+if ($text -notmatch 'VM02_C54_LOGICAL_VIEWPORT=PASS size=\d+x\d+') {
+  throw "VM02_C54_GATE=BLOCKED missing_marker=VM02_C54_LOGICAL_VIEWPORT"
+}
+if ($text -notmatch 'VM02_C54_LAYOUT_SCALE=PASS scale=[0-9.]+') {
+  throw "VM02_C54_GATE=BLOCKED missing_marker=VM02_C54_LAYOUT_SCALE"
+}
+
 $markers = @(
+  "VM02_C54_AUTHORED_CANVAS=PASS size=1920x1080",
+  "VM02_C54_SAFE_FRAME=PASS",
   "VM02_C54_BASE00_TEXTURE=PASS",
   "VM02_C54_CANVAS=PASS size=1024x1024",
   "VM02_C54_GAMEPLAY_HEIGHT=PASS actual=132.000",
@@ -174,6 +190,9 @@ $branchName = (git -C $RepoRoot branch --show-current).Trim()
 $commit = (git -C $RepoRoot rev-parse --short=12 HEAD).Trim()
 Write-TehkneGateReport -Gate "VM02-C54-BASE00-GODOT-VISUAL-BENCH" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
   C52_PREFLIGHT="PASS"
+  VIEWPORT_LAYOUT="PASS"
+  AUTHORED_CANVAS="1920x1080"
+  SAFE_FRAME="PASS"
   BASE00_TEXTURE="PASS"
   CANVAS="1024x1024"
   GAMEPLAY_HEIGHT="132px"
