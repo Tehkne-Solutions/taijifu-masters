@@ -195,7 +195,7 @@ try {
   for ($y = 0; $y -lt $bitmap.Height; $y += 2) {
     for ($x = 0; $x -lt $bitmap.Width; $x += 2) {
       $pixel = $bitmap.GetPixel($x, $y)
-      if ($pixel.R -le 130 -and $pixel.G -ge 130 -and $pixel.B -ge 150) {
+      if ($pixel.R -le 130 -and $pixel.G -ge 130 -and $pixel.B -ge 180) {
         $cyanCount++
         if ($x -lt $cyanMinX) { $cyanMinX = $x }
         if ($x -gt $cyanMaxX) { $cyanMaxX = $x }
