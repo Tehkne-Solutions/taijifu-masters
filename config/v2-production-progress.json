@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C46-V2-COMBAT-READABILITY-BALANCE",
+  "updated_by_gate": "VM02-C47-V2-COMPARATIVE-PLAYTEST-BUILD",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 74,
+    "progress_percent": 76,
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
@@ -23,10 +23,12 @@
     "packaged_build_smoke": 100,
     "interactive_playtest_handoff": 100,
     "presentation_cleanup": 100,
-    "combat_readability_balance": 100
+    "combat_readability_balance": 100,
+    "comparative_playtest_build": 100,
+    "attack_cadence_impact": 0
   },
   "project": {
-    "progress_percent": 54
+    "progress_percent": 55
   },
   "blocked_art_dependencies": [
     "training_rival_master",
@@ -43,13 +45,20 @@
       "p2_confirmed_hits": 4,
       "p1_max_combo": 6,
       "p2_max_combo": 0
+    },
+    "c47_human_review": {
+      "difficulty": "disciple",
+      "result": "too_easy",
+      "dominant_input": "repeated_F",
+      "problem": "attack_mash_wins_without_timing_or_sequence",
+      "impact_readability": "too_fast_no_clear_strike_contact"
     }
   },
   "next_priority": [
-    "run C46 gate and verify Godot bootstrap after camera and AI tuning",
-    "produce a fresh packaged Windows playtest from the C46 branch",
-    "confirm fighters occupy more screen area while both remain readable",
-    "retest DISCIPULO and compare match duration, CPU confirmed hits and defensive pressure against C45 telemetry",
-    "only after readability and difficulty improve, return to canonical Training Rival art production"
+    "run C48 gate and validate anti-mash attack commitment runtime",
+    "confirm attack startup active recovery cadence is visually readable",
+    "build a fresh Windows playtest and verify repeated F alone is no longer an effective winning strategy",
+    "require deliberate Tai Ji Fu sequencing and timing for reliable pressure",
+    "resume canonical character art after combat cadence is accepted"
   ]
 }
