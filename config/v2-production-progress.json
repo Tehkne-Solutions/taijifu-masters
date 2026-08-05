@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C47-V2-COMPARATIVE-PLAYTEST-BUILD",
+  "updated_by_gate": "VM02-C48-V2-ATTACK-CADENCE-IMPACT",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 76,
+    "progress_percent": 79,
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
@@ -25,10 +25,10 @@
     "presentation_cleanup": 100,
     "combat_readability_balance": 100,
     "comparative_playtest_build": 100,
-    "attack_cadence_impact": 0
+    "attack_cadence_impact": 100
   },
   "project": {
-    "progress_percent": 55
+    "progress_percent": 57
   },
   "blocked_art_dependencies": [
     "training_rival_master",
@@ -52,13 +52,21 @@
       "dominant_input": "repeated_F",
       "problem": "attack_mash_wins_without_timing_or_sequence",
       "impact_readability": "too_fast_no_clear_strike_contact"
+    },
+    "c48_gate": {
+      "status": "pass",
+      "anti_mash": true,
+      "attack_commitment": true,
+      "timing_scale": true,
+      "godot_bootstrap": true,
+      "validated_commit": "c16a467cadd7"
     }
   },
   "next_priority": [
-    "run C48 gate and validate anti-mash attack commitment runtime",
-    "confirm attack startup active recovery cadence is visually readable",
-    "build a fresh Windows playtest and verify repeated F alone is no longer an effective winning strategy",
-    "require deliberate Tai Ji Fu sequencing and timing for reliable pressure",
-    "resume canonical character art after combat cadence is accepted"
+    "build the C49 packaged Windows playtest from the validated C48 combat feel runtime",
+    "run a repeated-F abuse test and confirm mash is no longer an efficient winning strategy",
+    "run a deliberate Tai Ji Fu timing test and compare effectiveness against repeated F",
+    "evaluate startup contact recovery feel before introducing any further combat tuning",
+    "resume canonical character art only after combat cadence is human-approved"
   ]
 }
