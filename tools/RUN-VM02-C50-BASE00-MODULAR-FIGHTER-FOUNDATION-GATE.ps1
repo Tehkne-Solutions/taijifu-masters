@@ -49,9 +49,26 @@ if (-not $base.rig_contract.shared_animation_source -or -not $base.rig_contract.
 Write-Host "VM02_C50_BASE00_RIG_CONTRACT=PASS"
 
 $assembler = Get-Content (Join-Path $RepoRoot "scripts\characters\modular_fighter_assembler.gd") -Raw
-if ($assembler -notmatch 'class_name ModularFighterAssembler' -or $assembler -notmatch 'attach_visual_module' -or $assembler -notmatch 'ModularFighterProfile') {
-  throw "VM02_C50_BASE00_ASSEMBLER_CONTRACT=BLOCKED"
+$assemblerContract = [ordered]@{
+  CLASS_NAME = 'class_name ModularFighterAssembler'
+  CONFIGURE_ENTRY = 'func configure(profile) -> PackedStringArray:'
+  PROFILE_METHOD_CHECK = '_profile.has_method("validate_against_standard")'
+  PROFILE_RUNTIME_VALIDATION = '_profile.call("validate_against_standard")'
+  VALIDATION_RESULT_TYPE = 'TYPE_PACKED_STRING_ARRAY'
+  VISUAL_ATTACHMENT = 'func attach_visual_module(slot: StringName, node: CanvasItem) -> bool:'
+  READY_ACCESSOR = 'func is_ready_for_render() -> bool:'
+  PROFILE_ID_ACCESSOR = 'func profile_id() -> StringName:'
 }
+foreach ($entry in $assemblerContract.GetEnumerator()) {
+  if (-not $assembler.Contains([string]$entry.Value)) {
+    throw "VM02_C50_BASE00_ASSEMBLER_CONTRACT=BLOCKED missing=$($entry.Key)"
+  }
+  Write-Host "VM02_C50_BASE00_ASSEMBLER_$($entry.Key)=PASS"
+}
+if ($assembler -match 'var\s+_profile\s*:\s*ModularFighterProfile' -or $assembler -match 'configure\s*\([^)]*:\s*ModularFighterProfile') {
+  throw "VM02_C50_BASE00_ASSEMBLER_COMPILE_TIME_PROFILE_TYPE=BLOCKED"
+}
+Write-Host "VM02_C50_BASE00_ASSEMBLER_COMPILE_TIME_PROFILE_TYPE=RETIRED"
 Write-Host "VM02_C50_BASE00_ASSEMBLER_CONTRACT=PASS"
 
 $master = Join-Path $RepoRoot $base.source.expected_master
