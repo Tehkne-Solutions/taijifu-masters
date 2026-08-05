@@ -3,6 +3,12 @@ extends Node2D
 
 const LOT_ROOT := "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01"
 const SPRITE_FRAMES_PATH := LOT_ROOT + "/lian_wu_first_playable_frames.tres"
+const CANONICAL_CANVAS_SIZE := Vector2(1024.0, 1024.0)
+const CANONICAL_BASELINE_Y := 969.0
+const TARGET_VISUAL_HEIGHT := 132.0
+const CANONICAL_ALPHA_HEIGHT := 900.0
+const CANONICAL_SCALE := TARGET_VISUAL_HEIGHT / CANONICAL_ALPHA_HEIGHT
+const BASELINE_OFFSET_Y := -(CANONICAL_BASELINE_Y - CANONICAL_CANVAS_SIZE.y * 0.5) * CANONICAL_SCALE
 
 var _fighter: FighterController
 var _sprite: AnimatedSprite2D
@@ -31,22 +37,28 @@ func expected_sprite_frames_path() -> String:
 
 func _try_activate_real_assets() -> void:
 	if not ResourceLoader.exists(SPRITE_FRAMES_PATH):
+		print("V2_LIAN_CANONICAL_PRESENTER=BLOCKED missing_spriteframes")
 		return
 	var frames := load(SPRITE_FRAMES_PATH) as SpriteFrames
 	if frames == null or not _has_required_animations(frames):
 		push_warning("Lot 01 encontrado, mas contrato de animações está incompleto")
+		print("V2_LIAN_CANONICAL_PRESENTER=BLOCKED incomplete_animation_contract")
 		return
 	_sprite = AnimatedSprite2D.new()
 	_sprite.name = "Lot01AnimatedSprite"
 	_sprite.sprite_frames = frames
 	_sprite.centered = true
-	_sprite.position = Vector2(0.0, -34.0)
+	_sprite.scale = Vector2.ONE * CANONICAL_SCALE
+	_sprite.position = Vector2(0.0, BASELINE_OFFSET_Y)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_using_real_assets = true
 	_hide_procedural_fallback()
 	_active_animation = &"idle"
 	_sprite.play(_active_animation)
+	print("V2_LIAN_CANONICAL_PRESENTER=PASS")
+	print("V2_LIAN_CANONICAL_SCALE=%.6f" % CANONICAL_SCALE)
+	print("V2_LIAN_CANONICAL_BASELINE=PASS")
 
 func _hide_procedural_fallback() -> void:
 	if not is_instance_valid(_fighter):
