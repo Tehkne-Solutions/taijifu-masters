@@ -12,6 +12,8 @@ $required = @(
   "scripts\vertical_slice\first_playable_lot01_presenter.gd",
   "scripts\vertical_slice\training_rival_lot01_presenter.gd",
   "scripts\vertical_slice\first_playable_arena_dressing.gd",
+  "tools\MATERIALIZE-VM02-C50-LIAN-CANONICAL.ps1",
+  "tools\materialize_c50_lian_spriteframes.py",
   "assets\pack_03_stages\mountain_dojo_night\background.png",
   "assets\pack_03_stages\mountain_dojo_night\midground.png",
   "assets\pack_03_stages\mountain_dojo_night\foreground.png"
@@ -44,6 +46,17 @@ Write-Host "VM02_C50_ARENA_PROCEDURAL_RETIREMENT=PASS"
 $lianFrames = Join-Path $RepoRoot "assets\tgap\pack_01_lian_wu\first_playable_lot_01\lian_wu_first_playable_frames.tres"
 $rivalFrames = Join-Path $RepoRoot "assets\tgap\training_rival\first_playable_lot_01\training_rival_first_playable_frames.tres"
 
+if (-not (Test-Path $lianFrames)) {
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=BEGIN"
+  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools\MATERIALIZE-VM02-C50-LIAN-CANONICAL.ps1") -RepoRoot $RepoRoot
+  if ($LASTEXITCODE -ne 0) {
+    throw "VM02_C50_LIAN_AUTO_MATERIALIZE=BLOCKED exit=$LASTEXITCODE"
+  }
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=PASS"
+} else {
+  Write-Host "VM02_C50_LIAN_AUTO_MATERIALIZE=SKIP_ALREADY_PRESENT"
+}
+
 $lianReady = Test-Path $lianFrames
 $rivalReady = Test-Path $rivalFrames
 Write-Host ("VM02_C50_LIAN_CANONICAL_FRAMES=" + $(if ($lianReady) { "PASS" } else { "BLOCKED" }))
@@ -55,6 +68,9 @@ if (-not $lianReady -or -not $rivalReady) {
   Write-Host "VM02_C50_EXPECTED_LIAN=$lianFrames"
   Write-Host "VM02_C50_EXPECTED_RIVAL=$rivalFrames"
   Write-Host "VM02_C50_NO_PROGRESS_PROMOTION=PASS"
+  if ($lianReady -and -not $rivalReady) {
+    Write-Host "VM02_C50_NEXT_BLOCKER=TRAINING_RIVAL_CANONICAL_ART"
+  }
   throw "VM02_C50_CANONICAL_CHARACTER_ART=BLOCKED"
 }
 
