@@ -26,7 +26,15 @@ Write-Host "VM02_C49_C48_PROGRESS=PASS"
 $feel = Get-Content (Join-Path $RepoRoot "scripts\runtime\first_playable_combat_feel_runtime.gd") -Raw
 $timing = Get-Content (Join-Path $RepoRoot "scripts\combat\technique_data.gd") -Raw
 if ($feel -notmatch 'REARM_SECONDS := 0\.18' -or $feel -notmatch '_combo\._queue\.clear\(\)') { throw "VM02_C49_ANTI_MASH_BASELINE=BLOCKED" }
-if ($timing -notmatch 'startup_frames \* 1\.28' -or $timing -notmatch 'recovery_frames \* 1\.38') { throw "VM02_C49_ATTACK_TIMING_BASELINE=BLOCKED" }
+$timingContract = (
+  $timing -match 'STARTUP_FEEL_SCALE := 1\.28' -and
+  $timing -match 'ACTIVE_FEEL_SCALE := 1\.12' -and
+  $timing -match 'RECOVERY_FEEL_SCALE := 1\.38' -and
+  $timing -match 'startup_frames / 60\.0\) \* STARTUP_FEEL_SCALE' -and
+  $timing -match 'active_frames / 60\.0\) \* ACTIVE_FEEL_SCALE' -and
+  $timing -match 'recovery_frames / 60\.0\) \* RECOVERY_FEEL_SCALE'
+)
+if (-not $timingContract) { throw "VM02_C49_ATTACK_TIMING_BASELINE=BLOCKED" }
 Write-Host "VM02_C49_ANTI_MASH_BASELINE=PASS"
 Write-Host "VM02_C49_ATTACK_TIMING_BASELINE=PASS"
 
