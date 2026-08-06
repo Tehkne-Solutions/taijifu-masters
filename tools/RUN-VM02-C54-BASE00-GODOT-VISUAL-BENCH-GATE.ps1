@@ -56,8 +56,11 @@ $benchContract = [ordered]@{
   BODY_SLOT_ATTACH = 'assembler.call("attach_visual_module", &"body_base", sprite)'
   AUTHORED_CANVAS = 'const BENCH_CANVAS_SIZE := Vector2(1920.0, 1080.0)'
   VIEWPORT_DISCOVERY = 'get_viewport().get_visible_rect().size'
-  LAYOUT_SCALE = 'scale = Vector2.ONE * _layout_scale'
-  LAYOUT_CENTER = 'position = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5'
+  LAYOUT_OFFSET = '_layout_offset = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5'
+  LOGICAL_POINT = 'func _logical_point(authored: Vector2) -> Vector2:'
+  LOGICAL_RECT = 'func _logical_rect(authored: Rect2) -> Rect2:'
+  LOGICAL_FONT = '_logical_font_size(font_size)'
+  SPRITE_LAYOUT_SCALE = 'sprite.scale = Vector2.ONE * _gameplay_scale * _layout_scale'
   SAFE_FRAME = '_safe_frame_contract_passes()'
   TARGET_HEIGHT = 'const TARGET_VISUAL_HEIGHT := 132.0'
   BASELINE = 'const BENCH_BASELINE_Y := 790.0'
@@ -73,6 +76,13 @@ if ($benchScript.Contains('preload("res://assets/modular_fighters/base_00/base_f
   throw "VM02_C54_PNG_PRELOAD=BLOCKED"
 }
 Write-Host "VM02_C54_PNG_PRELOAD=RETIRED"
+if ($benchScript -match '(?m)^\s*scale\s*=\s*Vector2\.ONE\s*\*\s*_layout_scale') {
+  throw "VM02_C54_ROOT_LAYOUT_SCALE=BLOCKED"
+}
+if ($benchScript -match '(?m)^\s*position\s*=\s*\(_logical_viewport_size') {
+  throw "VM02_C54_ROOT_LAYOUT_POSITION=BLOCKED"
+}
+Write-Host "VM02_C54_ROOT_LAYOUT_TRANSFORM=RETIRED"
 if ($benchScript -match 'draw_circle\(' -or $benchScript -match 'draw_colored_polygon\(') {
   throw "VM02_C54_PROCEDURAL_FIGHTER_RENDERER=BLOCKED"
 }
@@ -128,6 +138,7 @@ foreach ($fatal in @(
   "VM02_C54_MODULAR_ASSEMBLY=BLOCKED",
   "VM02_C54_BODY_SLOT=BLOCKED",
   "VM02_C54_GAMEPLAY_HEIGHT=BLOCKED",
+  "VM02_C54_LOGICAL_GAMEPLAY_HEIGHT=BLOCKED",
   "VM02_C54_BASELINE=BLOCKED",
   "VM02_C54_CAPTURE=BLOCKED"
 )) {
@@ -142,9 +153,13 @@ if ($text -notmatch 'VM02_C54_LOGICAL_VIEWPORT=PASS size=\d+x\d+') {
 if ($text -notmatch 'VM02_C54_LAYOUT_SCALE=PASS scale=[0-9.]+') {
   throw "VM02_C54_GATE=BLOCKED missing_marker=VM02_C54_LAYOUT_SCALE"
 }
+if ($text -notmatch 'VM02_C54_LOGICAL_GAMEPLAY_HEIGHT=PASS actual=[0-9.]+') {
+  throw "VM02_C54_GATE=BLOCKED missing_marker=VM02_C54_LOGICAL_GAMEPLAY_HEIGHT"
+}
 
 $markers = @(
   "VM02_C54_AUTHORED_CANVAS=PASS size=1920x1080",
+  "VM02_C54_LOGICAL_COORDINATES=PASS",
   "VM02_C54_SAFE_FRAME=PASS",
   "VM02_C54_BASE00_TEXTURE=PASS",
   "VM02_C54_CANVAS=PASS size=1024x1024",
@@ -168,14 +183,39 @@ if (-not (Test-Path $output)) { throw "VM02_C54_GATE=BLOCKED missing_capture" }
 
 Add-Type -AssemblyName System.Drawing
 $bitmap = [System.Drawing.Bitmap]::FromFile($output)
+$cyanMinX = [int]::MaxValue
+$cyanMinY = [int]::MaxValue
+$cyanMaxX = -1
+$cyanMaxY = -1
+$cyanCount = 0
 try {
   if ($bitmap.Width -ne 1920 -or $bitmap.Height -ne 1080) {
     throw "VM02_C54_CAPTURE_DIMENSIONS=BLOCKED size=$($bitmap.Width)x$($bitmap.Height)"
+  }
+  for ($y = 0; $y -lt $bitmap.Height; $y += 2) {
+    for ($x = 0; $x -lt $bitmap.Width; $x += 2) {
+      $pixel = $bitmap.GetPixel($x, $y)
+      if ($pixel.R -le 130 -and $pixel.G -ge 130 -and $pixel.B -ge 180) {
+        $cyanCount++
+        if ($x -lt $cyanMinX) { $cyanMinX = $x }
+        if ($x -gt $cyanMaxX) { $cyanMaxX = $x }
+        if ($y -lt $cyanMinY) { $cyanMinY = $y }
+        if ($y -gt $cyanMaxY) { $cyanMaxY = $y }
+      }
+    }
   }
 } finally {
   $bitmap.Dispose()
 }
 Write-Host "VM02_C54_CAPTURE_DIMENSIONS=PASS size=1920x1080"
+
+if ($cyanCount -lt 40) {
+  throw "VM02_C54_CAPTURE_CONTENT_BOUNDS=BLOCKED cyan_pixels=$cyanCount"
+}
+if ($cyanMinX -lt 450 -or $cyanMinX -gt 800 -or $cyanMaxX -lt 1100 -or $cyanMaxX -gt 1500 -or $cyanMinY -lt 500 -or $cyanMinY -gt 800 -or $cyanMaxY -lt 700 -or $cyanMaxY -gt 900) {
+  throw "VM02_C54_CAPTURE_CONTENT_BOUNDS=BLOCKED bounds=$cyanMinX,$cyanMinY,$cyanMaxX,$cyanMaxY"
+}
+Write-Host "VM02_C54_CAPTURE_CONTENT_BOUNDS=PASS bounds=$cyanMinX,$cyanMinY,$cyanMaxX,$cyanMaxY"
 
 $sha = (Get-FileHash $output -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "VM02_C54_GODOT_VISUAL_BENCH_GATE=PASS"
@@ -192,7 +232,9 @@ Write-TehkneGateReport -Gate "VM02-C54-BASE00-GODOT-VISUAL-BENCH" -Status "PASS"
   C52_PREFLIGHT="PASS"
   VIEWPORT_LAYOUT="PASS"
   AUTHORED_CANVAS="1920x1080"
+  LOGICAL_COORDINATES="PASS"
   SAFE_FRAME="PASS"
+  CAPTURE_CONTENT_BOUNDS="PASS"
   BASE00_TEXTURE="PASS"
   CANVAS="1024x1024"
   GAMEPLAY_HEIGHT="132px"

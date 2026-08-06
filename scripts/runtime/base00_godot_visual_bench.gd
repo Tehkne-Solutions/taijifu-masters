@@ -14,6 +14,7 @@ var _source_used_rect := Rect2i()
 var _gameplay_scale := 1.0
 var _baseline_offset_y := 0.0
 var _layout_scale := 1.0
+var _layout_offset := Vector2.ZERO
 var _logical_viewport_size := Vector2.ZERO
 var _base_texture: Texture2D
 var _left_assembler: Node2D
@@ -72,15 +73,21 @@ func _run() -> void:
 	if abs(computed_height - TARGET_VISUAL_HEIGHT) > 0.05:
 		_fail("VM02_C54_GAMEPLAY_HEIGHT=BLOCKED actual=%.4f" % computed_height, 10)
 		return
+	var logical_height := computed_height * _layout_scale
+	var expected_logical_height := TARGET_VISUAL_HEIGHT * _layout_scale
+	if abs(logical_height - expected_logical_height) > 0.05:
+		_fail("VM02_C54_LOGICAL_GAMEPLAY_HEIGHT=BLOCKED actual=%.4f" % logical_height, 11)
+		return
 
+	var expected_baseline := _logical_point(Vector2(0.0, BENCH_BASELINE_Y)).y
 	var left_bottom := _left_assembler.position.y
 	var right_bottom := _right_assembler.position.y
-	if abs(left_bottom - BENCH_BASELINE_Y) > 0.01 or abs(right_bottom - BENCH_BASELINE_Y) > 0.01:
-		_fail("VM02_C54_BASELINE=BLOCKED left=%.3f right=%.3f" % [left_bottom, right_bottom], 11)
+	if abs(left_bottom - expected_baseline) > 0.01 or abs(right_bottom - expected_baseline) > 0.01:
+		_fail("VM02_C54_BASELINE=BLOCKED left=%.3f right=%.3f expected=%.3f" % [left_bottom, right_bottom, expected_baseline], 12)
 		return
 
 	if not _safe_frame_contract_passes():
-		_fail("VM02_C54_SAFE_FRAME=BLOCKED", 12)
+		_fail("VM02_C54_SAFE_FRAME=BLOCKED", 13)
 		return
 
 	var output_dir := OUTPUT.get_base_dir()
@@ -88,25 +95,27 @@ func _run() -> void:
 	await RenderingServer.frame_post_draw
 	var capture := get_viewport().get_texture().get_image()
 	if capture == null or capture.is_empty():
-		_fail("VM02_C54_CAPTURE=BLOCKED viewport_unavailable", 13)
+		_fail("VM02_C54_CAPTURE=BLOCKED viewport_unavailable", 14)
 		return
 	if capture.get_width() != 1920 or capture.get_height() != 1080:
 		capture.resize(1920, 1080, Image.INTERPOLATE_LANCZOS)
 	var save_error := capture.save_png(OUTPUT)
 	if save_error != OK:
-		_fail("VM02_C54_CAPTURE=BLOCKED save_error=%s" % save_error, 14)
+		_fail("VM02_C54_CAPTURE=BLOCKED save_error=%s" % save_error, 15)
 		return
 
 	print("VM02_C54_LOGICAL_VIEWPORT=PASS size=%dx%d" % [roundi(_logical_viewport_size.x), roundi(_logical_viewport_size.y)])
 	print("VM02_C54_AUTHORED_CANVAS=PASS size=1920x1080")
 	print("VM02_C54_LAYOUT_SCALE=PASS scale=%.8f" % _layout_scale)
+	print("VM02_C54_LOGICAL_COORDINATES=PASS")
 	print("VM02_C54_SAFE_FRAME=PASS")
 	print("VM02_C54_BASE00_TEXTURE=PASS")
 	print("VM02_C54_CANVAS=PASS size=1024x1024")
 	print("VM02_C54_ALPHA_BBOX=%d,%d,%d,%d" % [_source_used_rect.position.x, _source_used_rect.position.y, _source_used_rect.size.x, _source_used_rect.size.y])
 	print("VM02_C54_GAMEPLAY_HEIGHT=PASS actual=%.3f" % computed_height)
+	print("VM02_C54_LOGICAL_GAMEPLAY_HEIGHT=PASS actual=%.3f" % logical_height)
 	print("VM02_C54_GAMEPLAY_SCALE=%.8f" % _gameplay_scale)
-	print("VM02_C54_BASELINE=PASS y=%.1f" % BENCH_BASELINE_Y)
+	print("VM02_C54_BASELINE=PASS y=%.1f logical=%.3f" % [BENCH_BASELINE_Y, expected_baseline])
 	print("VM02_C54_FLIP=PASS")
 	print("VM02_C54_MODULAR_ASSEMBLY=PASS slot=body_base")
 	print("VM02_C54_HITBOX_SCALE=PASS visual_height=132")
@@ -127,9 +136,20 @@ func _configure_layout_transform() -> bool:
 	_layout_scale = minf(scale_x, scale_y)
 	if _layout_scale <= 0.0:
 		return false
-	scale = Vector2.ONE * _layout_scale
-	position = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5
+	_layout_offset = (_logical_viewport_size - BENCH_CANVAS_SIZE * _layout_scale) * 0.5
 	return true
+
+func _logical_point(authored: Vector2) -> Vector2:
+	return _layout_offset + authored * _layout_scale
+
+func _logical_size(authored: Vector2) -> Vector2:
+	return authored * _layout_scale
+
+func _logical_rect(authored: Rect2) -> Rect2:
+	return Rect2(_logical_point(authored.position), _logical_size(authored.size))
+
+func _logical_font_size(authored_size: int) -> int:
+	return maxi(1, roundi(float(authored_size) * _layout_scale))
 
 func _safe_frame_contract_passes() -> bool:
 	if LEFT_ROOT_X - 52.0 < 0.0 or LEFT_ROOT_X + 52.0 > BENCH_CANVAS_SIZE.x:
@@ -138,7 +158,10 @@ func _safe_frame_contract_passes() -> bool:
 		return false
 	if BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT < 0.0 or BENCH_BASELINE_Y > BENCH_CANVAS_SIZE.y:
 		return false
-	return true
+	var left_box := _logical_rect(Rect2(LEFT_ROOT_X - 52.0, BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT, 104.0, TARGET_VISUAL_HEIGHT))
+	var right_box := _logical_rect(Rect2(RIGHT_ROOT_X - 52.0, BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT, 104.0, TARGET_VISUAL_HEIGHT))
+	var viewport_rect := Rect2(Vector2.ZERO, _logical_viewport_size)
+	return viewport_rect.encloses(left_box) and viewport_rect.encloses(right_box)
 
 func _build_fighter(root_x: float, flipped: bool, caption: String) -> bool:
 	var profile = ProfileClass.new()
@@ -153,7 +176,7 @@ func _build_fighter(root_x: float, flipped: bool, caption: String) -> bool:
 		push_error("BASE-00 assembler instantiation failed")
 		return false
 	assembler.name = "Base00AssemblerFlip" if flipped else "Base00AssemblerAuthored"
-	assembler.position = Vector2(root_x, BENCH_BASELINE_Y)
+	assembler.position = _logical_point(Vector2(root_x, BENCH_BASELINE_Y))
 	add_child(assembler)
 
 	var failures_variant = assembler.call("configure", profile)
@@ -169,8 +192,8 @@ func _build_fighter(root_x: float, flipped: bool, caption: String) -> bool:
 	sprite.texture = _base_texture
 	sprite.centered = true
 	sprite.flip_h = flipped
-	sprite.scale = Vector2.ONE * _gameplay_scale
-	sprite.position = Vector2(0.0, -_baseline_offset_y)
+	sprite.scale = Vector2.ONE * _gameplay_scale * _layout_scale
+	sprite.position = Vector2(0.0, -_baseline_offset_y * _layout_scale)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if not bool(assembler.call("attach_visual_module", &"body_base", sprite)):
 		return false
@@ -217,21 +240,21 @@ func _install_labels() -> void:
 func _add_label(text_value: String, at: Vector2, font_size: int, color: Color) -> void:
 	var label := Label.new()
 	label.text = text_value
-	label.position = at
-	label.add_theme_font_size_override("font_size", font_size)
+	label.position = _logical_point(at)
+	label.add_theme_font_size_override("font_size", _logical_font_size(font_size))
 	label.add_theme_color_override("font_color", color)
 	add_child(label)
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, BENCH_CANVAS_SIZE), Color("0a0e14"), true)
-	draw_rect(Rect2(130, 235, 1660, 710), Color("111923"), true)
-	draw_rect(Rect2(130, 235, 1660, 710), Color("a88435"), false, 2.0)
-	draw_rect(Rect2(210, BENCH_BASELINE_Y, 1500, 72), Color("171c24"), true)
-	draw_line(Vector2(210, BENCH_BASELINE_Y), Vector2(1710, BENCH_BASELINE_Y), Color("57d998"), 3.0)
+	draw_rect(_logical_rect(Rect2(Vector2.ZERO, BENCH_CANVAS_SIZE)), Color("0a0e14"), true)
+	draw_rect(_logical_rect(Rect2(130, 235, 1660, 710)), Color("111923"), true)
+	draw_rect(_logical_rect(Rect2(130, 235, 1660, 710)), Color("a88435"), false, 2.0 * _layout_scale)
+	draw_rect(_logical_rect(Rect2(210, BENCH_BASELINE_Y, 1500, 72)), Color("171c24"), true)
+	draw_line(_logical_point(Vector2(210, BENCH_BASELINE_Y)), _logical_point(Vector2(1710, BENCH_BASELINE_Y)), Color("57d998"), 3.0 * _layout_scale)
 	for root_x in [LEFT_ROOT_X, RIGHT_ROOT_X]:
-		draw_rect(Rect2(root_x - 52.0, BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT, 104.0, TARGET_VISUAL_HEIGHT), Color("55c9e8"), false, 2.0)
-		draw_line(Vector2(root_x - 12.0, BENCH_BASELINE_Y), Vector2(root_x + 12.0, BENCH_BASELINE_Y), Color.WHITE, 2.0)
-		draw_line(Vector2(root_x, BENCH_BASELINE_Y - 12.0), Vector2(root_x, BENCH_BASELINE_Y + 12.0), Color.WHITE, 2.0)
+		draw_rect(_logical_rect(Rect2(root_x - 52.0, BENCH_BASELINE_Y - TARGET_VISUAL_HEIGHT, 104.0, TARGET_VISUAL_HEIGHT)), Color("55c9e8"), false, 2.0 * _layout_scale)
+		draw_line(_logical_point(Vector2(root_x - 12.0, BENCH_BASELINE_Y)), _logical_point(Vector2(root_x + 12.0, BENCH_BASELINE_Y)), Color.WHITE, 2.0 * _layout_scale)
+		draw_line(_logical_point(Vector2(root_x, BENCH_BASELINE_Y - 12.0)), _logical_point(Vector2(root_x, BENCH_BASELINE_Y + 12.0)), Color.WHITE, 2.0 * _layout_scale)
 
 func _fail(marker: String, exit_code: int) -> void:
 	print(marker)
