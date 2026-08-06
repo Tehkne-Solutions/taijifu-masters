@@ -7,10 +7,12 @@ extends Node2D
 
 const STANDARD_PATH := "res://config/modular-fighter-standard-v1.json"
 const BASE_PATH := "res://config/fighter-bases/base_fighter_v1.json"
+const BASE01_MANIFEST_PATH := "res://assets/modular_fighters/base_01/manifest.json"
 
 var _profile
 var _layers: Dictionary = {}
 var _ready_for_render := false
+var _active_skin_palette: Dictionary = {}
 
 func configure(profile) -> PackedStringArray:
 	_clear_layers()
@@ -33,6 +35,65 @@ func configure(profile) -> PackedStringArray:
 		failures.append("base_fighter_contract_missing")
 		return failures
 	_ready_for_render = true
+	return failures
+
+func assemble_base01_default_identity() -> PackedStringArray:
+	var failures := PackedStringArray()
+	if not _ready_for_render:
+		failures.append("assembler_not_ready")
+		return failures
+	var manifest := _load_json(BASE01_MANIFEST_PATH)
+	if manifest.is_empty():
+		failures.append("base01_manifest_missing_or_invalid")
+		return failures
+	if String(manifest.get("pack_id", "")) != "BASE01_DEFAULT_IDENTITY_MODULES":
+		failures.append("base01_pack_id_invalid")
+		return failures
+
+	var default_identity = manifest.get("default_identity", {})
+	var modules = manifest.get("modules", {})
+	if typeof(default_identity) != TYPE_DICTIONARY or typeof(modules) != TYPE_DICTIONARY:
+		failures.append("base01_manifest_contract_invalid")
+		return failures
+
+	var palette_path := "res://%s" % String(manifest.get("palette_path", ""))
+	_active_skin_palette = _load_json(palette_path)
+	if _active_skin_palette.is_empty():
+		failures.append("skin_palette_missing_or_invalid")
+
+	for slot in ["face", "eyes", "brows"]:
+		var module_id := String(default_identity.get(slot, ""))
+		if module_id.is_empty() or not modules.has(module_id):
+			failures.append("default_module_missing:%s" % slot)
+			continue
+		var module_contract = modules[module_id]
+		if typeof(module_contract) != TYPE_DICTIONARY:
+			failures.append("module_contract_invalid:%s" % module_id)
+			continue
+		var asset_path := "res://%s" % String(module_contract.get("path", ""))
+		if not ResourceLoader.exists(asset_path):
+			failures.append("module_asset_missing:%s" % module_id)
+			continue
+		var texture = load(asset_path)
+		if not texture is Texture2D:
+			failures.append("module_texture_invalid:%s" % module_id)
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = texture
+		sprite.centered = true
+		var pivot = module_contract.get("pivot", [0.5, 0.92])
+		if typeof(pivot) != TYPE_ARRAY or pivot.size() != 2:
+			failures.append("module_pivot_invalid:%s" % module_id)
+			continue
+		var size := texture.get_size()
+		sprite.position = Vector2(
+			size.x * (0.5 - float(pivot[0])),
+			size.y * (0.5 - float(pivot[1]))
+		)
+		sprite.z_index = _slot_z_index(slot)
+		if not attach_visual_module(StringName(slot), sprite):
+			failures.append("module_attach_failed:%s" % module_id)
+
 	return failures
 
 func attach_visual_module(slot: StringName, node: CanvasItem) -> bool:
@@ -59,6 +120,9 @@ func clear_visual_module(slot: StringName) -> void:
 	if is_instance_valid(node):
 		node.queue_free()
 
+func active_skin_palette() -> Dictionary:
+	return _active_skin_palette.duplicate(true)
+
 func is_ready_for_render() -> bool:
 	return _ready_for_render
 
@@ -72,18 +136,14 @@ func _clear_layers() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_layers.clear()
+	_active_skin_palette.clear()
 	_profile = null
 	_ready_for_render = false
 
 func _allowed_slots() -> PackedStringArray:
 	var result := PackedStringArray()
-	if not FileAccess.file_exists(STANDARD_PATH):
-		return result
-	var file := FileAccess.open(STANDARD_PATH, FileAccess.READ)
-	if file == null:
-		return result
-	var parsed = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
+	var parsed := _load_json(STANDARD_PATH)
+	if parsed.is_empty():
 		return result
 	var slots = parsed.get("slots", [])
 	if typeof(slots) != TYPE_ARRAY:
@@ -91,3 +151,23 @@ func _allowed_slots() -> PackedStringArray:
 	for slot in slots:
 		result.append(String(slot))
 	return result
+
+func _load_json(path: String) -> Dictionary:
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+func _slot_z_index(slot: String) -> int:
+	match slot:
+		"face":
+			return 20
+		"eyes":
+			return 30
+		"brows":
+			return 40
+		_:
+			return 10

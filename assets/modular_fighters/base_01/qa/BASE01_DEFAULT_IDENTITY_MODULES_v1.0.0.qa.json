@@ -1,0 +1,74 @@
+{
+  "schema": "tehkne/taijifu-asset-qa/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01_DEFAULT_IDENTITY_MODULES",
+  "version": "1.0.0",
+  "status": "PASS_CANDIDATE",
+  "owner_approval": "PENDING",
+  "source": {
+    "base_path": "assets/modular_fighters/base_00/base_fighter_v1_master.png",
+    "sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe"
+  },
+  "checks": {
+    "required_modules": "PASS",
+    "canvas_1024x1024": "PASS",
+    "rgba": "PASS",
+    "transparent_corners": "PASS",
+    "shared_pivot_0_5_0_92": "PASS",
+    "bottom_center_anchor": "PASS",
+    "no_text_or_background_in_runtime_assets": "PASS",
+    "no_contact_sheet_runtime_source": "PASS",
+    "body_silhouette_change": "PASS_NONE",
+    "default_reconstruction": "PASS",
+    "authored_alignment": "PASS",
+    "flipped_alignment": "PASS",
+    "gameplay_scale_132px": "PASS",
+    "internal_visual_review": "PASS"
+  },
+  "modules": {
+    "face_01_balanced": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_01_balanced.png",
+      "sha256": "d8bc0218b6104d2095e20a074fa4e0a23d428d1bf71e91fcac7139374b3504d9",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [367, 302, 605, 373],
+      "visible_components": 3,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "eyes_01_focused": {
+      "slot": "eyes",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_01_focused.png",
+      "sha256": "7517e6d14cef106fbe782736524321b992ea3088486498fc24e71f1e158419a9",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [392, 286, 569, 351],
+      "visible_components": 2,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "brows_01_focused": {
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_01_focused.png",
+      "sha256": "44fa5d30e0963582b5cf2d877b7a61a6d68f8028b9a2da19cbba9a73afc80225",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [378, 265, 551, 303],
+      "visible_components": 2,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    }
+  },
+  "reconstruction": {
+    "max_channel_difference": 2,
+    "mean_absolute_difference": 4.5299530029296875e-06,
+    "changed_channel_values": 18,
+    "acceptance_max_channel_difference": 2,
+    "status": "PASS"
+  },
+  "next_gate": "owner visual approval then C56 integration"
+}

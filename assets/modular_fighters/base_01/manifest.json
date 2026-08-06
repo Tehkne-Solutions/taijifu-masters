@@ -1,0 +1,88 @@
+{
+  "schema": "tehkne/taijifu-base01-default-identity-pack/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01_DEFAULT_IDENTITY_MODULES",
+  "version": "1.0.0",
+  "status": "production_candidate_owner_review_pending",
+  "depends_on": {
+    "base_pack": "BASE-00",
+    "base_body_id": "base_fighter_v1",
+    "base_source_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe"
+  },
+  "default_identity": {
+    "skin": "skin_tone_03_warm",
+    "face": "face_01_balanced",
+    "eyes": "eyes_01_focused",
+    "brows": "brows_01_focused"
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency": true,
+    "contact_sheet_runtime_source": false
+  },
+  "modules": {
+    "face_01_balanced": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_01_balanced.png",
+      "sha256": "d8bc0218b6104d2095e20a074fa4e0a23d428d1bf71e91fcac7139374b3504d9",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [367, 302, 605, 373],
+      "visible_components": 3,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "eyes_01_focused": {
+      "slot": "eyes",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_01_focused.png",
+      "sha256": "7517e6d14cef106fbe782736524321b992ea3088486498fc24e71f1e158419a9",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [392, 286, 569, 351],
+      "visible_components": 2,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "brows_01_focused": {
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_01_focused.png",
+      "sha256": "44fa5d30e0963582b5cf2d877b7a61a6d68f8028b9a2da19cbba9a73afc80225",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [378, 265, 551, 303],
+      "visible_components": 2,
+      "transparent_corners": true,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    }
+  },
+  "palette_path": "assets/modular_fighters/base_01/palettes/skin_tone_03_warm.json",
+  "assembly_order": ["body_base", "skin", "face", "eyes", "brows"],
+  "qa": {
+    "machine": "PASS",
+    "internal_visual_review": "PASS",
+    "owner_review": "PENDING",
+    "reconstruction": {
+      "max_channel_difference": 2,
+      "mean_absolute_difference": 4.5299530029296875e-06,
+      "changed_channel_values": 18,
+      "acceptance_max_channel_difference": 2,
+      "status": "PASS"
+    }
+  },
+  "scope": {
+    "delivered": "default identity modules",
+    "not_yet_delivered": [
+      "additional face variants",
+      "additional eye variants",
+      "additional brow variants",
+      "remaining seven skin palettes",
+      "neutral replacement face plate for non-default swaps"
+    ]
+  }
+}
