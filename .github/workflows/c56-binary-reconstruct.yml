@@ -7,6 +7,13 @@ on:
     paths:
       - 'tools/c56_binary_chunks/**'
       - '.github/workflows/c56-binary-reconstruct.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/c56_binary_chunks/**'
+      - '.github/workflows/c56-binary-reconstruct.yml'
+      - 'assets/modular_fighters/base_01/**'
 
 permissions:
   contents: write
@@ -15,9 +22,10 @@ jobs:
   reconstruct:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout source branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Reconstruct audited BASE-01 binaries
@@ -36,6 +44,7 @@ jobs:
           echo 'C56_BINARY_RECONSTRUCTION=PASS'
 
       - name: Commit exact binaries
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -49,4 +58,4 @@ jobs:
             exit 0
           fi
           git commit -m "fix(c56): restore exact BASE-01 identity binaries"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
