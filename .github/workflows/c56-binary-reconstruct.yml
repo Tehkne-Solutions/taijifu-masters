@@ -59,3 +59,5 @@ jobs:
           fi
           git commit -m "fix(c56): restore exact BASE-01 identity binaries"
           git push origin HEAD:${{ github.head_ref }}
+
+# C56 canonical finalization trigger
