@@ -1,0 +1,17 @@
+{
+  "schema": "tehkne/taijifu-skin-palette/v1",
+  "signature": "Tehkné Solutions",
+  "palette_id": "skin_tone_03_warm",
+  "display_name": "Warm",
+  "status": "production_candidate",
+  "channels": {
+    "skin_base": "#FBC470",
+    "skin_shadow": "#C7733C",
+    "skin_highlight": "#FECC74",
+    "cheek_tint": "#FABF6B"
+  },
+  "source_base_body": "base_fighter_v1",
+  "application": "palette_driven_base_tint",
+  "preserve_linework": true,
+  "preserve_shading_structure": true
+}
