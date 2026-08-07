@@ -11,9 +11,11 @@ func _run_validation() -> void:
 		_finish(failures)
 		return
 
-	var gamepad_training := root.get_node_or_null("TaijifuGamepadTraining") as GamepadTrainingRuntime
+	# Sprint 0 intentionally forbids TaijifuGamepadTraining as an autoload.
+	# Validate the runtime directly so this smoke follows the current architecture.
+	var gamepad_training := GamepadTrainingRuntime.new()
 	if not is_instance_valid(gamepad_training):
-		failures.append("Autoload TaijifuGamepadTraining ausente")
+		failures.append("GamepadTrainingRuntime não pôde ser instanciado")
 		_finish(failures)
 		return
 
@@ -109,6 +111,7 @@ func _run_validation() -> void:
 	if not _has_joy_button(&"p1_attack", JOY_BUTTON_X, 0):
 		failures.append("Restauração não recuperou X no gamepad P1")
 
+	gamepad_training.free()
 	_finish(failures)
 
 func _has_keyboard_key(action_id: StringName, keycode: Key) -> bool:
