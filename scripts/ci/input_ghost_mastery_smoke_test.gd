@@ -5,9 +5,13 @@ func _initialize() -> void:
 
 func _run_validation() -> void:
 	var failures: Array[String] = []
-	var runtime := root.get_node_or_null("TaijifuInputGhostMastery") as InputGhostMasteryRuntime
+	# Sprint 0 forbids this runtime as a permanent autoload; instantiate the
+	# production class directly for its self-contained mastery contract.
+	var runtime := InputGhostMasteryRuntime.new()
+	runtime.name = "TaijifuInputGhostMastery"
+	root.add_child(runtime)
 	if not is_instance_valid(runtime):
-		failures.append("Autoload TaijifuInputGhostMastery ausente")
+		failures.append("InputGhostMasteryRuntime não pôde ser instanciado")
 		_finish(failures)
 		return
 
@@ -89,6 +93,7 @@ func _run_validation() -> void:
 	if not state.has("weapon_mastery"):
 		failures.append("Ponte com maestria de arma ausente")
 
+	runtime.free()
 	_finish(failures)
 
 func _finish(failures: Array[String]) -> void:
