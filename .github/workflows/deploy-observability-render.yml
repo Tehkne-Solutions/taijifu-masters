@@ -1,6 +1,11 @@
 name: Deploy Observability to Render
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/deploy-observability-render.yml'
+      - 'render.yaml'
+      - 'services/observability_collector/**'
   workflow_dispatch:
     inputs:
       confirm:
@@ -18,13 +23,37 @@ permissions:
   contents: read
 
 concurrency:
-  group: taijifu-observability-render-production
+  group: taijifu-observability-render-production-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deploy workflow contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/deploy-observability-render.yml').read_text(encoding='utf-8')
+          required = [
+              'RENDER_OBSERVABILITY_DEPLOY_HOOK',
+              'TAIJIFU_OBSERVABILITY_PUBLIC_URL',
+              'DEPLOY_OBSERVABILITY',
+              '/health',
+              '/v1/ops',
+              '/dashboard',
+              'Tehkné Solutions',
+          ]
+          for token in required:
+              assert token in text, token
+          print('RENDER_OBSERVABILITY_DEPLOY_CONTRACT=PASS')
+          PY
+
   deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.confirm == 'DEPLOY_OBSERVABILITY'
+    needs: contract
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.confirm == 'DEPLOY_OBSERVABILITY')
     steps:
       - uses: actions/checkout@v4
 
