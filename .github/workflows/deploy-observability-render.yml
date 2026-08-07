@@ -39,6 +39,7 @@ jobs:
           required = [
               'RENDER_OBSERVABILITY_DEPLOY_HOOK',
               'TAIJIFU_OBSERVABILITY_PUBLIC_URL',
+              'TAIJIFU_OBSERVABILITY_AUTO_DEPLOY',
               'DEPLOY_OBSERVABILITY',
               '/health',
               '/v1/ops',
@@ -53,7 +54,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: contract
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.confirm == 'DEPLOY_OBSERVABILITY')
+    if: >-
+      (github.event_name == 'push' && vars.TAIJIFU_OBSERVABILITY_AUTO_DEPLOY == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.confirm == 'DEPLOY_OBSERVABILITY')
     steps:
       - uses: actions/checkout@v4
 
