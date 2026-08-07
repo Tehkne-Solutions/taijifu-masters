@@ -74,8 +74,8 @@ func assemble_base01_default_identity() -> PackedStringArray:
 		if not ResourceLoader.exists(asset_path):
 			failures.append("module_asset_missing:%s" % module_id)
 			continue
-		var texture = load(asset_path)
-		if not texture is Texture2D:
+		var texture: Texture2D = load(asset_path) as Texture2D
+		if texture == null:
 			failures.append("module_texture_invalid:%s" % module_id)
 			continue
 		var sprite := Sprite2D.new()
@@ -85,7 +85,7 @@ func assemble_base01_default_identity() -> PackedStringArray:
 		if typeof(pivot) != TYPE_ARRAY or pivot.size() != 2:
 			failures.append("module_pivot_invalid:%s" % module_id)
 			continue
-		var size := texture.get_size()
+		var size: Vector2 = texture.get_size()
 		sprite.position = Vector2(
 			size.x * (0.5 - float(pivot[0])),
 			size.y * (0.5 - float(pivot[1]))
