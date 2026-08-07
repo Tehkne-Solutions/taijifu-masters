@@ -1,0 +1,59 @@
+name: C56 Canonical Recovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/c56_binary_chunks/**'
+      - '.github/workflows/c56-canonical-recovery.yml'
+      - 'assets/modular_fighters/base_01/**'
+
+permissions:
+  contents: write
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Reconstruct and verify canonical BASE-01
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/modular_fighters/base_01/face assets/modular_fighters/base_01/eyes assets/modular_fighters/base_01/brows
+          cat tools/c56_binary_chunks/face_00.b64 tools/c56_binary_chunks/face_01.b64 | base64 -d > assets/modular_fighters/base_01/face/face_01_balanced.png
+          cat tools/c56_binary_chunks/eyes_00.b64 tools/c56_binary_chunks/eyes_01.b64 tools/c56_binary_chunks/eyes_02.b64 | base64 -d > assets/modular_fighters/base_01/eyes/eyes_01_focused.png
+          cat tools/c56_binary_chunks/brows_00.b64 tools/c56_binary_chunks/brows_01.b64 | base64 -d > assets/modular_fighters/base_01/brows/brows_01_focused.png
+
+          face_sha=$(sha256sum assets/modular_fighters/base_01/face/face_01_balanced.png | awk '{print $1}')
+          eyes_sha=$(sha256sum assets/modular_fighters/base_01/eyes/eyes_01_focused.png | awk '{print $1}')
+          brows_sha=$(sha256sum assets/modular_fighters/base_01/brows/brows_01_focused.png | awk '{print $1}')
+          echo "C56_FACE_SHA=${face_sha}"
+          echo "C56_EYES_SHA=${eyes_sha}"
+          echo "C56_BROWS_SHA=${brows_sha}"
+
+          test "$face_sha" = "d8bc0218b6104d2095e20a074fa4e0a23d428d1bf71e91fcac7139374b3504d9"
+          test "$eyes_sha" = "7517e6d14cef106fbe782736524321b992ea3088486498fc24e71f1e158419a9"
+          test "$brows_sha" = "44fa5d30e0963582b5cf2d877b7a61a6d68f8028b9a2da19cbba9a73afc80225"
+          echo 'C56_CANONICAL_RECOVERY=PASS sha256=3/3'
+
+      - name: Commit reconstructed PNGs to recovery branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Tehkne Solutions Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/modular_fighters/base_01/face/face_01_balanced.png \
+                  assets/modular_fighters/base_01/eyes/eyes_01_focused.png \
+                  assets/modular_fighters/base_01/brows/brows_01_focused.png
+          if git diff --cached --quiet; then
+            echo 'C56_CANONICAL_RECOVERY_COMMIT=NO_CHANGES'
+            exit 0
+          fi
+          git commit -m "fix(c56): reconstruct exact BASE-01 canonical binaries"
+          git push origin "HEAD:${{ github.head_ref }}"
