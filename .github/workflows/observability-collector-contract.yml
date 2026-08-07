@@ -1,0 +1,30 @@
+name: Observability Collector Contract
+
+on:
+  pull_request:
+    paths:
+      - 'services/observability_collector/**'
+      - 'scripts/observability/**'
+      - '.github/workflows/observability-collector-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collector-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/observability_collector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install collector dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+      - name: Run collector contract
+        run: python -m pytest -q test_collector.py
+      - name: Compile collector
+        run: python -m py_compile app.py
