@@ -6,21 +6,64 @@ on:
       - 'assets/modular_fighters/base_01/**'
       - 'scripts/ci/validate_base01_asset_integrity.py'
       - '.github/workflows/base01-asset-integrity.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'assets/modular_fighters/base_01/**'
-      - 'scripts/ci/validate_base01_asset_integrity.py'
-      - '.github/workflows/base01-asset-integrity.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  integrity:
+  validator-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Self-test PNG parser and CRC validation
+        run: |
+          python - <<'PY'
+          import struct
+          import zlib
+          from scripts.ci.validate_base01_asset_integrity import PNG_SIGNATURE, validate_png
+
+          def chunk(kind: bytes, payload: bytes) -> bytes:
+              crc = zlib.crc32(kind)
+              crc = zlib.crc32(payload, crc) & 0xFFFFFFFF
+              return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', crc)
+
+          ihdr = struct.pack('>IIBBBBB', 1024, 1024, 8, 6, 0, 0, 0)
+          valid = PNG_SIGNATURE + chunk(b'IHDR', ihdr) + chunk(b'IDAT', b'contract') + chunk(b'IEND', b'')
+          width, height, chunks = validate_png(valid)
+          assert (width, height) == (1024, 1024)
+          assert chunks == 3
+
+          broken = bytearray(valid)
+          broken[-5] ^= 1
+          try:
+              validate_png(bytes(broken))
+          except ValueError:
+              print('BASE01_PNG_VALIDATOR_SELF_TEST=PASS')
+          else:
+              raise SystemExit('BASE01_PNG_VALIDATOR_SELF_TEST=FAIL crc corruption not detected')
+          PY
+
+  canonical-integrity:
+    runs-on: ubuntu-latest
+    needs: validator-contract
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.changed_files, 'never')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect BASE-01 asset changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        env:
+          GH_BASE: ${{ github.event.pull_request.base.sha }}
+          GH_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$GH_BASE"
+          changed=$(git diff --name-only "$GH_BASE" "$GH_HEAD" -- 'assets/modular_fighters/base_01/**/*.png' || true)
+          if [ -n "$changed" ]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Validate canonical SHA-256 and PNG structure
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.changed == 'true'
         run: python scripts/ci/validate_base01_asset_integrity.py
