@@ -13,6 +13,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
+from maintenance import deliver_alerts, enforce_retention
+
 APP_SCHEMA = "tehkne/taijifu-observability-collector/v1"
 BATCH_SCHEMA = "tehkne/taijifu-observability-batch/v1"
 EVENT_SCHEMA = "tehkne/taijifu-observability/v1"
@@ -26,12 +28,14 @@ ALERT_FRAME_STALL_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_FRAME_STALL_THRESHOLD
 ALERT_ASSET_FALLBACK_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_ASSET_FALLBACK_THRESHOLD", "3"))
 ALERT_HASH_MISMATCH_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_HASH_MISMATCH_THRESHOLD", "1"))
 
-app = FastAPI(title="Taijifu Observability Collector", version="1.1.1")
+app = FastAPI(title="Taijifu Observability Collector", version="1.2.0")
 _lock = threading.Lock()
 _recent: deque[dict[str, Any]] = deque(maxlen=RECENT_WINDOW)
 _started_unix = int(time.time())
 _ingested_events = 0
 _rejected_batches = 0
+_last_retention: dict[str, Any] = {"compacted": False, "lines_before": 0, "lines_after": 0}
+_last_alert_delivery: dict[str, Any] = {"delivered": False, "reason": "not_attempted"}
 
 
 class EventBatch(BaseModel):
@@ -58,7 +62,7 @@ def _validate_event(event: dict[str, Any]) -> None:
 
 
 def _append_events(events: list[dict[str, Any]]) -> None:
-    global _ingested_events
+    global _ingested_events, _last_retention
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with _lock:
         with EVENT_LOG.open("a", encoding="utf-8") as handle:
@@ -66,6 +70,7 @@ def _append_events(events: list[dict[str, Any]]) -> None:
                 handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
                 _recent.append(event)
         _ingested_events += len(events)
+        _last_retention = enforce_retention(EVENT_LOG)
 
 
 def _summary_payload() -> dict[str, Any]:
@@ -126,6 +131,8 @@ def _ops_payload() -> dict[str, Any]:
             "asset_assembler_failures": assembler_failures,
         },
         "summary": summary_data,
+        "retention": _last_retention,
+        "alert_delivery": _last_alert_delivery,
         "generated_unix_ms": int(time.time() * 1000),
     }
 
@@ -144,12 +151,13 @@ def health() -> dict[str, Any]:
         "recent_window": len(_recent),
         "storage_path": str(EVENT_LOG),
         "active_alerts": len(ops["alerts"]),
+        "retention": _last_retention,
     }
 
 
 @app.post("/v1/events")
 async def ingest(batch: EventBatch, request: Request) -> dict[str, Any]:
-    global _rejected_batches
+    global _rejected_batches, _last_alert_delivery
     if not _authorized(request):
         _rejected_batches += 1
         raise HTTPException(status_code=401, detail="unauthorized")
@@ -162,10 +170,14 @@ async def ingest(batch: EventBatch, request: Request) -> dict[str, Any]:
     for event in batch.events:
         _validate_event(event)
     _append_events(batch.events)
+    ops = _ops_payload()
+    _last_alert_delivery = deliver_alerts(ops)
     return {
         "ok": True,
         "accepted": len(batch.events),
         "collector_unix_ms": int(time.time() * 1000),
+        "operational_status": ops["status"],
+        "alert_delivery": _last_alert_delivery,
     }
 
 
