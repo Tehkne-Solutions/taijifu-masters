@@ -5,14 +5,17 @@ func _initialize() -> void:
 
 func _run_validation() -> void:
 	var failures: Array[String] = []
-	var library := root.get_node_or_null("TaijifuGhostLibrary") as GhostLibraryRuntime
-	var sharing := root.get_node_or_null("TaijifuGhostSharing") as GhostSharingRuntime
-	if not is_instance_valid(library):
-		failures.append("Autoload TaijifuGhostLibrary ausente")
-		_finish(failures)
-		return
-	if not is_instance_valid(sharing):
-		failures.append("Autoload TaijifuGhostSharing ausente")
+	# Sprint 0 forbids these as permanent autoloads. The library smoke only needs
+	# their real classes for package creation and CRUD validation.
+	var sharing := GhostSharingRuntime.new()
+	sharing.name = "TaijifuGhostSharing"
+	root.add_child(sharing)
+	var library := GhostLibraryRuntime.new()
+	library.name = "TaijifuGhostLibrary"
+	root.add_child(library)
+	if not is_instance_valid(library) or not is_instance_valid(sharing):
+		failures.append("Runtimes temporários da biblioteca não puderam ser montados")
+		_cleanup(library, sharing)
 		_finish(failures)
 		return
 
@@ -46,7 +49,14 @@ func _run_validation() -> void:
 	if int(library.current_state().get("count", 0)) != 0:
 		failures.append("Biblioteca não ficou vazia após remoção")
 
+	_cleanup(library, sharing)
 	_finish(failures)
+
+func _cleanup(library: Node, sharing: Node) -> void:
+	if is_instance_valid(library):
+		library.free()
+	if is_instance_valid(sharing):
+		sharing.free()
 
 func _finish(failures: Array[String]) -> void:
 	if failures.is_empty():

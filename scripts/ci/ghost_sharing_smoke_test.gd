@@ -5,9 +5,17 @@ func _initialize() -> void:
 
 func _run_validation() -> void:
 	var failures: Array[String] = []
-	var sharing := root.get_node_or_null("TaijifuGhostSharing") as GhostSharingRuntime
-	if not is_instance_valid(sharing):
-		failures.append("Autoload TaijifuGhostSharing ausente")
+	# Sprint 0 keeps these out of permanent autoloads. Mount the real dependency
+	# graph only for this smoke so import/replacement behavior is still exercised.
+	var ghost_runtime := InputGhostMasteryRuntime.new()
+	ghost_runtime.name = "TaijifuInputGhostMastery"
+	root.add_child(ghost_runtime)
+	var sharing := GhostSharingRuntime.new()
+	sharing.name = "TaijifuGhostSharing"
+	root.add_child(sharing)
+	if not is_instance_valid(ghost_runtime) or not is_instance_valid(sharing):
+		failures.append("Runtimes temporários de compartilhamento não puderam ser montados")
+		_cleanup(ghost_runtime, sharing)
 		_finish(failures)
 		return
 
@@ -48,7 +56,14 @@ func _run_validation() -> void:
 	if not sharing.package_for_test(invalid_frames).is_empty():
 		failures.append("Frames fora de ordem não foram rejeitados")
 
+	_cleanup(ghost_runtime, sharing)
 	_finish(failures)
+
+func _cleanup(ghost_runtime: Node, sharing: Node) -> void:
+	if is_instance_valid(sharing):
+		sharing.free()
+	if is_instance_valid(ghost_runtime):
+		ghost_runtime.free()
 
 func _finish(failures: Array[String]) -> void:
 	if failures.is_empty():

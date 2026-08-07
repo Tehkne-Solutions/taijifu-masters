@@ -6,12 +6,22 @@ func _initialize() -> void:
 func _run_validation() -> void:
 	var failures: Array[String] = []
 	var keyboard_bridge := root.get_node_or_null("TaijifuWebBridge") as WebPlatformBridgeRuntime
-	var mastery := root.get_node_or_null("TaijifuControllerMastery") as ControllerMasteryRuntime
 	if not is_instance_valid(keyboard_bridge):
 		failures.append("Autoload TaijifuWebBridge ausente")
-	if not is_instance_valid(mastery):
-		failures.append("Autoload TaijifuControllerMastery ausente")
-	if not failures.is_empty():
+		_finish(failures)
+		return
+
+	# Sprint 0 forbids these runtimes as permanent autoloads. Mount the real
+	# dependency graph temporarily so ControllerMasteryRuntime can resolve it.
+	var base := GamepadTrainingRuntime.new()
+	base.name = "TaijifuGamepadTraining"
+	root.add_child(base)
+	var mastery := ControllerMasteryRuntime.new()
+	mastery.name = "TaijifuControllerMastery"
+	root.add_child(mastery)
+	if not is_instance_valid(base) or not is_instance_valid(mastery):
+		failures.append("Runtimes temporários de maestria não puderam ser montados")
+		_cleanup(base, mastery)
 		_finish(failures)
 		return
 
@@ -83,7 +93,14 @@ func _run_validation() -> void:
 	if String(reset_profile.get("right_trigger_action", "")) != "attack":
 		failures.append("Restauração não recuperou R2 em Golpe")
 
+	_cleanup(base, mastery)
 	_finish(failures)
+
+func _cleanup(base: Node, mastery: Node) -> void:
+	if is_instance_valid(mastery):
+		mastery.free()
+	if is_instance_valid(base):
+		base.free()
 
 func _has_trigger_axis(action_id: StringName, axis: JoyAxis, device: int) -> bool:
 	if not InputMap.has_action(action_id):
