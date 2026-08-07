@@ -1,0 +1,69 @@
+name: C56 Canonical URL Recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_url:
+        description: 'HTTPS URL for canonical BASE-01 candidate ZIP'
+        required: true
+        type: string
+      candidate_sha256:
+        description: 'Expected SHA-256 for the ZIP'
+        required: true
+        type: string
+      target_branch:
+        description: 'Branch to receive reconstructed canonical PNGs'
+        required: true
+        default: 'agent/c56-exact-from-candidate-zip'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch }}
+          fetch-depth: 0
+
+      - name: Download canonical candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output /tmp/base01-candidate.zip '${{ inputs.candidate_url }}'
+          echo '${{ inputs.candidate_sha256 }}  /tmp/base01-candidate.zip' | sha256sum --check -
+
+      - name: Extract and verify canonical PNGs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/base01-candidate
+          mkdir -p /tmp/base01-candidate
+          unzip -q /tmp/base01-candidate.zip -d /tmp/base01-candidate
+          face=$(find /tmp/base01-candidate -type f -name face_01_balanced.png -print -quit)
+          eyes=$(find /tmp/base01-candidate -type f -name eyes_01_focused.png -print -quit)
+          brows=$(find /tmp/base01-candidate -type f -name brows_01_focused.png -print -quit)
+          test -n "$face" && test -n "$eyes" && test -n "$brows"
+          echo 'd8bc0218b6104d2095e20a074fa4e0a23d428d1bf71e91fcac7139374b3504d9  '"$face" | sha256sum --check -
+          echo '7517e6d14cef106fbe782736524321b992ea3088486498fc24e71f1e158419a9  '"$eyes" | sha256sum --check -
+          echo '44fa5d30e0963582b5cf2d877b7a61a6d68f8028b9a2da19cbba9a73afc80225  '"$brows" | sha256sum --check -
+          install -m 0644 "$face" assets/modular_fighters/base_01/face/face_01_balanced.png
+          install -m 0644 "$eyes" assets/modular_fighters/base_01/eyes/eyes_01_focused.png
+          install -m 0644 "$brows" assets/modular_fighters/base_01/brows/brows_01_focused.png
+
+      - name: Commit exact canonical binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkne Solutions Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add assets/modular_fighters/base_01/face/face_01_balanced.png \
+                  assets/modular_fighters/base_01/eyes/eyes_01_focused.png \
+                  assets/modular_fighters/base_01/brows/brows_01_focused.png
+          git diff --cached --quiet && { echo 'C56_CANONICAL_URL_RECOVERY=NO_CHANGES'; exit 0; }
+          git commit -m 'fix(c56): publish exact canonical BASE-01 identity binaries'
+          git push origin HEAD:${{ inputs.target_branch }}
+          echo 'C56_CANONICAL_URL_RECOVERY=PASS'
