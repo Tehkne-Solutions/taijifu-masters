@@ -47,23 +47,31 @@ jobs:
   canonical-integrity:
     runs-on: ubuntu-latest
     needs: validator-contract
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.changed_files, 'never')
     steps:
       - uses: actions/checkout@v4
-      - name: Detect BASE-01 asset changes
+        with:
+          fetch-depth: 0
+
+      - name: Detect BASE-01 PNG changes
         id: changes
         if: github.event_name == 'pull_request'
         env:
           GH_BASE: ${{ github.event.pull_request.base.sha }}
           GH_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          git fetch --no-tags --depth=1 origin "$GH_BASE"
           changed=$(git diff --name-only "$GH_BASE" "$GH_HEAD" -- 'assets/modular_fighters/base_01/**/*.png' || true)
           if [ -n "$changed" ]; then
             echo 'changed=true' >> "$GITHUB_OUTPUT"
+            echo "$changed"
           else
             echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'No BASE-01 PNG changes in this PR.'
           fi
+
       - name: Validate canonical SHA-256 and PNG structure
         if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.changed == 'true'
         run: python scripts/ci/validate_base01_asset_integrity.py
+
+      - name: Record skipped canonical check
+        if: github.event_name == 'pull_request' && steps.changes.outputs.changed != 'true'
+        run: echo 'BASE01_CANONICAL_CHECK=SKIPPED no binary asset changes'
