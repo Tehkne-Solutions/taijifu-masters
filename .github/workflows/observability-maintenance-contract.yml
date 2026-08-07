@@ -1,0 +1,44 @@
+name: Observability Maintenance Contract
+
+on:
+  pull_request:
+    paths:
+      - 'services/observability_collector/**'
+      - 'render.yaml'
+      - '.github/workflows/observability-maintenance-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maintenance-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pytest fastapi uvicorn httpx pydantic pyyaml
+      - name: Run observability contracts
+        run: |
+          python -m pytest -q \
+            services/observability_collector/test_collector.py \
+            services/observability_collector/test_ops.py \
+            services/observability_collector/test_maintenance.py
+          python -m compileall -q services/observability_collector
+      - name: Validate Render blueprint
+        run: |
+          python - <<'PY'
+          import yaml
+          data = yaml.safe_load(open('render.yaml', encoding='utf-8'))
+          services = data.get('services', [])
+          names = {item.get('name') for item in services}
+          assert 'taijifu-masters-web' in names
+          assert 'taijifu-observability' in names
+          obs = next(item for item in services if item.get('name') == 'taijifu-observability')
+          assert obs.get('healthCheckPath') == '/health'
+          assert obs.get('runtime') == 'docker'
+          print('OBSERVABILITY_MAINTENANCE_CONTRACT=PASS')
+          PY
