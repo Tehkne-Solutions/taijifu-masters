@@ -1,0 +1,26 @@
+name: BASE-01 Asset Integrity
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_01/**'
+      - 'scripts/ci/validate_base01_asset_integrity.py'
+      - '.github/workflows/base01-asset-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/modular_fighters/base_01/**'
+      - 'scripts/ci/validate_base01_asset_integrity.py'
+      - '.github/workflows/base01-asset-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate canonical SHA-256 and PNG structure
+        run: python scripts/ci/validate_base01_asset_integrity.py
