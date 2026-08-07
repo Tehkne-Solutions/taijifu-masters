@@ -6,15 +6,22 @@ func _initialize() -> void:
 func _run_validation() -> void:
 	var failures: Array[String] = []
 	var keyboard_bridge := root.get_node_or_null("TaijifuWebBridge") as WebPlatformBridgeRuntime
-	var base := root.get_node_or_null("TaijifuGamepadTraining") as GamepadTrainingRuntime
-	var experience := root.get_node_or_null("TaijifuGamepadExperience") as GamepadExperienceRuntime
 	if not is_instance_valid(keyboard_bridge):
 		failures.append("Autoload TaijifuWebBridge ausente")
-	if not is_instance_valid(base):
-		failures.append("Autoload TaijifuGamepadTraining ausente")
-	if not is_instance_valid(experience):
-		failures.append("Autoload TaijifuGamepadExperience ausente")
-	if not failures.is_empty():
+		_finish(failures)
+		return
+
+	# Sprint 0 forbids these runtimes as permanent autoloads. Mount them only
+	# for this integration smoke so their real /root dependency contract works.
+	var base := GamepadTrainingRuntime.new()
+	base.name = "TaijifuGamepadTraining"
+	root.add_child(base)
+	var experience := GamepadExperienceRuntime.new()
+	experience.name = "TaijifuGamepadExperience"
+	root.add_child(experience)
+	if not is_instance_valid(base) or not is_instance_valid(experience):
+		failures.append("Runtimes temporários de gamepad não puderam ser montados")
+		_cleanup(base, experience)
 		_finish(failures)
 		return
 
@@ -90,7 +97,14 @@ func _run_validation() -> void:
 	if not bool(reset_player.get("haptics_enabled", false)):
 		failures.append("Restauração não reativou a vibração")
 
+	_cleanup(base, experience)
 	_finish(failures)
+
+func _cleanup(base: Node, experience: Node) -> void:
+	if is_instance_valid(experience):
+		experience.free()
+	if is_instance_valid(base):
+		base.free()
 
 func _has_trigger_axis(action_id: StringName, axis: JoyAxis, device: int) -> bool:
 	for event in InputMap.action_get_events(action_id):
