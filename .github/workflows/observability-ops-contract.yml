@@ -1,0 +1,26 @@
+name: Observability Ops Contract
+
+on:
+  pull_request:
+    paths:
+      - 'services/observability_collector/**'
+      - '.github/workflows/observability-ops-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ops-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install collector dependencies
+        run: python -m pip install --upgrade pip pytest fastapi uvicorn httpx pydantic
+      - name: Run collector and operations contracts
+        run: |
+          python -m pytest -q services/observability_collector/test_collector.py services/observability_collector/test_ops.py
+          python -m compileall -q services/observability_collector
