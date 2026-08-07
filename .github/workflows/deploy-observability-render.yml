@@ -1,0 +1,122 @@
+name: Deploy Observability to Render
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/deploy-observability-render.yml'
+      - 'render.yaml'
+      - 'services/observability_collector/**'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY_OBSERVABILITY to confirm production deploy'
+        required: true
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'services/observability_collector/**'
+      - 'render.yaml'
+      - '.github/workflows/deploy-observability-render.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taijifu-observability-render-production-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deploy workflow contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/deploy-observability-render.yml').read_text(encoding='utf-8')
+          required = [
+              'RENDER_OBSERVABILITY_DEPLOY_HOOK',
+              'TAIJIFU_OBSERVABILITY_PUBLIC_URL',
+              'TAIJIFU_OBSERVABILITY_AUTO_DEPLOY',
+              'DEPLOY_OBSERVABILITY',
+              '/health',
+              '/v1/ops',
+              '/dashboard',
+              'Tehkné Solutions',
+          ]
+          for token in required:
+              assert token in text, token
+          print('RENDER_OBSERVABILITY_DEPLOY_CONTRACT=PASS')
+          PY
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: contract
+    if: >-
+      (github.event_name == 'push' && vars.TAIJIFU_OBSERVABILITY_AUTO_DEPLOY == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.confirm == 'DEPLOY_OBSERVABILITY')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_OBSERVABILITY_DEPLOY_HOOK }}
+          PUBLIC_URL: ${{ secrets.TAIJIFU_OBSERVABILITY_PUBLIC_URL }}
+        run: |
+          test -n "$DEPLOY_HOOK" || { echo 'Missing RENDER_OBSERVABILITY_DEPLOY_HOOK'; exit 2; }
+          test -n "$PUBLIC_URL" || { echo 'Missing TAIJIFU_OBSERVABILITY_PUBLIC_URL'; exit 2; }
+
+      - name: Trigger Render deploy
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_OBSERVABILITY_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error --request POST "$DEPLOY_HOOK"
+
+      - name: Wait for healthy collector
+        env:
+          PUBLIC_URL: ${{ secrets.TAIJIFU_OBSERVABILITY_PUBLIC_URL }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error "$PUBLIC_URL/health" -o health.json; then
+              python - <<'PY'
+          import json
+          payload = json.load(open('health.json', encoding='utf-8'))
+          assert payload.get('status') == 'ok', payload
+          assert payload.get('operational_status') in {'healthy','degraded','critical'}, payload
+          print('REMOTE_HEALTH=PASS')
+          PY
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Render collector did not become healthy'
+          exit 3
+
+      - name: Validate operations endpoints
+        env:
+          PUBLIC_URL: ${{ secrets.TAIJIFU_OBSERVABILITY_PUBLIC_URL }}
+        run: |
+          curl --fail --silent --show-error "$PUBLIC_URL/v1/ops" -o ops.json
+          curl --fail --silent --show-error "$PUBLIC_URL/dashboard" -o dashboard.html
+          python - <<'PY'
+          import json
+          ops = json.load(open('ops.json', encoding='utf-8'))
+          assert ops.get('status') in {'healthy','degraded','critical'}, ops
+          dashboard = open('dashboard.html', encoding='utf-8').read()
+          assert 'Taijifu Masters — Operations' in dashboard
+          assert 'Tehkné Solutions' in dashboard
+          print('REMOTE_OPS_SMOKE=PASS')
+          PY
+
+      - name: Publish deployment summary
+        env:
+          PUBLIC_URL: ${{ secrets.TAIJIFU_OBSERVABILITY_PUBLIC_URL }}
+        run: |
+          {
+            echo '## Taijifu Observability Deploy'
+            echo '- status: PASS'
+            echo "- endpoint: $PUBLIC_URL"
+            echo "- commit: $GITHUB_SHA"
+            echo '- signature: Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
