@@ -26,7 +26,7 @@ ALERT_FRAME_STALL_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_FRAME_STALL_THRESHOLD
 ALERT_ASSET_FALLBACK_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_ASSET_FALLBACK_THRESHOLD", "3"))
 ALERT_HASH_MISMATCH_THRESHOLD = int(os.getenv("TAIJIFU_ALERT_HASH_MISMATCH_THRESHOLD", "1"))
 
-app = FastAPI(title="Taijifu Observability Collector", version="1.1.0")
+app = FastAPI(title="Taijifu Observability Collector", version="1.1.1")
 _lock = threading.Lock()
 _recent: deque[dict[str, Any]] = deque(maxlen=RECENT_WINDOW)
 _started_unix = int(time.time())
@@ -135,7 +135,8 @@ def health() -> dict[str, Any]:
     ops = _ops_payload()
     return {
         "schema": APP_SCHEMA,
-        "status": ops["status"],
+        "status": "ok",
+        "operational_status": ops["status"],
         "started_unix": _started_unix,
         "uptime_sec": max(0, int(time.time()) - _started_unix),
         "ingested_events": _ingested_events,
@@ -190,6 +191,7 @@ def dashboard() -> str:
         f"<li><strong>{html.escape(str(key))}</strong>: {value}</li>"
         for key, value in ops["signals"].items()
     )
+    status_label = html.escape(str(ops["status"]).upper())
     return f"""<!doctype html>
 <html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Taijifu Operations</title><style>
@@ -198,7 +200,7 @@ body{{font-family:system-ui,sans-serif;margin:32px;max-width:1100px;background:#
 table{{width:100%;border-collapse:collapse}}th,td{{padding:10px;border-bottom:1px solid #333;text-align:left}}
 .status{{font-size:28px;font-weight:700;text-transform:uppercase}}
 </style></head><body>
-<h1>Taijifu Masters — Operations</h1><div class='card'><div class='status'>{html.escape(ops['status'])}</div>
+<h1>Taijifu Masters — Operations</h1><div class='card'><div class='status'>{status_label}</div>
 <p>Events in window: {ops['summary']['window_events']}</p></div>
 <div class='card'><h2>Signals</h2><ul>{signals}</ul></div>
 <div class='card'><h2>Alerts</h2><table><thead><tr><th>Level</th><th>Code</th><th>Count</th><th>Threshold</th></tr></thead><tbody>{rows}</tbody></table></div>
