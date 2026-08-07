@@ -1,0 +1,3 @@
+C56 canonical binary recovery trigger
+Expected result: exact SHA-256 verification and binary commit
+Signature: Tehkné Solutions
