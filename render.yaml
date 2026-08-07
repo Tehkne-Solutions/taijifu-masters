@@ -17,3 +17,32 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
+
+  - type: web
+    name: taijifu-observability
+    runtime: docker
+    dockerfilePath: ./services/observability_collector/Dockerfile
+    dockerContext: ./services/observability_collector
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: TAIJIFU_OBSERVABILITY_DATA_DIR
+        value: /var/data/observability
+      - key: TAIJIFU_OBSERVABILITY_RETENTION_MAX_BYTES
+        value: "67108864"
+      - key: TAIJIFU_OBSERVABILITY_RETENTION_MAX_LINES
+        value: "250000"
+      - key: TAIJIFU_OBSERVABILITY_RETENTION_KEEP_LINES
+        value: "100000"
+      - key: TAIJIFU_ALERT_COOLDOWN_SEC
+        value: "300"
+      - key: TAIJIFU_OBSERVABILITY_PROJECT_KEY
+        sync: false
+      - key: TAIJIFU_ALERT_WEBHOOK_URL
+        sync: false
+      - key: TAIJIFU_ALERT_WEBHOOK_TOKEN
+        sync: false
+    disk:
+      name: taijifu-observability-data
+      mountPath: /var/data
+      sizeGB: 1
