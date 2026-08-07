@@ -44,7 +44,6 @@ jobs:
           echo 'C56_BINARY_RECONSTRUCTION=PASS'
 
       - name: Commit exact binaries
-        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -58,4 +57,5 @@ jobs:
             exit 0
           fi
           git commit -m "fix(c56): restore exact BASE-01 identity binaries"
-          git push origin HEAD:${{ github.head_ref }}
+          target_branch="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          git push origin "HEAD:${target_branch}"
