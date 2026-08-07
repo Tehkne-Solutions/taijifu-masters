@@ -16,6 +16,7 @@ signal batch_failed(count: int, reason: String)
 signal health_changed(snapshot: Dictionary)
 
 var endpoint_url := ""
+var project_key := ""
 var enabled := true
 var remote_enabled := false
 var batch_size := DEFAULT_BATCH_SIZE
@@ -40,6 +41,7 @@ func _ready() -> void:
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
 	_build_context = _default_build_context()
+	_apply_environment_configuration()
 	_load_spool()
 	record_event("runtime.started", {"queued_from_spool": _queue.size()}, "info")
 
@@ -51,8 +53,9 @@ func _process(delta: float) -> void:
 		_flush_elapsed = 0.0
 		flush()
 
-func configure_remote(url: String, active := true) -> void:
+func configure_remote(url: String, active := true, public_project_key := "") -> void:
 	endpoint_url = url.strip_edges()
+	project_key = public_project_key.strip_edges()
 	remote_enabled = active and endpoint_url != ""
 	emit_signal("health_changed", health_snapshot())
 
@@ -111,13 +114,11 @@ func flush(force_local := false) -> void:
 		"sent_unix_ms": int(Time.get_unix_time_from_system() * 1000.0),
 		"events": batch
 	})
+	var headers := PackedStringArray(["Content-Type: application/json", "X-Tehkne-Observability: 1"])
+	if project_key != "":
+		headers.append("X-Tehkne-Project-Key: %s" % project_key)
 	_request_in_flight = true
-	var error := _http.request(
-		endpoint_url,
-		["Content-Type: application/json", "X-Tehkne-Observability: 1"],
-		HTTPClient.METHOD_POST,
-		body
-	)
+	var error := _http.request(endpoint_url, headers, HTTPClient.METHOD_POST, body)
 	if error != OK:
 		_request_in_flight = false
 		_on_send_failure("request_error_%d" % error)
@@ -135,8 +136,26 @@ func health_snapshot() -> Dictionary:
 		"sent_events": _sent_events,
 		"failed_batches": _failed_batches,
 		"dropped_events": _dropped_events,
-		"last_error": _last_error
+		"last_error": _last_error,
+		"build": _build_context.duplicate(true)
 	}
+
+func _apply_environment_configuration() -> void:
+	var env_endpoint := OS.get_environment("TAIJIFU_OBSERVABILITY_ENDPOINT").strip_edges()
+	var env_project_key := OS.get_environment("TAIJIFU_OBSERVABILITY_PROJECT_KEY").strip_edges()
+	if env_endpoint != "":
+		configure_remote(env_endpoint, true, env_project_key)
+	_build_context.merge({
+		"build_sha": _environment_or("TAIJIFU_BUILD_SHA", "unknown"),
+		"deploy_id": _environment_or("TAIJIFU_DEPLOY_ID", "unknown"),
+		"environment": _environment_or("TAIJIFU_ENVIRONMENT", "local"),
+		"release": _environment_or("TAIJIFU_RELEASE", "unversioned"),
+		"source": _environment_or("TAIJIFU_BUILD_SOURCE", "runtime")
+	}, true)
+
+func _environment_or(key: String, fallback: String) -> String:
+	var value := OS.get_environment(key).strip_edges()
+	return fallback if value == "" else value
 
 func _on_request_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 	_request_in_flight = false
