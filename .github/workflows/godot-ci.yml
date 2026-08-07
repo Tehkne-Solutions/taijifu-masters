@@ -41,10 +41,15 @@ jobs:
           chmod +x godot
           ./godot --version
 
-      - name: Importar projeto e validar parser
+      - name: Importar projeto e concluir varredura de scripts
         run: |
           set -o pipefail
-          ./godot --headless --editor --path . --quit 2>&1 | tee godot-import.log
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee godot-import.log
+
+      - name: Validar registro global de class_name
+        run: |
+          python scripts/ci/validate_global_class_registry.py | tee godot-class-registry.log
 
       - name: Instanciar cena principal e validar recursos
         run: |
@@ -128,6 +133,7 @@ jobs:
           name: godot-ci-logs
           path: |
             godot-import.log
+            godot-class-registry.log
             godot-smoke.log
             godot-competitive.log
             godot-presets-history.log
