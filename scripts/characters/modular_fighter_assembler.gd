@@ -61,6 +61,9 @@ func assemble_base01_default_identity() -> PackedStringArray:
 	if _active_skin_palette.is_empty():
 		failures.append("skin_palette_missing_or_invalid")
 
+	# Default identity intentionally does not attach face_plate. It reconstructs
+	# the approved BASE-00 source exactly. face_plate is reserved for non-default
+	# identity swaps so the BASE-00 facial identity can be neutralized first.
 	for slot in ["face", "eyes", "brows"]:
 		var module_id := String(default_identity.get(slot, ""))
 		if module_id.is_empty() or not modules.has(module_id):
@@ -163,6 +166,8 @@ func _load_json(path: String) -> Dictionary:
 
 func _slot_z_index(slot: String) -> int:
 	match slot:
+		"face_plate":
+			return 15
 		"face":
 			return 20
 		"eyes":

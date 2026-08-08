@@ -1,0 +1,62 @@
+name: BASE-01 Face Plate Slot Contract
+
+on:
+  pull_request:
+    paths:
+      - 'config/modular-fighter-standard-v1.json'
+      - 'scripts/characters/modular_fighter_assembler.gd'
+      - 'scripts/ci/base01_face_plate_slot_smoke.gd'
+      - '.github/workflows/base01-face-plate-slot-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c59-3-import.log
+
+      - name: Validate face_plate contract
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_face_plate_slot_smoke.gd 2>&1 | tee c59-3-face-plate.log
+          grep -q 'C59_3_FACE_PLATE_SLOT=PASS' c59-3-face-plate.log
+          grep -q 'DEFAULT_IDENTITY_PLATE_FREE=PASS' c59-3-face-plate.log
+
+      - name: Summary
+        run: |
+          {
+            echo '## C59.3 — face_plate slot contract'
+            echo ''
+            echo '- face_plate is internal, not creator-editable.'
+            echo '- z-order: face_plate 15 → face 20 → eyes 30 → brows 40.'
+            echo '- approved default identity remains plate-free.'
+            echo '- no face_plate PNG is promoted by this PR.'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
