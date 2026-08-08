@@ -4,6 +4,7 @@ const BASE := "res://assets/modular_fighters/base_00/base_fighter_v1_master.png"
 const OUTPUT := "res://artifacts/c62-1/BASE01_SKIN_PALETTES.contact-sheet-1920x1080.png"
 const QA_OUTPUT := "res://artifacts/c62-1/BASE01_SKIN_PALETTES.runtime.qa.json"
 const PALETTE_ROOT := "res://assets/modular_fighters/base_01/palettes"
+const AUTHORED_CANVAS := Vector2(1920.0, 1080.0)
 const PALETTE_IDS := [
 	"skin_tone_01_porcelain",
 	"skin_tone_02_light_neutral",
@@ -18,6 +19,10 @@ const DISPLAY_NAMES := ["PORCELAIN", "LIGHT NEUTRAL", "WARM / DEFAULT", "OLIVE",
 const REVIEW_HEIGHT := 240.0
 const GAMEPLAY_HEIGHT := 132.0
 
+var _layout_scale := 1.0
+var _layout_offset := Vector2.ZERO
+var _logical_viewport_size := Vector2.ZERO
+
 class SkinPreviewProfile:
 	extends RefCounted
 	var profile_id: StringName = &"c62_1_skin_visual_bench"
@@ -28,7 +33,9 @@ func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	get_root().size = Vector2i(1920, 1080)
+	if not _configure_layout_transform():
+		_fail("C62_1_SKIN_VISUAL=BLOCKED viewport_layout")
+		return
 	RenderingServer.set_default_clear_color(Color("080d13"))
 	var base_image := Image.load_from_file(ProjectSettings.globalize_path(BASE))
 	if base_image == null or base_image.is_empty():
@@ -43,7 +50,7 @@ func _run() -> void:
 	var gameplay_scale := GAMEPLAY_HEIGHT / float(used.size.y)
 	var base_texture := ImageTexture.create_from_image(base_image)
 
-	_add_rect(Vector2(0, 0), Vector2(1920, 1080), Color("080d13"))
+	_add_rect(Vector2(0, 0), AUTHORED_CANVAS, Color("080d13"))
 	_add_label("TAIJIFU BASE-01 — SKIN PALETTE RUNTIME REVIEW", Vector2(54, 30), 34, Color("f2c85b"))
 	_add_label("Same BASE-00 • palette data only • authored review + flipped 132px gameplay proof", Vector2(56, 78), 19, Color("c3ccd8"))
 
@@ -86,6 +93,9 @@ func _run() -> void:
 	if capture == null or capture.is_empty():
 		_fail("C62_1_SKIN_VISUAL=BLOCKED capture")
 		return
+	if capture.get_width() <= 0 or capture.get_height() <= 0:
+		_fail("C62_1_SKIN_VISUAL=BLOCKED capture_size")
+		return
 	if capture.get_size() != Vector2i(1920, 1080):
 		capture.resize(1920, 1080, Image.INTERPOLATE_LANCZOS)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT.get_base_dir()))
@@ -105,21 +115,48 @@ func _run() -> void:
 		"flipped_review": "PASS",
 		"runtime_material_application": "PASS",
 		"default_warm_identity_preservation": "PASS",
+		"logical_viewport": [roundi(_logical_viewport_size.x), roundi(_logical_viewport_size.y)],
+		"layout_scale": _layout_scale,
+		"authored_canvas": [1920, 1080],
 		"owner_review": "PENDING"
 	}
 	var qa_file := FileAccess.open(QA_OUTPUT, FileAccess.WRITE)
 	qa_file.store_string(JSON.stringify(qa, "  ") + "\n")
 	qa_file.close()
+	print("C62_1_LOGICAL_VIEWPORT=PASS size=%dx%d" % [roundi(_logical_viewport_size.x), roundi(_logical_viewport_size.y)])
+	print("C62_1_LAYOUT_SCALE=PASS scale=%.8f" % _layout_scale)
 	print("C62_1_SKIN_VISUAL=PASS palettes=8 authored=8 flipped_gameplay=8")
 	print("C62_1_SKIN_VISUAL_OUTPUT=" + OUTPUT)
 	print("OWNER_REVIEW=PENDING")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
 
+func _configure_layout_transform() -> bool:
+	_logical_viewport_size = get_root().get_visible_rect().size
+	if _logical_viewport_size.x <= 0.0 or _logical_viewport_size.y <= 0.0:
+		return false
+	var scale_x := _logical_viewport_size.x / AUTHORED_CANVAS.x
+	var scale_y := _logical_viewport_size.y / AUTHORED_CANVAS.y
+	_layout_scale = minf(scale_x, scale_y)
+	if _layout_scale <= 0.0:
+		return false
+	_layout_offset = (_logical_viewport_size - AUTHORED_CANVAS * _layout_scale) * 0.5
+	return true
+
+func _logical_point(authored: Vector2) -> Vector2:
+	return _layout_offset + authored * _layout_scale
+
+func _logical_size(authored: Vector2) -> Vector2:
+	return authored * _layout_scale
+
+func _logical_font_size(authored_size: int) -> int:
+	return maxi(1, roundi(float(authored_size) * _layout_scale))
+
 func _build_fighter(texture: Texture2D, palette_id: String, root_position: Vector2, visual_scale: float, flipped: bool, bottom_offset: float) -> bool:
 	var assembler := ModularFighterAssembler.new()
-	assembler.position = root_position
-	assembler.scale = Vector2(-visual_scale if flipped else visual_scale, visual_scale)
+	assembler.position = _logical_point(root_position)
+	var scaled := visual_scale * _layout_scale
+	assembler.scale = Vector2(-scaled if flipped else scaled, scaled)
 	get_root().add_child(assembler)
 	var failures := assembler.configure(SkinPreviewProfile.new())
 	if not failures.is_empty():
@@ -163,8 +200,8 @@ func _alpha_used_rect(image: Image) -> Rect2i:
 
 func _add_rect(position: Vector2, size: Vector2, color: Color) -> void:
 	var rect := ColorRect.new()
-	rect.position = position
-	rect.size = size
+	rect.position = _logical_point(position)
+	rect.size = _logical_size(size)
 	rect.color = color
 	get_root().add_child(rect)
 	get_root().move_child(rect, 0)
@@ -181,8 +218,8 @@ func _add_border(position: Vector2, size: Vector2, color: Color) -> void:
 func _add_label(text_value: String, position: Vector2, font_size: int, color: Color) -> void:
 	var label := Label.new()
 	label.text = text_value
-	label.position = position
-	label.add_theme_font_size_override("font_size", font_size)
+	label.position = _logical_point(position)
+	label.add_theme_font_size_override("font_size", _logical_font_size(font_size))
 	label.add_theme_color_override("font_color", color)
 	get_root().add_child(label)
 
