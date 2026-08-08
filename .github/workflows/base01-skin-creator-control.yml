@@ -34,19 +34,24 @@ jobs:
           palettes=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json').read_text())
           plan=json.loads(Path('assets/modular_fighters/base_01/production_plan.json').read_text())
           assert control['signature']=='Tehkné Solutions'
-          assert control['status']=='implementation_candidate_owner_review_pending'
+          assert control['status']=='implementation_integrated_owner_review_pending'
           assert control['control_contract']['options']==8
           assert control['control_contract']['keyboard_focus'] is True
           assert control['control_contract']['gamepad_focus'] is True
           assert control['runtime_contract']['duplicate_body_pngs'] is False
           assert control['profile_contract']['field']=='palette.skin'
           assert len(control['palette_ids'])==8
-          assert palettes['status']=='creator_control_candidate_owner_review_pending'
+          assert control['review']['machine']=='PASS'
+          assert control['review']['internal_visual']=='PASS'
+          assert control['review']['owner_review']=='PENDING'
+          assert palettes['status']=='creator_control_integrated_owner_review_pending'
           assert palettes['runtime_policy']['creator_control_available'] is True
+          assert palettes['review']['creator_control_machine']=='PASS'
+          assert palettes['review']['creator_control_visual']=='PASS'
           packs={p['pack_id']:p for p in plan['packs']}
-          assert packs['BASE01-SKIN-PALETTES']['status']=='creator_control_candidate_owner_review_pending'
+          assert packs['BASE01-SKIN-PALETTES']['status']=='creator_control_integrated_owner_review_pending'
           assert 'creator_control' in packs['BASE01-SKIN-PALETTES']['required_outputs_per_module']
-          print('C62_3_CREATOR_CONTRACT=PASS options=8')
+          print('C62_3_CREATOR_CONTRACT=PASS options=8 state=integrated')
           PY
       - name: Install Godot 4.3 runtime dependencies
         run: |
@@ -82,6 +87,7 @@ jobs:
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' ./godot --path . --rendering-method gl_compatibility --resolution 1280x720 --script res://scripts/runtime/base01_skin_creator_control_bench.gd 2>&1 | tee c62-3-visual.log
           grep -q 'C62_3_CREATOR_VISUAL=PASS options=8 cycles=8 selected=skin_tone_07_deep' c62-3-visual.log
+          grep -q 'INTERNAL_VISUAL_REVIEW=PASS' c62-3-visual.log
           if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-3-visual.log; then
             echo 'C62_3_VISUAL_ERRORS=BLOCKED'
             exit 1
@@ -98,15 +104,16 @@ jobs:
           assert png[:8]==b'\x89PNG\r\n\x1a\n'
           assert struct.unpack('>II', png[16:24])==(1920,1080)
           qa=json.loads(Path('artifacts/c62-3/BASE01_SKIN_CREATOR_CONTROL.qa.json').read_text())
-          assert qa['status']=='implementation_candidate_owner_review_pending'
+          assert qa['status']=='implementation_integrated_owner_review_pending'
           assert qa['palette_options']==8
           assert qa['runtime_cycles_exercised']==8
           assert qa['selected_palette']=='skin_tone_07_deep'
           assert qa['profile_palette']==qa['selected_palette']==qa['assembler_palette']
           assert qa['keyboard_gamepad_focus']=='PASS'
           assert qa['duplicate_body_pngs'] is False
+          assert qa['internal_visual_review']=='PASS'
           assert qa['owner_review']=='PENDING'
-          print('C62_3_CREATOR_REVIEW_ARTIFACT=PASS size=1920x1080')
+          print('C62_3_CREATOR_REVIEW_ARTIFACT=PASS size=1920x1080 state=integrated')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -120,4 +127,4 @@ jobs:
             c62-3-visual.log
           if-no-files-found: ignore
       - name: Summary
-        run: echo 'C62.3 BASE-01 Skin Creator Control PASS — owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.3 BASE-01 Skin Creator Control PASS — internal visual PASS — owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
