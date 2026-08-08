@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE01_CHARACTER_CREATOR_SHELL",
   "version": "1.0.0",
-  "status": "implementation_candidate_owner_review_pending",
+  "status": "character_creator_shell_integrated_owner_review_pending",
   "depends_on": {
     "identity_creator": "BASE01_IDENTITY_CREATOR_CONTROL",
     "preset_serialization": "BASE01_IDENTITY_PRESET_SERIALIZATION",
@@ -11,11 +11,14 @@
   },
   "scene_contract": {
     "scene": "scenes/characters/modular_fighter_creator_shell.tscn",
-    "controller": "scripts/characters/modular_fighter_creator_shell.gd",
+    "behavior_controller": "scripts/characters/modular_fighter_creator_shell.gd",
+    "scene_controller": "scripts/characters/modular_fighter_creator_scene.gd",
     "logical_viewport": [1280, 720],
     "live_preview": true,
     "canonical_pivot": [0.5, 0.92],
-    "preview_transform": "assembler_uniform_scale"
+    "preview_transform": "assembler_uniform_scale",
+    "reviewed_preview_scale": 0.20,
+    "preview_controls_overlap": false
   },
   "identity_contract": {
     "categories": ["skin", "face", "eyes", "brows"],
@@ -41,8 +44,12 @@
   },
   "future_expansion_slots": ["hair", "uniform", "weapons", "accessories"],
   "review": {
-    "machine": "PENDING",
-    "internal_visual": "PENDING",
+    "machine": "PASS",
+    "runtime_roundtrip": "PASS",
+    "live_preview": "PASS",
+    "preset_list_runtime_proof": "PASS",
+    "internal_visual": "PASS",
+    "visual_basis": "C62.6 V2 1920x1080 reviewed layout; Deep + Broad + Fierce + Sharp; preset visible; no control overlap",
     "owner_review": "PENDING"
   },
   "next_stage": "C62.7_CREATOR_MENU_ENTRY"
