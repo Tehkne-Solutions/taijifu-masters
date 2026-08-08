@@ -3,10 +3,12 @@ extends Control
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FIRST_PLAYABLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
+const CREATOR_SCENE := "res://scenes/characters/modular_fighter_creator_shell.tscn"
 const DEFAULT_PARTICIPANT_CODE := "TJFP-001"
 const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
 
 @onready var play_button: Button = $Content/Actions/PlayButton
+@onready var creator_button: Button = $Content/Actions/CreatorButton
 @onready var exit_button: Button = $Content/Actions/ExitButton
 @onready var difficulty_label: Label = $Content/Difficulty/DifficultyLabel
 @onready var easy_button: Button = $Content/Difficulty/Options/EasyButton
@@ -16,6 +18,7 @@ const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
 func _ready() -> void:
 	get_tree().paused = false
 	play_button.pressed.connect(_start_first_playable)
+	creator_button.pressed.connect(_open_character_creator)
 	exit_button.pressed.connect(_exit_game)
 	easy_button.pressed.connect(select_difficulty.bind(&"apprentice"))
 	normal_button.pressed.connect(select_difficulty.bind(&"disciple"))
@@ -24,6 +27,7 @@ func _ready() -> void:
 	# Identificador técnico interno: não existe formulário ou bloqueio para o jogador.
 	FirstPlayableSession.set_participant_code(DEFAULT_PARTICIPANT_CODE)
 	play_button.disabled = false
+	creator_button.disabled = false
 	_apply_visual_policy()
 	_update_difficulty_ui()
 	play_button.grab_focus()
@@ -46,6 +50,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				select_difficulty(&"disciple")
 			KEY_3:
 				select_difficulty(&"master")
+			KEY_C:
+				_open_character_creator()
 			KEY_ENTER:
 				_start_first_playable()
 			KEY_ESCAPE:
@@ -59,6 +65,9 @@ func flow_signature() -> Dictionary:
 	return {
 		"main_action": &"play_vs_ai",
 		"first_playable_scene": FIRST_PLAYABLE_SCENE,
+		"creator_scene": CREATOR_SCENE,
+		"creator_entry_exposed": true,
+		"creator_entry_role": "secondary_non_blocking",
 		"difficulty_ids": FirstPlayableSession.VALID_DIFFICULTIES.duplicate(),
 		"participant_code_required": false,
 		"participant_code": DEFAULT_PARTICIPANT_CODE,
@@ -67,9 +76,11 @@ func flow_signature() -> Dictionary:
 		"site_like_panels": false,
 		"form_fields": 0,
 		"visible_primary_actions": 2,
+		"visible_creator_actions": 1,
 		"visual_policy": POLICY.UI_READ,
 		"quick_game_ui": true,
-		"keyboard_shortcuts": {"play": "Enter", "easy": "1", "normal": "2", "hard": "3"},
+		"quick_game_path_unchanged": true,
+		"keyboard_shortcuts": {"play": "Enter", "creator": "C", "easy": "1", "normal": "2", "hard": "3"},
 		"mouse_supported": true,
 		"gamepad_focus_supported": true,
 		"signature": "Tehkné Solutions"
@@ -79,6 +90,9 @@ func _start_first_playable() -> void:
 	if not FirstPlayableSession.has_valid_participant_code():
 		FirstPlayableSession.set_participant_code(DEFAULT_PARTICIPANT_CODE)
 	get_tree().change_scene_to_file(FIRST_PLAYABLE_SCENE)
+
+func _open_character_creator() -> void:
+	get_tree().change_scene_to_file(CREATOR_SCENE)
 
 func _exit_game() -> void:
 	get_tree().quit()
@@ -118,6 +132,7 @@ func _apply_visual_policy() -> void:
 	_style_difficulty_button(normal_button)
 	_style_difficulty_button(hard_button)
 	_style_primary_button(play_button)
+	_style_secondary_button(creator_button)
 	_style_secondary_button(exit_button)
 
 func _style_difficulty_button(button: Button) -> void:
