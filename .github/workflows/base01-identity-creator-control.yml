@@ -103,6 +103,7 @@ jobs:
           xvfb-run -a -s '-screen 0 1280x720x24' ./godot --path . --rendering-method gl_compatibility --resolution 1280x720 --script res://scripts/runtime/base01_identity_creator_control_bench.gd 2>&1 | tee c62-4-visual.log
           grep -q 'C62_4_IDENTITY_VISUAL=PASS transitions=24 skin=8 face=4 eyes=6 brows=6' c62-4-visual.log
           grep -q 'C62_4_FACE_PLATE_VISUAL_POLICY=PASS internal=true creator_editable=false' c62-4-visual.log
+          grep -q 'C62_4_PREVIEW_TRANSFORM=PASS policy=assembler_uniform_scale' c62-4-visual.log
           if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-4-visual.log; then
             echo 'C62_4_VISUAL_ERRORS=BLOCKED'
             exit 1
@@ -134,9 +135,11 @@ jobs:
           assert qa['face_plate_creator_editable'] is False
           assert qa['z_order']=='PASS'
           assert qa['skin_material_propagation']=='PASS'
+          assert qa['preview_transform_policy']=='assembler_uniform_scale'
+          assert qa['per_module_scale']=='IDENTITY'
           assert qa['keyboard_gamepad_focus']=='PASS'
           assert qa['owner_review']=='PENDING'
-          print('C62_4_IDENTITY_REVIEW_ARTIFACT=PASS size=1920x1080')
+          print('C62_4_IDENTITY_REVIEW_ARTIFACT=PASS size=1920x1080 transform=assembler_uniform_scale')
           PY
 
       - uses: actions/upload-artifact@v4
