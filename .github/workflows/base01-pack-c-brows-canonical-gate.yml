@@ -1,0 +1,75 @@
+name: BASE-01 Pack C Brows Canonical Gate
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_01/brows/brows_0[2-6]_*.png'
+      - 'assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS*'
+      - 'assets/modular_fighters/base_01/catalog.json'
+      - 'assets/modular_fighters/base_01/manifest.json'
+      - 'scripts/ci/base01_pack_c_brows_canonical_smoke.gd'
+      - '.github/workflows/base01-pack-c-brows-canonical-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate canonical hashes and metadata
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          c = Path('assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.canonical.json')
+          assert c.is_file()
+          d = json.loads(c.read_text(encoding='utf-8'))
+          assert d['status'] == 'PASS' and d['owner_review'] == 'PASS'
+          assert len(d['modules']) == 5
+          assert set(d['modules']) == {
+              'brows_02_neutral','brows_03_arched','brows_04_straight','brows_05_heavy','brows_06_sharp'
+          }
+          cat = json.loads(Path('assets/modular_fighters/base_01/catalog.json').read_text(encoding='utf-8'))
+          rows = {x['id']: x for x in cat['brows']}
+          for brow_id, m in d['modules'].items():
+              p = Path(m['path'])
+              assert p.is_file()
+              assert hashlib.sha256(p.read_bytes()).hexdigest() == m['sha256']
+              assert rows[brow_id]['status'] == 'produced'
+              assert rows[brow_id]['sha256'] == m['sha256']
+              assert rows[brow_id]['path'] == m['path']
+              assert m['canvas'] == [1024,1024]
+              assert m['mode'] == 'RGBA'
+              assert m['transparent_corners'] is True
+              assert m['pivot'] == [0.5,0.92]
+          manifest = json.loads(Path('assets/modular_fighters/base_01/manifest.json').read_text(encoding='utf-8'))
+          assert manifest['qa']['pack_c_brows']['status'] == 'PASS'
+          assert manifest['qa']['pack_c_brows']['owner_review'] == 'PASS'
+          assert manifest['qa']['pack_c_brows']['visual_review_basis'] == 'C61_V3_CONTACT_SHEET'
+          print('C61_2_PACK_C_HASH_METADATA=PASS modules=5')
+          PY
+      - name: Install Godot dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c61-2-gate-import.log
+      - name: Run canonical runtime smoke
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_c_brows_canonical_smoke.gd 2>&1 | tee c61-2-gate-runtime.log
+          grep -q 'C61_2_PACK_C_CANONICAL=PASS variants=5' c61-2-gate-runtime.log
+      - name: Summary
+        run: |
+          echo 'C61.2 Pack C canonical gate PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
