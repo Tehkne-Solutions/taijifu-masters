@@ -64,7 +64,9 @@ jobs:
         run: ./godot --headless --path . --script tests/first_playable_character_contract_test.gd
 
       - name: Run First Playable combo combat contract
-        run: ./godot --headless --path . --script tests/first_playable_combo_combat_contract.gd
+        run: |
+          set -o pipefail
+          timeout 30s ./godot --headless --path . --script tests/first_playable_combo_combat_contract.gd 2>&1 | tee first-playable-combo-contract.log
 
       - name: Run First Playable adaptive master contract
         run: ./godot --headless --path . --script tests/first_playable_adaptive_master_contract.gd
@@ -86,3 +88,13 @@ jobs:
 
       - name: Run First Playable playtest telemetry contract
         run: ./godot --headless --path . --script tests/first_playable_playtest_telemetry_test.gd
+
+      - name: Upload First Playable diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-playable-smoke-diagnostics
+          path: |
+            first-playable-import.log
+            first-playable-combo-contract.log
+          if-no-files-found: ignore
