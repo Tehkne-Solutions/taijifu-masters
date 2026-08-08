@@ -73,11 +73,15 @@ jobs:
           validation = json.loads(validation_path.read_text(encoding="utf-8"))
           assert validation["product"] == "Taijifu Masters"
           assert validation["publisher"] == "Tehkné Solutions"
-          experience = validation["web_experience"]
-          assert experience["responsive_shell"] is True
-          assert experience["native_web_menu"] is True
-          assert experience["godot_pause_bridge"] is True
-          assert experience["gamepad_web_panel"] is True
+          assert validation["web_contract"] == "sprint0-essential-shell-v1"
+          features = validation["features"]
+          assert features["godot_canvas"] is True
+          assert features["direct_arena_entry"] is True
+          assert features["pause_menu"] is True
+          assert features["closable_dialog"] is True
+          assert features["keyboard_escape"] is True
+          assert features["responsive_shell"] is True
+          assert features["pwa"] is True
 
           print(json.dumps({
               "build_id": manifest["build_id"],
@@ -85,6 +89,7 @@ jobs:
               "files": manifest["totals"]["file_count"],
               "size_bytes": manifest["totals"]["size_bytes"],
               "web_validation": "approved",
+              "web_contract": validation["web_contract"],
               "telemetry": "local-v3",
           }, indent=2))
           PY
@@ -136,6 +141,7 @@ jobs:
         with:
           name: taijifu-web-smoke-${{ github.sha }}
           path: |
+            web-import.log
             web-build.log
             web-server.log
             web-test.log
