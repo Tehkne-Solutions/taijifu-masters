@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base01-production-pack/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-B-EYES",
-  "version": "1.0.0",
-  "status": "production_contract_ready",
+  "version": "1.1.0",
+  "status": "produced_canonical",
   "slot": "eyes",
   "depends_on": {
     "catalog": "BASE01_IDENTITY_CATALOG",
@@ -14,21 +14,69 @@
     "default_brows": "brows_01_focused"
   },
   "deliverables": [
-    {"id":"eyes_02_calm","path":"assets/modular_fighters/base_01/eyes/eyes_02_calm.png","intent":"relaxed eyelid geometry and calmer gaze while preserving canonical spacing"},
-    {"id":"eyes_03_fierce","path":"assets/modular_fighters/base_01/eyes/eyes_03_fierce.png","intent":"sharper inward upper-lid angle for aggressive combat readability"},
-    {"id":"eyes_04_narrow","path":"assets/modular_fighters/base_01/eyes/eyes_04_narrow.png","intent":"compressed vertical eye aperture for focused narrow gaze"},
-    {"id":"eyes_05_round","path":"assets/modular_fighters/base_01/eyes/eyes_05_round.png","intent":"rounder larger aperture for open expressive readability"},
-    {"id":"eyes_06_heavy","path":"assets/modular_fighters/base_01/eyes/eyes_06_heavy.png","intent":"heavier upper-lid weight and grounded mature gaze"}
+    {
+      "id": "eyes_02_calm",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_02_calm.png",
+      "intent": "relaxed eyelid geometry and calmer gaze while preserving canonical spacing",
+      "status": "produced",
+      "sha256": "cbf6adb8b3c569d8d209403a93e8865237288cfd45425252e30bf1d7cb9ccfd0"
+    },
+    {
+      "id": "eyes_03_fierce",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_03_fierce.png",
+      "intent": "sharper inward upper-lid angle for aggressive combat readability",
+      "status": "produced",
+      "sha256": "d62d20ec46dee6d9a1db6cdbb8a2bab65a48b8f24f22c1fb94a2d8be5d3c8e61"
+    },
+    {
+      "id": "eyes_04_narrow",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_04_narrow.png",
+      "intent": "compressed vertical eye aperture for focused narrow gaze",
+      "status": "produced",
+      "sha256": "98b66cf8ce4e5bef2b65fc82e527a975ee699d8c5a3bf56723690a633aaad934"
+    },
+    {
+      "id": "eyes_05_round",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_05_round.png",
+      "intent": "rounder larger aperture for open expressive readability",
+      "status": "produced",
+      "sha256": "72e13623821b0c9807e0f3c747befb2fcab4a467775e691197527ad16fe4f2f9"
+    },
+    {
+      "id": "eyes_06_heavy",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_06_heavy.png",
+      "intent": "heavier upper-lid weight and grounded mature gaze",
+      "status": "produced",
+      "sha256": "bfcedf9d46af7705f1cdd3953ecfe7c97609a31275a01c209244f0ec490ba057"
+    }
   ],
   "authoring": {
-    "canvas": [1024,1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5,0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency": true,
     "contact_sheet_runtime_source": false,
-    "independent_from": ["hair","uniform","weapon","brows"],
-    "preview_assembly_order": ["body_base","skin","face_plate","face","eyes","brows"]
+    "independent_from": [
+      "hair",
+      "uniform",
+      "weapon",
+      "brows"
+    ],
+    "preview_assembly_order": [
+      "body_base",
+      "skin",
+      "face_plate",
+      "face",
+      "eyes",
+      "brows"
+    ]
   },
   "acceptance": {
     "individual_pngs": 5,
