@@ -12,6 +12,7 @@
   "slots": [
     "body_base",
     "skin",
+    "face_plate",
     "face",
     "eyes",
     "brows",
@@ -31,6 +32,10 @@
     "weapon_offhand",
     "weapon_back",
     "fx_aura"
+  ],
+  "internal_slots": [
+    "body_base",
+    "face_plate"
   ],
   "required_animation_families": [
     "idle",
