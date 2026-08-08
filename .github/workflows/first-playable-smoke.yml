@@ -51,8 +51,14 @@ jobs:
           mv Godot_v4.3-stable_linux.x86_64 godot
           chmod +x godot
 
-      - name: Import project
-        run: ./godot --headless --editor --path . --quit-after 3
+      - name: Import project completely
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --import 2>&1 | tee first-playable-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error' first-playable-import.log; then
+            echo 'FIRST_PLAYABLE_IMPORT=BLOCKED'
+            exit 1
+          fi
 
       - name: Run First Playable character contract
         run: ./godot --headless --path . --script tests/first_playable_character_contract_test.gd
