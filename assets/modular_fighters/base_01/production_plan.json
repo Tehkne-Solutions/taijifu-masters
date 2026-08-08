@@ -1,0 +1,36 @@
+{
+  "schema": "tehkne/taijifu-base01-production-plan/v1",
+  "signature": "Tehkné Solutions",
+  "status": "active",
+  "packs": [
+    {
+      "pack_id": "BASE01-PACK-A-FACES",
+      "scope": ["face_02_angular", "face_03_soft", "face_04_broad"],
+      "delivery_mode": "single_pack",
+      "required_outputs_per_module": ["png_rgba_1024", "authored_preview", "flipped_preview", "gameplay_scale_preview", "sha256"]
+    },
+    {
+      "pack_id": "BASE01-PACK-B-EYES",
+      "scope": ["eyes_02_calm", "eyes_03_fierce", "eyes_04_narrow", "eyes_05_round", "eyes_06_heavy"],
+      "delivery_mode": "single_pack",
+      "required_outputs_per_module": ["png_rgba_1024", "authored_preview", "flipped_preview", "gameplay_scale_preview", "sha256"]
+    },
+    {
+      "pack_id": "BASE01-PACK-C-BROWS",
+      "scope": ["brows_02_neutral", "brows_03_arched", "brows_04_straight", "brows_05_heavy", "brows_06_sharp"],
+      "delivery_mode": "single_pack",
+      "required_outputs_per_module": ["png_rgba_1024", "authored_preview", "flipped_preview", "gameplay_scale_preview", "sha256"]
+    }
+  ],
+  "global_rules": {
+    "canvas": [1024,1024],
+    "mode": "RGBA",
+    "pivot": [0.5,0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency": true,
+    "no_borders": true,
+    "runtime_assets_individual": true,
+    "contact_sheet_preview_only": true,
+    "merge_requires_remote_integrity_gate": true
+  }
+}

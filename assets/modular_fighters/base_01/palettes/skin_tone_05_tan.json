@@ -1,0 +1,17 @@
+{
+  "schema": "tehkne/taijifu-skin-palette/v1",
+  "signature": "Tehkné Solutions",
+  "palette_id": "skin_tone_05_tan",
+  "display_name": "Tan",
+  "status": "production_candidate",
+  "channels": {
+    "skin_base": "#C98952",
+    "skin_shadow": "#7F4D31",
+    "skin_highlight": "#DDA471",
+    "cheek_tint": "#B97250"
+  },
+  "source_base_body": "base_fighter_v1",
+  "application": "palette_driven_base_tint",
+  "preserve_linework": true,
+  "preserve_shading_structure": true
+}
