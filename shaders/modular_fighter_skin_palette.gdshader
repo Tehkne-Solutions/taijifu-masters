@@ -40,8 +40,8 @@ bool extended_warm_skin(vec3 c) {
         && chroma > 0.10;
 }
 
-vec3 map_skin_luminance(vec3 source_color) {
-    float source_lum = luminance(source_color);
+vec3 map_skin_luminance(vec3 input_color) {
+    float source_lum = luminance(input_color);
     float shadow_lum = luminance(source_skin_shadow.rgb);
     float base_lum = luminance(source_skin_base.rgb);
     float highlight_lum = luminance(source_skin_highlight.rgb);
