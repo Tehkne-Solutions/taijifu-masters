@@ -124,7 +124,7 @@
         "safe_preset_id",
         "roundtrip_smoke"
       ],
-      "status": "implementation_candidate",
+      "status": "identity_preset_serialization_integrated",
       "version": "1.0.0"
     }
   ],
