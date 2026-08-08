@@ -33,13 +33,13 @@
     ],
     "initial_tone_ids": [
       "skin_tone_01_porcelain",
-      "skin_tone_02_light",
+      "skin_tone_02_light_neutral",
       "skin_tone_03_warm",
-      "skin_tone_04_tan",
-      "skin_tone_05_brown",
-      "skin_tone_06_deep",
-      "skin_tone_07_olive",
-      "skin_tone_08_copper"
+      "skin_tone_04_olive",
+      "skin_tone_05_tan",
+      "skin_tone_06_brown",
+      "skin_tone_07_deep",
+      "skin_tone_08_ebony"
     ]
   },
   "face_modules": {
