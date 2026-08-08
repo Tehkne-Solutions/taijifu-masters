@@ -31,7 +31,7 @@ jobs:
           from pathlib import Path
           c=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_CREATOR_MENU_ENTRY.json').read_text())
           assert c['signature']=='Tehkné Solutions'
-          assert c['status']=='implementation_candidate_owner_review_pending'
+          assert c['status']=='creator_menu_entry_integrated_owner_review_pending'
           e=c['entry_contract']
           assert e['creator_scene']=='scenes/characters/modular_fighter_creator_shell.tscn'
           assert e['button_path']=='Content/Actions/CreatorButton'
@@ -46,7 +46,13 @@ jobs:
           assert r['participant_form_absent'] is True
           assert r['legacy_prototype_absent'] is True
           assert r['existing_first_playable_flow_test_required'] is True
-          print('C62_7_MENU_ENTRY_CONTRACT=PASS role=secondary_non_blocking')
+          review=c['review']
+          assert review['machine']=='PASS'
+          assert review['existing_first_playable_flow']=='PASS'
+          assert review['creator_runtime_entry']=='PASS'
+          assert review['internal_visual']=='PASS'
+          assert review['owner_review']=='PENDING'
+          print('C62_7_MENU_ENTRY_CONTRACT=PASS role=secondary_non_blocking state=integrated')
           PY
 
       - name: Install Godot 4.3 runtime dependencies
@@ -141,4 +147,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C62.7 BASE-01 Creator Menu Entry PASS — owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.7 BASE-01 Creator Menu Entry PASS — integrated, owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
