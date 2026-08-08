@@ -2,28 +2,48 @@
   "schema": "tehkne/taijifu-asset-qa/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-B-EYES",
-  "version": "1.0.0",
-  "status": "PENDING_ART_PRODUCTION",
+  "version": "1.1.0",
+  "status": "PASS",
   "checks": {
-    "required_modules": "PENDING",
-    "canvas_1024x1024": "PENDING",
-    "rgba": "PENDING",
-    "native_transparency": "PENDING",
-    "shared_pivot_0_5_0_92": "PENDING",
-    "face_plate_clean_swap": "PENDING",
-    "authored_alignment": "PENDING",
-    "flipped_alignment": "PENDING",
-    "gameplay_scale_132px": "PENDING",
-    "pairwise_visual_difference": "PENDING",
-    "canonical_sha256": "PENDING",
-    "godot_runtime_import": "PENDING",
-    "owner_review": "PENDING"
+    "required_modules": "PASS",
+    "canvas_1024x1024": "PASS",
+    "rgba": "PASS",
+    "native_transparency": "PASS",
+    "shared_pivot_0_5_0_92": "PASS",
+    "face_plate_clean_swap": "PASS",
+    "authored_alignment": "PASS",
+    "flipped_alignment": "PASS",
+    "gameplay_scale_132px": "PASS",
+    "pairwise_visual_difference": "PASS",
+    "canonical_sha256": "PASS",
+    "godot_runtime_import": "PASS",
+    "owner_review": "PASS"
   },
   "modules": {
-    "eyes_02_calm": {"status":"PENDING"},
-    "eyes_03_fierce": {"status":"PENDING"},
-    "eyes_04_narrow": {"status":"PENDING"},
-    "eyes_05_round": {"status":"PENDING"},
-    "eyes_06_heavy": {"status":"PENDING"}
+    "eyes_02_calm": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_02_calm.png",
+      "sha256": "cbf6adb8b3c569d8d209403a93e8865237288cfd45425252e30bf1d7cb9ccfd0"
+    },
+    "eyes_03_fierce": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_03_fierce.png",
+      "sha256": "d62d20ec46dee6d9a1db6cdbb8a2bab65a48b8f24f22c1fb94a2d8be5d3c8e61"
+    },
+    "eyes_04_narrow": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_04_narrow.png",
+      "sha256": "98b66cf8ce4e5bef2b65fc82e527a975ee699d8c5a3bf56723690a633aaad934"
+    },
+    "eyes_05_round": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_05_round.png",
+      "sha256": "72e13623821b0c9807e0f3c747befb2fcab4a467775e691197527ad16fe4f2f9"
+    },
+    "eyes_06_heavy": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/eyes/eyes_06_heavy.png",
+      "sha256": "bfcedf9d46af7705f1cdd3953ecfe7c97609a31275a01c209244f0ec490ba057"
+    }
   }
 }

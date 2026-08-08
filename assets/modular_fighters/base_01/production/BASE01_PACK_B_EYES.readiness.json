@@ -2,20 +2,19 @@
   "schema": "tehkne/taijifu-production-readiness/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-B-EYES",
-  "state": "CONTRACT_AND_GENERATOR_READY",
+  "state": "CANONICAL_COMPLETE",
   "ready": {
     "catalog": true,
     "authoring_contract": true,
     "qa_template": true,
     "face_plate_dependency": true,
     "deterministic_generator": true,
-    "remote_candidate_workflow": true
+    "remote_candidate_workflow": true,
+    "candidate_generation": true,
+    "authored_flipped_gameplay_review": true,
+    "godot_runtime_import": true,
+    "owner_visual_review": true,
+    "canonical_promotion": true
   },
-  "pending": [
-    "generate 5 candidate PNG eye modules",
-    "authored/flipped/gameplay review",
-    "Godot runtime import validation",
-    "owner visual review",
-    "canonical promotion"
-  ]
+  "pending": []
 }

@@ -37,7 +37,9 @@
         "flipped_preview",
         "gameplay_scale_preview",
         "sha256"
-      ]
+      ],
+      "status": "complete",
+      "version": "1.1.0"
     },
     {
       "pack_id": "BASE01-PACK-C-BROWS",
