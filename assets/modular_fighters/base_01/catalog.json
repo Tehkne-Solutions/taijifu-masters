@@ -87,23 +87,33 @@
     },
     {
       "id": "brows_02_neutral",
-      "status": "planned"
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/brows/brows_02_neutral.png",
+      "sha256": "48dddcdd524ef88c35153385dc8a595af664ac6b811bf372fd73108b96839df5"
     },
     {
       "id": "brows_03_arched",
-      "status": "planned"
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/brows/brows_03_arched.png",
+      "sha256": "3854bab6b60a628cf2b5ccdec51229841680becaabcccd876e3c5041fddd75b0"
     },
     {
       "id": "brows_04_straight",
-      "status": "planned"
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/brows/brows_04_straight.png",
+      "sha256": "62ac25f1aec54c039ce99d00f9fadd1f1675f745ff972c295d54fd96464409e1"
     },
     {
       "id": "brows_05_heavy",
-      "status": "planned"
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/brows/brows_05_heavy.png",
+      "sha256": "36d859806c38fe33f1b79947bcc3e2ed1e0880ba242bb8de19c32018e321c8b9"
     },
     {
       "id": "brows_06_sharp",
-      "status": "planned"
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/brows/brows_06_sharp.png",
+      "sha256": "9d97fd0dc697185832ac04d645f32b48048dbc12d0ed8f89e0dd69ba15a9ba54"
     }
   ],
   "authoring_contract": {
@@ -143,5 +153,5 @@
       "creator_editable": false
     }
   ],
-  "last_completed_pack": "BASE01-PACK-B-EYES"
+  "last_completed_pack": "BASE01-PACK-C-BROWS"
 }
