@@ -83,7 +83,7 @@
         "profile_selection_contract",
         "creator_control"
       ],
-      "status": "creator_control_candidate_owner_review_pending",
+      "status": "creator_control_integrated_owner_review_pending",
       "version": "1.0.0"
     }
   ],
