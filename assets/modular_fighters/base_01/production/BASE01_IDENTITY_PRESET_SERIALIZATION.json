@@ -1,0 +1,61 @@
+{
+  "schema": "tehkne/taijifu-base01-identity-preset-serialization/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_IDENTITY_PRESET_SERIALIZATION",
+  "version": "1.0.0",
+  "status": "implementation_candidate",
+  "depends_on": {
+    "identity_creator": "BASE01_IDENTITY_CREATOR_CONTROL",
+    "profile": "ModularFighterProfile"
+  },
+  "preset_contract": {
+    "canonical_schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "read_compatible_schemas": [
+      "tehkne/taijifu-modular-fighter-preset/v1",
+      "tehkne/taijifu-modular-fighter-preset/v2"
+    ],
+    "store": "ModularFighterPresetStore",
+    "store_script": "scripts/characters/modular_fighter_preset_store.gd",
+    "user_directory": "user://modular_fighter_presets",
+    "signature_required": true,
+    "safe_preset_id_required": true
+  },
+  "roundtrip_contract": {
+    "profile_fields": [
+      "profile_id",
+      "display_name",
+      "base_body_id",
+      "authored_facing",
+      "palette",
+      "modules",
+      "combat_loadout_id"
+    ],
+    "creator_identity": [
+      "palette.skin",
+      "modules.face",
+      "modules.eyes",
+      "modules.brows"
+    ],
+    "save": true,
+    "load": true,
+    "list": true,
+    "delete": true
+  },
+  "legacy_validation": {
+    "repository_presets": [
+      "config/fighter-presets/preset_lian_wu.json",
+      "config/fighter-presets/preset_training_rival.json"
+    ],
+    "must_decode_without_data_loss": true
+  },
+  "security_policy": {
+    "path_traversal": "blocked",
+    "unsupported_schema": "blocked",
+    "invalid_signature": "blocked",
+    "invalid_skin_palette": "blocked"
+  },
+  "review": {
+    "machine": "PENDING"
+  },
+  "next_stage": "C62.6_CHARACTER_CREATOR_SHELL"
+}
