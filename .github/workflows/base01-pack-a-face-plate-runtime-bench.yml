@@ -1,0 +1,108 @@
+name: BASE-01 Pack A Face Plate Runtime Bench
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/ci/base01_pack_a_face_plate_runtime_smoke.gd'
+      - '.github/workflows/base01-pack-a-face-plate-runtime-bench.yml'
+      - 'scripts/art/generate_base01_pack_a_faces.py'
+      - 'scripts/art/refine_base01_pack_a_faces_for_plate.py'
+      - 'scripts/art/generate_base01_neutral_face_plate.py'
+      - 'config/modular-fighter-standard-v1.json'
+      - 'scripts/characters/modular_fighter_assembler.gd'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install generator and Godot dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0 numpy==2.3.2
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Generate Pack A V2 candidates
+        run: |
+          python scripts/art/generate_base01_pack_a_faces.py \
+            --repo-root . \
+            --output build/c59-4/faces
+          python scripts/art/refine_base01_pack_a_faces_for_plate.py \
+            --faces-dir build/c59-4/faces
+
+      - name: Generate neutral face plate
+        run: |
+          python scripts/art/generate_base01_neutral_face_plate.py \
+            --repo-root . \
+            --faces-dir build/c59-4/faces \
+            --output build/c59-4/neutral
+
+      - name: Stage generated assets under res://
+        run: |
+          mkdir -p assets/modular_fighters/base_01/_ci_candidates
+          cp build/c59-4/neutral/neutral_face_plate_v1.png assets/modular_fighters/base_01/_ci_candidates/
+          cp build/c59-4/faces/face_02_angular.png assets/modular_fighters/base_01/_ci_candidates/
+          cp build/c59-4/faces/face_03_soft.png assets/modular_fighters/base_01/_ci_candidates/
+          cp build/c59-4/faces/face_04_broad.png assets/modular_fighters/base_01/_ci_candidates/
+
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import generated assets
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c59-4-import.log
+
+      - name: Run runtime assembly bench
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_a_face_plate_runtime_smoke.gd 2>&1 | tee c59-4-runtime.log
+          grep -q 'C59_4_PACK_A_FACE_PLATE_RUNTIME=PASS variants=3' c59-4-runtime.log
+
+      - name: Publish review evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BASE01-PACK-A-FACE-PLATE-RUNTIME-${{ github.sha }}
+          path: |
+            build/c59-4/neutral/
+            build/c59-4/faces/face_02_angular.png
+            build/c59-4/faces/face_03_soft.png
+            build/c59-4/faces/face_04_broad.png
+            c59-4-import.log
+            c59-4-runtime.log
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo '## C59.4 — Pack A + face_plate runtime bench'
+            echo ''
+            echo '- generated neutral face plate imported by Godot'
+            echo '- Angular / Soft / Broad V2 imported by Godot'
+            echo '- runtime assembly order: plate 15 → face 20 → eyes 30 → brows 40'
+            echo '- owner review remains PENDING'
+            echo '- PNG promotion remains BLOCKED'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
