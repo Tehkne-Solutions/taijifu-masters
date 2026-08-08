@@ -6,6 +6,9 @@
   "base_body_id": "base_fighter_v1",
   "authored_facing": 1,
   "status": "migration_in_progress",
+  "palette": {
+    "skin": "skin_tone_03_warm"
+  },
   "modules": {
     "body_base": "base_fighter_v1",
     "skin": "skin_lian_wu",

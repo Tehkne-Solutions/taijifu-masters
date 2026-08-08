@@ -60,6 +60,30 @@
       ],
       "status": "complete",
       "version": "1.1.0"
+    },
+    {
+      "pack_id": "BASE01-SKIN-PALETTES",
+      "scope": [
+        "skin_tone_01_porcelain",
+        "skin_tone_02_light_neutral",
+        "skin_tone_03_warm",
+        "skin_tone_04_olive",
+        "skin_tone_05_tan",
+        "skin_tone_06_brown",
+        "skin_tone_07_deep",
+        "skin_tone_08_ebony"
+      ],
+      "delivery_mode": "palette_data_runtime_pack",
+      "required_outputs_per_module": [
+        "palette_json",
+        "runtime_shader",
+        "authored_preview",
+        "flipped_preview",
+        "gameplay_scale_preview",
+        "profile_selection_contract"
+      ],
+      "status": "runtime_integrated_owner_review_pending",
+      "version": "1.0.0"
     }
   ],
   "global_rules": {

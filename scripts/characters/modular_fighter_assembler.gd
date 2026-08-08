@@ -40,6 +40,16 @@ func configure(profile) -> PackedStringArray:
 		failures.append("base_fighter_contract_missing")
 		return failures
 	_ready_for_render = true
+
+	# Palette selection belongs to the serializable fighter profile. Loading it
+	# during configure means every later skin-bearing module receives the same
+	# material automatically when it is attached.
+	if _profile.has_method("skin_palette_id"):
+		var selected_skin := String(_profile.call("skin_palette_id"))
+		if not selected_skin.is_empty():
+			failures.append_array(set_skin_palette(StringName(selected_skin)))
+	if not failures.is_empty():
+		_ready_for_render = false
 	return failures
 
 func assemble_base01_default_identity() -> PackedStringArray:
@@ -61,8 +71,11 @@ func assemble_base01_default_identity() -> PackedStringArray:
 		failures.append("base01_manifest_contract_invalid")
 		return failures
 
-	var default_skin_id := String(default_identity.get("skin", DEFAULT_SKIN_PALETTE_ID))
-	failures.append_array(set_skin_palette(StringName(default_skin_id)))
+	# Preserve a profile-selected skin. Only profiles without an explicit skin
+	# receive the approved BASE-01 Warm default.
+	if _active_skin_palette.is_empty():
+		var default_skin_id := String(default_identity.get("skin", DEFAULT_SKIN_PALETTE_ID))
+		failures.append_array(set_skin_palette(StringName(default_skin_id)))
 
 	# Default identity intentionally does not attach face_plate. It reconstructs
 	# the approved BASE-00 source exactly. face_plate is reserved for non-default
