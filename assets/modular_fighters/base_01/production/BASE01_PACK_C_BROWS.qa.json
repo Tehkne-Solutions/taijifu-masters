@@ -1,0 +1,29 @@
+{
+  "schema": "tehkne/taijifu-asset-qa/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-C-BROWS",
+  "version": "1.0.0",
+  "status": "PENDING_ART_PRODUCTION",
+  "checks": {
+    "required_modules": "PENDING",
+    "canvas_1024x1024": "PENDING",
+    "rgba": "PENDING",
+    "native_transparency": "PENDING",
+    "shared_pivot_0_5_0_92": "PENDING",
+    "face_plate_clean_swap": "PENDING",
+    "authored_alignment": "PENDING",
+    "flipped_alignment": "PENDING",
+    "gameplay_scale_132px": "PENDING",
+    "pairwise_visual_difference": "PENDING",
+    "canonical_sha256": "PENDING",
+    "godot_runtime_import": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "modules": {
+    "brows_02_neutral": {"status":"PENDING"},
+    "brows_03_arched": {"status":"PENDING"},
+    "brows_04_straight": {"status":"PENDING"},
+    "brows_05_heavy": {"status":"PENDING"},
+    "brows_06_sharp": {"status":"PENDING"}
+  }
+}
