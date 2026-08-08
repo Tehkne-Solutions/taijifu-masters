@@ -1,0 +1,82 @@
+name: BASE-01 Profile Skin Selection
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/characters/modular_fighter_profile.gd'
+      - 'scripts/characters/modular_fighter_assembler.gd'
+      - 'scripts/ci/base01_profile_skin_selection_smoke.gd'
+      - 'config/fighter-presets/preset_lian_wu.json'
+      - 'assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json'
+      - 'assets/modular_fighters/base_01/production_plan.json'
+      - '.github/workflows/base01-profile-skin-selection.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile-skin-selection:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate palette contract and production state
+        run: |
+          set -euo pipefail
+          python scripts/ci/validate_base01_skin_contract.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          contract=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json').read_text())
+          plan=json.loads(Path('assets/modular_fighters/base_01/production_plan.json').read_text())
+          preset=json.loads(Path('config/fighter-presets/preset_lian_wu.json').read_text())
+          assert contract['status']=='runtime_integrated_owner_review_pending'
+          assert contract['runtime_policy']['profile_driven_selection'] is True
+          assert contract['review']['internal_visual']=='PASS'
+          assert contract['review']['owner_review']=='PENDING'
+          packs={p['pack_id']:p for p in plan['packs']}
+          assert packs['BASE01-SKIN-PALETTES']['status']=='runtime_integrated_owner_review_pending'
+          assert len(packs['BASE01-SKIN-PALETTES']['scope'])==8
+          assert preset['palette']['skin']=='skin_tone_03_warm'
+          print('C62_2_PROFILE_SKIN_CONTRACT=PASS palettes=8 preset=skin_tone_03_warm')
+          PY
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c62-2-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-2-import.log; then
+            echo 'C62_2_IMPORT=BLOCKED'
+            exit 1
+          fi
+      - name: Run profile-driven skin smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_profile_skin_selection_smoke.gd 2>&1 | tee c62-2-runtime.log
+          grep -q 'C62_2_PROFILE_SKIN_SELECTION=PASS palettes=8' c62-2-runtime.log
+          grep -q 'C62_2_INVALID_SKIN=BLOCKED' c62-2-runtime.log
+          grep -q 'C62_2_PROFILE_PRESERVATION=PASS' c62-2-runtime.log
+          grep -q 'C62_2_IMPLICIT_DEFAULT=PASS palette=skin_tone_03_warm' c62-2-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-2-runtime.log; then
+            echo 'C62_2_RUNTIME_ERRORS=BLOCKED'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE01-PROFILE-SKIN-SELECTION-EVIDENCE
+          path: |
+            c62-2-import.log
+            c62-2-runtime.log
+          if-no-files-found: ignore
+      - name: Summary
+        run: echo 'C62.2 profile-driven skin selection PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
