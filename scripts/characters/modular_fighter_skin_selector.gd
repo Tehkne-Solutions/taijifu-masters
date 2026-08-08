@@ -197,8 +197,9 @@ func _refresh_selection_visuals() -> void:
 		var button = _buttons[palette_id]
 		if not (button is Button):
 			continue
-		var selected := palette_id == String(_selected_id)
-		var base_color := palette_base_color(StringName(palette_id))
+		var palette_key := String(palette_id)
+		var selected: bool = palette_key == String(_selected_id)
+		var base_color := palette_base_color(StringName(palette_key))
 		var style := StyleBoxFlat.new()
 		style.bg_color = base_color
 		style.border_color = Color("f0d38b") if selected else Color(0.08, 0.07, 0.06, 0.72)
