@@ -1,0 +1,83 @@
+name: BASE-01 Neutral Face Plate Candidate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/art/generate_base01_neutral_face_plate.py'
+      - '.github/workflows/base01-neutral-face-plate-candidate.yml'
+      - 'scripts/art/generate_base01_pack_a_faces.py'
+      - 'assets/modular_fighters/base_00/base_fighter_v1_master.png'
+      - 'assets/modular_fighters/base_01/eyes/eyes_01_focused.png'
+      - 'assets/modular_fighters/base_01/brows/brows_01_focused.png'
+      - 'assets/modular_fighters/base_01/palettes/skin_tone_03_warm.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic image dependencies
+        run: python -m pip install --disable-pip-version-check pillow==11.3.0 numpy==2.3.2
+
+      - name: Rebuild Pack A face candidates from canonical source
+        run: |
+          python scripts/art/generate_base01_pack_a_faces.py \
+            --repo-root . \
+            --output build/c59-2/faces
+
+      - name: Generate neutral face plate prototype
+        run: |
+          python scripts/art/generate_base01_neutral_face_plate.py \
+            --repo-root . \
+            --faces-dir build/c59-2/faces \
+            --output build/c59-2/neutral
+
+      - name: Assert fail-closed prototype outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s build/c59-2/neutral/neutral_face_plate_v1.png
+          test -s build/c59-2/neutral/neutralized_base_preview.png
+          test -s build/c59-2/neutral/BASE01_NEUTRAL_FACE_PLATE.contact-sheet-1920x1080.png
+          test -s build/c59-2/neutral/BASE01_NEUTRAL_FACE_PLATE.candidate-qa.json
+          grep -q '"owner_review": "PENDING"' build/c59-2/neutral/BASE01_NEUTRAL_FACE_PLATE.candidate-qa.json
+          grep -q '"standard_slot_promotion": "PENDING"' build/c59-2/neutral/BASE01_NEUTRAL_FACE_PLATE.candidate-qa.json
+          echo 'C59_2_NEUTRAL_FACE_PLATE_ARTIFACT=PASS'
+
+      - name: Publish visual review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BASE01-NEUTRAL-FACE-PLATE-CANDIDATE-${{ github.sha }}
+          path: |
+            build/c59-2/neutral/
+            build/c59-2/faces/face_02_angular.png
+            build/c59-2/faces/face_03_soft.png
+            build/c59-2/faces/face_04_broad.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo '## C59.2 — Neutral Face Plate Prototype'
+            echo ''
+            echo '- BASE-00 remains canonical and unchanged.'
+            echo '- default face path remains unchanged.'
+            echo '- prototype plate is used only before non-default face swaps.'
+            echo '- face_plate standard slot is NOT promoted by this PR.'
+            echo '- owner visual review remains PENDING.'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
