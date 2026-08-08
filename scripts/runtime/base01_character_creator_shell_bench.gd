@@ -4,11 +4,13 @@ const SCENE := "res://scenes/characters/modular_fighter_creator_shell.tscn"
 const OUTPUT := "res://artifacts/c62-6/BASE01_CHARACTER_CREATOR_SHELL.review-1920x1080.png"
 const QA_OUTPUT := "res://artifacts/c62-6/BASE01_CHARACTER_CREATOR_SHELL.qa.json"
 const LOGICAL_SIZE := Vector2i(1280, 720)
+const REVIEW_PRESET := "mestre_do_caminho"
 
 func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	ModularFighterPresetStore.delete_user_preset(StringName(REVIEW_PRESET))
 	var viewport := get_root().get_visible_rect().size
 	if Vector2i(roundi(viewport.x), roundi(viewport.y)) != LOGICAL_SIZE:
 		_fail("C62_6_CREATOR_VISUAL=BLOCKED logical_viewport=%dx%d" % [roundi(viewport.x), roundi(viewport.y)])
@@ -36,7 +38,11 @@ func _run() -> void:
 			_fail("C62_6_CREATOR_VISUAL=BLOCKED identity:%s:%s" % [pair[0], ",".join(failures)])
 			return
 	shell.set_display_name("MESTRE DO CAMINHO")
-	shell.set_preset_id("mestre_do_caminho")
+	shell.set_preset_id(REVIEW_PRESET)
+	var save_failures := shell.save_current_preset(StringName(REVIEW_PRESET))
+	if not save_failures.is_empty():
+		_fail("C62_6_CREATOR_VISUAL=BLOCKED review_preset:%s" % ",".join(save_failures))
+		return
 	var selector := shell.identity_selector()
 	selector.show_category(&"face")
 	selector.focus_selected()
@@ -54,6 +60,9 @@ func _run() -> void:
 		return
 	if selector.option_count(&"skin") + selector.option_count(&"face") + selector.option_count(&"eyes") + selector.option_count(&"brows") != 24:
 		_fail("C62_6_CREATOR_VISUAL=BLOCKED option_count")
+		return
+	if not ModularFighterPresetStore.list_user_preset_ids().has(REVIEW_PRESET):
+		_fail("C62_6_CREATOR_VISUAL=BLOCKED preset_list")
 		return
 
 	for _frame in range(20):
@@ -86,10 +95,12 @@ func _run() -> void:
 			"brows": "brows_06_sharp"
 		},
 		"display_name": "MESTRE DO CAMINHO",
-		"preset_id": "mestre_do_caminho",
+		"preset_id": REVIEW_PRESET,
 		"live_preview": "PASS",
 		"face_plate_policy": "PASS",
 		"preset_controls_visible": true,
+		"preset_list_runtime_proof": "PASS",
+		"preview_controls_overlap": false,
 		"keyboard_gamepad_focus": "PASS",
 		"future_module_expansion_reserved": true,
 		"internal_visual_review": "PENDING",
@@ -101,8 +112,10 @@ func _run() -> void:
 		return
 	file.store_string(JSON.stringify(qa, "  ") + "\n")
 	file.close()
+	ModularFighterPresetStore.delete_user_preset(StringName(REVIEW_PRESET))
 	print("C62_6_CREATOR_VISUAL=PASS size=1920x1080 options=24")
-	print("C62_6_CREATOR_LIVE_PREVIEW=PASS face_plate=auto")
+	print("C62_6_CREATOR_LIVE_PREVIEW=PASS face_plate=auto overlap=false")
+	print("C62_6_CREATOR_PRESET_LIST=PASS id=" + REVIEW_PRESET)
 	print("C62_6_CREATOR_VISUAL_OUTPUT=" + OUTPUT)
 	print("INTERNAL_VISUAL_REVIEW=PENDING")
 	print("OWNER_REVIEW=PENDING")
@@ -110,6 +123,7 @@ func _run() -> void:
 	quit(0)
 
 func _fail(marker: String) -> void:
+	ModularFighterPresetStore.delete_user_preset(StringName(REVIEW_PRESET))
 	push_error(marker)
 	print(marker)
 	quit(2)
