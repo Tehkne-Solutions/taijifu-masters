@@ -45,8 +45,13 @@ install_templates() {
 install_editor
 install_templates
 log "Godot detectado: $("${GODOT_BIN}" --version)"
-log "Importando recursos"
-"${GODOT_BIN}" --headless --editor --path "${ROOT_DIR}" --quit
+log "Importando recursos completamente"
+IMPORT_LOG="${ROOT_DIR}/web-import.log"
+"${GODOT_BIN}" --headless --path "${ROOT_DIR}" --import 2>&1 | tee "${IMPORT_LOG}"
+if grep -Eq 'SCRIPT ERROR|Parse Error|Scan thread aborted' "${IMPORT_LOG}"; then
+  echo "[taijifu-web] ERRO: importação Godot incompleta ou inválida" >&2
+  exit 1
+fi
 
 log "Exportando preset Web para ${OUTPUT_DIR}"
 rm -rf "${OUTPUT_DIR}"
