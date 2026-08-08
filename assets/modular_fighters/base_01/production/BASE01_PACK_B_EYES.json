@@ -1,0 +1,46 @@
+{
+  "schema": "tehkne/taijifu-base01-production-pack/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-B-EYES",
+  "version": "1.0.0",
+  "status": "production_contract_ready",
+  "slot": "eyes",
+  "depends_on": {
+    "catalog": "BASE01_IDENTITY_CATALOG",
+    "base_pack": "BASE-00",
+    "default_reference": "eyes_01_focused",
+    "neutral_face_plate": "neutral_face_plate_v1",
+    "default_face": "face_01_balanced",
+    "default_brows": "brows_01_focused"
+  },
+  "deliverables": [
+    {"id":"eyes_02_calm","path":"assets/modular_fighters/base_01/eyes/eyes_02_calm.png","intent":"relaxed eyelid geometry and calmer gaze while preserving canonical spacing"},
+    {"id":"eyes_03_fierce","path":"assets/modular_fighters/base_01/eyes/eyes_03_fierce.png","intent":"sharper inward upper-lid angle for aggressive combat readability"},
+    {"id":"eyes_04_narrow","path":"assets/modular_fighters/base_01/eyes/eyes_04_narrow.png","intent":"compressed vertical eye aperture for focused narrow gaze"},
+    {"id":"eyes_05_round","path":"assets/modular_fighters/base_01/eyes/eyes_05_round.png","intent":"rounder larger aperture for open expressive readability"},
+    {"id":"eyes_06_heavy","path":"assets/modular_fighters/base_01/eyes/eyes_06_heavy.png","intent":"heavier upper-lid weight and grounded mature gaze"}
+  ],
+  "authoring": {
+    "canvas": [1024,1024],
+    "mode": "RGBA",
+    "pivot": [0.5,0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency": true,
+    "contact_sheet_runtime_source": false,
+    "independent_from": ["hair","uniform","weapon","brows"],
+    "preview_assembly_order": ["body_base","skin","face_plate","face","eyes","brows"]
+  },
+  "acceptance": {
+    "individual_pngs": 5,
+    "transparent_corners": true,
+    "authored_review": "required",
+    "flipped_review": "required",
+    "gameplay_scale_preview_px": 132,
+    "pairwise_visual_difference_required": true,
+    "shared_pivot_required": true,
+    "canonical_sha256_required": true,
+    "owner_review_required": true,
+    "runtime_import_required": true
+  },
+  "promotion_policy": "fail_closed"
+}
