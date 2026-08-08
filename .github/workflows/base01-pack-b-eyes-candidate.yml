@@ -1,0 +1,117 @@
+name: BASE-01 Pack B Eyes Candidate
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES*'
+      - 'scripts/art/generate_base01_pack_b_eyes.py'
+      - 'scripts/ci/base01_pack_b_eyes_candidate_smoke.gd'
+      - 'scripts/ci/validate_base01_pack_b_eyes_contract.py'
+      - '.github/workflows/base01-pack-b-eyes-candidate.yml'
+      - 'assets/modular_fighters/base_01/eyes/eyes_01_focused.png'
+      - 'assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate Pack B contract
+        run: python scripts/ci/validate_base01_pack_b_eyes_contract.py
+
+      - name: Install generator and Godot dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Generate five eye candidates
+        run: |
+          python scripts/art/generate_base01_pack_b_eyes.py \
+            --repo-root . \
+            --output build/base01-pack-b-eyes
+
+      - name: Assert candidate outputs
+        run: |
+          set -euo pipefail
+          for f in eyes_02_calm eyes_03_fierce eyes_04_narrow eyes_05_round eyes_06_heavy; do
+            test -s "build/base01-pack-b-eyes/${f}.png"
+          done
+          test -s build/base01-pack-b-eyes/BASE01_PACK_B_EYES.contact-sheet-1920x1080.png
+          test -s build/base01-pack-b-eyes/BASE01_PACK_B_EYES.candidate-qa.json
+          grep -q '"owner_review": "PENDING"' build/base01-pack-b-eyes/BASE01_PACK_B_EYES.candidate-qa.json
+
+      - name: Stage candidates under res
+        run: |
+          mkdir -p assets/modular_fighters/base_01/_ci_eye_candidates
+          cp build/base01-pack-b-eyes/eyes_*.png assets/modular_fighters/base_01/_ci_eye_candidates/
+
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import generated candidates
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c60-pack-b-import.log
+
+      - name: Validate runtime assembly
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_b_eyes_candidate_smoke.gd 2>&1 | tee c60-pack-b-runtime.log
+          grep -q 'C60_PACK_B_EYES_RUNTIME=PASS candidates=5' c60-pack-b-runtime.log
+
+      - name: Record runtime pass in QA artifact
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('build/base01-pack-b-eyes/BASE01_PACK_B_EYES.candidate-qa.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          data['runtime_import'] = 'PASS_GODOT_4_3_CI'
+          data['promotion'] = 'BLOCKED_OWNER_REVIEW'
+          for item in data['modules'].values():
+              item['runtime_import'] = 'PASS_GODOT_4_3_CI'
+          p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+
+      - name: Publish review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BASE01-PACK-B-EYES-CANDIDATES-${{ github.sha }}
+          path: |
+            build/base01-pack-b-eyes/
+            c60-pack-b-import.log
+            c60-pack-b-runtime.log
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo '## C60 — BASE01 Pack B Eyes'
+            echo ''
+            echo '- 5 deterministic eye candidates generated.'
+            echo '- clean swap path uses canonical face_plate.'
+            echo '- Godot import/runtime assembly validated.'
+            echo '- owner visual review remains PENDING.'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
