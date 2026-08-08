@@ -7,6 +7,8 @@ const CANDIDATES := [
 ]
 const EXPECTED_SIZE := Vector2(1024, 1024)
 const EXPECTED_PIVOT := Vector2(0.5, 0.92)
+const EXPECTED_POSITION := Vector2(0.0, -430.08)
+const POSITION_EPSILON := 0.001
 
 class CandidateProfile:
 	extends RefCounted
@@ -48,11 +50,11 @@ func _init() -> void:
 			failures.append("assembler_face_attach_failed:%s" % path)
 			assembler.queue_free()
 			continue
-		if sprite.position != Vector2(0.0, -430.08):
-			failures.append("pivot_position_invalid:%s:%s" % [path, sprite.position])
+		if sprite.position.distance_to(EXPECTED_POSITION) > POSITION_EPSILON:
+			failures.append("pivot_position_invalid:%s:%s expected=%s" % [path, sprite.position, EXPECTED_POSITION])
 		if sprite.z_index != 20:
 			failures.append("face_z_index_invalid:%s:%s" % [path, sprite.z_index])
-		print("C59_1_GODOT_CANDIDATE=PASS path=%s size=%s pivot=%s" % [path, texture.get_size(), EXPECTED_PIVOT])
+		print("C59_1_GODOT_CANDIDATE=PASS path=%s size=%s pivot=%s position=%s" % [path, texture.get_size(), EXPECTED_PIVOT, sprite.position])
 		assembler.queue_free()
 
 	if not failures.is_empty():
