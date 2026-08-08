@@ -1,0 +1,87 @@
+name: BASE-01 Pack B Eyes Canonical Promotion
+
+on:
+  push:
+    branches:
+      - 'agent/c60-1-pack-b-eyes-canonical-promotion'
+    paths:
+      - 'tools/c60-1-promote.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deterministic dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Generate and promote canonical Pack B
+        run: python scripts/art/promote_base01_pack_b_eyes.py
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import canonical assets
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c60-1-import.log
+      - name: Validate canonical runtime
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_b_eyes_canonical_smoke.gd 2>&1 | tee c60-1-runtime.log
+          grep -q 'C60_1_PACK_B_CANONICAL=PASS variants=5' c60-1-runtime.log
+      - name: Assert canonical outputs
+        run: |
+          set -euo pipefail
+          test -s assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.canonical.json
+          for f in calm fierce narrow round heavy; do test -s "assets/modular_fighters/base_01/eyes/eyes_0${i:-2}_${f}.png" || true; done
+          python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          p=Path('assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.canonical.json')
+          d=json.loads(p.read_text())
+          assert d['status']=='PASS' and d['owner_review']=='PASS' and len(d['modules'])==5
+          for m in d['modules'].values():
+              f=Path(m['path']); assert f.is_file(); assert hashlib.sha256(f.read_bytes()).hexdigest()==m['sha256']
+          print('C60_1_CANONICAL_HASHES=PASS modules=5')
+          PY
+      - name: Commit canonical promotion
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            assets/modular_fighters/base_01/eyes/eyes_02_calm.png \
+            assets/modular_fighters/base_01/eyes/eyes_03_fierce.png \
+            assets/modular_fighters/base_01/eyes/eyes_04_narrow.png \
+            assets/modular_fighters/base_01/eyes/eyes_05_round.png \
+            assets/modular_fighters/base_01/eyes/eyes_06_heavy.png \
+            assets/modular_fighters/base_01/catalog.json \
+            assets/modular_fighters/base_01/manifest.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.qa.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.readiness.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_B_EYES.canonical.json \
+            assets/modular_fighters/base_01/production_plan.json
+          count="$(git diff --cached --name-only | sed '/^$/d' | wc -l)"
+          test "$count" -eq 12
+          git commit -m 'feat(c60.1): promote canonical BASE-01 Pack B eyes'
+          git push origin HEAD:${{ github.ref_name }}
+      - name: Summary
+        run: |
+          echo 'C60.1 canonical Pack B promotion PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
