@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from pathlib import Path
 from PIL import Image
 
@@ -32,12 +33,23 @@ def main() -> int:
     source=Image.open(source_path).convert('RGBA')
     heavy=Image.new('RGBA',CANVAS,(0,0,0,0))
     # Heavy should read as greater brow mass, not extra decorative strokes.
-    # Preserve the canonical authored shapes and increase only vertical mass.
     place(heavy,source,LEFT,1.06,1.42,-1,-1)
     place(heavy,source,RIGHT,1.06,1.42,1,-1)
     out=brows_dir/'brows_05_heavy.png'; heavy.save(out,'PNG',optimize=False)
-    if heavy.getchannel('A').getbbox() is None: raise SystemExit('C61_BROW_REFINEMENT=BLOCKED heavy_empty')
-    print(f'C61_BROW_REFINEMENT=PASS module=brows_05_heavy sha256={sha256(out)}')
+    box=heavy.getchannel('A').getbbox()
+    if box is None: raise SystemExit('C61_BROW_REFINEMENT=BLOCKED heavy_empty')
+    digest=sha256(out)
+
+    qa_path=brows_dir/'BASE01_PACK_C_BROWS.candidate-qa.json'
+    qa=json.loads(qa_path.read_text(encoding='utf-8'))
+    x0,y0,x1,y1=box
+    qa['modules']['brows_05_heavy']['sha256']=digest
+    qa['modules']['brows_05_heavy']['alpha_bbox']=[x0,y0,x1-1,y1-1]
+    qa_path.write_text(json.dumps(qa,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+    order=['brows_02_neutral','brows_03_arched','brows_04_straight','brows_05_heavy','brows_06_sharp']
+    (brows_dir/'checksums.sha256').write_text(''.join(f"{qa['modules'][i]['sha256']}  {qa['modules'][i]['file']}\n" for i in order),encoding='utf-8')
+
+    print(f'C61_BROW_REFINEMENT=PASS module=brows_05_heavy sha256={digest}')
     print('SIGNATURE=Tehkné Solutions')
     return 0
 
