@@ -2,10 +2,9 @@ shader_type canvas_item;
 
 // BASE-01 skin palette remap.
 // Source references are the approved skin_tone_03_warm channels from BASE-00.
-// The nearest-channel pass handles canonical skin colors; an extended warm-skin
-// classifier remaps darker cel-shading strokes that are part of the skin art but
-// sit outside the four exact source anchors. Black ink and low-chroma clothing
-// remain untouched.
+// The nearest-channel pass handles canonical skin colors globally. A second pass
+// catches darker warm cel-shading only inside the BASE-00 skin regions, so the
+// beige pants and equipment remain untouched.
 // Tehkné Solutions
 
 uniform vec4 source_skin_base : source_color = vec4(0.9843137, 0.7686275, 0.4392157, 1.0);
@@ -38,6 +37,15 @@ bool extended_warm_skin(vec3 c) {
         && c.r > c.g * 1.10
         && c.g > c.b * 1.10
         && chroma > 0.10;
+}
+
+bool extended_skin_region(vec2 uv) {
+    // Head + upper torso are centered and remain above the waist.
+    bool upper_body = uv.y < 0.585;
+    // Hands sit lower than the torso but outside the center-line clothing zone.
+    bool left_hand = uv.y >= 0.50 && uv.y < 0.69 && uv.x > 0.26 && uv.x < 0.42;
+    bool right_hand = uv.y >= 0.50 && uv.y < 0.69 && uv.x > 0.58 && uv.x < 0.74;
+    return upper_body || left_hand || right_hand;
 }
 
 vec3 map_skin_luminance(vec3 input_color) {
@@ -92,7 +100,7 @@ void fragment() {
         float nearest_influence = 1.0 - smoothstep(remap_tolerance - soft_edge, remap_tolerance, min_distance);
         result = mix(tex.rgb, nearest_mapped, clamp(nearest_influence, 0.0, 1.0));
 
-        if (extended_warm_skin(tex.rgb) && min_distance >= remap_tolerance - soft_edge) {
+        if (extended_skin_region(UV) && extended_warm_skin(tex.rgb) && min_distance >= remap_tolerance - soft_edge) {
             vec3 extended_mapped = map_skin_luminance(tex.rgb);
             result = mix(result, extended_mapped, 0.92);
         }
