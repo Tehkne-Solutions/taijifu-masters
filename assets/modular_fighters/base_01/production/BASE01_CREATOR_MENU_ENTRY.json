@@ -1,0 +1,35 @@
+{
+  "schema": "tehkne/taijifu-base01-creator-menu-entry/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_CREATOR_MENU_ENTRY",
+  "version": "1.0.0",
+  "status": "implementation_candidate_owner_review_pending",
+  "depends_on": {
+    "creator_shell": "BASE01_CHARACTER_CREATOR_SHELL",
+    "first_playable_menu": "FirstPlayableMenuController"
+  },
+  "entry_contract": {
+    "menu_scene": "scenes/vertical_slice/first_playable_menu.tscn",
+    "menu_controller": "scripts/vertical_slice/first_playable_menu.gd",
+    "creator_scene": "scenes/characters/modular_fighter_creator_shell.tscn",
+    "button_path": "Content/Actions/CreatorButton",
+    "button_label": "CRIAR LUTADOR",
+    "keyboard_shortcut": "C",
+    "role": "secondary_non_blocking"
+  },
+  "regression_contract": {
+    "main_action": "play_vs_ai",
+    "play_initial_focus": true,
+    "quick_game_path_unchanged": true,
+    "difficulty_selection_unchanged": true,
+    "participant_form_absent": true,
+    "legacy_prototype_absent": true,
+    "existing_first_playable_flow_test_required": true
+  },
+  "review": {
+    "machine": "PENDING",
+    "internal_visual": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "next_stage": "C62.8_CREATOR_PRESET_GAMEPLAY_HANDOFF"
+}
