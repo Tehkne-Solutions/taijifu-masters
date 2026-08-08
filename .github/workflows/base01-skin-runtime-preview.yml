@@ -1,0 +1,92 @@
+name: BASE-01 Skin Runtime Preview
+
+on:
+  pull_request:
+    paths:
+      - 'shaders/modular_fighter_skin_palette.gdshader'
+      - 'scripts/characters/modular_fighter_assembler.gd'
+      - 'scripts/ci/base01_skin_palette_runtime_smoke.gd'
+      - 'scripts/runtime/base01_skin_palette_visual_bench.gd'
+      - 'assets/modular_fighters/base_01/palettes/*.json'
+      - 'assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json'
+      - '.github/workflows/base01-skin-runtime-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-preview:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate reconciled palette data
+        run: python scripts/ci/validate_base01_skin_contract.py
+      - name: Install Godot runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project and shader
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c62-1-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed' c62-1-import.log; then
+            echo 'C62_1_SHADER_COMPILE=BLOCKED'
+            exit 1
+          fi
+      - name: Run skin palette runtime smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_skin_palette_runtime_smoke.gd 2>&1 | tee c62-1-runtime.log
+          grep -q 'C62_1_SKIN_RUNTIME=PASS palettes=8' c62-1-runtime.log
+          grep -q 'C62_1_DEFAULT_WARM_IDENTITY=PASS material=none' c62-1-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed' c62-1-runtime.log; then
+            echo 'C62_1_SHADER_RUNTIME=BLOCKED'
+            exit 1
+          fi
+      - name: Render authored and gameplay review sheet
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --resolution 1920x1080 --script res://scripts/runtime/base01_skin_palette_visual_bench.gd 2>&1 | tee c62-1-visual.log
+          grep -q 'C62_1_SKIN_VISUAL=PASS palettes=8 authored=8 flipped_gameplay=8' c62-1-visual.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed' c62-1-visual.log; then
+            echo 'C62_1_SHADER_VISUAL=BLOCKED'
+            exit 1
+          fi
+      - name: Assert review outputs
+        run: |
+          set -euo pipefail
+          test -s artifacts/c62-1/BASE01_SKIN_PALETTES.contact-sheet-1920x1080.png
+          test -s artifacts/c62-1/BASE01_SKIN_PALETTES.runtime.qa.json
+          python - <<'PY'
+          import json, struct
+          from pathlib import Path
+          png=Path('artifacts/c62-1/BASE01_SKIN_PALETTES.contact-sheet-1920x1080.png').read_bytes()
+          assert png[:8] == b'\x89PNG\r\n\x1a\n'
+          assert struct.unpack('>II', png[16:24]) == (1920,1080)
+          q=json.loads(Path('artifacts/c62-1/BASE01_SKIN_PALETTES.runtime.qa.json').read_text())
+          assert q['status']=='runtime_candidate_owner_review_pending'
+          assert len(q['palettes'])==8
+          assert q['duplicate_body_pngs'] is False
+          assert q['runtime_material_application']=='PASS'
+          assert q['owner_review']=='PENDING'
+          print('C62_1_SKIN_REVIEW_ARTIFACT=PASS palettes=8 size=1920x1080')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BASE01-SKIN-PALETTE-RUNTIME-REVIEW
+          path: |
+            artifacts/c62-1/BASE01_SKIN_PALETTES.contact-sheet-1920x1080.png
+            artifacts/c62-1/BASE01_SKIN_PALETTES.runtime.qa.json
+            c62-1-import.log
+            c62-1-runtime.log
+            c62-1-visual.log
+          if-no-files-found: error
+      - name: Summary
+        run: echo 'C62.1 BASE-01 skin runtime preview PASS — owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
