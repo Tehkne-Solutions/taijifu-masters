@@ -1,0 +1,111 @@
+{
+  "schema": "tehkne/taijifu-base01-pack-a-canonical/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-A-FACES",
+  "version": "1.1.0",
+  "status": "PASS",
+  "owner_review": "PASS",
+  "runtime_bench": "C59.4_PASS",
+  "pivot": [
+    0.5,
+    0.92
+  ],
+  "assembly_order_non_default": [
+    "body_base",
+    "skin",
+    "face_plate",
+    "face",
+    "eyes",
+    "brows"
+  ],
+  "modules": {
+    "neutral_face_plate_v1": {
+      "slot": "face_plate",
+      "path": "assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png",
+      "sha256": "9ba03d0fbdb79b2958f8e559bcec760e9a38628e37e516d4a0f1e6cf8fa30e86",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        370,
+        243,
+        622,
+        397
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_02_angular": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_02_angular.png",
+      "sha256": "1adb1d6092cdbe1813582be79c50313dd3082166864c7205ac0c4491394f48d9",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        370,
+        300,
+        600,
+        384
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_03_soft": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_03_soft.png",
+      "sha256": "60dc0caf9f1d97bae208afd9ddc92445ce0029b9ff1564775d547cadc7f55b9e",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        366,
+        302,
+        604,
+        379
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_04_broad": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_04_broad.png",
+      "sha256": "ce8124c6607ef741f85d3a8c087213d3a59596f1fb24a282bcc08c3a585a44bf",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        362,
+        302,
+        608,
+        386
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    }
+  }
+}
