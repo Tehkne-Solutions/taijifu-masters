@@ -1,0 +1,46 @@
+{
+  "schema": "tehkne/taijifu-base01-production-pack/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-C-BROWS",
+  "version": "1.0.0",
+  "status": "production_contract_ready",
+  "slot": "brows",
+  "depends_on": {
+    "catalog": "BASE01_IDENTITY_CATALOG",
+    "base_pack": "BASE-00",
+    "default_reference": "brows_01_focused",
+    "neutral_face_plate": "neutral_face_plate_v1",
+    "default_face": "face_01_balanced",
+    "default_eyes": "eyes_01_focused"
+  },
+  "deliverables": [
+    {"id":"brows_02_neutral","path":"assets/modular_fighters/base_01/brows/brows_02_neutral.png","intent":"relaxed neutral brow angle with preserved canonical spacing"},
+    {"id":"brows_03_arched","path":"assets/modular_fighters/base_01/brows/brows_03_arched.png","intent":"higher expressive arch while preserving independent two-brow structure"},
+    {"id":"brows_04_straight","path":"assets/modular_fighters/base_01/brows/brows_04_straight.png","intent":"flatter horizontal brow read for calm disciplined identity"},
+    {"id":"brows_05_heavy","path":"assets/modular_fighters/base_01/brows/brows_05_heavy.png","intent":"thicker heavier brow mass for mature grounded identity"},
+    {"id":"brows_06_sharp","path":"assets/modular_fighters/base_01/brows/brows_06_sharp.png","intent":"sharper inward angle for aggressive martial expression"}
+  ],
+  "authoring": {
+    "canvas": [1024,1024],
+    "mode": "RGBA",
+    "pivot": [0.5,0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency": true,
+    "contact_sheet_runtime_source": false,
+    "independent_from": ["hair","uniform","weapon","eyes"],
+    "preview_assembly_order": ["body_base","skin","face_plate","face","eyes","brows"]
+  },
+  "acceptance": {
+    "individual_pngs": 5,
+    "transparent_corners": true,
+    "authored_review": "required",
+    "flipped_review": "required",
+    "gameplay_scale_preview_px": 132,
+    "pairwise_visual_difference_required": true,
+    "shared_pivot_required": true,
+    "canonical_sha256_required": true,
+    "owner_review_required": true,
+    "runtime_import_required": true
+  },
+  "promotion_policy": "fail_closed"
+}
