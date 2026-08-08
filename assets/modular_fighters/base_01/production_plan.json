@@ -80,9 +80,10 @@
         "authored_preview",
         "flipped_preview",
         "gameplay_scale_preview",
-        "profile_selection_contract"
+        "profile_selection_contract",
+        "creator_control"
       ],
-      "status": "runtime_integrated_owner_review_pending",
+      "status": "creator_control_integrated_owner_review_pending",
       "version": "1.0.0"
     }
   ],

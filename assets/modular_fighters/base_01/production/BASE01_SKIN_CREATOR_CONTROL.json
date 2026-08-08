@@ -1,0 +1,62 @@
+{
+  "schema": "tehkne/taijifu-base01-skin-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_SKIN_CREATOR_CONTROL",
+  "version": "1.0.0",
+  "status": "implementation_integrated_owner_review_pending",
+  "palette_source": "BASE01-SKIN-PALETTES",
+  "profile_contract": {
+    "resource": "ModularFighterProfile",
+    "field": "palette.skin",
+    "setter": "set_skin_palette_id",
+    "getter": "skin_palette_id",
+    "invalid_selection_policy": "fail_closed"
+  },
+  "runtime_contract": {
+    "assembler": "ModularFighterAssembler",
+    "method": "set_skin_palette",
+    "skin_slots": [
+      "body_base",
+      "face_plate",
+      "face"
+    ],
+    "non_skin_slots_untouched": [
+      "eyes",
+      "brows"
+    ],
+    "duplicate_body_pngs": false
+  },
+  "control_contract": {
+    "script": "scripts/characters/modular_fighter_skin_selector.gd",
+    "options": 8,
+    "columns": 4,
+    "swatch_source": "channels.skin_base",
+    "keyboard_focus": true,
+    "gamepad_focus": true,
+    "signal": "skin_selected",
+    "default_palette": "skin_tone_03_warm"
+  },
+  "palette_ids": [
+    "skin_tone_01_porcelain",
+    "skin_tone_02_light_neutral",
+    "skin_tone_03_warm",
+    "skin_tone_04_olive",
+    "skin_tone_05_tan",
+    "skin_tone_06_brown",
+    "skin_tone_07_deep",
+    "skin_tone_08_ebony"
+  ],
+  "review_policy": {
+    "runtime_sync_required": true,
+    "all_options_exercised_required": true,
+    "visual_review_required": true,
+    "owner_review_required_before_canonical_status": true
+  },
+  "review": {
+    "machine": "PASS",
+    "internal_visual": "PASS",
+    "basis": "C62.3 creator control review, 1920x1080, eight runtime cycles, Deep selected",
+    "owner_review": "PENDING"
+  },
+  "next_stage": "C62.4_IDENTITY_CREATOR_CONTROL"
+}
