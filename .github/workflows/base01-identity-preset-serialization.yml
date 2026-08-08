@@ -1,0 +1,107 @@
+name: BASE-01 Identity Preset Serialization
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/characters/modular_fighter_profile.gd'
+      - 'scripts/characters/modular_fighter_preset_store.gd'
+      - 'scripts/ci/base01_identity_preset_serialization_smoke.gd'
+      - 'config/fighter-presets/preset_lian_wu.json'
+      - 'config/fighter-presets/preset_training_rival.json'
+      - 'assets/modular_fighters/base_01/production/BASE01_IDENTITY_PRESET_SERIALIZATION.json'
+      - 'assets/modular_fighters/base_01/production_plan.json'
+      - '.github/workflows/base01-identity-preset-serialization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity-preset-serialization:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate preset serialization contract
+        run: |
+          set -euo pipefail
+          python scripts/ci/validate_base01_skin_contract.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          contract=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_IDENTITY_PRESET_SERIALIZATION.json').read_text())
+          plan=json.loads(Path('assets/modular_fighters/base_01/production_plan.json').read_text())
+          assert contract['signature']=='Tehkné Solutions'
+          assert contract['status']=='implementation_candidate'
+          preset=contract['preset_contract']
+          assert preset['canonical_schema']=='tehkne/taijifu-modular-fighter-preset/v2'
+          assert preset['read_compatible_schemas']==[
+            'tehkne/taijifu-modular-fighter-preset/v1',
+            'tehkne/taijifu-modular-fighter-preset/v2'
+          ]
+          assert preset['user_directory']=='user://modular_fighter_presets'
+          assert preset['signature_required'] is True
+          assert preset['safe_preset_id_required'] is True
+          roundtrip=contract['roundtrip_contract']
+          assert roundtrip['save'] and roundtrip['load'] and roundtrip['list'] and roundtrip['delete']
+          assert roundtrip['creator_identity']==['palette.skin','modules.face','modules.eyes','modules.brows']
+          legacy=contract['legacy_validation']['repository_presets']
+          assert legacy==[
+            'config/fighter-presets/preset_lian_wu.json',
+            'config/fighter-presets/preset_training_rival.json'
+          ]
+          security=contract['security_policy']
+          assert all(security[key]=='blocked' for key in ['path_traversal','unsupported_schema','invalid_signature','invalid_skin_palette'])
+          packs={p['pack_id']:p for p in plan['packs']}
+          pack=packs['BASE01-IDENTITY-PRESET-SERIALIZATION']
+          assert pack['status']=='implementation_candidate'
+          assert pack['scope']==['preset_v2','roundtrip','user_persistence','legacy_v1_compatibility']
+          print('C62_5_PRESET_CONTRACT=PASS schema=v2 legacy=v1')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import preset serialization resources fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c62-5-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-5-import.log; then
+            echo 'C62_5_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run identity preset roundtrip smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_identity_preset_serialization_smoke.gd 2>&1 | tee c62-5-runtime.log
+          grep -q 'C62_5_PRESET_V2_ROUNDTRIP=PASS skin=deep face=broad eyes=fierce brows=sharp' c62-5-runtime.log
+          grep -q 'C62_5_USER_PERSISTENCE=PASS save=load=list=delete' c62-5-runtime.log
+          grep -q 'C62_5_V1_COMPATIBILITY=PASS presets=2' c62-5-runtime.log
+          grep -q 'C62_5_INVALID_PRESET=BLOCKED schema=signature=skin=path' c62-5-runtime.log
+          grep -q 'SIGNATURE=Tehkné Solutions' c62-5-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-5-runtime.log; then
+            echo 'C62_5_RUNTIME_ERRORS=BLOCKED'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE01-IDENTITY-PRESET-SERIALIZATION-EVIDENCE
+          path: |
+            c62-5-import.log
+            c62-5-runtime.log
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C62.5 BASE-01 Identity Preset Serialization PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
