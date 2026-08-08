@@ -8,6 +8,11 @@ extends Node2D
 const STANDARD_PATH := "res://config/modular-fighter-standard-v1.json"
 const BASE_PATH := "res://config/fighter-bases/base_fighter_v1.json"
 const BASE01_MANIFEST_PATH := "res://assets/modular_fighters/base_01/manifest.json"
+const SKIN_PALETTE_ROOT := "res://assets/modular_fighters/base_01/palettes"
+const SKIN_SHADER_PATH := "res://shaders/modular_fighter_skin_palette.gdshader"
+const DEFAULT_SKIN_PALETTE_ID := "skin_tone_03_warm"
+const SKIN_TINT_SLOTS := ["body_base", "face_plate", "face"]
+const SKIN_CHANNELS := ["skin_base", "skin_shadow", "skin_highlight", "cheek_tint"]
 
 var _profile
 var _layers: Dictionary = {}
@@ -56,10 +61,8 @@ func assemble_base01_default_identity() -> PackedStringArray:
 		failures.append("base01_manifest_contract_invalid")
 		return failures
 
-	var palette_path := "res://%s" % String(manifest.get("palette_path", ""))
-	_active_skin_palette = _load_json(palette_path)
-	if _active_skin_palette.is_empty():
-		failures.append("skin_palette_missing_or_invalid")
+	var default_skin_id := String(default_identity.get("skin", DEFAULT_SKIN_PALETTE_ID))
+	failures.append_array(set_skin_palette(StringName(default_skin_id)))
 
 	# Default identity intentionally does not attach face_plate. It reconstructs
 	# the approved BASE-00 source exactly. face_plate is reserved for non-default
@@ -99,6 +102,39 @@ func assemble_base01_default_identity() -> PackedStringArray:
 
 	return failures
 
+func set_skin_palette(palette_id: StringName) -> PackedStringArray:
+	var failures := PackedStringArray()
+	if not _ready_for_render:
+		failures.append("assembler_not_ready")
+		return failures
+	var palette_name := String(palette_id)
+	if palette_name.is_empty():
+		failures.append("skin_palette_id_missing")
+		return failures
+	var palette := _load_json("%s/%s.json" % [SKIN_PALETTE_ROOT, palette_name])
+	if palette.is_empty():
+		failures.append("skin_palette_missing_or_invalid:%s" % palette_name)
+		return failures
+	if String(palette.get("palette_id", "")) != palette_name:
+		failures.append("skin_palette_id_mismatch:%s" % palette_name)
+		return failures
+	var channels = palette.get("channels", {})
+	if typeof(channels) != TYPE_DICTIONARY:
+		failures.append("skin_palette_channels_invalid:%s" % palette_name)
+		return failures
+	for channel in SKIN_CHANNELS:
+		var value := String(channels.get(channel, ""))
+		if value.is_empty() or not Color.html_is_valid(value):
+			failures.append("skin_palette_channel_invalid:%s:%s" % [palette_name, channel])
+	if not failures.is_empty():
+		return failures
+	if palette_name != DEFAULT_SKIN_PALETTE_ID and _skin_shader() == null:
+		failures.append("skin_palette_shader_missing")
+		return failures
+	_active_skin_palette = palette
+	_apply_active_skin_palette_to_layers()
+	return failures
+
 func attach_visual_module(slot: StringName, node: CanvasItem) -> bool:
 	if not _ready_for_render or node == null:
 		return false
@@ -112,6 +148,7 @@ func attach_visual_module(slot: StringName, node: CanvasItem) -> bool:
 	_layers[slot_name] = node
 	node.name = "Module_%s" % slot_name
 	add_child(node)
+	_apply_active_skin_palette_to_node(slot_name, node)
 	return true
 
 func clear_visual_module(slot: StringName) -> void:
@@ -126,6 +163,9 @@ func clear_visual_module(slot: StringName) -> void:
 func active_skin_palette() -> Dictionary:
 	return _active_skin_palette.duplicate(true)
 
+func active_skin_palette_id() -> StringName:
+	return StringName(String(_active_skin_palette.get("palette_id", "")))
+
 func is_ready_for_render() -> bool:
 	return _ready_for_render
 
@@ -133,6 +173,42 @@ func profile_id() -> StringName:
 	if _profile == null:
 		return &""
 	return StringName(String(_profile.get("profile_id")))
+
+func _apply_active_skin_palette_to_layers() -> void:
+	if _active_skin_palette.is_empty():
+		return
+	for slot in SKIN_TINT_SLOTS:
+		if _layers.has(slot):
+			var node = _layers[slot]
+			if is_instance_valid(node):
+				_apply_active_skin_palette_to_node(slot, node)
+
+func _apply_active_skin_palette_to_node(slot: String, node: CanvasItem) -> void:
+	if not SKIN_TINT_SLOTS.has(slot) or _active_skin_palette.is_empty():
+		return
+	var sprite := node as Sprite2D
+	if sprite == null:
+		return
+	var palette_name := String(_active_skin_palette.get("palette_id", ""))
+	if palette_name == DEFAULT_SKIN_PALETTE_ID:
+		sprite.material = null
+		return
+	var shader := _skin_shader()
+	if shader == null:
+		return
+	var channels = _active_skin_palette.get("channels", {})
+	if typeof(channels) != TYPE_DICTIONARY:
+		return
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	for channel in SKIN_CHANNELS:
+		material.set_shader_parameter(channel, Color.from_string(String(channels.get(channel, "#FFFFFF")), Color.WHITE))
+	sprite.material = material
+
+func _skin_shader() -> Shader:
+	if not ResourceLoader.exists(SKIN_SHADER_PATH):
+		return null
+	return load(SKIN_SHADER_PATH) as Shader
 
 func _clear_layers() -> void:
 	for node in _layers.values():
