@@ -38,11 +38,15 @@ jobs:
           manifest=json.loads(Path('assets/modular_fighters/base_01/manifest.json').read_text())
 
           assert control['signature']=='Tehkné Solutions'
-          assert control['status']=='implementation_candidate_owner_review_pending'
+          assert control['status']=='identity_creator_integrated_owner_review_pending'
+          assert control['review']['machine']=='PASS'
+          assert control['review']['internal_visual']=='PASS'
+          assert control['review']['owner_review']=='PENDING'
           assert control['runtime_contract']['total_options']==24
           assert control['runtime_contract']['keyboard_focus'] is True
           assert control['runtime_contract']['gamepad_focus'] is True
           assert control['runtime_contract']['invalid_selection_policy']=='fail_closed_with_no_mutation'
+          assert control['runtime_contract']['preview_transform_policy']=='assembler_uniform_scale'
           assert control['face_plate_policy']['module_id']=='neutral_face_plate_v1'
           assert control['face_plate_policy']['creator_editable'] is False
           assert control['face_plate_policy']['default_face_plate']=='absent'
@@ -57,10 +61,10 @@ jobs:
 
           packs={p['pack_id']:p for p in plan['packs']}
           pack=packs['BASE01-IDENTITY-CREATOR-CONTROL']
-          assert pack['status']=='implementation_candidate_owner_review_pending'
+          assert pack['status']=='identity_creator_integrated_owner_review_pending'
           assert pack['scope']==['skin','face','eyes','brows']
           assert 'automatic_face_plate_policy' in pack['required_outputs_per_module']
-          print('C62_4_IDENTITY_CONTRACT=PASS total_options=24')
+          print('C62_4_IDENTITY_CONTRACT=PASS total_options=24 state=integrated')
           PY
 
       - name: Install Godot 4.3 runtime dependencies
@@ -155,4 +159,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C62.4 BASE-01 Identity Creator Control PASS — owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.4 BASE-01 Identity Creator Control PASS — integrated, owner review pending — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
