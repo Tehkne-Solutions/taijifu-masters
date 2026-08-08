@@ -1,0 +1,51 @@
+{
+  "schema": "tehkne/taijifu-base01-production-pack/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-A-FACES",
+  "version": "1.0.0",
+  "status": "production_contract_ready",
+  "slot": "face",
+  "depends_on": {
+    "catalog": "BASE01_IDENTITY_CATALOG",
+    "base_pack": "BASE-00",
+    "default_reference": "face_01_balanced"
+  },
+  "deliverables": [
+    {
+      "id": "face_02_angular",
+      "path": "assets/modular_fighters/base_01/face/face_02_angular.png",
+      "intent": "more angular cheek and jaw planes; mature martial identity; preserves base silhouette"
+    },
+    {
+      "id": "face_03_soft",
+      "path": "assets/modular_fighters/base_01/face/face_03_soft.png",
+      "intent": "softer cheek and jaw planes; youthful neutral identity; preserves base silhouette"
+    },
+    {
+      "id": "face_04_broad",
+      "path": "assets/modular_fighters/base_01/face/face_04_broad.png",
+      "intent": "broader cheek and jaw planes; powerful grounded identity; preserves base silhouette"
+    }
+  ],
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency": true,
+    "contact_sheet_runtime_source": false,
+    "independent_from": ["hair", "uniform", "weapon", "eyes", "brows"]
+  },
+  "acceptance": {
+    "individual_pngs": 3,
+    "transparent_corners": true,
+    "authored_review": "required",
+    "flipped_review": "required",
+    "gameplay_scale_preview_px": 132,
+    "shared_pivot_required": true,
+    "canonical_sha256_required": true,
+    "owner_review_required": true,
+    "runtime_import_required": true
+  },
+  "promotion_policy": "fail_closed"
+}

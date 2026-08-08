@@ -1,0 +1,25 @@
+{
+  "schema": "tehkne/taijifu-asset-qa/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-A-FACES",
+  "version": "1.0.0",
+  "status": "PENDING_ART_PRODUCTION",
+  "checks": {
+    "required_modules": "PENDING",
+    "canvas_1024x1024": "PENDING",
+    "rgba": "PENDING",
+    "native_transparency": "PENDING",
+    "shared_pivot_0_5_0_92": "PENDING",
+    "authored_alignment": "PENDING",
+    "flipped_alignment": "PENDING",
+    "gameplay_scale_132px": "PENDING",
+    "canonical_sha256": "PENDING",
+    "godot_runtime_import": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "modules": {
+    "face_02_angular": {"status":"PENDING"},
+    "face_03_soft": {"status":"PENDING"},
+    "face_04_broad": {"status":"PENDING"}
+  }
+}

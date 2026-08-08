@@ -1,0 +1,20 @@
+{
+  "schema": "tehkne/taijifu-production-readiness/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-A-FACES",
+  "state": "CONTRACT_READY_ART_PENDING",
+  "ready": {
+    "catalog": true,
+    "authoring_contract": true,
+    "qa_template": true,
+    "preview_matrix": true,
+    "remote_ci_contract": true
+  },
+  "pending": [
+    "produce 3 PNG face modules",
+    "generate authored/flipped/gameplay previews",
+    "calculate canonical SHA-256",
+    "Godot runtime import validation",
+    "owner visual review"
+  ]
+}
