@@ -1,0 +1,24 @@
+{
+  "schema": "tehkne/taijifu-base01-preview-matrix/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-A-FACES",
+  "preview_requirements": {
+    "authored": true,
+    "flipped": true,
+    "gameplay_scale_px": 132,
+    "skin_palette_reference": "skin_tone_03_warm",
+    "base_reference": "BASE-00",
+    "show_individual_modules": true,
+    "show_reconstructed_identity": true,
+    "contact_sheet_runtime_source": false
+  },
+  "rows": [
+    "BASE-00 reference",
+    "face_02_angular module",
+    "face_03_soft module",
+    "face_04_broad module",
+    "assembled authored",
+    "assembled flipped",
+    "gameplay scale"
+  ]
+}
