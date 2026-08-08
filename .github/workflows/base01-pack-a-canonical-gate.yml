@@ -1,0 +1,97 @@
+name: BASE-01 Pack A Canonical Gate
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png'
+      - 'assets/modular_fighters/base_01/face/face_02_angular.png'
+      - 'assets/modular_fighters/base_01/face/face_03_soft.png'
+      - 'assets/modular_fighters/base_01/face/face_04_broad.png'
+      - 'assets/modular_fighters/base_01/catalog.json'
+      - 'assets/modular_fighters/base_01/manifest.json'
+      - 'assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES*'
+      - 'scripts/ci/base01_pack_a_canonical_smoke.gd'
+      - '.github/workflows/base01-pack-a-canonical-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate canonical hashes and metadata
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('.')
+          p = root / 'assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.canonical.json'
+          data = json.loads(p.read_text(encoding='utf-8'))
+          assert data['status'] == 'PASS'
+          assert data['owner_review'] == 'PASS'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['assembly_order_non_default'] == ['body_base','skin','face_plate','face','eyes','brows']
+          assert len(data['modules']) == 4
+          for module_id, item in data['modules'].items():
+              path = root / item['path']
+              assert path.exists(), path
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest == item['sha256'], (module_id, digest, item['sha256'])
+              assert item['canvas'] == [1024,1024]
+              assert item['mode'] == 'RGBA'
+              assert item['pivot'] == [0.5,0.92]
+              assert item['transparent_corners'] is True
+              print(f'C59_5_HASH=PASS id={module_id} sha256={digest}')
+          print('C59_5_CANONICAL_METADATA=PASS assets=4')
+          PY
+
+      - name: Validate Pack A contracts
+        run: |
+          python scripts/ci/validate_base01_catalog.py
+          python scripts/ci/validate_base01_pack_a_faces_contract.py
+
+      - name: Install Godot dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c59-5-gate-import.log
+
+      - name: Run canonical runtime smoke
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_a_canonical_smoke.gd 2>&1 | tee c59-5-gate-runtime.log
+          grep -q 'C59_5_PACK_A_CANONICAL=PASS variants=3 plate=1' c59-5-gate-runtime.log
+
+      - name: Summary
+        run: |
+          {
+            echo '## C59.5 — Canonical Gate'
+            echo ''
+            echo '- canonical hashes: PASS 4/4'
+            echo '- catalog/Pack A contracts: PASS'
+            echo '- Godot import/runtime assembly: PASS 3/3'
+            echo '- owner review: PASS'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"
