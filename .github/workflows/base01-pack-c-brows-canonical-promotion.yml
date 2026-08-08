@@ -1,0 +1,104 @@
+name: BASE-01 Pack C Brows Canonical Promotion
+
+on:
+  push:
+    branches:
+      - 'agent/c61-2-pack-c-brows-canonical-promotion'
+    paths:
+      - 'tools/c61-1-owner-review.pass'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deterministic dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Generate and promote canonical Pack C
+        run: python scripts/art/promote_base01_pack_c_brows.py
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import canonical assets
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c61-2-import.log
+      - name: Validate canonical runtime
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_c_brows_canonical_smoke.gd 2>&1 | tee c61-2-runtime.log
+          grep -q 'C61_2_PACK_C_CANONICAL=PASS variants=5' c61-2-runtime.log
+      - name: Assert canonical outputs and hashes
+        run: |
+          set -euo pipefail
+          test -s assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.canonical.json
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p = Path('assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.canonical.json')
+          d = json.loads(p.read_text())
+          assert d['status'] == 'PASS'
+          assert d['owner_review'] == 'PASS'
+          assert len(d['modules']) == 5
+          expected = {
+              'brows_02_neutral','brows_03_arched','brows_04_straight','brows_05_heavy','brows_06_sharp'
+          }
+          assert set(d['modules']) == expected
+          for module_id, meta in d['modules'].items():
+              f = Path(meta['path'])
+              assert f.is_file(), (module_id, f)
+              assert hashlib.sha256(f.read_bytes()).hexdigest() == meta['sha256'], module_id
+              assert meta['canvas'] == [1024,1024]
+              assert meta['mode'] == 'RGBA'
+              assert meta['transparent_corners'] is True
+              assert meta['pivot'] == [0.5,0.92]
+          catalog = json.loads(Path('assets/modular_fighters/base_01/catalog.json').read_text())
+          rows = {row['id']: row for row in catalog['brows']}
+          for module_id, meta in d['modules'].items():
+              assert rows[module_id]['status'] == 'produced'
+              assert rows[module_id]['sha256'] == meta['sha256']
+              assert rows[module_id]['path'] == meta['path']
+          print('C61_2_CANONICAL_HASHES=PASS modules=5')
+          PY
+      - name: Commit canonical promotion
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            assets/modular_fighters/base_01/brows/brows_02_neutral.png \
+            assets/modular_fighters/base_01/brows/brows_03_arched.png \
+            assets/modular_fighters/base_01/brows/brows_04_straight.png \
+            assets/modular_fighters/base_01/brows/brows_05_heavy.png \
+            assets/modular_fighters/base_01/brows/brows_06_sharp.png \
+            assets/modular_fighters/base_01/catalog.json \
+            assets/modular_fighters/base_01/manifest.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.qa.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.readiness.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS.canonical.json \
+            assets/modular_fighters/base_01/production_plan.json
+          count="$(git diff --cached --name-only | sed '/^$/d' | wc -l)"
+          test "$count" -eq 12
+          git commit -m 'feat(c61.2): promote canonical BASE-01 Pack C brows'
+          git push origin HEAD:${{ github.ref_name }}
+      - name: Summary
+        run: |
+          echo 'C61.2 canonical Pack C promotion PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

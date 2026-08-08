@@ -296,6 +296,116 @@
       "root_anchor": "bottom_center",
       "slot": "eyes",
       "path": "assets/modular_fighters/base_01/eyes/eyes_06_heavy.png"
+    },
+    "brows_02_neutral": {
+      "sha256": "48dddcdd524ef88c35153385dc8a595af664ac6b811bf372fd73108b96839df5",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        377,
+        267,
+        551,
+        307
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_02_neutral.png"
+    },
+    "brows_03_arched": {
+      "sha256": "3854bab6b60a628cf2b5ccdec51229841680becaabcccd876e3c5041fddd75b0",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        381,
+        255,
+        548,
+        306
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_03_arched.png"
+    },
+    "brows_04_straight": {
+      "sha256": "62ac25f1aec54c039ce99d00f9fadd1f1675f745ff972c295d54fd96464409e1",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        375,
+        271,
+        552,
+        305
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_04_straight.png"
+    },
+    "brows_05_heavy": {
+      "sha256": "36d859806c38fe33f1b79947bcc3e2ed1e0880ba242bb8de19c32018e321c8b9",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        372,
+        253,
+        555,
+        313
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_05_heavy.png"
+    },
+    "brows_06_sharp": {
+      "sha256": "9d97fd0dc697185832ac04d645f32b48048dbc12d0ed8f89e0dd69ba15a9ba54",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        376,
+        268,
+        552,
+        302
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "slot": "brows",
+      "path": "assets/modular_fighters/base_01/brows/brows_06_sharp.png"
     }
   },
   "palette_path": "assets/modular_fighters/base_01/palettes/skin_tone_03_warm.json",
@@ -330,12 +440,18 @@
       "owner_review": "PASS",
       "visual_review_basis": "C60_CANDIDATE_CONTACT_SHEET",
       "status": "PASS"
+    },
+    "pack_c_brows": {
+      "machine": "PASS",
+      "runtime_import": "PASS_GODOT_4_3_C61",
+      "owner_review": "PASS",
+      "visual_review_basis": "C61_V3_CONTACT_SHEET",
+      "status": "PASS"
     }
   },
   "scope": {
-    "delivered": "default identity modules + Pack A face variants + neutral face plate + Pack B eye variants",
+    "delivered": "default identity modules + Pack A faces + neutral face plate + Pack B eyes + Pack C brows",
     "not_yet_delivered": [
-      "additional brow variants",
       "remaining seven skin palettes"
     ]
   },

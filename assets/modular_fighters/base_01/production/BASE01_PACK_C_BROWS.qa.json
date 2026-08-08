@@ -2,28 +2,48 @@
   "schema": "tehkne/taijifu-asset-qa/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-C-BROWS",
-  "version": "1.0.0",
-  "status": "PENDING_ART_PRODUCTION",
+  "version": "1.1.0",
+  "status": "PASS",
   "checks": {
-    "required_modules": "PENDING",
-    "canvas_1024x1024": "PENDING",
-    "rgba": "PENDING",
-    "native_transparency": "PENDING",
-    "shared_pivot_0_5_0_92": "PENDING",
-    "face_plate_clean_swap": "PENDING",
-    "authored_alignment": "PENDING",
-    "flipped_alignment": "PENDING",
-    "gameplay_scale_132px": "PENDING",
-    "pairwise_visual_difference": "PENDING",
-    "canonical_sha256": "PENDING",
-    "godot_runtime_import": "PENDING",
-    "owner_review": "PENDING"
+    "required_modules": "PASS",
+    "canvas_1024x1024": "PASS",
+    "rgba": "PASS",
+    "native_transparency": "PASS",
+    "shared_pivot_0_5_0_92": "PASS",
+    "face_plate_clean_swap": "PASS",
+    "authored_alignment": "PASS",
+    "flipped_alignment": "PASS",
+    "gameplay_scale_132px": "PASS",
+    "pairwise_visual_difference": "PASS",
+    "canonical_sha256": "PASS",
+    "godot_runtime_import": "PASS",
+    "owner_review": "PASS"
   },
   "modules": {
-    "brows_02_neutral": {"status":"PENDING"},
-    "brows_03_arched": {"status":"PENDING"},
-    "brows_04_straight": {"status":"PENDING"},
-    "brows_05_heavy": {"status":"PENDING"},
-    "brows_06_sharp": {"status":"PENDING"}
+    "brows_02_neutral": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/brows/brows_02_neutral.png",
+      "sha256": "48dddcdd524ef88c35153385dc8a595af664ac6b811bf372fd73108b96839df5"
+    },
+    "brows_03_arched": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/brows/brows_03_arched.png",
+      "sha256": "3854bab6b60a628cf2b5ccdec51229841680becaabcccd876e3c5041fddd75b0"
+    },
+    "brows_04_straight": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/brows/brows_04_straight.png",
+      "sha256": "62ac25f1aec54c039ce99d00f9fadd1f1675f745ff972c295d54fd96464409e1"
+    },
+    "brows_05_heavy": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/brows/brows_05_heavy.png",
+      "sha256": "36d859806c38fe33f1b79947bcc3e2ed1e0880ba242bb8de19c32018e321c8b9"
+    },
+    "brows_06_sharp": {
+      "status": "CANONICAL",
+      "path": "assets/modular_fighters/base_01/brows/brows_06_sharp.png",
+      "sha256": "9d97fd0dc697185832ac04d645f32b48048dbc12d0ed8f89e0dd69ba15a9ba54"
+    }
   }
 }
