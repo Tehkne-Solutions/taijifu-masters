@@ -1,0 +1,17 @@
+{
+  "schema": "tehkne/taijifu-skin-palette/v1",
+  "signature": "Tehkné Solutions",
+  "palette_id": "skin_tone_08_ebony",
+  "display_name": "Ebony",
+  "status": "production_candidate",
+  "channels": {
+    "skin_base": "#4B2E24",
+    "skin_shadow": "#271714",
+    "skin_highlight": "#684235",
+    "cheek_tint": "#55302B"
+  },
+  "source_base_body": "base_fighter_v1",
+  "application": "palette_driven_base_tint",
+  "preserve_linework": true,
+  "preserve_shading_structure": true
+}
