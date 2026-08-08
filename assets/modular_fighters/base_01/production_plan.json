@@ -85,6 +85,27 @@
       ],
       "status": "creator_control_integrated_owner_review_pending",
       "version": "1.0.0"
+    },
+    {
+      "pack_id": "BASE01-IDENTITY-CREATOR-CONTROL",
+      "scope": [
+        "skin",
+        "face",
+        "eyes",
+        "brows"
+      ],
+      "delivery_mode": "profile_runtime_creator_control",
+      "required_outputs_per_module": [
+        "identity_selector",
+        "profile_contract",
+        "runtime_module_swap",
+        "automatic_face_plate_policy",
+        "keyboard_gamepad_focus",
+        "visual_review",
+        "qa_json"
+      ],
+      "status": "identity_creator_integrated_owner_review_pending",
+      "version": "1.0.0"
     }
   ],
   "global_rules": {
