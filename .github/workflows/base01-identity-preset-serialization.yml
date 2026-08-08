@@ -34,7 +34,12 @@ jobs:
           contract=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_IDENTITY_PRESET_SERIALIZATION.json').read_text())
           plan=json.loads(Path('assets/modular_fighters/base_01/production_plan.json').read_text())
           assert contract['signature']=='Tehkné Solutions'
-          assert contract['status']=='implementation_candidate'
+          assert contract['status']=='identity_preset_serialization_integrated'
+          assert contract['review']['machine']=='PASS'
+          assert contract['review']['roundtrip_v2']=='PASS'
+          assert contract['review']['user_persistence']=='PASS'
+          assert contract['review']['legacy_v1_compatibility']=='PASS'
+          assert contract['review']['invalid_input_policy']=='PASS'
           preset=contract['preset_contract']
           assert preset['canonical_schema']=='tehkne/taijifu-modular-fighter-preset/v2'
           assert preset['read_compatible_schemas']==[
@@ -56,9 +61,9 @@ jobs:
           assert all(security[key]=='blocked' for key in ['path_traversal','unsupported_schema','invalid_signature','invalid_skin_palette'])
           packs={p['pack_id']:p for p in plan['packs']}
           pack=packs['BASE01-IDENTITY-PRESET-SERIALIZATION']
-          assert pack['status']=='implementation_candidate'
+          assert pack['status']=='identity_preset_serialization_integrated'
           assert pack['scope']==['preset_v2','roundtrip','user_persistence','legacy_v1_compatibility']
-          print('C62_5_PRESET_CONTRACT=PASS schema=v2 legacy=v1')
+          print('C62_5_PRESET_CONTRACT=PASS schema=v2 legacy=v1 state=integrated')
           PY
 
       - name: Install Godot 4.3
@@ -104,4 +109,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C62.5 BASE-01 Identity Preset Serialization PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.5 BASE-01 Identity Preset Serialization PASS — integrated — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
