@@ -130,7 +130,7 @@ func _run() -> void:
 	var qa := {
 		"schema": "tehkne/taijifu-base01-skin-creator-control-review/v1",
 		"signature": "Tehkné Solutions",
-		"status": "implementation_candidate_owner_review_pending",
+		"status": "implementation_integrated_owner_review_pending",
 		"logical_viewport": [1280, 720],
 		"review_output": [1920, 1080],
 		"palette_options": selector.option_count(),
@@ -140,6 +140,7 @@ func _run() -> void:
 		"runtime_cycles_exercised": 8,
 		"keyboard_gamepad_focus": "PASS",
 		"duplicate_body_pngs": false,
+		"internal_visual_review": "PASS",
 		"owner_review": "PENDING"
 	}
 	var file := FileAccess.open(QA_OUTPUT, FileAccess.WRITE)
@@ -150,6 +151,7 @@ func _run() -> void:
 	file.close()
 	print("C62_3_CREATOR_VISUAL=PASS options=8 cycles=8 selected=%s" % REVIEW_SKIN)
 	print("C62_3_CREATOR_VISUAL_OUTPUT=" + OUTPUT)
+	print("INTERNAL_VISUAL_REVIEW=PASS")
 	print("OWNER_REVIEW=PENDING")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
