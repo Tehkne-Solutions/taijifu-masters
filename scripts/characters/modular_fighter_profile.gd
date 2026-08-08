@@ -7,6 +7,8 @@ extends Resource
 
 const STANDARD_PATH := "res://config/modular-fighter-standard-v1.json"
 const SKIN_CONTRACT_PATH := "res://assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json"
+const BASE01_MANIFEST_PATH := "res://assets/modular_fighters/base_01/manifest.json"
+const BASE01_IDENTITY_SLOTS := ["face", "eyes", "brows"]
 
 @export var profile_id: StringName = &""
 @export var display_name: String = ""
@@ -33,6 +35,55 @@ func set_skin_palette_id(palette_id: StringName) -> void:
 
 func skin_palette_id() -> StringName:
 	return StringName(String(palette.get("skin", "")))
+
+func set_base01_identity_module(slot: StringName, module_id_value: StringName) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var slot_name := String(slot)
+	var module_name := String(module_id_value)
+	if not BASE01_IDENTITY_SLOTS.has(slot_name):
+		failures.append("base01_identity_slot_invalid:%s" % slot_name)
+		return failures
+	if module_name.is_empty():
+		failures.append("base01_identity_module_missing:%s" % slot_name)
+		return failures
+	var manifest := _load_json(BASE01_MANIFEST_PATH)
+	var module_contracts = manifest.get("modules", {})
+	if typeof(module_contracts) != TYPE_DICTIONARY:
+		failures.append("base01_identity_manifest_unavailable")
+		return failures
+	if not module_contracts.has(module_name):
+		failures.append("base01_identity_module_unknown:%s:%s" % [slot_name, module_name])
+		return failures
+	var contract = module_contracts[module_name]
+	if typeof(contract) != TYPE_DICTIONARY or String(contract.get("slot", "")) != slot_name:
+		failures.append("base01_identity_module_slot_mismatch:%s:%s" % [slot_name, module_name])
+		return failures
+	set_module(slot, module_id_value)
+	return failures
+
+func base01_identity_module_ids(slot: StringName) -> PackedStringArray:
+	var result := PackedStringArray()
+	var slot_name := String(slot)
+	if not BASE01_IDENTITY_SLOTS.has(slot_name):
+		return result
+	var manifest := _load_json(BASE01_MANIFEST_PATH)
+	var module_contracts = manifest.get("modules", {})
+	if typeof(module_contracts) != TYPE_DICTIONARY:
+		return result
+	for raw_id in module_contracts.keys():
+		var module_name := String(raw_id)
+		var contract = module_contracts[module_name]
+		if typeof(contract) == TYPE_DICTIONARY and String(contract.get("slot", "")) == slot_name:
+			result.append(module_name)
+	result.sort()
+	return result
+
+func base01_default_identity_id(slot: StringName) -> StringName:
+	var manifest := _load_json(BASE01_MANIFEST_PATH)
+	var default_identity = manifest.get("default_identity", {})
+	if typeof(default_identity) != TYPE_DICTIONARY:
+		return &""
+	return StringName(String(default_identity.get(String(slot), "")))
 
 func validate_against_standard() -> PackedStringArray:
 	var failures := PackedStringArray()

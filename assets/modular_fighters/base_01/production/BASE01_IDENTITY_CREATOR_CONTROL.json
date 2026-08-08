@@ -1,0 +1,84 @@
+{
+  "schema": "tehkne/taijifu-base01-identity-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_IDENTITY_CREATOR_CONTROL",
+  "version": "1.0.0",
+  "status": "implementation_candidate_owner_review_pending",
+  "depends_on": {
+    "base_body": "BASE-00",
+    "skin_pack": "BASE01-SKIN-PALETTES",
+    "skin_creator_control": "BASE01_SKIN_CREATOR_CONTROL",
+    "face_pack": "BASE01-PACK-A-FACES",
+    "eyes_pack": "BASE01-PACK-B-EYES",
+    "brows_pack": "BASE01-PACK-C-BROWS"
+  },
+  "categories": {
+    "skin": {
+      "profile_field": "palette.skin",
+      "options": 8,
+      "runtime_method": "set_skin_palette"
+    },
+    "face": {
+      "profile_field": "modules.face",
+      "options": 4,
+      "runtime_method": "set_base01_identity_module"
+    },
+    "eyes": {
+      "profile_field": "modules.eyes",
+      "options": 6,
+      "runtime_method": "set_base01_identity_module"
+    },
+    "brows": {
+      "profile_field": "modules.brows",
+      "options": 6,
+      "runtime_method": "set_base01_identity_module"
+    }
+  },
+  "runtime_contract": {
+    "profile": "ModularFighterProfile",
+    "assembler": "ModularFighterAssembler",
+    "control": "ModularFighterIdentitySelector",
+    "control_script": "scripts/characters/modular_fighter_identity_selector.gd",
+    "total_options": 24,
+    "profile_runtime_sync_required": true,
+    "invalid_selection_policy": "fail_closed_with_no_mutation",
+    "keyboard_focus": true,
+    "gamepad_focus": true
+  },
+  "face_plate_policy": {
+    "module_id": "neutral_face_plate_v1",
+    "slot": "face_plate",
+    "creator_editable": false,
+    "default_face": "face_01_balanced",
+    "default_face_plate": "absent",
+    "non_default_faces": [
+      "face_02_angular",
+      "face_03_soft",
+      "face_04_broad"
+    ],
+    "non_default_face_plate": "required_automatic",
+    "z_order": [
+      "face_plate",
+      "face",
+      "eyes",
+      "brows"
+    ],
+    "skin_palette_applies_to": [
+      "face_plate",
+      "face"
+    ]
+  },
+  "review_policy": {
+    "all_24_options_exercised_required": true,
+    "face_plate_policy_required": true,
+    "serialization_required": true,
+    "visual_review_required": true,
+    "owner_review_required_before_canonical_status": true
+  },
+  "review": {
+    "machine": "PENDING",
+    "internal_visual": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "next_stage": "C62.5_IDENTITY_PRESET_SERIALIZATION"
+}
