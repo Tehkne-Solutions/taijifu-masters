@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'scripts/art/generate_base01_pack_a_faces.py'
+      - 'scripts/ci/base01_pack_a_faces_candidate_smoke.gd'
       - '.github/workflows/base01-pack-a-faces-candidate-generation.yml'
       - 'assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.json'
       - 'assets/modular_fighters/base_01/face/face_01_balanced.png'
@@ -17,8 +18,8 @@ permissions:
 
 jobs:
   generate-candidates:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,8 +29,18 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Pillow
-        run: python -m pip install --disable-pip-version-check pillow==11.3.0
+      - name: Install generator and Godot dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            unzip \
+            libfontconfig1 \
+            libgl1 \
+            libxcursor1 \
+            libxinerama1 \
+            libxrandr2 \
+            libxi6
 
       - name: Generate fail-closed candidate pack
         run: |
@@ -51,11 +62,63 @@ jobs:
           grep -q '"runtime_import": "PENDING"' build/base01-pack-a-faces/BASE01_PACK_A_FACES.candidate-qa.json
           echo 'C59_1_REMOTE_CANDIDATE_OUTPUT=PASS'
 
+      - name: Stage generated candidates inside res:// for ephemeral import
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/modular_fighters/base_01/_ci_candidates
+          cp build/base01-pack-a-faces/face_02_angular.png assets/modular_fighters/base_01/_ci_candidates/
+          cp build/base01-pack-a-faces/face_03_soft.png assets/modular_fighters/base_01/_ci_candidates/
+          cp build/base01-pack-a-faces/face_04_broad.png assets/modular_fighters/base_01/_ci_candidates/
+
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project with generated candidates
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c59-pack-a-godot-import.log
+
+      - name: Validate candidate import and face-slot attachment
+        shell: bash
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_a_faces_candidate_smoke.gd 2>&1 | tee c59-pack-a-runtime-smoke.log
+          grep -q 'C59_1_GODOT_IMPORT_AND_SLOT_ATTACH=PASS candidates=3' c59-pack-a-runtime-smoke.log
+          echo 'C59_1_RUNTIME_IMPORT=PASS'
+
+      - name: Record runtime pass in artifact QA
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('build/base01-pack-a-faces/BASE01_PACK_A_FACES.candidate-qa.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          data['runtime_import'] = 'PASS_GODOT_4_3_CI'
+          data['promotion'] = 'BLOCKED_OWNER_REVIEW'
+          for module in data['modules'].values():
+              module['runtime_import'] = 'PASS_GODOT_4_3_CI'
+          p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+
       - name: Publish candidate review artifact
         uses: actions/upload-artifact@v4
         with:
           name: BASE01-PACK-A-FACES-CANDIDATES-${{ github.sha }}
-          path: build/base01-pack-a-faces/
+          path: |
+            build/base01-pack-a-faces/
+            c59-pack-a-godot-import.log
+            c59-pack-a-runtime-smoke.log
           if-no-files-found: error
           retention-days: 14
 
@@ -67,9 +130,9 @@ jobs:
             echo ''
             echo '- deterministic source: face_01_balanced canonical'
             echo '- candidates: face_02_angular / face_03_soft / face_04_broad'
+            echo '- Godot 4.3 import + face-slot attach: PASS'
             echo '- owner review: PENDING'
-            echo '- runtime import: PENDING'
-            echo '- promotion: BLOCKED until review + runtime'
+            echo '- promotion: BLOCKED until owner review'
             echo ''
             echo 'Tehkné Solutions'
           } >> "$GITHUB_STEP_SUMMARY"
