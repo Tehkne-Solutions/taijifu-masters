@@ -16,6 +16,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GATE_TIMEOUT_SECONDS = 120
+SCRIPT_FAILURE_MARKERS = (
+    "SCRIPT ERROR:",
+    "Parse Error",
+    "Assertion failed",
+    "Failed to load script",
+)
 
 
 @dataclass
@@ -59,13 +65,33 @@ def run_gate(
                 f"{output[-12000:]}"
             ),
         )
+
+    output = process.stdout or ""
+    script_failure = any(marker in output for marker in SCRIPT_FAILURE_MARKERS)
+    returncode = process.returncode if process.returncode != 0 else (2 if script_failure else 0)
     return GateResult(
         name=name,
         command=command,
-        status="passed" if process.returncode == 0 else "failed",
-        returncode=process.returncode,
-        output=process.stdout[-12000:],
+        status="passed" if returncode == 0 else "failed",
+        returncode=returncode,
+        output=output[-12000:],
     )
+
+
+def godot_contract(path: str) -> list[str]:
+    # Contract scripts execute assertions from SceneTree._init(). If an assert
+    # aborts before their explicit quit(), --quit-after prevents a zombie
+    # headless process while run_gate still marks SCRIPT ERROR/Assertion failed.
+    return [
+        "godot",
+        "--headless",
+        "--path",
+        ".",
+        "--quit-after",
+        "5",
+        "--script",
+        path,
+    ]
 
 
 def art_report_gate(report_path: Path, strict: bool) -> GateResult:
@@ -107,14 +133,14 @@ def main() -> int:
     args = parser.parse_args()
 
     gates: list[tuple[str, list[str]]] = [
-        ("visual_policy", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_visual_policy_contract.gd"]),
-        ("arena_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_arena_final_contract.gd"]),
-        ("hud_final", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_hud_final_contract.gd"]),
-        ("combat_feedback", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_combat_feedback_contract.gd"]),
-        ("real_art_handoff", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_real_art_handoff_contract.gd"]),
-        ("lian_wu_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/first_playable_lot01_presenter_contract.gd"]),
+        ("visual_policy", godot_contract("tests/first_playable_visual_policy_contract.gd")),
+        ("arena_final", godot_contract("tests/first_playable_arena_final_contract.gd")),
+        ("hud_final", godot_contract("tests/first_playable_hud_final_contract.gd")),
+        ("combat_feedback", godot_contract("tests/first_playable_combat_feedback_contract.gd")),
+        ("real_art_handoff", godot_contract("tests/first_playable_real_art_handoff_contract.gd")),
+        ("lian_wu_lot01_presenter", godot_contract("tests/first_playable_lot01_presenter_contract.gd")),
         ("lian_wu_lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_first_playable_lot01_importer.py"]),
-        ("training_rival_lot01_presenter", ["godot", "--headless", "--path", ".", "--script", "tests/training_rival_lot01_presenter_contract.gd"]),
+        ("training_rival_lot01_presenter", godot_contract("tests/training_rival_lot01_presenter_contract.gd")),
         ("training_rival_lot01_importer", [sys.executable, "-m", "pytest", "-q", "tests/test_training_rival_lot01_importer.py"]),
     ]
 
@@ -133,6 +159,8 @@ def main() -> int:
         "gate_id": "taijifu-first-playable-release-v3",
         "strict_assets": args.strict_assets,
         "subgate_timeout_seconds": DEFAULT_GATE_TIMEOUT_SECONDS,
+        "script_failure_markers": list(SCRIPT_FAILURE_MARKERS),
+        "godot_contract_quit_after_frames": 5,
         "art_report": str(art_report_path),
         "required_real_fighters": ["lian_wu", "training_rival"],
         "signature": "Tehkné Solutions",
