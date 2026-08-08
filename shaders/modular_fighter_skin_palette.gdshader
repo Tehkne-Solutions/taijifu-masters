@@ -24,31 +24,32 @@ float color_distance(vec3 a, vec3 b) {
 
 void fragment() {
     vec4 tex = texture(TEXTURE, UV);
-    if (tex.a <= 0.0) {
-        COLOR = tex;
-        return;
+    vec3 result = tex.rgb;
+
+    if (tex.a > 0.0) {
+        float d_base = color_distance(tex.rgb, source_skin_base.rgb);
+        float d_shadow = color_distance(tex.rgb, source_skin_shadow.rgb);
+        float d_highlight = color_distance(tex.rgb, source_skin_highlight.rgb);
+        float d_cheek = color_distance(tex.rgb, source_cheek_tint.rgb);
+
+        float min_distance = d_base;
+        vec3 mapped = skin_base.rgb;
+        if (d_shadow < min_distance) {
+            min_distance = d_shadow;
+            mapped = skin_shadow.rgb;
+        }
+        if (d_highlight < min_distance) {
+            min_distance = d_highlight;
+            mapped = skin_highlight.rgb;
+        }
+        if (d_cheek < min_distance) {
+            min_distance = d_cheek;
+            mapped = cheek_tint.rgb;
+        }
+
+        float influence = 1.0 - smoothstep(remap_tolerance - soft_edge, remap_tolerance, min_distance);
+        result = mix(tex.rgb, mapped, clamp(influence, 0.0, 1.0));
     }
 
-    float d_base = color_distance(tex.rgb, source_skin_base.rgb);
-    float d_shadow = color_distance(tex.rgb, source_skin_shadow.rgb);
-    float d_highlight = color_distance(tex.rgb, source_skin_highlight.rgb);
-    float d_cheek = color_distance(tex.rgb, source_cheek_tint.rgb);
-
-    float min_distance = d_base;
-    vec3 mapped = skin_base.rgb;
-    if (d_shadow < min_distance) {
-        min_distance = d_shadow;
-        mapped = skin_shadow.rgb;
-    }
-    if (d_highlight < min_distance) {
-        min_distance = d_highlight;
-        mapped = skin_highlight.rgb;
-    }
-    if (d_cheek < min_distance) {
-        min_distance = d_cheek;
-        mapped = cheek_tint.rgb;
-    }
-
-    float influence = 1.0 - smoothstep(remap_tolerance - soft_edge, remap_tolerance, min_distance);
-    COLOR = vec4(mix(tex.rgb, mapped, clamp(influence, 0.0, 1.0)), tex.a);
+    COLOR = vec4(result, tex.a);
 }
