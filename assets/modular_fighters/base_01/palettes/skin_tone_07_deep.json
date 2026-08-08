@@ -1,0 +1,17 @@
+{
+  "schema": "tehkne/taijifu-skin-palette/v1",
+  "signature": "Tehkné Solutions",
+  "palette_id": "skin_tone_07_deep",
+  "display_name": "Deep",
+  "status": "production_candidate",
+  "channels": {
+    "skin_base": "#71442E",
+    "skin_shadow": "#3F251D",
+    "skin_highlight": "#8C5A3E",
+    "cheek_tint": "#633A30"
+  },
+  "source_base_body": "base_fighter_v1",
+  "application": "palette_driven_base_tint",
+  "preserve_linework": true,
+  "preserve_shading_structure": true
+}
