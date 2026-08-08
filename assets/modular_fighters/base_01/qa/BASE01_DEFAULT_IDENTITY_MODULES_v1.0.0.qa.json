@@ -4,7 +4,7 @@
   "pack_id": "BASE01_DEFAULT_IDENTITY_MODULES",
   "version": "1.0.0",
   "status": "PASS_CANDIDATE",
-  "owner_approval": "PENDING",
+  "owner_approval": "PASS",
   "source": {
     "base_path": "assets/modular_fighters/base_00/base_fighter_v1_master.png",
     "sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe"
@@ -70,5 +70,5 @@
     "acceptance_max_channel_difference": 2,
     "status": "PASS"
   },
-  "next_gate": "owner visual approval then C56 integration"
+  "next_gate": "C56 integration closeout"
 }
