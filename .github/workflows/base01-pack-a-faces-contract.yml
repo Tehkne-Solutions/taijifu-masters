@@ -1,0 +1,18 @@
+name: BASE-01 Pack A Faces Contract
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.json'
+      - 'assets/modular_fighters/base_01/catalog.json'
+      - 'scripts/ci/validate_base01_pack_a_faces_contract.py'
+      - '.github/workflows/base01-pack-a-faces-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate BASE01 Pack A faces contract
+        run: python scripts/ci/validate_base01_pack_a_faces_contract.py
