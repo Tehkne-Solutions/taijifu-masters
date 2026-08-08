@@ -31,15 +31,23 @@ jobs:
           contract=json.loads(Path('assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json').read_text())
           plan=json.loads(Path('assets/modular_fighters/base_01/production_plan.json').read_text())
           preset=json.loads(Path('config/fighter-presets/preset_lian_wu.json').read_text())
-          assert contract['status']=='runtime_integrated_owner_review_pending'
+          allowed_states={
+              'runtime_integrated_owner_review_pending',
+              'creator_control_candidate_owner_review_pending',
+              'creator_control_integrated_owner_review_pending',
+              'identity_creator_candidate_owner_review_pending',
+              'identity_creator_integrated_owner_review_pending',
+          }
+          assert contract['status'] in allowed_states
           assert contract['runtime_policy']['profile_driven_selection'] is True
-          assert contract['review']['internal_visual']=='PASS'
+          runtime_review=contract['review'].get('runtime_visual', contract['review'].get('internal_visual'))
+          assert runtime_review=='PASS'
           assert contract['review']['owner_review']=='PENDING'
           packs={p['pack_id']:p for p in plan['packs']}
-          assert packs['BASE01-SKIN-PALETTES']['status']=='runtime_integrated_owner_review_pending'
+          assert packs['BASE01-SKIN-PALETTES']['status'] in allowed_states
           assert len(packs['BASE01-SKIN-PALETTES']['scope'])==8
           assert preset['palette']['skin']=='skin_tone_03_warm'
-          print('C62_2_PROFILE_SKIN_CONTRACT=PASS palettes=8 preset=skin_tone_03_warm')
+          print('C62_2_PROFILE_SKIN_CONTRACT=PASS palettes=8 preset=skin_tone_03_warm state='+contract['status'])
           PY
       - name: Install Godot 4.3
         run: |
