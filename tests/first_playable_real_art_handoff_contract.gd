@@ -10,7 +10,9 @@ func _init() -> void:
 	assert(bool(signature.get("real_asset_handoff", false)))
 	assert(bool(signature.get("lian_wu_presenter", false)))
 	assert(bool(signature.get("training_rival_presenter", false)))
-	assert(bool(signature.get("procedural_fallback_until_real_assets", false)))
+	assert(not bool(signature.get("procedural_character_renderer", true)))
+	assert(not bool(signature.get("procedural_fallback_until_real_assets", true)))
+	assert(bool(signature.get("canonical_visual_cutover_required", false)))
 	assert(not bool(signature.get("collision_changes", true)))
 
 	var lian := LIAN_WU_PRESENTER_SCRIPT.new() as FirstPlayableLot01Presenter
@@ -21,4 +23,6 @@ func _init() -> void:
 	print("FIRST_PLAYABLE_REAL_ART_HANDOFF_CONTRACT_OK")
 	quit()
 
+# Missing canonical art remains a release blocker; the runtime does not silently
+# reactivate the removed procedural renderer.
 # Tehkné Solutions
