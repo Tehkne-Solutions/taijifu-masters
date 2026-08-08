@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'scripts/art/generate_base01_neutral_face_plate.py'
+      - 'scripts/art/refine_base01_pack_a_faces_for_plate.py'
       - '.github/workflows/base01-neutral-face-plate-candidate.yml'
       - 'scripts/art/generate_base01_pack_a_faces.py'
       - 'assets/modular_fighters/base_00/base_fighter_v1_master.png'
@@ -36,6 +37,11 @@ jobs:
           python scripts/art/generate_base01_pack_a_faces.py \
             --repo-root . \
             --output build/c59-2/faces
+
+      - name: Strengthen face differentiation for neutral plate
+        run: |
+          python scripts/art/refine_base01_pack_a_faces_for_plate.py \
+            --faces-dir build/c59-2/faces
 
       - name: Generate neutral face plate prototype
         run: |
@@ -76,6 +82,7 @@ jobs:
             echo '- BASE-00 remains canonical and unchanged.'
             echo '- default face path remains unchanged.'
             echo '- prototype plate is used only before non-default face swaps.'
+            echo '- Pack A internal planes are refined only in this candidate pipeline.'
             echo '- face_plate standard slot is NOT promoted by this PR.'
             echo '- owner visual review remains PENDING.'
             echo ''
