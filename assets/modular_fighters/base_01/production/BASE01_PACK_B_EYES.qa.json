@@ -1,0 +1,29 @@
+{
+  "schema": "tehkne/taijifu-asset-qa/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-PACK-B-EYES",
+  "version": "1.0.0",
+  "status": "PENDING_ART_PRODUCTION",
+  "checks": {
+    "required_modules": "PENDING",
+    "canvas_1024x1024": "PENDING",
+    "rgba": "PENDING",
+    "native_transparency": "PENDING",
+    "shared_pivot_0_5_0_92": "PENDING",
+    "face_plate_clean_swap": "PENDING",
+    "authored_alignment": "PENDING",
+    "flipped_alignment": "PENDING",
+    "gameplay_scale_132px": "PENDING",
+    "pairwise_visual_difference": "PENDING",
+    "canonical_sha256": "PENDING",
+    "godot_runtime_import": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "modules": {
+    "eyes_02_calm": {"status":"PENDING"},
+    "eyes_03_fierce": {"status":"PENDING"},
+    "eyes_04_narrow": {"status":"PENDING"},
+    "eyes_05_round": {"status":"PENDING"},
+    "eyes_06_heavy": {"status":"PENDING"}
+  }
+}
