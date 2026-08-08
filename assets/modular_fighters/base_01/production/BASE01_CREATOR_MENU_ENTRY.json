@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE01_CREATOR_MENU_ENTRY",
   "version": "1.0.0",
-  "status": "implementation_candidate_owner_review_pending",
+  "status": "creator_menu_entry_integrated_owner_review_pending",
   "depends_on": {
     "creator_shell": "BASE01_CHARACTER_CREATOR_SHELL",
     "first_playable_menu": "FirstPlayableMenuController"
@@ -27,8 +27,11 @@
     "existing_first_playable_flow_test_required": true
   },
   "review": {
-    "machine": "PENDING",
-    "internal_visual": "PENDING",
+    "machine": "PASS",
+    "existing_first_playable_flow": "PASS",
+    "creator_runtime_entry": "PASS",
+    "internal_visual": "PASS",
+    "visual_basis": "C62.7 1920x1080 menu review; JOGAR primary; CRIAR LUTADOR secondary focused; no layout regression",
     "owner_review": "PENDING"
   },
   "next_stage": "C62.8_CREATOR_PRESET_GAMEPLAY_HANDOFF"
