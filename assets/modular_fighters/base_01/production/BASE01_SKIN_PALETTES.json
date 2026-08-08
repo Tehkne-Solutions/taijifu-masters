@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-SKIN-PALETTES",
   "version": "1.0.0",
-  "status": "runtime_integrated_owner_review_pending",
+  "status": "creator_control_candidate_owner_review_pending",
   "source_base_body": "base_fighter_v1",
   "implementation": "palette_driven_base_tint",
   "duplicate_body_png_per_tone": false,
@@ -30,6 +30,8 @@
     "body_source_remains_base00": true,
     "palette_is_data_not_duplicate_sprite": true,
     "profile_driven_selection": true,
+    "creator_control_available": true,
+    "creator_control_script": "scripts/characters/modular_fighter_skin_selector.gd",
     "preview_must_preserve_linework": true,
     "preview_must_preserve_shading_structure": true,
     "authored_review_required": true,
@@ -38,9 +40,11 @@
     "owner_review_required_before_canonical_status": true
   },
   "review": {
-    "internal_visual": "PASS",
-    "basis": "C62.1 V6 runtime contact sheet, 1920x1080, authored + flipped 132px",
+    "runtime_visual": "PASS",
+    "runtime_basis": "C62.1 V6 runtime contact sheet, 1920x1080, authored + flipped 132px",
+    "creator_control_machine": "PENDING",
+    "creator_control_visual": "PENDING",
     "owner_review": "PENDING"
   },
-  "next_stage": "C62.3_SKIN_CREATOR_CONTROL"
+  "next_stage": "C62.3_SKIN_CREATOR_CONTROL_REVIEW"
 }
