@@ -104,7 +104,7 @@
         "visual_review",
         "qa_json"
       ],
-      "status": "implementation_candidate_owner_review_pending",
+      "status": "identity_creator_integrated_owner_review_pending",
       "version": "1.0.0"
     }
   ],
