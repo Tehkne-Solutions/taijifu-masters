@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE01_IDENTITY_CREATOR_CONTROL",
   "version": "1.0.0",
-  "status": "implementation_candidate_owner_review_pending",
+  "status": "identity_creator_integrated_owner_review_pending",
   "depends_on": {
     "base_body": "BASE-00",
     "skin_pack": "BASE01-SKIN-PALETTES",
@@ -43,7 +43,8 @@
     "profile_runtime_sync_required": true,
     "invalid_selection_policy": "fail_closed_with_no_mutation",
     "keyboard_focus": true,
-    "gamepad_focus": true
+    "gamepad_focus": true,
+    "preview_transform_policy": "assembler_uniform_scale"
   },
   "face_plate_policy": {
     "module_id": "neutral_face_plate_v1",
@@ -76,8 +77,9 @@
     "owner_review_required_before_canonical_status": true
   },
   "review": {
-    "machine": "PENDING",
-    "internal_visual": "PENDING",
+    "machine": "PASS",
+    "internal_visual": "PASS",
+    "visual_basis": "C62.4 V2 identity creator review 1920x1080; assembler uniform scale; Deep + Broad + Fierce + Sharp",
     "owner_review": "PENDING"
   },
   "next_stage": "C62.5_IDENTITY_PRESET_SERIALIZATION"
