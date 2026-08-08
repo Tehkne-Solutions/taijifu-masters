@@ -106,6 +106,26 @@
       ],
       "status": "identity_creator_integrated_owner_review_pending",
       "version": "1.0.0"
+    },
+    {
+      "pack_id": "BASE01-IDENTITY-PRESET-SERIALIZATION",
+      "scope": [
+        "preset_v2",
+        "roundtrip",
+        "user_persistence",
+        "legacy_v1_compatibility"
+      ],
+      "delivery_mode": "versioned_profile_persistence",
+      "required_outputs_per_module": [
+        "preset_store",
+        "schema_v2",
+        "save_load_list_delete",
+        "legacy_v1_decode",
+        "safe_preset_id",
+        "roundtrip_smoke"
+      ],
+      "status": "implementation_candidate",
+      "version": "1.0.0"
     }
   ],
   "global_rules": {
