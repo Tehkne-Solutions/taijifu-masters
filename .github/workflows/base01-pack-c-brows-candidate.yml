@@ -5,6 +5,7 @@ on:
     paths:
       - 'assets/modular_fighters/base_01/production/BASE01_PACK_C_BROWS*'
       - 'scripts/art/generate_base01_pack_c_brows.py'
+      - 'scripts/art/refine_base01_pack_c_brows.py'
       - 'scripts/ci/base01_pack_c_brows_candidate_smoke.gd'
       - '.github/workflows/base01-pack-c-brows-candidate.yml'
       - 'assets/modular_fighters/base_01/brows/brows_01_focused.png'
@@ -30,6 +31,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
       - name: Generate Pack C candidates
         run: python scripts/art/generate_base01_pack_c_brows.py --repo-root . --output build/base01-pack-c-brows
+      - name: Refine Heavy brow candidate
+        run: python scripts/art/refine_base01_pack_c_brows.py --repo-root . --brows-dir build/base01-pack-c-brows
       - name: Stage candidates under res
         run: |
           mkdir -p assets/modular_fighters/base_01/_ci_brow_candidates
