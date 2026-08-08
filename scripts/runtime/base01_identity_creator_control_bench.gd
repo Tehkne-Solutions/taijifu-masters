@@ -37,9 +37,9 @@ func _run() -> void:
 		_fail("C62_4_IDENTITY_VISUAL=BLOCKED alpha_bounds")
 		return
 	var texture := ImageTexture.create_from_image(image)
-	var scale := PREVIEW_HEIGHT / float(used.size.y)
+	var visual_scale := PREVIEW_HEIGHT / float(used.size.y)
 	var last_visible_y := float(used.position.y + used.size.y - 1)
-	var baseline_offset := (last_visible_y - 512.0) * scale
+	var bottom_offset := last_visible_y - 512.0
 
 	var profile := ModularFighterProfile.new()
 	profile.profile_id = &"c62_4_identity_creator_visual"
@@ -49,6 +49,9 @@ func _run() -> void:
 	var assembler := ModularFighterAssembler.new()
 	assembler.name = "IdentityCreatorPreviewAssembler"
 	assembler.position = Vector2(1025.0, 570.0)
+	# Scale the complete modular fighter as one unit. Scaling only body_base would
+	# leave face/eyes/brows at authored 1024px scale and create off-frame artifacts.
+	assembler.scale = Vector2.ONE * visual_scale
 	get_root().add_child(assembler)
 	var failures := assembler.configure(profile)
 	if not failures.is_empty():
@@ -58,8 +61,7 @@ func _run() -> void:
 	var body := Sprite2D.new()
 	body.texture = texture
 	body.centered = true
-	body.scale = Vector2.ONE * scale
-	body.position = Vector2(0.0, -baseline_offset)
+	body.position = Vector2(0.0, -bottom_offset)
 	body.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if not assembler.attach_visual_module(&"body_base", body):
 		_fail("C62_4_IDENTITY_VISUAL=BLOCKED body_attach")
@@ -149,6 +151,12 @@ func _run() -> void:
 	if eyes.material != null or brows.material != null:
 		_fail("C62_4_IDENTITY_VISUAL=BLOCKED non_skin_material")
 		return
+	if body.scale != Vector2.ONE or plate.scale != Vector2.ONE or face.scale != Vector2.ONE or eyes.scale != Vector2.ONE or brows.scale != Vector2.ONE:
+		_fail("C62_4_IDENTITY_VISUAL=BLOCKED per_module_scale")
+		return
+	if assembler.scale.distance_to(Vector2.ONE * visual_scale) > 0.0001:
+		_fail("C62_4_IDENTITY_VISUAL=BLOCKED assembler_scale")
+		return
 
 	_add_label("TAIJIFU BASE-01 — IDENTITY CREATOR", Vector2(30, 28), 29, Color("f0d38b"))
 	_add_label("PELE + ROSTO + OLHOS + SOBRANCELHAS", Vector2(32, 72), 16, Color("d0c8bb"))
@@ -197,6 +205,8 @@ func _run() -> void:
 		"face_plate_creator_editable": false,
 		"z_order": "PASS",
 		"skin_material_propagation": "PASS",
+		"preview_transform_policy": "assembler_uniform_scale",
+		"per_module_scale": "IDENTITY",
 		"keyboard_gamepad_focus": "PASS",
 		"internal_visual_review": "PENDING",
 		"owner_review": "PENDING"
@@ -209,6 +219,7 @@ func _run() -> void:
 	file.close()
 	print("C62_4_IDENTITY_VISUAL=PASS transitions=24 skin=8 face=4 eyes=6 brows=6")
 	print("C62_4_FACE_PLATE_VISUAL_POLICY=PASS internal=true creator_editable=false")
+	print("C62_4_PREVIEW_TRANSFORM=PASS policy=assembler_uniform_scale")
 	print("C62_4_IDENTITY_VISUAL_OUTPUT=" + OUTPUT)
 	print("INTERNAL_VISUAL_REVIEW=PENDING")
 	print("OWNER_REVIEW=PENDING")
