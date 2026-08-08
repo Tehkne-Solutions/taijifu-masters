@@ -1,0 +1,23 @@
+name: BASE-01 Pack C Canonical Readiness
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/art/promote_base01_pack_c_brows.py'
+      - 'scripts/ci/validate_c61_pack_c_canonical_readiness.py'
+      - '.github/workflows/base01-pack-c-canonical-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate fail-closed canonical readiness
+        run: python scripts/ci/validate_c61_pack_c_canonical_readiness.py
+      - name: Summary
+        run: |
+          echo 'C61.1 canonical readiness PASS; owner review remains PENDING — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
