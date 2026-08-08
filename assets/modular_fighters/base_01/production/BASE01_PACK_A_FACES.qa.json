@@ -2,24 +2,44 @@
   "schema": "tehkne/taijifu-asset-qa/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-A-FACES",
-  "version": "1.0.0",
-  "status": "PENDING_ART_PRODUCTION",
+  "version": "1.1.0",
+  "status": "PASS",
   "checks": {
-    "required_modules": "PENDING",
-    "canvas_1024x1024": "PENDING",
-    "rgba": "PENDING",
-    "native_transparency": "PENDING",
-    "shared_pivot_0_5_0_92": "PENDING",
-    "authored_alignment": "PENDING",
-    "flipped_alignment": "PENDING",
-    "gameplay_scale_132px": "PENDING",
-    "canonical_sha256": "PENDING",
-    "godot_runtime_import": "PENDING",
-    "owner_review": "PENDING"
+    "required_modules": "PASS",
+    "canvas_1024x1024": "PASS",
+    "rgba": "PASS",
+    "native_transparency": "PASS",
+    "shared_pivot_0_5_0_92": "PASS",
+    "authored_alignment": "PASS",
+    "flipped_alignment": "PASS",
+    "gameplay_scale_132px": "PASS",
+    "canonical_sha256": "PASS",
+    "godot_runtime_import": "PASS",
+    "owner_review": "PASS",
+    "face_plate_dependency": "PASS"
   },
   "modules": {
-    "face_02_angular": {"status":"PENDING"},
-    "face_03_soft": {"status":"PENDING"},
-    "face_04_broad": {"status":"PENDING"}
-  }
+    "face_02_angular": {
+      "status": "PASS",
+      "sha256": "1adb1d6092cdbe1813582be79c50313dd3082166864c7205ac0c4491394f48d9",
+      "path": "assets/modular_fighters/base_01/face/face_02_angular.png"
+    },
+    "face_03_soft": {
+      "status": "PASS",
+      "sha256": "60dc0caf9f1d97bae208afd9ddc92445ce0029b9ff1564775d547cadc7f55b9e",
+      "path": "assets/modular_fighters/base_01/face/face_03_soft.png"
+    },
+    "face_04_broad": {
+      "status": "PASS",
+      "sha256": "ce8124c6607ef741f85d3a8c087213d3a59596f1fb24a282bcc08c3a585a44bf",
+      "path": "assets/modular_fighters/base_01/face/face_04_broad.png"
+    }
+  },
+  "face_plate": {
+    "status": "PASS",
+    "sha256": "9ba03d0fbdb79b2958f8e559bcec760e9a38628e37e516d4a0f1e6cf8fa30e86",
+    "path": "assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png"
+  },
+  "owner_approval": "PASS",
+  "runtime_gate": "C59_4_PASS"
 }

@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base01-production-pack/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE01-PACK-A-FACES",
-  "version": "1.0.0",
-  "status": "production_contract_ready",
+  "version": "1.1.0",
+  "status": "produced_canonical",
   "slot": "face",
   "depends_on": {
     "catalog": "BASE01_IDENTITY_CATALOG",
@@ -14,27 +14,45 @@
     {
       "id": "face_02_angular",
       "path": "assets/modular_fighters/base_01/face/face_02_angular.png",
-      "intent": "more angular cheek and jaw planes; mature martial identity; preserves base silhouette"
+      "intent": "more angular cheek and jaw planes; mature martial identity; preserves base silhouette",
+      "status": "produced",
+      "sha256": "1adb1d6092cdbe1813582be79c50313dd3082166864c7205ac0c4491394f48d9"
     },
     {
       "id": "face_03_soft",
       "path": "assets/modular_fighters/base_01/face/face_03_soft.png",
-      "intent": "softer cheek and jaw planes; youthful neutral identity; preserves base silhouette"
+      "intent": "softer cheek and jaw planes; youthful neutral identity; preserves base silhouette",
+      "status": "produced",
+      "sha256": "60dc0caf9f1d97bae208afd9ddc92445ce0029b9ff1564775d547cadc7f55b9e"
     },
     {
       "id": "face_04_broad",
       "path": "assets/modular_fighters/base_01/face/face_04_broad.png",
-      "intent": "broader cheek and jaw planes; powerful grounded identity; preserves base silhouette"
+      "intent": "broader cheek and jaw planes; powerful grounded identity; preserves base silhouette",
+      "status": "produced",
+      "sha256": "ce8124c6607ef741f85d3a8c087213d3a59596f1fb24a282bcc08c3a585a44bf"
     }
   ],
   "authoring": {
-    "canvas": [1024, 1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5, 0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency": true,
     "contact_sheet_runtime_source": false,
-    "independent_from": ["hair", "uniform", "weapon", "eyes", "brows"]
+    "independent_from": [
+      "hair",
+      "uniform",
+      "weapon",
+      "eyes",
+      "brows"
+    ]
   },
   "acceptance": {
     "individual_pngs": 3,
@@ -47,5 +65,16 @@
     "owner_review_required": true,
     "runtime_import_required": true
   },
-  "promotion_policy": "fail_closed"
+  "promotion_policy": "fail_closed",
+  "face_plate_dependency": {
+    "id": "neutral_face_plate_v1",
+    "path": "assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png",
+    "sha256": "9ba03d0fbdb79b2958f8e559bcec760e9a38628e37e516d4a0f1e6cf8fa30e86",
+    "required_for_non_default_faces": true
+  },
+  "promotion": {
+    "owner_review": "PASS",
+    "godot_runtime": "PASS_C59_4",
+    "canonicalized_by": "C59.5"
+  }
 }

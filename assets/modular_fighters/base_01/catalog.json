@@ -21,35 +21,99 @@
     "skin_tone_08_ebony"
   ],
   "faces": [
-    {"id":"face_01_balanced","status":"produced"},
-    {"id":"face_02_angular","status":"planned"},
-    {"id":"face_03_soft","status":"planned"},
-    {"id":"face_04_broad","status":"planned"}
+    {
+      "id": "face_01_balanced",
+      "status": "produced"
+    },
+    {
+      "id": "face_02_angular",
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/face/face_02_angular.png",
+      "sha256": "1adb1d6092cdbe1813582be79c50313dd3082166864c7205ac0c4491394f48d9"
+    },
+    {
+      "id": "face_03_soft",
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/face/face_03_soft.png",
+      "sha256": "60dc0caf9f1d97bae208afd9ddc92445ce0029b9ff1564775d547cadc7f55b9e"
+    },
+    {
+      "id": "face_04_broad",
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/face/face_04_broad.png",
+      "sha256": "ce8124c6607ef741f85d3a8c087213d3a59596f1fb24a282bcc08c3a585a44bf"
+    }
   ],
   "eyes": [
-    {"id":"eyes_01_focused","status":"produced"},
-    {"id":"eyes_02_calm","status":"planned"},
-    {"id":"eyes_03_fierce","status":"planned"},
-    {"id":"eyes_04_narrow","status":"planned"},
-    {"id":"eyes_05_round","status":"planned"},
-    {"id":"eyes_06_heavy","status":"planned"}
+    {
+      "id": "eyes_01_focused",
+      "status": "produced"
+    },
+    {
+      "id": "eyes_02_calm",
+      "status": "planned"
+    },
+    {
+      "id": "eyes_03_fierce",
+      "status": "planned"
+    },
+    {
+      "id": "eyes_04_narrow",
+      "status": "planned"
+    },
+    {
+      "id": "eyes_05_round",
+      "status": "planned"
+    },
+    {
+      "id": "eyes_06_heavy",
+      "status": "planned"
+    }
   ],
   "brows": [
-    {"id":"brows_01_focused","status":"produced"},
-    {"id":"brows_02_neutral","status":"planned"},
-    {"id":"brows_03_arched","status":"planned"},
-    {"id":"brows_04_straight","status":"planned"},
-    {"id":"brows_05_heavy","status":"planned"},
-    {"id":"brows_06_sharp","status":"planned"}
+    {
+      "id": "brows_01_focused",
+      "status": "produced"
+    },
+    {
+      "id": "brows_02_neutral",
+      "status": "planned"
+    },
+    {
+      "id": "brows_03_arched",
+      "status": "planned"
+    },
+    {
+      "id": "brows_04_straight",
+      "status": "planned"
+    },
+    {
+      "id": "brows_05_heavy",
+      "status": "planned"
+    },
+    {
+      "id": "brows_06_sharp",
+      "status": "planned"
+    }
   ],
   "authoring_contract": {
-    "canvas": [1024,1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5,0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency": true,
     "contact_sheet_runtime_source": false,
-    "identity_independent_from": ["hair","uniform","weapon"]
+    "identity_independent_from": [
+      "hair",
+      "uniform",
+      "weapon"
+    ]
   },
   "production_rules": {
     "runtime_assets_are_individual_modules": true,
@@ -58,5 +122,16 @@
     "gameplay_scale_preview_required": true,
     "canonical_hash_required_before_merge": true,
     "owner_review_required_before_promotion": true
-  }
+  },
+  "internal_modules": [
+    {
+      "id": "neutral_face_plate_v1",
+      "slot": "face_plate",
+      "status": "produced",
+      "path": "assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png",
+      "sha256": "9ba03d0fbdb79b2958f8e559bcec760e9a38628e37e516d4a0f1e6cf8fa30e86",
+      "creator_editable": false
+    }
+  ],
+  "last_completed_pack": "BASE01-PACK-A-FACES"
 }

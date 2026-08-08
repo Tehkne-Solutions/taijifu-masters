@@ -1,0 +1,126 @@
+name: BASE-01 Pack A Canonical Promotion
+
+on:
+  push:
+    branches:
+      - 'agent/c59-5-pack-a-canonical-promotion'
+    paths:
+      - 'tools/c59-5-promote.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout promotion branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0 numpy==2.3.2
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Generate and promote canonical assets
+        run: python scripts/art/promote_base01_pack_a_faces.py
+
+      - name: Download Godot 4.3 stable
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import canonical assets
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c59-5-import.log
+
+      - name: Validate canonical runtime assembly
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_pack_a_canonical_smoke.gd 2>&1 | tee c59-5-runtime.log
+          grep -q 'C59_5_PACK_A_CANONICAL=PASS variants=3 plate=1' c59-5-runtime.log
+
+      - name: Validate catalog and Pack A contracts
+        run: |
+          python scripts/ci/validate_base01_catalog.py
+          python scripts/ci/validate_base01_pack_a_faces_contract.py
+
+      - name: Assert promotion scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short
+          test -s assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png
+          test -s assets/modular_fighters/base_01/face/face_02_angular.png
+          test -s assets/modular_fighters/base_01/face/face_03_soft.png
+          test -s assets/modular_fighters/base_01/face/face_04_broad.png
+          test -s assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.canonical.json
+
+      - name: Commit canonical promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png \
+            assets/modular_fighters/base_01/face/face_02_angular.png \
+            assets/modular_fighters/base_01/face/face_03_soft.png \
+            assets/modular_fighters/base_01/face/face_04_broad.png \
+            assets/modular_fighters/base_01/catalog.json \
+            assets/modular_fighters/base_01/manifest.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.qa.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.readiness.json \
+            assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.canonical.json \
+            assets/modular_fighters/base_01/production_plan.json
+          staged="$(git diff --cached --name-only)"
+          echo "$staged"
+          count="$(printf '%s\n' "$staged" | sed '/^$/d' | wc -l)"
+          test "$count" -eq 11
+          git commit -m 'feat(c59.5): promote canonical BASE-01 Pack A faces'
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Publish promotion evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BASE01-PACK-A-CANONICAL-PROMOTION-${{ github.sha }}
+          path: |
+            assets/modular_fighters/base_01/production/BASE01_PACK_A_FACES.canonical.json
+            c59-5-import.log
+            c59-5-runtime.log
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          {
+            echo '## C59.5 — Canonical Pack A Promotion'
+            echo ''
+            echo '- neutral face plate: canonical'
+            echo '- face_02_angular: canonical'
+            echo '- face_03_soft: canonical'
+            echo '- face_04_broad: canonical'
+            echo '- Godot import/runtime: PASS'
+            echo '- owner review: PASS'
+            echo '- commit pushed to promotion branch'
+            echo ''
+            echo 'Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"

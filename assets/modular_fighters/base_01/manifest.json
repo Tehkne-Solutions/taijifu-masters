@@ -16,9 +16,15 @@
     "brows": "brows_01_focused"
   },
   "authoring": {
-    "canvas": [1024, 1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5, 0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency": true,
     "contact_sheet_runtime_source": false
@@ -28,41 +34,168 @@
       "slot": "face",
       "path": "assets/modular_fighters/base_01/face/face_01_balanced.png",
       "sha256": "d8bc0218b6104d2095e20a074fa4e0a23d428d1bf71e91fcac7139374b3504d9",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [367, 302, 605, 373],
+      "alpha_bbox": [
+        367,
+        302,
+        605,
+        373
+      ],
       "visible_components": 3,
       "transparent_corners": true,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center"
     },
     "eyes_01_focused": {
       "slot": "eyes",
       "path": "assets/modular_fighters/base_01/eyes/eyes_01_focused.png",
       "sha256": "7517e6d14cef106fbe782736524321b992ea3088486498fc24e71f1e158419a9",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [392, 286, 569, 351],
+      "alpha_bbox": [
+        392,
+        286,
+        569,
+        351
+      ],
       "visible_components": 2,
       "transparent_corners": true,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center"
     },
     "brows_01_focused": {
       "slot": "brows",
       "path": "assets/modular_fighters/base_01/brows/brows_01_focused.png",
       "sha256": "44fa5d30e0963582b5cf2d877b7a61a6d68f8028b9a2da19cbba9a73afc80225",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [378, 265, 551, 303],
+      "alpha_bbox": [
+        378,
+        265,
+        551,
+        303
+      ],
       "visible_components": 2,
       "transparent_corners": true,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_02_angular": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_02_angular.png",
+      "sha256": "1adb1d6092cdbe1813582be79c50313dd3082166864c7205ac0c4491394f48d9",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        370,
+        300,
+        600,
+        384
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_03_soft": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_03_soft.png",
+      "sha256": "60dc0caf9f1d97bae208afd9ddc92445ce0029b9ff1564775d547cadc7f55b9e",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        366,
+        302,
+        604,
+        379
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "face_04_broad": {
+      "slot": "face",
+      "path": "assets/modular_fighters/base_01/face/face_04_broad.png",
+      "sha256": "ce8124c6607ef741f85d3a8c087213d3a59596f1fb24a282bcc08c3a585a44bf",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        362,
+        302,
+        608,
+        386
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center"
+    },
+    "neutral_face_plate_v1": {
+      "slot": "face_plate",
+      "path": "assets/modular_fighters/base_01/face_plate/neutral_face_plate_v1.png",
+      "sha256": "9ba03d0fbdb79b2958f8e559bcec760e9a38628e37e516d4a0f1e6cf8fa30e86",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        370,
+        243,
+        622,
+        397
+      ],
+      "transparent_corners": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center"
     }
   },
   "palette_path": "assets/modular_fighters/base_01/palettes/skin_tone_03_warm.json",
-  "assembly_order": ["body_base", "skin", "face", "eyes", "brows"],
+  "assembly_order": [
+    "body_base",
+    "skin",
+    "face",
+    "eyes",
+    "brows"
+  ],
   "qa": {
     "machine": "PASS",
     "internal_visual_review": "PASS",
@@ -73,16 +206,38 @@
       "changed_channel_values": 18,
       "acceptance_max_channel_difference": 2,
       "status": "PASS"
+    },
+    "pack_a_faces": {
+      "machine": "PASS",
+      "runtime_import": "PASS_GODOT_4_3_C59_4",
+      "owner_review": "PASS",
+      "visual_review_basis": "C59.2_V2",
+      "status": "PASS"
     }
   },
   "scope": {
-    "delivered": "default identity modules",
+    "delivered": "default identity modules + Pack A face variants + neutral face plate",
     "not_yet_delivered": [
-      "additional face variants",
       "additional eye variants",
       "additional brow variants",
-      "remaining seven skin palettes",
-      "neutral replacement face plate for non-default swaps"
+      "remaining seven skin palettes"
+    ]
+  },
+  "non_default_identity": {
+    "face_plate": "neutral_face_plate_v1",
+    "assembly_order": [
+      "body_base",
+      "skin",
+      "face_plate",
+      "face",
+      "eyes",
+      "brows"
+    ],
+    "default_face_plate_free": true,
+    "applies_to_faces": [
+      "face_02_angular",
+      "face_03_soft",
+      "face_04_broad"
     ]
   }
 }

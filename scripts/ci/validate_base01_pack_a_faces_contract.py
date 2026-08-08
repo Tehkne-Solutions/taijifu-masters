@@ -1,4 +1,5 @@
 from __future__ import annotations
+import hashlib
 import json
 from pathlib import Path
 
@@ -24,11 +25,17 @@ assert actual == expected, (actual, expected)
 catalog_faces = {item["id"]: item["status"] for item in catalog["faces"]}
 assert catalog_faces.get("face_01_balanced") == "produced"
 for face_id in expected:
-    assert catalog_faces.get(face_id) == "planned", face_id
+    assert catalog_faces.get(face_id) in {"planned", "produced"}, face_id
 
 for item in pack["deliverables"]:
     assert item["path"].endswith(f"/{item['id']}.png")
     assert item["intent"].strip()
+    if catalog_faces[item["id"]] == "produced":
+        path = ROOT / item["path"]
+        assert path.exists(), path
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert item.get("sha256") == digest, (item["id"], item.get("sha256"), digest)
+        assert item.get("status") == "produced"
 
 acceptance = pack["acceptance"]
 assert acceptance["individual_pngs"] == 3
