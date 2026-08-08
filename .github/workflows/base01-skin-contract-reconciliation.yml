@@ -1,0 +1,26 @@
+name: BASE-01 Skin Contract Reconciliation
+
+on:
+  pull_request:
+    paths:
+      - 'config/fighter-modules/base_01_faces_skin_v1.json'
+      - 'assets/modular_fighters/base_01/catalog.json'
+      - 'assets/modular_fighters/base_01/palettes/*.json'
+      - 'assets/modular_fighters/base_01/production/BASE01_SKIN_PALETTES.json'
+      - 'scripts/ci/validate_base01_skin_contract.py'
+      - '.github/workflows/base01-skin-contract-reconciliation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate reconciled skin contract
+        run: python scripts/ci/validate_base01_skin_contract.py
+      - name: Summary
+        run: echo 'C62.0 BASE-01 skin contract reconciliation PASS — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

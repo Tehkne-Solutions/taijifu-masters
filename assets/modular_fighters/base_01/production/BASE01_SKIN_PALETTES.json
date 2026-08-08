@@ -1,0 +1,40 @@
+{
+  "schema": "tehkne/taijifu-base01-skin-palettes/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE01-SKIN-PALETTES",
+  "version": "1.0.0",
+  "status": "contract_reconciled_candidate_review_pending",
+  "source_base_body": "base_fighter_v1",
+  "implementation": "palette_driven_base_tint",
+  "duplicate_body_png_per_tone": false,
+  "preserve_linework": true,
+  "preserve_shading_structure": true,
+  "palette_channels": [
+    "skin_base",
+    "skin_shadow",
+    "skin_highlight",
+    "cheek_tint"
+  ],
+  "palette_ids": [
+    "skin_tone_01_porcelain",
+    "skin_tone_02_light_neutral",
+    "skin_tone_03_warm",
+    "skin_tone_04_olive",
+    "skin_tone_05_tan",
+    "skin_tone_06_brown",
+    "skin_tone_07_deep",
+    "skin_tone_08_ebony"
+  ],
+  "default_palette": "skin_tone_03_warm",
+  "runtime_policy": {
+    "body_source_remains_base00": true,
+    "palette_is_data_not_duplicate_sprite": true,
+    "preview_must_preserve_linework": true,
+    "preview_must_preserve_shading_structure": true,
+    "authored_review_required": true,
+    "flipped_review_required": true,
+    "gameplay_scale_review_required": true,
+    "owner_review_required_before_canonical_status": true
+  },
+  "next_stage": "C62.1_SKIN_RUNTIME_PREVIEW"
+}
