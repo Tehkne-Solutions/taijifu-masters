@@ -1,0 +1,49 @@
+{
+  "schema": "tehkne/taijifu-base01-character-creator-shell/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_CHARACTER_CREATOR_SHELL",
+  "version": "1.0.0",
+  "status": "implementation_candidate_owner_review_pending",
+  "depends_on": {
+    "identity_creator": "BASE01_IDENTITY_CREATOR_CONTROL",
+    "preset_serialization": "BASE01_IDENTITY_PRESET_SERIALIZATION",
+    "base_body": "BASE-00"
+  },
+  "scene_contract": {
+    "scene": "scenes/characters/modular_fighter_creator_shell.tscn",
+    "controller": "scripts/characters/modular_fighter_creator_shell.gd",
+    "logical_viewport": [1280, 720],
+    "live_preview": true,
+    "canonical_pivot": [0.5, 0.92],
+    "preview_transform": "assembler_uniform_scale"
+  },
+  "identity_contract": {
+    "categories": ["skin", "face", "eyes", "brows"],
+    "total_options": 24,
+    "face_plate_internal": true,
+    "profile_runtime_sync": true
+  },
+  "preset_contract": {
+    "schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "actions": ["save", "load", "list", "delete"],
+    "user_storage": "user://modular_fighter_presets",
+    "legacy_v1_read_boundary": true,
+    "legacy_v1_edit_coercion": false
+  },
+  "ux_contract": {
+    "display_name_edit": true,
+    "preset_id_edit": true,
+    "preset_list": true,
+    "reset_default": true,
+    "back_to_menu": true,
+    "keyboard_gamepad_focus": true,
+    "visual_language": "dark_martial_bronze_no_tech_glow"
+  },
+  "future_expansion_slots": ["hair", "uniform", "weapons", "accessories"],
+  "review": {
+    "machine": "PENDING",
+    "internal_visual": "PENDING",
+    "owner_review": "PENDING"
+  },
+  "next_stage": "C62.7_CREATOR_MENU_ENTRY"
+}
