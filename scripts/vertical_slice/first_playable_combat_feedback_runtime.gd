@@ -216,6 +216,7 @@ func _update_combo_label(profile_id: String) -> void:
 func presentation_signature() -> Dictionary:
 	return {
 		"impact_feedback_runtime": true,
+		"world_space_impact_popups": true,
 		"technique_name_on_normal_hit": true,
 		"short_defensive_feedback": true,
 		"combo_counter_per_side": true,

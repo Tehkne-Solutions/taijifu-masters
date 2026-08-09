@@ -76,8 +76,13 @@ static func signature() -> Dictionary:
 		"training_rival_palette": ["dark_armor", "ember", "metal", "brass"],
 		"training_rival_gauntlets": true,
 		"real_art_status": &"art_required",
-		"procedural_is_fallback_only": true,
+		"procedural_is_fallback_only": false,
+		"procedural_fallback_removed": true,
+		"canonical_visual_cutover_required": true,
+		"missing_real_art_blocks_visual_release": true,
 		"signature": "Tehkné Solutions"
 	}
 
+# C50: o runtime canônico não regride para desenho procedural quando o Pack 01
+# está ausente. A ausência de arte real permanece visível como blocker de release.
 # Tehkné Solutions

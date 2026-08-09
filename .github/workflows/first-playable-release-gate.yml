@@ -52,9 +52,15 @@ jobs:
           version: "4.3.0"
           use-dotnet: false
 
-      - name: Importar projeto Godot
+      - name: Importar projeto Godot completamente
         shell: bash
-        run: godot --headless --editor --path . --quit-after 3
+        run: |
+          set -euo pipefail
+          godot --headless --path . --import 2>&1 | tee first-playable-release-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error' first-playable-release-import.log; then
+            echo 'FIRST_PLAYABLE_RELEASE_IMPORT=BLOCKED'
+            exit 1
+          fi
 
       - name: Gerar relatório artístico canônico
         shell: bash
@@ -82,6 +88,7 @@ jobs:
           path: |
             artifacts/first-playable-release-gate.json
             artifacts/first-playable-art-preflight.json
+            first-playable-release-import.log
           if-no-files-found: warn
           retention-days: 14
 

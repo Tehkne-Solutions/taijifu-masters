@@ -77,17 +77,17 @@ layout_mode = 0
 offset_left = 250.0
 offset_top = 158.0
 offset_right = 1030.0
-offset_bottom = 640.0
-theme_override_constants/separation = 18
+offset_bottom = 650.0
+theme_override_constants/separation = 16
 
 [node name="Fighters" type="HBoxContainer" parent="Content"]
-custom_minimum_size = Vector2(0, 138)
+custom_minimum_size = Vector2(0, 126)
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
 [node name="Lian" type="VBoxContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(300, 120)
+custom_minimum_size = Vector2(300, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 1
@@ -107,7 +107,7 @@ text = "LÂMINA SERENA • ÁGUA"
 horizontal_alignment = 1
 
 [node name="Versus" type="Label" parent="Content/Fighters"]
-custom_minimum_size = Vector2(90, 120)
+custom_minimum_size = Vector2(90, 112)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.68, 0.28, 1)
 theme_override_font_sizes/font_size = 30
@@ -116,7 +116,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Rival" type="VBoxContainer" parent="Content/Fighters"]
-custom_minimum_size = Vector2(300, 120)
+custom_minimum_size = Vector2(300, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 1
@@ -171,17 +171,23 @@ text = "○ MESTRE"
 
 [node name="Actions" type="VBoxContainer" parent="Content"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="PlayButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "JOGAR"
 
+[node name="CreatorButton" type="Button" parent="Content/Actions"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "CRIAR LUTADOR"
+
 [node name="ExitButton" type="Button" parent="Content/Actions"]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "SAIR"
@@ -190,7 +196,7 @@ text = "SAIR"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.72, 0.68, 0.68)
 theme_override_font_sizes/font_size = 10
-text = "1 / 2 / 3  dificuldade    •    ENTER  jogar"
+text = "1 / 2 / 3  dificuldade    •    ENTER  jogar    •    C  criar lutador"
 horizontal_alignment = 1
 
 [node name="Signature" type="Label" parent="."]
