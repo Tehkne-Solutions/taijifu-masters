@@ -70,8 +70,12 @@ jobs:
 
           for slot in ('head_accessory','shoulders','back_accessory'):
               assert slot in standard['slots']
-              assert slot in standard['creator_v1_editable_slots']
-          print('C68_0_STATIC_CONTRACT=PASS armor_slots=2 back_slots=1 art=false creator=false')
+          # `shoulders` intentionally stays outside the legacy direct Creator slot
+          # list. C68 exposes it only through the future atomic ArmorSetOption.
+          assert 'shoulders' not in standard['creator_v1_editable_slots']
+          assert 'head_accessory' in standard['creator_v1_editable_slots']
+          assert 'back_accessory' in standard['creator_v1_editable_slots']
+          print('C68_0_STATIC_CONTRACT=PASS armor_slots=2 back_slots=1 art=false creator=false direct_shoulders=false')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
