@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'tools/probe_base03_lian_uniform_source.py'
+      - 'tools/probe_base03_lian_uniform_source_v3.py'
       - '.github/workflows/c67-1-uniform-source-feasibility.yml'
   workflow_dispatch:
 
@@ -27,9 +28,9 @@ jobs:
       - name: Probe exact Lian uniform source against BASE-00 and Hair
         run: |
           set -euo pipefail
-          python tools/probe_base03_lian_uniform_source.py 2>&1 | tee c67-1-uniform-source-probe.log
-          grep -q 'C67_1_UNIFORM_SOURCE_PROBE=PASS method=semantic_v2' c67-1-uniform-source-probe.log
-          grep -q 'C67_1_CONTAMINATION=PASS skin=0 hair_overlap=0' c67-1-uniform-source-probe.log
+          python tools/probe_base03_lian_uniform_source_v3.py 2>&1 | tee c67-1-uniform-source-probe.log
+          grep -q 'C67_1_UNIFORM_SOURCE_PROBE=PASS method=semantic_v3' c67-1-uniform-source-probe.log
+          grep -q 'C67_1_CONTAMINATION=PASS skin=0 hair=0 hands_weapon=0 collar=0 boot_spill=0 baseline_shadow=0' c67-1-uniform-source-probe.log
           grep -q 'C67_1_HAIR_INTERACTION=MEASURED' c67-1-uniform-source-probe.log
           grep -q 'C67_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required' c67-1-uniform-source-probe.log
           test -s artifacts/c67_1_uniform_source_probe/C67_1_LIAN_UNIFORM_SOURCE_FEASIBILITY.contact.png
@@ -41,24 +42,32 @@ jobs:
           import json
           from pathlib import Path
           data=json.loads(Path('artifacts/c67_1_uniform_source_probe/report.json').read_text())
-          assert data['schema']=='tehkne/taijifu-c67-1-uniform-source-feasibility/v2'
+          assert data['schema']=='tehkne/taijifu-c67-1-uniform-source-feasibility/v3'
           candidate=data['candidate']
-          assert candidate['selection']=='semantic_source_pixel_uniform_palette_body_matte_v2'
+          assert candidate['selection']=='semantic_source_pixel_uniform_palette_body_matte_v3_spatial_sanitized'
           assert candidate['changed_pixel_dependency'] is False
           assert candidate['source_pixel_mutation'] is False
           assert candidate['redraw'] is False
           assert candidate['resampling'] is False
           assert candidate['slot_overlap_pixels']=={}
           assert candidate['nonempty_slots']
-          assert candidate['skin_like_pixels']==0
-          assert candidate['approved_hair_overlap_pixels']==0
+          for key in (
+              'skin_like_pixels',
+              'approved_hair_overlap_pixels',
+              'left_hand_weapon_zone_pixels',
+              'right_hand_zone_pixels',
+              'warm_collar_pixels',
+              'feet_outside_boot_zones_pixels',
+              'feet_low_alpha_baseline_pixels',
+          ):
+              assert candidate[key]==0, (key,candidate[key])
           comp=data['composition']
           assert comp['gameplay_review_height_px']==132
           policy=data['policy']
           assert policy['automatic_uniform_promotion_allowed'] is False
           assert policy['hair_interaction_visual_review_required'] is True
           assert policy['layer_policy_change_allowed_from_metrics_only'] is False
-          print('C67_1_DIAGNOSTIC_CONTRACT=PASS method=semantic_v2 contamination=0')
+          print('C67_1_DIAGNOSTIC_CONTRACT=PASS method=semantic_v3 contamination=0')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -73,4 +82,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C67.1 diagnostic v2 only — semantic source-pixel uniform matte, no production promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C67.1 diagnostic v3 only — sanitized exact source pixels, no production promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
