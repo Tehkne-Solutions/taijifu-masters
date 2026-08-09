@@ -1,0 +1,40 @@
+{
+  "schema": "tehkne/c63-2-lian-canonical-visual-identity/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "C63.2",
+  "status": "visual_fingerprint_defined_generator_migration_pending",
+  "character_id": "lian_wu",
+  "source_role": "character_lock_neutral",
+  "canvas": [1024, 1024],
+  "historical_binary_provenance": {
+    "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "policy": "preserve_as_forensic_lineage_not_as_sole_art_identity"
+  },
+  "canonical_visual_identity": {
+    "decoded_format": "RGBA",
+    "decoded_pixel_sha256": "c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2",
+    "evidence": "C63.1 reproduced one identical decoded RGBA digest across Pillow 9.5.0 through 12.3.0 from the official assets-pack-01-v1.0.0 raw lineage and canonical clean builder",
+    "png_encoder_byte_variation_allowed": true,
+    "pixel_variation_allowed": false,
+    "canvas_variation_allowed": false
+  },
+  "acceptance": {
+    "exact_historical_png": "pass_if_decoded_rgba_also_matches",
+    "pixel_equivalent_png_encoding": "pass",
+    "different_decoded_rgba": "blocked",
+    "different_canvas": "blocked"
+  },
+  "safety": {
+    "does_not_promote_binary_asset": true,
+    "does_not_activate_creator_visual_in_battle": true,
+    "does_not_change_collision_or_gameplay": true,
+    "shared_modular_animation_runtime_still_required": true
+  },
+  "next": [
+    "migrate_lian_generators_to_canonical_visual_identity_validator",
+    "reconstruct_neutral_in_remote_ci",
+    "materialize_required_first_playable_animation_families",
+    "generate_lian_wu_first_playable_frames_tres",
+    "run_godot_presenter_and_creator_handoff_gates"
+  ]
+}
