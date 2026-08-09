@@ -56,10 +56,19 @@ func _run() -> void:
 		_fail("C65_VISUAL_REVIEW=BLOCKED assembler")
 		return
 
-	# Do not await frame_post_draw here: the functional smoke already proved the
-	# runtime. After 32 process frames the root viewport contains the actual battle
-	# composition; reading it directly prevents a visual-evidence wait from stalling
-	# the logical gate on headless runners.
+	# The first capture proved the renderer works but also proved 32 frames are too
+	# early: the HUD was still showing countdown "1". Wait real scene time so the
+	# screenshot evaluates an active fight and the fighters are actually on-stage.
+	await create_timer(4.0).timeout
+	for _frame in range(12):
+		await process_frame
+	if not is_instance_valid(modular) or not modular.using_modular_assets():
+		_fail("C65_VISUAL_REVIEW=BLOCKED modular_lost_after_countdown")
+		return
+	if not is_instance_valid(assembler) or not assembler.is_ready_for_render():
+		_fail("C65_VISUAL_REVIEW=BLOCKED assembler_lost_after_countdown")
+		return
+
 	var image := get_root().get_texture().get_image()
 	if image == null or image.is_empty():
 		_fail("C65_VISUAL_REVIEW=BLOCKED capture_empty")
@@ -74,6 +83,7 @@ func _run() -> void:
 		return
 
 	print("C65_VISUAL_REVIEW=PASS preset=%s" % String(TEST_PRESET))
+	print("C65_VISUAL_REVIEW_PHASE=PASS active_fight_after_countdown=true")
 	print("C65_VISUAL_REVIEW_IDENTITY=PASS skin=deep face=broad eyes=fierce brows=sharp")
 	print("C65_VISUAL_REVIEW_OUTPUT=" + OUTPUT)
 	print("SIGNATURE=Tehkné Solutions")
