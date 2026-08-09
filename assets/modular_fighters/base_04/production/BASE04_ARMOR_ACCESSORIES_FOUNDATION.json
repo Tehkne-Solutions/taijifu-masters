@@ -1,0 +1,62 @@
+{
+  "schema": "tehkne/taijifu-base04-armor-accessories-foundation/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_ARMOR_ACCESSORIES_FOUNDATION",
+  "stage": "C68.0",
+  "status": "foundation_candidate_art_blocked",
+  "selection_contract": {
+    "armor_set": {
+      "public_selection_unit": "armor_set",
+      "atomic_slots": ["head_accessory", "shoulders"],
+      "direct_piece_controls": false,
+      "cross_set_piece_mixing": false,
+      "default_id": "armor_none"
+    },
+    "back_accessory": {
+      "public_selection_unit": "back_accessory",
+      "atomic_slots": ["back_accessory"],
+      "direct_piece_controls": false,
+      "default_id": "back_none"
+    }
+  },
+  "layer_contract": {
+    "source": "ModularFighterLayerPolicy",
+    "expected_z": {
+      "weapon_back": 3,
+      "back_accessory": 4,
+      "hair_back": 5,
+      "body_base": 10,
+      "hair_front": 50,
+      "head_accessory": 60,
+      "torso_outer": 65,
+      "shoulders": 70
+    },
+    "head_accessory_must_render_over_hair_front": true,
+    "shoulders_must_render_over_uniform_torso_outer": true,
+    "back_accessory_must_render_between_weapon_back_and_hair_back": true
+  },
+  "profile_contract": {
+    "schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "storage": "existing generic modules dictionary",
+    "required_slots_already_standardized": ["head_accessory", "shoulders", "back_accessory"],
+    "schema_change_required": false
+  },
+  "compatibility_contract": {
+    "hair_head_accessory_review": "required_before_art_promotion",
+    "uniform_shoulders_review": "required_before_art_promotion",
+    "weapon_back_back_accessory_review": "required_before_art_promotion",
+    "active_fight_review": "required_before_battle_activation",
+    "creator_review": "required_before_creator_exposure",
+    "reference_hair": "hair_01_lian_topknot",
+    "reference_uniform": "uniform_01_lian_martial"
+  },
+  "promotion": {
+    "armor_art_promotion_allowed": false,
+    "back_accessory_art_promotion_allowed": false,
+    "runtime_activation_allowed": false,
+    "creator_control_allowed": false,
+    "battle_activation_allowed": false,
+    "reason": "C68.0 freezes architecture only; C68.1 must provide real reviewed art"
+  },
+  "next_stage": "C68.1 — first Armor & Accessories art pack"
+}
