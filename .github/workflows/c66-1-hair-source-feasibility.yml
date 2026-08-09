@@ -1,0 +1,47 @@
+name: C66.1 Hair Source Feasibility Probe
+
+on:
+  pull_request:
+    paths:
+      - 'tools/probe_base02_lian_hair_source.py'
+      - '.github/workflows/c66-1-hair-source-feasibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-feasibility:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic image dependency
+        run: pip install --disable-pip-version-check pillow==11.1.0
+
+      - name: Probe exact Lian Character Lock vs BASE-00
+        run: |
+          set -euo pipefail
+          python tools/probe_base02_lian_hair_source.py 2>&1 | tee c66-1-hair-source-probe.log
+          grep -q 'C66_1_HAIR_SOURCE_PROBE=PASS' c66-1-hair-source-probe.log
+          grep -q 'C66_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required' c66-1-hair-source-probe.log
+          test -s artifacts/c66_1_hair_source_probe/C66_1_LIAN_HAIR_SOURCE_FEASIBILITY.contact.png
+          test -s artifacts/c66_1_hair_source_probe/report.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C66-1-HAIR-SOURCE-FEASIBILITY
+          path: |
+            c66-1-hair-source-probe.log
+            artifacts/c66_1_hair_source_probe/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C66.1 diagnostic only — no Hair asset promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
