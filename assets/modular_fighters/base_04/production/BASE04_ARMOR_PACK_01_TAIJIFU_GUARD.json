@@ -1,0 +1,61 @@
+{
+  "schema": "tehkne/taijifu-base04-armor-pack/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_ARMOR_PACK_01_TAIJIFU_GUARD",
+  "stage": "C68.1",
+  "status": "candidate_runtime_visual_review_pending",
+  "armor_set_id": "armor_01_taijifu_guard",
+  "label": "Guarda Marcial Taijifu",
+  "selection": {
+    "unit": "armor_set",
+    "atomic_slots": ["head_accessory", "shoulders"],
+    "direct_piece_controls": false,
+    "cross_set_piece_mixing": false
+  },
+  "back_accessory": {
+    "selected": "back_none",
+    "promotion": "deferred",
+    "reason": "candidate_v1_back_accessory_rejected_as_weak_two_strip_silhouette"
+  },
+  "art_review": {
+    "candidate_v1": {
+      "status": "rejected",
+      "reason": "shoulders_oversized_and_back_accessory_not_readable_as_complete_back_item"
+    },
+    "candidate_v2": {
+      "status": "selected",
+      "reason": "paired_compact_shoulders_best_gameplay_readability_and_topknot_face_preservation"
+    },
+    "candidate_v3": {
+      "status": "rejected",
+      "reason": "shoulders_module_contains_one_effective_shoulder_and_breaks_paired_set_contract"
+    }
+  },
+  "expected_sha256": {
+    "armor_01_taijifu_guard_head_accessory": "e166fbf51f4b62383026ae95eef2a2f4b0925f484cc616cd1b77284100d70602",
+    "armor_01_taijifu_guard_shoulders": "cf643a6467281e7d1a5bd9606b5e94c7de5b3ffff5d4e7138ac50747357281fd"
+  },
+  "expected_alpha_bbox": {
+    "armor_01_taijifu_guard_head_accessory": [496, 132, 620, 192],
+    "armor_01_taijifu_guard_shoulders": [340, 328, 716, 420]
+  },
+  "runtime_contract": {
+    "boundary": "ModularFighterArmorRuntime",
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "layer_policy": "modular_fighter_layer_policy_v1",
+    "hair_reference": "hair_01_lian_topknot",
+    "uniform_reference": "uniform_01_lian_martial",
+    "back_accessory_independent": true,
+    "preset_specific_sprite_sheet": false,
+    "combat_changes": false
+  },
+  "promotion": {
+    "runtime_validation": "pending",
+    "battle_activation": false,
+    "battle_visual_review": "pending",
+    "creator_exposure": false,
+    "creator_control": "blocked_until_C68.2",
+    "back_accessory_art": "blocked_until_new_reviewed_asset"
+  },
+  "next_stage": "C68.1 — runtime + active-fight visual review"
+}

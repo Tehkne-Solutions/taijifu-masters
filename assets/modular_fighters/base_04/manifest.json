@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "0.1.0-foundation",
-  "status": "foundation_no_art_assets",
+  "version": "1.0.0-candidate.1",
+  "status": "production_candidate_armor_pack_01_visual_review_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -21,11 +21,7 @@
     "text_allowed": false,
     "preset_specific_sprite_sheet": false
   },
-  "slots": [
-    "head_accessory",
-    "shoulders",
-    "back_accessory"
-  ],
+  "slots": ["head_accessory", "shoulders", "back_accessory"],
   "public_controls": {
     "armor_set": {
       "atomic_slots": ["head_accessory", "shoulders"],
@@ -47,6 +43,14 @@
       "requires_art_assets": false,
       "runtime_ready": true,
       "production_ready": true
+    },
+    "armor_01_taijifu_guard": {
+      "label": "Guarda Marcial Taijifu",
+      "head_accessory": "armor_01_taijifu_guard_head_accessory",
+      "shoulders": "armor_01_taijifu_guard_shoulders",
+      "requires_art_assets": true,
+      "runtime_ready": true,
+      "production_ready": false
     }
   },
   "back_accessories": {
@@ -58,7 +62,44 @@
       "production_ready": true
     }
   },
-  "modules": {},
+  "modules": {
+    "armor_01_taijifu_guard_head_accessory": {
+      "slot": "head_accessory",
+      "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/head_accessory.png",
+      "sha256": "e166fbf51f4b62383026ae95eef2a2f4b0925f484cc616cd1b77284100d70602",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [496, 132, 620, 192],
+      "visible_pixels": 4768,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "authored_base04_pack01_candidate_v2",
+        "candidate": "v2",
+        "review": "selected_over_v1_v3",
+        "redraw": true,
+        "resampling": false
+      }
+    },
+    "armor_01_taijifu_guard_shoulders": {
+      "slot": "shoulders",
+      "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/shoulders.png",
+      "sha256": "cf643a6467281e7d1a5bd9606b5e94c7de5b3ffff5d4e7138ac50747357281fd",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [340, 328, 716, 420],
+      "visible_pixels": 13712,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "authored_base04_pack01_candidate_v2",
+        "candidate": "v2",
+        "review": "selected_over_v1_v3",
+        "redraw": true,
+        "resampling": false
+      }
+    }
+  },
   "layer_contract": {
     "weapon_back": 3,
     "back_accessory": 4,
@@ -79,16 +120,24 @@
     "uniform_shoulders_visual_review_required": true,
     "weapon_back_back_accessory_visual_review_required": true,
     "cross_pack_clipping_review_required": true,
-    "future_art_pack_must_test_topknot_and_lian_uniform": true
+    "future_art_pack_must_test_topknot_and_lian_uniform": true,
+    "candidate_review": {
+      "reference_hair": "hair_01_lian_topknot",
+      "reference_uniform": "uniform_01_lian_martial",
+      "candidate_v2_selected": true,
+      "candidate_v1_rejected": "oversized_shoulders_and_weak_back_accessory",
+      "candidate_v3_rejected": "single_effective_shoulder_module"
+    }
   },
   "promotion": {
-    "art_assets_present": false,
-    "armor_runtime_activation": false,
+    "art_assets_present": true,
+    "armor_runtime_activation": true,
     "back_accessory_runtime_activation": false,
     "creator_exposure": false,
     "battle_activation": false,
-    "owner_visual_review": "not_applicable_foundation",
-    "blocker": "base04_art_pack_required"
+    "runtime_validation": "pending",
+    "owner_visual_review": "active_fight_capture_pending",
+    "blocker": "c68_1_active_fight_visual_review"
   },
-  "next_stage": "C68_1_BASE04_FIRST_ARMOR_ACCESSORY_ART_PACK"
+  "next_stage": "C68_1_BASE04_ARMOR_PACK01_RUNTIME_VISUAL_REVIEW"
 }

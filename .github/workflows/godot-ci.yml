@@ -13,7 +13,7 @@ jobs:
   validate-godot-project:
     name: Parser, importação e smoke test
     runs-on: ubuntu-22.04
-    timeout-minutes: 18
+    timeout-minutes: 22
 
     steps:
       - name: Checkout
@@ -24,6 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             unzip \
+            xvfb \
             libfontconfig1 \
             libgl1 \
             libxcursor1 \
@@ -126,6 +127,32 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/ghost_library_smoke_test.gd 2>&1 | tee godot-ghost-library.log
 
+      - name: C68.1 validar Armor Pack 01 em runtime de luta
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c68-1-armor-pack01-v2')
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://scripts/ci/base04_armor_pack_01_runtime_smoke.gd 2>&1 | tee godot-c68-1-armor-runtime.log
+          grep -q 'C68_1_ARMOR_PACK_RUNTIME=PASS' godot-c68-1-armor-runtime.log
+
+      - name: C68.1 capturar compatibilidade visual ativa
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c68-1-armor-pack01-v2')
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/base04_armor_pack_01_visual_review.gd 2>&1 | tee godot-c68-1-armor-visual.log
+          grep -q 'C68_1_VISUAL_REVIEW=PASS' godot-c68-1-armor-visual.log
+          test -s artifacts/c68_1/C68_1_BASE04_TAIJIFU_GUARD.review-1920x1080.png
+
+      - name: Publicar evidência C68.1
+        if: always() && github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c68-1-armor-pack01-v2')
+        uses: actions/upload-artifact@v4
+        with:
+          name: C68-1-BASE04-ARMOR-PACK-01-EVIDENCE
+          path: |
+            godot-c68-1-armor-runtime.log
+            godot-c68-1-armor-visual.log
+            artifacts/c68_1/C68_1_BASE04_TAIJIFU_GUARD.review-1920x1080.png
+          if-no-files-found: ignore
+
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -149,4 +176,6 @@ jobs:
             godot-input-ghost-mastery.log
             godot-ghost-sharing.log
             godot-ghost-library.log
+            godot-c68-1-armor-runtime.log
+            godot-c68-1-armor-visual.log
           if-no-files-found: ignore
