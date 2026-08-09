@@ -52,7 +52,11 @@ LEGACY_PREFLIGHT_RE = re.compile(
     r'(?P=pathvar)\)\.convert\(["\']RGBA["\']\)',
     re.MULTILINE | re.DOTALL,
 )
-MARKER_RE = re.compile(r'([A-Z][A-Z0-9_]+)=BLOCKED\s+source_hash_mismatch')
+# Stage names are stable; the human-readable reason varied historically
+# (source_hash_mismatch vs source_hash=<sha>). The candidate itself is already
+# constrained to the EXPECTED_SOURCE_SHA256 comparison, so capture only the
+# stage prefix here rather than depending on wording after BLOCKED.
+MARKER_RE = re.compile(r'([A-Z][A-Z0-9_]+)=BLOCKED\b')
 
 
 def _inject_import(text: str, path: Path) -> str:
