@@ -4,7 +4,7 @@
   "component_id": "BASE01_SHARED_MODULAR_ANIMATION_RUNTIME",
   "version": "1.0.0",
   "stage": "C65",
-  "status": "integrated_candidate_runtime_validation_pending",
+  "status": "validated_visual_review_pass_ready_for_main_pr",
   "depends_on": {
     "creator_battle_handoff": "BASE01_CREATOR_BATTLE_HANDOFF",
     "identity_preset_serialization": "BASE01_IDENTITY_PRESET_SERIALIZATION",
@@ -41,6 +41,7 @@
     "skin_palette_propagation": ["body_base", "face_plate", "face"],
     "non_skin_tinted_slots": ["eyes", "brows"],
     "canonical_pivot": [0.5, 0.92],
+    "body_base_alignment": "same_canonical_pivot_as_identity_modules",
     "gameplay_visual_height": 132
   },
   "activation_contract": {
@@ -69,7 +70,26 @@
     "no_preset_lian_fallback_required": true,
     "godot_import_required": true,
     "first_playable_regression_required": true,
-    "owner_visual_review": "pending"
+    "owner_visual_review": "pass",
+    "visual_review_method": [
+      "real_battle_xvfb_1920x1080",
+      "active_fight_after_countdown",
+      "enlarged_player_crop_review"
+    ],
+    "visual_review_result": {
+      "single_modular_character": true,
+      "head_body_alignment": "pass",
+      "identity_layers_alignment": "pass",
+      "arena_readability": "pass",
+      "relative_scale_to_training_rival": "pass"
+    },
+    "visual_evidence": {
+      "workflow_run_id": 31325394402,
+      "artifact_id": 9041377434,
+      "artifact_sha256": "30bba3d31d4a4a2dc3a56d92a5d4c996627739a3daa8224d86b6349bc488963b",
+      "source_head_sha": "b38917948665d0628ffd3f9a0779ed819abd113a",
+      "file": "artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png"
+    }
   },
-  "next_stage": "C65_VISUAL_REVIEW_AND_PROMOTION"
+  "next_stage": "C65_MAIN_PROMOTION_AFTER_C64"
 }
