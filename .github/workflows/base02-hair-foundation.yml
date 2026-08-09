@@ -1,0 +1,106 @@
+name: C66.0 BASE-02 Hair Foundation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_02/**'
+      - 'scripts/characters/modular_fighter_layer_policy.gd'
+      - 'scripts/ci/base02_hair_foundation_smoke.gd'
+      - 'config/modular-fighter-standard-v1.json'
+      - '.github/workflows/base02-hair-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hair-foundation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate BASE-02 foundation contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          manifest = json.loads(Path('assets/modular_fighters/base_02/manifest.json').read_text())
+          contract = json.loads(Path('assets/modular_fighters/base_02/production/BASE02_HAIR_FOUNDATION.json').read_text())
+          standard = json.loads(Path('config/modular-fighter-standard-v1.json').read_text())
+
+          assert manifest['signature'] == 'Tehkné Solutions'
+          assert manifest['pack_id'] == 'BASE02_HAIR'
+          assert manifest['status'] == 'foundation_no_art_assets'
+          assert manifest['default_style_id'] == 'hair_none'
+          assert manifest['modules'] == {}
+          assert manifest['styles']['hair_none']['hair_back'] is None
+          assert manifest['styles']['hair_none']['hair_front'] is None
+          assert manifest['promotion']['art_assets_present'] is False
+          assert manifest['promotion']['creator_exposure'] is False
+          assert manifest['promotion']['battle_activation'] is False
+
+          assert contract['component_id'] == 'BASE02_HAIR_FOUNDATION'
+          assert contract['stage'] == 'C66.0'
+          assert contract['status'] == 'foundation_candidate_art_blocked'
+          assert contract['style_contract']['creator_selection_unit'] == 'hair_style'
+          assert contract['style_contract']['atomic_pair_slots'] == ['hair_back', 'hair_front']
+          assert contract['style_contract']['cross_style_mixing'] is False
+          assert contract['promotion']['hair_art_promotion_allowed'] is False
+          assert contract['promotion']['creator_hair_control_allowed'] is False
+          assert contract['promotion']['battle_hair_activation_allowed'] is False
+
+          for slot in ('hair_back', 'hair_front'):
+              assert slot in standard['slots']
+              assert slot in standard['creator_v1_editable_slots']
+
+          pngs = list(Path('assets/modular_fighters/base_02').rglob('*.png'))
+          assert not pngs, f'foundation must not silently promote hair PNGs: {pngs}'
+          print('C66_0_STATIC_CONTRACT=PASS art_assets=0 creator_exposure=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --import 2>&1 | tee c66-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed' c66-import.log; then
+            echo 'C66_0_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run BASE-02 Hair foundation smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base02_hair_foundation_smoke.gd 2>&1 | tee c66-hair-foundation.log
+          grep -q 'C66_0_HAIR_FOUNDATION=PASS' c66-hair-foundation.log
+          grep -q 'C66_0_HAIR_LAYER_ORDER=PASS' c66-hair-foundation.log
+          grep -q 'C66_0_ART_PROMOTION=BLOCKED' c66-hair-foundation.log
+          grep -q 'C66_0_CREATOR_EXPOSURE=BLOCKED' c66-hair-foundation.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C66_0_HAIR_FOUNDATION=BLOCKED' c66-hair-foundation.log; then
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C66-0-BASE02-HAIR-FOUNDATION-EVIDENCE
+          path: |
+            c66-import.log
+            c66-hair-foundation.log
+            assets/modular_fighters/base_02/manifest.json
+            assets/modular_fighters/base_02/production/BASE02_HAIR_FOUNDATION.json
+          if-no-files-found: error
+
+      - name: Summary
+        run: echo 'C66.0 BASE-02 Hair Foundation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
