@@ -2,17 +2,23 @@
   "schema": "tehkne/taijifu-base02-hair-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE02_HAIR",
-  "version": "0.1.0-foundation",
-  "status": "foundation_no_art_assets",
+  "version": "1.0.0-candidate",
+  "status": "production_candidate_runtime_validation_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
     "shared_animation_runtime": "shared_modular_animation_runtime_v1"
   },
   "authoring": {
-    "canvas": [1024, 1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5, 0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency_required": true,
     "background_allowed": false,
@@ -38,15 +44,82 @@
       "hair_front": null,
       "requires_art_assets": false,
       "production_ready": true
+    },
+    "hair_01_lian_topknot": {
+      "label": "Topknot Lian",
+      "hair_back": "hair_01_lian_topknot_back",
+      "hair_front": "hair_01_lian_topknot_front",
+      "requires_art_assets": true,
+      "production_ready": false,
+      "source_lineage": "exact_historical_lian_character_lock"
     }
   },
-  "modules": {},
+  "modules": {
+    "hair_01_lian_topknot_back": {
+      "slot": "hair_back",
+      "path": "assets/modular_fighters/base_02/hair_01_lian_topknot/hair_01_lian_topknot_back.png",
+      "sha256": "45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        464,
+        70,
+        688,
+        362
+      ],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "exact_character_lock_source_pixel_matte_v1",
+        "lian_character_lock_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+        "base00_reference_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+        "resampling": false,
+        "redraw": false,
+        "source_pixel_mutation": false
+      }
+    },
+    "hair_01_lian_topknot_front": {
+      "slot": "hair_front",
+      "path": "assets/modular_fighters/base_02/hair_01_lian_topknot/hair_01_lian_topknot_front.png",
+      "sha256": "11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        385,
+        125,
+        636,
+        361
+      ],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "exact_character_lock_source_pixel_matte_v1",
+        "lian_character_lock_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+        "base00_reference_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+        "resampling": false,
+        "redraw": false,
+        "source_pixel_mutation": false
+      }
+    }
+  },
   "promotion": {
     "art_pack_required": true,
-    "art_assets_present": false,
+    "art_assets_present": true,
     "creator_exposure": false,
     "battle_activation": false,
-    "owner_visual_review": "not_applicable_until_art_exists"
+    "owner_visual_review": "diagnostic_split_pass_runtime_pending"
   },
-  "next_stage": "C66_1_BASE02_FIRST_HAIR_ART_PACK"
+  "next_stage": "C66_1_RUNTIME_AND_BATTLE_VALIDATION"
 }
