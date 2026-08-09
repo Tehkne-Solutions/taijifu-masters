@@ -1,0 +1,119 @@
+name: C64 Lian First Playable LOT01
+
+on:
+  pull_request:
+    paths:
+      - 'tools/materialize_lian_wu_first_playable_c64.py'
+      - 'scripts/ci/c64_lian_first_playable_lot01_smoke.gd'
+      - '.github/workflows/c64-lian-first-playable-lot01.yml'
+      - 'tools/generate_lian_wu_*.py'
+      - 'tools/lian_wu_canonical_identity.py'
+      - 'assets/characters/lian_wu/character_lock/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  materialize-and-smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deterministic image dependency
+        run: python3 -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+
+      - name: Materialize canonical LOT01 candidate
+        run: |
+          set -euo pipefail
+          python3 tools/materialize_lian_wu_first_playable_c64.py --repo-root . 2>&1 | tee c64-materialize.log
+          grep -q 'C64_LOT01_MATERIALIZATION=PASS' c64-materialize.log
+          grep -q 'animations=10/10' c64-materialize.log
+          grep -q 'visual_review=PENDING' c64-materialize.log
+
+      - name: Validate candidate contract fail closed
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          root=Path('assets/tgap/pack_01_lian_wu/first_playable_lot_01')
+          manifest=json.loads((root/'manifest.json').read_text())
+          runtime=json.loads((root/'runtime-map.json').read_text())
+          approval=json.loads((root/'approval.json').read_text())
+          report=json.loads(Path('c64-lian-first-playable-report.json').read_text())
+          assert manifest['signature']=='Tehkné Solutions'
+          assert manifest['lot_id']=='pack_01_lian_wu_first_playable_lot_01'
+          assert manifest['source_character_lock_sha256']=='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          assert manifest['source_character_lock_rgba_sha256']=='0bedec17308acd2c7b392f2c989cf97238908aa4f18b73371aa67c741eb6030b'
+          required=['idle','run','jump_start','airborne','fall','attack_light','guard','dodge','hit','ko']
+          assert list(runtime['animations'])==required
+          assert manifest['animation_count']==10
+          assert report['required_animation_count']==10
+          assert approval['status']=='candidate_pending_visual_review'
+          assert approval['binary_promotion_allowed'] is False
+          for name in required:
+              spec=runtime['animations'][name]
+              folder=root/spec['path']
+              files=sorted(folder.glob('*.png'))
+              assert len(files)==spec['frames'] and len(files)>0, (name,len(files),spec['frames'])
+          expected={}
+          for raw in (root/'checksums.sha256').read_text().splitlines():
+              if not raw.strip(): continue
+              digest, rel=raw.split(maxsplit=1)
+              expected[rel.lstrip('*')]=digest
+          for rel,digest in expected.items():
+              got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
+              assert got==digest, rel
+          assert Path('c64-lian-first-playable-contact-sheet.png').is_file()
+          print(f"C64_LOT01_CONTRACT=PASS animations=10 frames={manifest['frame_count']}")
+          print('C64_LOT01_BINARY_PROMOTION=BLOCKED pending=contact_sheet_review')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import candidate and activate presenter in First Playable
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c64-godot-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c64-godot-import.log; then
+            echo 'C64_LOT01_IMPORT=BLOCKED'
+            exit 1
+          fi
+          ./godot --headless --path . --script res://scripts/ci/c64_lian_first_playable_lot01_smoke.gd 2>&1 | tee c64-godot-smoke.log
+          grep -q 'C64_LOT01_GODOT=PASS' c64-godot-smoke.log
+          grep -q 'C64_LOT01_PRESENTER=PASS real_assets=true' c64-godot-smoke.log
+          grep -q 'C64_LOT01_PROCEDURAL_VISUAL=HIDDEN' c64-godot-smoke.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|ERROR:' c64-godot-smoke.log; then
+            echo 'C64_LOT01_RUNTIME_ERRORS=BLOCKED'
+            exit 1
+          fi
+
+      - name: Publish visual review and LOT01 candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: C64-LIAN-FIRST-PLAYABLE-LOT01-CANDIDATE
+          path: |
+            c64-lian-first-playable-contact-sheet.png
+            c64-lian-first-playable-report.json
+            c64-materialize.log
+            c64-godot-import.log
+            c64-godot-smoke.log
+            assets/pack_01_characters/lian_wu/metadata/c64_first_playable_families.json
+            assets/tgap/pack_01_lian_wu/first_playable_lot_01/
+          if-no-files-found: warn
+
+      - name: Summary
+        run: echo 'C64 Lian First Playable LOT01 candidate generated and runtime-smoked; binary promotion remains visual-review gated — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
