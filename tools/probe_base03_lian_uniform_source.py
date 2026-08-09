@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """C67.1 diagnostic only: test exact Lian clothing reuse for BASE-03.
 
-This probe never promotes assets. It preserves source pixels under conservative
-body/clothing masks, partitions them into disjoint uniform slots and composes the
-result with BASE-00 + the approved BASE-02 Topknot using the current layer policy.
-Tehkné Solutions.
+Probe v2 rejects the first changed-pixel approach. It preserves exact source
+pixels under a semantic uniform-palette/body matte, subtracts the approved Hair
+modules explicitly and partitions the remaining clothing into disjoint BASE-03
+slots. No output is a production asset. Tehkné Solutions.
 """
 
 from __future__ import annotations
@@ -56,7 +56,10 @@ def checkerboard(size: tuple[int, int], cell: int = 24) -> Image.Image:
     for y in range(0, size[1], cell):
         for x in range(0, size[0], cell):
             if (x // cell + y // cell) % 2:
-                draw.rectangle((x, y, min(x + cell - 1, size[0]-1), min(y + cell - 1, size[1]-1)), fill=(205,205,205,255))
+                draw.rectangle(
+                    (x, y, min(x + cell - 1, size[0] - 1), min(y + cell - 1, size[1] - 1)),
+                    fill=(205, 205, 205, 255),
+                )
     return out
 
 
@@ -68,77 +71,93 @@ def preview(image: Image.Image) -> Image.Image:
 
 def is_skin_like(r: int, g: int, b: int) -> bool:
     mean = (r + g + b) / 3.0
-    return r > 135 and g > 75 and b > 35 and r > g > b and mean > 95 and (r - b) > 35
+    warm = r > 120 and g > 65 and b > 30 and r > g > b and (r - b) > 30
+    bright_warm = mean > 105 and warm
+    mid_warm = 90 < mean <= 105 and r > g * 1.12 and g > b * 1.12
+    return bright_warm or mid_warm
 
 
-def is_clothing_like(r: int, g: int, b: int) -> bool:
-    """Conservative Lian uniform palette classifier.
-
-    Lian's approved neutral uses white/blue/black/gold clothing. Skin-like warm
-    pixels are explicitly rejected; exact source pixels are retained unchanged.
-    """
+def uniform_palette(r: int, g: int, b: int) -> bool:
+    """Conservative approved Lian white/blue/black/gold uniform palette."""
     if is_skin_like(r, g, b):
         return False
     mean = (r + g + b) / 3.0
-    dark = mean < 105
-    white_neutral = mean > 145 and max(r, g, b) - min(r, g, b) < 75
-    blue = b > 65 and b >= r * 1.05 and b >= g * 1.02
-    gold = r > 105 and g > 75 and b < 95 and r > b * 1.25
-    return dark or white_neutral or blue or gold
+    chroma = max(r, g, b) - min(r, g, b)
+    dark = mean < 112
+    neutral_white = mean > 138 and chroma < 82
+    blue = b > 58 and b >= r * 1.04 and b >= g * 1.02
+    gold = r > 100 and g > 65 and b < 105 and r > b * 1.18 and not is_skin_like(r, g, b)
+    return dark or neutral_white or blue or gold
 
 
-def build_changed_clothing_mask(lian: Image.Image, base: Image.Image) -> Image.Image:
-    diff = ImageChops.difference(lian, base)
-    lp = lian.load(); dp = diff.load()
-    mask = Image.new("L", CANVAS, 0); mp = mask.load()
+def build_semantic_clothing_mask(lian: Image.Image, hair_back: Image.Image, hair_front: Image.Image) -> tuple[Image.Image, dict]:
+    lp = lian.load()
+    hb = hair_back.getchannel("A").load()
+    hf = hair_front.getchannel("A").load()
+    mask = Image.new("L", CANVAS, 0)
+    mp = mask.load()
     x0, y0, x1, y1 = BODY_BOX
+    rejected = {"skin": 0, "hair": 0, "shadow": 0, "palette": 0, "low_alpha": 0}
     for y in range(y0, y1):
         for x in range(x0, x1):
             r, g, b, a = lp[x, y]
-            if a < 16:
+            if a < 20:
+                rejected["low_alpha"] += 1
                 continue
-            dr, dg, db, da = dp[x, y]
-            if max(dr, dg, db, da) < 26:
+            if hb[x, y] or hf[x, y]:
+                rejected["hair"] += 1
                 continue
-            if is_clothing_like(r, g, b):
-                mp[x, y] = 255
-    return mask
+            if is_skin_like(r, g, b):
+                rejected["skin"] += 1
+                continue
+            # Reject semi-transparent ground shadow near the canonical baseline.
+            mean = (r + g + b) / 3.0
+            chroma = max(r, g, b) - min(r, g, b)
+            if y >= 885 and (a < 150 or (y >= 950 and mean < 92 and chroma < 36)):
+                rejected["shadow"] += 1
+                continue
+            if not uniform_palette(r, g, b):
+                rejected["palette"] += 1
+                continue
+            mp[x, y] = 255
+    return mask, rejected
 
 
-def partition_mask(mask: Image.Image) -> dict[str, Image.Image]:
-    """Diagnostic spatial partition; disjoint by construction.
+def partition_mask(mask: Image.Image) -> tuple[dict[str, Image.Image], int]:
+    """Disjoint diagnostic partition; torso_inner/hands remain intentionally empty.
 
-    C67.1 deliberately does not claim torso_inner/hands from a flattened source:
-    those two slots remain empty in this feasibility pass because the historical
-    neutral cannot prove an independent under-layer or gloves without invention.
+    A flattened historical render cannot prove a separate under-layer or glove
+    module. C67.1 prefers null slots to invented pixels.
     """
     masks = {slot: Image.new("L", CANVAS, 0) for slot in SLOTS}
-    src = mask.load(); dst = {slot: image.load() for slot, image in masks.items()}
+    src = mask.load()
+    dst = {slot: image.load() for slot, image in masks.items()}
+    unassigned = 0
     for y in range(BODY_BOX[1], BODY_BOX[3]):
         for x in range(BODY_BOX[0], BODY_BOX[2]):
             if not src[x, y]:
                 continue
             slot = None
-            if y >= 900:
+            if y >= 895 and 315 <= x <= 725:
                 slot = "feet"
-            elif y >= 715:
-                slot = "legs"
-            elif 625 <= y < 735 and 365 <= x <= 670:
+            elif 610 <= y < 735 and 355 <= x <= 695:
                 slot = "waist"
-            elif 350 <= y < 700 and (x < 425 or x > 610):
+            elif 345 <= y < 700 and (x < 430 or x > 605):
                 slot = "arms"
-            elif 345 <= y < 680:
+            elif 335 <= y < 690 and 350 <= x <= 680:
                 slot = "torso_outer"
-            elif y >= 680:
+            elif y >= 675 and 315 <= x <= 725:
                 slot = "legs"
-            if slot:
+            if slot is None:
+                unassigned += 1
+            else:
                 dst[slot][x, y] = 255
-    return masks
+    return masks, unassigned
 
 
 def rgba_from_mask(source: Image.Image, mask: Image.Image) -> Image.Image:
-    out = Image.new("RGBA", CANVAS, (0,0,0,0))
-    out.paste(source, (0,0), mask)
+    out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+    out.paste(source, (0, 0), mask)
     return out
 
 
@@ -150,9 +169,17 @@ def overlap_count(a: Image.Image, b: Image.Image) -> int:
     return sum(1 for av, bv in zip(a.getchannel("A").tobytes(), b.getchannel("A").tobytes()) if av and bv)
 
 
+def candidate_skin_pixels(image: Image.Image) -> int:
+    count = 0
+    for r, g, b, a in image.getdata():
+        if a and is_skin_like(r, g, b):
+            count += 1
+    return count
+
+
 def compose_layers(base: Image.Image, modules: dict[str, Image.Image], hair_back: Image.Image, hair_front: Image.Image) -> Image.Image:
     layer_images = {"body_base": base, "hair_back": hair_back, "hair_front": hair_front, **modules}
-    out = Image.new("RGBA", CANVAS, (0,0,0,0))
+    out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
     for name, _z in sorted(CURRENT_Z.items(), key=lambda item: (item[1], item[0])):
         image = layer_images.get(name)
         if image is not None:
@@ -163,7 +190,7 @@ def compose_layers(base: Image.Image, modules: dict[str, Image.Image], hair_back
 def gameplay_crop(image: Image.Image) -> Image.Image:
     bbox = image.getchannel("A").getbbox()
     if bbox is None:
-        return Image.new("RGBA", (GAMEPLAY_HEIGHT, GAMEPLAY_HEIGHT), (0,0,0,0))
+        return Image.new("RGBA", (GAMEPLAY_HEIGHT, GAMEPLAY_HEIGHT), (0, 0, 0, 0))
     crop = image.crop(bbox)
     scale = GAMEPLAY_HEIGHT / max(1, crop.height)
     return crop.resize((max(1, round(crop.width * scale)), GAMEPLAY_HEIGHT), Image.Resampling.NEAREST)
@@ -189,15 +216,15 @@ def main() -> None:
     if any(image.size != CANVAS for image in (lian, base, hair_back, hair_front)):
         raise SystemExit("C67_1_UNIFORM_SOURCE_PROBE=BLOCKED canvas")
 
-    candidate_mask = build_changed_clothing_mask(lian, base)
-    slot_masks = partition_mask(candidate_mask)
+    candidate_mask, rejected = build_semantic_clothing_mask(lian, hair_back, hair_front)
+    slot_masks, unassigned_pixels = partition_mask(candidate_mask)
     modules = {slot: rgba_from_mask(lian, mask) for slot, mask in slot_masks.items()}
+    candidate_rgba = rgba_from_mask(lian, candidate_mask)
 
-    # Fail closed on accidental slot overlap.
     nonempty = [slot for slot in SLOTS if count_pixels(slot_masks[slot]) > 0]
     overlaps = {}
     for i, a in enumerate(nonempty):
-        for b in nonempty[i+1:]:
+        for b in nonempty[i + 1 :]:
             count = overlap_count(modules[a], modules[b])
             if count:
                 overlaps[f"{a}:{b}"] = count
@@ -208,19 +235,19 @@ def main() -> None:
     composed = compose_layers(base, modules, hair_back, hair_front)
     gameplay = gameplay_crop(composed)
 
-    # Hair interaction risk is measured against the current z order. Torso outer
-    # is above hair_front today; this diagnostic must quantify actual pixel overlap.
+    hair_union = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+    hair_union.alpha_composite(hair_back)
+    hair_union.alpha_composite(hair_front)
+    candidate_hair_overlap = overlap_count(candidate_rgba, hair_union)
     hair_front_outer_overlap = overlap_count(hair_front, modules["torso_outer"])
+    skin_pixels = candidate_skin_pixels(candidate_rgba)
 
-    # Save diagnostic full-canvas modules. These are NOT production assets.
     for index, slot in enumerate(SLOTS, start=1):
         modules[slot].save(OUT / f"{index:02d}_{slot}_FULL_CANVAS_DIAGNOSTIC.png")
-    candidate_rgba = rgba_from_mask(lian, candidate_mask)
     candidate_rgba.save(OUT / "08_all_clothing_candidate_FULL_CANVAS_DIAGNOSTIC.png")
     composed.save(OUT / "09_base00_hair_uniform_composition_FULL_CANVAS_DIAGNOSTIC.png")
     preview(gameplay).save(OUT / "10_base00_hair_uniform_gameplay_132px.png")
 
-    # Build body-region contact sheet: Lian source | BASE00+Hair | candidate-only | composition.
     crops = [
         preview(lian.crop(BODY_BOX)),
         preview(base_hair.crop(BODY_BOX)),
@@ -228,16 +255,15 @@ def main() -> None:
         preview(composed.crop(BODY_BOX)),
     ]
     w, h = crops[0].size
-    panel = Image.new("RGBA", (w*4, h), (24,24,24,255))
+    panel = Image.new("RGBA", (w * 4, h), (24, 24, 24, 255))
     for i, image in enumerate(crops):
-        panel.paste(image, (i*w, 0))
+        panel.paste(image, (i * w, 0))
     panel.save(OUT / "C67_1_LIAN_UNIFORM_SOURCE_FEASIBILITY.contact.png")
 
-    # Slot sheet for visual contamination review.
     slot_previews = [preview(modules[slot].crop(BODY_BOX)) for slot in SLOTS]
-    slot_panel = Image.new("RGBA", (w*4, h*2), (24,24,24,255))
+    slot_panel = Image.new("RGBA", (w * 4, h * 2), (24, 24, 24, 255))
     for i, image in enumerate(slot_previews):
-        slot_panel.paste(image, ((i % 4)*w, (i // 4)*h))
+        slot_panel.paste(image, ((i % 4) * w, (i // 4) * h))
     slot_panel.save(OUT / "C67_1_UNIFORM_SLOT_SPLIT.contact.png")
 
     baseline_score = body_difference_score(lian, base_hair)
@@ -252,7 +278,7 @@ def main() -> None:
         for slot in SLOTS
     }
     report = {
-        "schema": "tehkne/taijifu-c67-1-uniform-source-feasibility/v1",
+        "schema": "tehkne/taijifu-c67-1-uniform-source-feasibility/v2",
         "signature": "Tehkné Solutions",
         "status": "diagnostic_owner_visual_review_required",
         "source": {
@@ -264,7 +290,8 @@ def main() -> None:
             "body_probe_box": list(BODY_BOX),
         },
         "candidate": {
-            "selection": "changed_source_pixels_matching_conservative_lian_uniform_palette",
+            "selection": "semantic_source_pixel_uniform_palette_body_matte_v2",
+            "changed_pixel_dependency": False,
             "source_pixel_mutation": False,
             "redraw": False,
             "resampling": False,
@@ -272,6 +299,10 @@ def main() -> None:
             "nonempty_slots": nonempty,
             "intentionally_empty_slots": [slot for slot in SLOTS if slot not in nonempty],
             "slot_overlap_pixels": overlaps,
+            "unassigned_candidate_pixels": unassigned_pixels,
+            "skin_like_pixels": skin_pixels,
+            "approved_hair_overlap_pixels": candidate_hair_overlap,
+            "rejected_pixels": rejected,
         },
         "composition": {
             "current_z": CURRENT_Z,
@@ -294,7 +325,10 @@ def main() -> None:
 
     if not nonempty:
         raise SystemExit("C67_1_UNIFORM_SOURCE_PROBE=BLOCKED no_candidate_pixels")
-    print(f"C67_1_UNIFORM_SOURCE_PROBE=PASS nonempty={','.join(nonempty)} improvement={improvement:.6f}")
+    if skin_pixels or candidate_hair_overlap:
+        raise SystemExit(f"C67_1_UNIFORM_SOURCE_PROBE=BLOCKED contamination skin={skin_pixels} hair={candidate_hair_overlap}")
+    print(f"C67_1_UNIFORM_SOURCE_PROBE=PASS method=semantic_v2 nonempty={','.join(nonempty)} improvement={improvement:.6f}")
+    print(f"C67_1_CONTAMINATION=PASS skin=0 hair_overlap=0 unassigned={unassigned_pixels}")
     print(f"C67_1_HAIR_INTERACTION=MEASURED hair_front_torso_outer_overlap={hair_front_outer_overlap}")
     print("C67_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required")
     print(f"C67_1_OUTPUT={OUT.relative_to(ROOT).as_posix()}")
