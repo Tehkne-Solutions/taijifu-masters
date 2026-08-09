@@ -1,0 +1,104 @@
+name: C63.2 Lian Canonical Visual Fingerprint
+
+on:
+  pull_request:
+    paths:
+      - 'tools/lian_wu_canonical_identity.py'
+      - 'config/character_identity/lian_wu_canonical_visual_identity.json'
+      - '.github/workflows/c63-2-lian-canonical-visual-fingerprint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-visual-fingerprint:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deterministic image dependency
+        run: python3 -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+
+      - name: Reconstruct neutral from official raw lineage
+        run: |
+          set -euo pipefail
+          URL='https://github.com/Tehkne-Solutions/taijifu-masters-assets/releases/download/assets-pack-01-v1.0.0/PACK_01_LIAN_WU_BASE_FINAL_v1.0.0.zip'
+          curl --fail --location --retry 3 --output /tmp/pack01.zip "$URL"
+          echo '0aea374365b8736ae2134312e94d8128260a9c7650cc840aa2e588a4ab70872a  /tmp/pack01.zip' | sha256sum -c -
+          rm -rf /tmp/c63-2-pack /tmp/c63-2-clean
+          mkdir -p /tmp/c63-2-pack /tmp/c63-2-clean
+          unzip -q /tmp/pack01.zip -d /tmp/c63-2-pack
+          echo '047de240f47d6b8ba1e0605dd3353dc3bd6921ae7589163b74c1855d1b5cf1ec  /tmp/c63-2-pack/turnaround/char_lian_wu__front_raw.png' | sha256sum -c -
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/Tehkne-Solutions/taijifu-masters-assets/f2f64600ce93396887e88d7b781553da54572da5/tools/build_lian_wu_canonical_clean_v101.py' \
+            --output /tmp/build_lian_wu_canonical_clean_v101.py
+          python3 /tmp/build_lian_wu_canonical_clean_v101.py /tmp/c63-2-pack /tmp/c63-2-clean
+          test -f /tmp/c63-2-clean/char_lian_wu__front_clean.png
+          mkdir -p assets/characters/lian_wu/character_lock
+          cp /tmp/c63-2-clean/char_lian_wu__front_clean.png assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+          echo 'C63_2_REMOTE_RECONSTRUCTION=PASS'
+
+      - name: Validate canonical decoded RGBA identity
+        run: |
+          set -euo pipefail
+          python3 tools/lian_wu_canonical_identity.py \
+            assets/characters/lian_wu/character_lock/lian_wu_neutral.png \
+            --json c63-2-canonical-visual-identity.json
+
+      - name: Inventory legacy binary-hash generator locks
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          old='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          files=[]
+          for path in sorted(Path('tools').glob('generate_lian_wu_*.py')):
+              if path.name == 'lian_wu_canonical_identity.py':
+                  continue
+              text=path.read_text(encoding='utf-8')
+              if old in text:
+                  files.append(path.as_posix())
+          report={
+              'schema':'tehkne/c63-2-generator-binary-lock-inventory/v1',
+              'signature':'Tehkné Solutions',
+              'legacy_binary_sha256':old,
+              'locked_generator_count':len(files),
+              'locked_generators':files,
+              'migration_required':bool(files),
+          }
+          Path('c63-2-generator-binary-lock-inventory.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+          print(f"C63_2_LEGACY_BINARY_LOCKS={len(files)}")
+          for path in files:
+              print('LOCKED_GENERATOR='+path)
+          PY
+
+      - name: Prove current Idle6 failure is encoding-only
+        run: |
+          set +e
+          python3 tools/generate_lian_wu_idle6.py --repo-root . > /tmp/c63-2-idle6.log 2>&1
+          rc=$?
+          cat /tmp/c63-2-idle6.log
+          set -e
+          if [ "$rc" -ne 3 ]; then
+            echo "C63_2_EXPECTED_LEGACY_BLOCK=FAILED rc=$rc"
+            exit 1
+          fi
+          grep -q 'source_hash_mismatch' /tmp/c63-2-idle6.log
+          echo 'C63_2_EXPECTED_LEGACY_BLOCK=PASS reason=source_hash_mismatch'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C63-2-LIAN-CANONICAL-VISUAL-FINGERPRINT
+          path: |
+            c63-2-canonical-visual-identity.json
+            c63-2-generator-binary-lock-inventory.json
+          if-no-files-found: error
+
+      - name: Summary
+        run: |
+          echo 'C63.2 canonical visual fingerprint + generator migration inventory — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
