@@ -29,9 +29,33 @@ jobs:
           set -euo pipefail
           python tools/probe_base02_lian_hair_source.py 2>&1 | tee c66-1-hair-source-probe.log
           grep -q 'C66_1_HAIR_SOURCE_PROBE=PASS' c66-1-hair-source-probe.log
+          grep -q 'C66_1_HAIR_SPLIT=PASS overlap=0 full_canvas=true source_pixels_only=true' c66-1-hair-source-probe.log
           grep -q 'C66_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required' c66-1-hair-source-probe.log
           test -s artifacts/c66_1_hair_source_probe/C66_1_LIAN_HAIR_SOURCE_FEASIBILITY.contact.png
+          test -s artifacts/c66_1_hair_source_probe/C66_1_HAIR_FRONT_BACK_SPLIT.contact.png
+          test -s artifacts/c66_1_hair_source_probe/08_hair_back_candidate_FULL_CANVAS_DIAGNOSTIC.png
+          test -s artifacts/c66_1_hair_source_probe/09_hair_front_candidate_FULL_CANVAS_DIAGNOSTIC.png
+          test -s artifacts/c66_1_hair_source_probe/10_base00_hair_composition_FULL_CANVAS_DIAGNOSTIC.png
+          test -s artifacts/c66_1_hair_source_probe/15_base00_hair_gameplay_132px.png
           test -s artifacts/c66_1_hair_source_probe/report.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('artifacts/c66_1_hair_source_probe/report.json').read_text())
+          split = data['semantic_split_diagnostic']
+          assert data['schema'] == 'tehkne/taijifu-c66-1-hair-source-feasibility/v2'
+          assert split['full_canvas'] is True
+          assert split['resampling'] is False
+          assert split['source_pixel_mutation'] is False
+          assert split['front_back_overlap_pixels'] == 0
+          assert split['hair_back_pixels'] > 0
+          assert split['hair_front_pixels'] > 0
+          assert split['composition_order'] == ['hair_back', 'base_fighter_v1', 'hair_front']
+          policy = data['policy']
+          assert policy['automatic_hair_promotion_allowed'] is False
+          assert policy['front_back_outputs_are_candidates_only'] is True
+          print('C66_1_SPLIT_CONTRACT=PASS')
+          PY
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -44,4 +68,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C66.1 diagnostic only — no Hair asset promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C66.1 diagnostic only — front/back source-pixel split, no Hair asset promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
