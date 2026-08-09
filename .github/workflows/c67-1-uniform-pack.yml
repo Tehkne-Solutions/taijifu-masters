@@ -75,9 +75,25 @@ jobs:
               assert promotion['runtime_validation'] == 'pending'
               assert promotion['owner_visual_review'] == 'battle_capture_pending'
               assert contract['status'] == 'candidate_runtime_visual_review_pending'
-          assert promotion['creator_exposure'] is False
+
+          # C67.1's immutable production record correctly says Creator was still
+          # blocked at that historical stage. Later C67.2+ may expose the same
+          # approved pack only through an explicit Uniform Creator contract.
           assert contract['promotion']['creator_exposure'] is False
-          print(f"C67_1_UNIFORM_BINARIES=PASS modules=5 exact_sha=true candidate={str(not promotion['battle_activation']).lower()}")
+          if promotion['creator_exposure']:
+              control_path = root/'assets/modular_fighters/base_03/production/BASE03_UNIFORM_CREATOR_CONTROL.json'
+              assert control_path.is_file(), control_path
+              control = json.loads(control_path.read_text())
+              assert control['component_id'] == 'BASE03_UNIFORM_CREATOR_CONTROL'
+              assert control['stage'] == 'C67.2'
+              assert control['promotion']['creator_exposure'] is True
+              assert manifest['status'] in (
+                  'production_approved_creator_control_candidate_review_pending',
+                  'production_approved_creator_control',
+              )
+          else:
+              assert manifest['status'] == 'production_approved_creator_control_pending'
+          print(f"C67_1_UNIFORM_BINARIES=PASS modules=5 exact_sha=true candidate={str(not promotion['battle_activation']).lower()} creator_exposure={str(bool(promotion['creator_exposure'])).lower()}")
           print('SIGNATURE=Tehkné Solutions')
           PY
 
