@@ -1,0 +1,153 @@
+{
+  "schema": "tehkne/taijifu-c67-1-uniform-source-feasibility/v4",
+  "signature": "Tehkné Solutions",
+  "status": "diagnostic_owner_visual_review_required",
+  "source": {
+    "lian_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "base00_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+    "hair_back_sha256": "45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b",
+    "hair_front_sha256": "11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4",
+    "canvas": [
+      1024,
+      1024
+    ],
+    "body_probe_box": [
+      285,
+      325,
+      760,
+      990
+    ]
+  },
+  "candidate": {
+    "selection": "semantic_source_pixel_uniform_palette_body_matte_v4_final_sanitized",
+    "changed_pixel_dependency": false,
+    "source_pixel_mutation": false,
+    "redraw": false,
+    "resampling": false,
+    "slots": {
+      "torso_inner": {
+        "pixels": 0,
+        "bbox": null
+      },
+      "torso_outer": {
+        "pixels": 38826,
+        "bbox": [
+          418,
+          335,
+          622,
+          610
+        ]
+      },
+      "arms": {
+        "pixels": 30195,
+        "bbox": [
+          340,
+          345,
+          720,
+          625
+        ]
+      },
+      "hands": {
+        "pixels": 0,
+        "bbox": null
+      },
+      "waist": {
+        "pixels": 31701,
+        "bbox": [
+          355,
+          610,
+          667,
+          735
+        ]
+      },
+      "legs": {
+        "pixels": 37604,
+        "bbox": [
+          363,
+          735,
+          685,
+          895
+        ]
+      },
+      "feet": {
+        "pixels": 7336,
+        "bbox": [
+          358,
+          895,
+          673,
+          943
+        ]
+      }
+    },
+    "nonempty_slots": [
+      "torso_outer",
+      "arms",
+      "waist",
+      "legs",
+      "feet"
+    ],
+    "intentionally_empty_slots": [
+      "torso_inner",
+      "hands"
+    ],
+    "slot_overlap_pixels": {},
+    "unassigned_candidate_pixels": 547,
+    "contamination": {
+      "slot_overlap": 0,
+      "skin": 0,
+      "hair": 0,
+      "left_hand_weapon": 0,
+      "right_hand": 0,
+      "collar_warm": 0,
+      "boot_spill": 0,
+      "baseline": 0,
+      "extra_weapon": 0
+    },
+    "v2_rejected_pixels": {
+      "skin": 12235,
+      "hair": 2747,
+      "shadow": 5145,
+      "palette": 4577,
+      "low_alpha": 134924
+    },
+    "v3_removed_pixels": {
+      "left_hand_weapon": 1826,
+      "right_hand": 3965,
+      "collar_skin": 591,
+      "boot_spill": 755,
+      "baseline_low_alpha": 772
+    },
+    "v4_removed_pixels": {
+      "extra_left_weapon": 87,
+      "hard_baseline": 2042
+    },
+    "hard_baseline_cut_y": 943
+  },
+  "composition": {
+    "current_z": {
+      "hair_back": 5,
+      "body_base": 10,
+      "torso_inner": 11,
+      "legs": 11,
+      "feet": 12,
+      "arms": 12,
+      "hands": 13,
+      "waist": 14,
+      "hair_front": 50,
+      "torso_outer": 65
+    },
+    "hair_front_torso_outer_overlap_pixels": 0,
+    "body_difference_baseline_score": 32623391,
+    "body_difference_composed_score": 10096373,
+    "difference_improvement_ratio": 0.6905173652855401,
+    "gameplay_review_height_px": 132
+  },
+  "policy": {
+    "diagnostic_is_production_asset": false,
+    "automatic_uniform_promotion_allowed": false,
+    "hair_interaction_visual_review_required": true,
+    "layer_policy_change_allowed_from_metrics_only": false,
+    "production_requires_owner_visual_review": true,
+    "fallback_if_contaminated": "author_new_BASE03_uniform_art"
+  }
+}

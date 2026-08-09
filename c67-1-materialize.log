@@ -1,0 +1,6 @@
+C67_1_UNIFORM_SOURCE_PROBE=PASS method=semantic_v4 nonempty=torso_outer,arms,waist,legs,feet improvement=0.690517
+C67_1_CONTAMINATION=PASS skin=0 hair=0 hands_weapon=0 collar=0 boot_spill=0 baseline=0 extra_weapon=0
+C67_1_HAIR_INTERACTION=MEASURED hair_front_torso_outer_overlap=0
+C67_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required
+C67_1_OUTPUT=artifacts/c67_1_uniform_source_probe
+SIGNATURE=Tehkné Solutions
