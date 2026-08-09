@@ -18,6 +18,22 @@
     "pixel_variation_allowed": false,
     "canvas_variation_allowed": false
   },
+  "generator_migration_inventory": {
+    "legacy_binary_lock_count": 10,
+    "source": "C63.2 remote Actions inventory",
+    "generators": [
+      "tools/generate_lian_wu_body_hook6.py",
+      "tools/generate_lian_wu_fall3.py",
+      "tools/generate_lian_wu_idle6.py",
+      "tools/generate_lian_wu_ji_sweep6.py",
+      "tools/generate_lian_wu_jump_loop3.py",
+      "tools/generate_lian_wu_jump_start4.py",
+      "tools/generate_lian_wu_land4.py",
+      "tools/generate_lian_wu_riposte6.py",
+      "tools/generate_lian_wu_run8.py",
+      "tools/generate_lian_wu_walk8.py"
+    ]
+  },
   "acceptance": {
     "exact_historical_png": "pass_if_decoded_rgba_also_matches",
     "pixel_equivalent_png_encoding": "pass",
