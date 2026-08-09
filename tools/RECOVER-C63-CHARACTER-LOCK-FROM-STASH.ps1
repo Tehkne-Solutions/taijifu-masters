@@ -11,16 +11,17 @@ $Expected = [ordered]@{
     "assets/characters/lian_wu/character_lock/lian_wu_neutral.png" = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
     "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png" = "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c"
 }
+$ExpectedPaths = [string[]]@($Expected.Keys)
 
 function Fail([string]$Message) {
     Write-Host "C63_2_EXACT_RECOVERY=BLOCKED $Message" -ForegroundColor Red
     exit 1
 }
 
-function Invoke-Git([string[]]$Args) {
-    $result = & git -C $RepoRoot @Args 2>&1
+function Invoke-RepoGit([string[]]$GitArgs) {
+    $result = & git -C $RepoRoot @GitArgs 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Fail ("git_failed=" + ($Args -join " ") + " output=" + ($result -join " | "))
+        Fail ("git_failed=" + ($GitArgs -join " ") + " output=" + ($result -join " | "))
     }
     return $result
 }
@@ -39,12 +40,12 @@ function Assert-Png1024Rgba([string]$Path, [string]$Label) {
 }
 
 Write-Host "=== TEHKNÉ SOLUTIONS — C63.2 EXACT CHARACTER LOCK RECOVERY ==="
-Write-Host "POLICY=NO_STASH_POP_NO_WORKTREE_MUTATION_NO_REDRAW"
+Write-Host "POLICY=NO_STASH_POP_NO_PRIMARY_WORKTREE_MUTATION_NO_REDRAW"
 
 if (-not (Test-Path $RepoRoot)) { Fail "repo_not_found=$RepoRoot" }
 if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { Fail "not_git_repo=$RepoRoot" }
 
-$stashLines = @(Invoke-Git @("stash", "list", "--format=%gd`t%gs"))
+$stashLines = @(Invoke-RepoGit @("stash", "list", "--format=%gd%x09%gs"))
 $match = $stashLines | Where-Object { $_ -like "*$StashMessage*" } | Select-Object -First 1
 if (-not $match) { Fail "stash_message_not_found=$StashMessage" }
 $stashRef = (($match -split "`t", 2)[0]).Trim()
@@ -56,7 +57,7 @@ if ($LASTEXITCODE -ne 0) { Fail "stash_untracked_parent_missing ref=$stashRef" }
 $untrackedCommit = ($untrackedCommitOutput | Select-Object -First 1).Trim()
 Write-Host "STASH_UNTRACKED_COMMIT=$untrackedCommit"
 
-foreach ($path in $Expected.Keys) {
+foreach ($path in $ExpectedPaths) {
     & git -C $RepoRoot cat-file -e "${untrackedCommit}:$path" 2>$null
     if ($LASTEXITCODE -ne 0) { Fail "stash_path_missing=$path" }
     Write-Host "STASH_PATH=PASS $path"
@@ -69,8 +70,8 @@ $worktree = Join-Path $tempRoot "worktree"
 New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 
 try {
-    $archiveArgs = @("archive", "--format=zip", "--output=$archivePath", $untrackedCommit, "--") + @($Expected.Keys)
-    Invoke-Git $archiveArgs | Out-Null
+    $archiveArgs = @("archive", "--format=zip", "--output=$archivePath", $untrackedCommit, "--") + $ExpectedPaths
+    Invoke-RepoGit $archiveArgs | Out-Null
     if (-not (Test-Path $archivePath)) { Fail "stash_archive_missing" }
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force
 
@@ -84,7 +85,8 @@ try {
         Write-Host "PNG_1024_RGBA=PASS $($entry.Key)"
     }
 
-    Invoke-Git @("fetch", "origin", $Branch) | Out-Null
+    $refspec = "+refs/heads/$Branch`:refs/remotes/origin/$Branch"
+    Invoke-RepoGit @("fetch", "origin", $refspec) | Out-Null
     $remoteRef = "origin/$Branch"
     & git -C $RepoRoot rev-parse --verify $remoteRef *> $null
     if ($LASTEXITCODE -ne 0) { Fail "remote_recovery_branch_missing=$Branch" }
@@ -109,11 +111,11 @@ try {
     })
     if ($unexpected.Count -gt 0) { Fail ("unexpected_worktree_changes=" + ($unexpected -join ",")) }
 
-    & git -C $worktree add -- @($Expected.Keys)
+    & git -C $worktree add -- @ExpectedPaths
     if ($LASTEXITCODE -ne 0) { Fail "git_add_failed" }
     $staged = @(& git -C $worktree diff --cached --name-only)
     if ($staged.Count -ne 2) { Fail ("staged_file_count=" + $staged.Count) }
-    foreach ($path in $Expected.Keys) {
+    foreach ($path in $ExpectedPaths) {
         if ($staged -notcontains $path) { Fail "staged_path_missing=$path" }
     }
 
