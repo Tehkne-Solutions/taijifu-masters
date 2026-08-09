@@ -21,6 +21,36 @@ static func style_ids() -> PackedStringArray:
 	result.sort()
 	return result
 
+static func creator_style_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	var manifest := _manifest()
+	var styles = manifest.get("styles", {})
+	if not (styles is Dictionary):
+		return result
+	for raw_id in styles.keys():
+		var style_id := str(raw_id)
+		var style = styles[style_id]
+		if style is Dictionary and bool(style.get("production_ready", false)):
+			result.append(style_id)
+	result.sort()
+	return result
+
+static func style_label(style_id: StringName) -> String:
+	var manifest := _manifest()
+	var styles = manifest.get("styles", {})
+	var key := str(style_id)
+	if not (styles is Dictionary) or not styles.has(key):
+		return key
+	var style = styles[key]
+	if not (style is Dictionary):
+		return key
+	return str(style.get("label", key))
+
+static func creator_exposure_enabled() -> bool:
+	var manifest := _manifest()
+	var promotion = manifest.get("promotion", {})
+	return promotion is Dictionary and bool(promotion.get("creator_exposure", false))
+
 static func set_profile_style(profile: ModularFighterProfile, style_id: StringName) -> PackedStringArray:
 	var failures := PackedStringArray()
 	if profile == null:
@@ -193,7 +223,7 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		"hair_back_z": back.z_index if back != null else -1,
 		"hair_front_z": front.z_index if front != null else -1,
 		"atomic_pair": true,
-		"creator_exposure": false,
+		"creator_exposure": creator_exposure_enabled(),
 		"signature": "Tehkné Solutions",
 	}
 
