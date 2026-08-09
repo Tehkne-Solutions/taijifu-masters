@@ -1,9 +1,9 @@
 class_name FirstPlayableModularFighterPresenter
 extends Node2D
 
-## Shared BASE-01 animation runtime for creator presets in the First Playable.
+## Shared modular animation runtime for creator presets in the First Playable.
 ## The complete ModularFighterAssembler is animated as one visual unit; identity
-## layers are never flattened into preset-specific sprite sheets.
+## and pack modules are never flattened into preset-specific sprite sheets.
 ## Tehkné Solutions
 
 const BASE_TEXTURE_PATH := "res://assets/modular_fighters/base_00/base_fighter_v1_master.png"
@@ -25,6 +25,7 @@ var _hit_visual_timer := 0.0
 var _visual_state: StringName = &"idle"
 var _state_time := 0.0
 var _preset_id: StringName = &""
+var _hair_style_id: StringName = &"hair_none"
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -53,6 +54,9 @@ func using_modular_assets() -> bool:
 func active_preset_id() -> StringName:
 	return _preset_id
 
+func active_hair_style_id() -> StringName:
+	return _hair_style_id
+
 func visual_state() -> StringName:
 	return _visual_state
 
@@ -64,6 +68,7 @@ func runtime_signature() -> Dictionary:
 		"runtime": RUNTIME_ID,
 		"active": _active,
 		"preset_id": String(_preset_id),
+		"hair_style_id": String(_hair_style_id),
 		"states": ANIMATION_STATES.duplicate(),
 		"state_count": ANIMATION_STATES.size(),
 		"world_translation_owner": "fighter_physics",
@@ -133,6 +138,15 @@ func _try_activate() -> void:
 		print("C65_MODULAR_PRESENTER=BLOCKED reason=identity_assembly failures=%s" % ",".join(failures))
 		return
 
+	# C66.1 composes optional Hair after BASE-01 identity is valid. hair_none is a
+	# no-op, so all existing presets preserve the exact C65 visual behavior.
+	failures = ModularFighterHairRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
+	if not failures.is_empty():
+		candidate.queue_free()
+		print("C65_MODULAR_PRESENTER=BLOCKED reason=hair_assembly failures=%s" % ",".join(failures))
+		return
+	_hair_style_id = ModularFighterHairRuntime.profile_style_id(profile as ModularFighterProfile)
+
 	_base_scale = TARGET_VISUAL_HEIGHT / float(used.size.y)
 	candidate.scale = Vector2.ONE * _base_scale
 	candidate.position = Vector2.ZERO
@@ -158,6 +172,13 @@ func _try_activate() -> void:
 		String(_assembler.active_identity_module_id(&"eyes")),
 		String(_assembler.active_identity_module_id(&"brows")),
 	])
+	if _hair_style_id != &"hair_none":
+		var hair_signature := ModularFighterHairRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
+		print("C66_1_HAIR_RUNTIME=PASS style=%s back_z=%d front_z=%d" % [
+			String(_hair_style_id),
+			int(hair_signature.get("hair_back_z", -1)),
+			int(hair_signature.get("hair_front_z", -1)),
+		])
 	print("C65_LIAN_FALLBACK=HIDDEN_PRESERVED")
 	print("SIGNATURE=Tehkné Solutions")
 
@@ -174,6 +195,7 @@ func _promote_battle_handoff() -> void:
 	handoff["visual_blocker"] = ""
 	handoff["visual_runtime"] = RUNTIME_ID
 	handoff["animation_states"] = ANIMATION_STATES.duplicate()
+	handoff["hair_style_id"] = String(_hair_style_id)
 	handoff["static_sprite_regression_allowed"] = false
 	handoff["lian_fallback_preserved"] = true
 	handoff["preset_specific_sprite_sheet"] = false

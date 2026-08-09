@@ -1,0 +1,56 @@
+{
+  "schema": "tehkne/taijifu-base02-hair-pack/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE02_HAIR_PACK_01_LIAN_TOPKNOT",
+  "stage": "C66.1",
+  "status": "production_approved_creator_control_pending",
+  "style_id": "hair_01_lian_topknot",
+  "modules": {
+    "hair_back": "hair_01_lian_topknot_back",
+    "hair_front": "hair_01_lian_topknot_front"
+  },
+  "source": {
+    "character_lock_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "base00_reference_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+    "derivation": "exact_character_lock_source_pixel_matte_v1",
+    "diagnostic_artifact": {
+      "workflow_run": 31330055231,
+      "artifact_id": 9042650886,
+      "artifact_sha256": "98048b44188dc044418b273749aedff0b57f8d6eb6e4a768e905398b9c54a697"
+    }
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "redraw": false,
+    "resampling": false,
+    "source_pixel_mutation": false
+  },
+  "runtime": {
+    "style_selection_atomic": true,
+    "profile_storage": "generic_modules_v2",
+    "hair_back_z": 5,
+    "hair_front_z": 50,
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "combat_build_changed": false,
+    "creator_control": false
+  },
+  "promotion": {
+    "binary_materialized": true,
+    "runtime_validation": "pass",
+    "battle_visual_review": "pass",
+    "battle_activation": true,
+    "creator_exposure": false,
+    "creator_control_stage": "C66.2",
+    "evidence": {
+      "workflow_run": 31330696902,
+      "artifact_id": 9042838843,
+      "artifact_sha256": "4ddaeabdf13d6f2943c4f5ffc0bd477fea9bcba6797f62e400e17d740724b7c7",
+      "capture": "artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png"
+    }
+  },
+  "next_stage": "C66.2 — Hair Creator Control",
+  "signature_note": "Tehkné Solutions"
+}

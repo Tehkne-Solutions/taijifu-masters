@@ -15,31 +15,62 @@ func _run() -> void:
 
 	if String(manifest.get("pack_id", "")) != "BASE02_HAIR":
 		failures.append("base02_manifest_missing")
-	if String(manifest.get("status", "")) != "foundation_no_art_assets":
-		failures.append("base02_manifest_status")
 	if String(manifest.get("default_style_id", "")) != "hair_none":
 		failures.append("base02_default_style")
+	var styles = manifest.get("styles", {})
+	if not (styles is Dictionary) or not styles.has("hair_none"):
+		failures.append("base02_hair_none_missing")
+	else:
+		var none_style = styles["hair_none"]
+		if not (none_style is Dictionary):
+			failures.append("base02_hair_none_invalid")
+		else:
+			if none_style.get("hair_back", "invalid") != null or none_style.get("hair_front", "invalid") != null:
+				failures.append("base02_hair_none_must_be_empty")
+			if not bool(none_style.get("production_ready", false)):
+				failures.append("base02_hair_none_not_ready")
+
+	var status := String(manifest.get("status", ""))
 	var modules = manifest.get("modules", {})
-	if not (modules is Dictionary) or not modules.is_empty():
-		failures.append("base02_foundation_must_not_claim_art_modules")
 	var promotion = manifest.get("promotion", {})
+	if not (modules is Dictionary):
+		failures.append("base02_modules_invalid")
 	if not (promotion is Dictionary):
 		failures.append("base02_promotion_contract")
-	else:
+	elif status == "foundation_no_art_assets":
+		# Original C66.0 state: before any canonical Hair pack exists.
+		if not modules.is_empty():
+			failures.append("base02_foundation_must_not_claim_art_modules")
 		if bool(promotion.get("art_assets_present", true)):
-			failures.append("base02_art_assets_must_be_false")
-		if bool(promotion.get("creator_exposure", true)):
-			failures.append("base02_creator_exposure_must_be_false")
+			failures.append("base02_foundation_art_assets_must_be_false")
 		if bool(promotion.get("battle_activation", true)):
-			failures.append("base02_battle_activation_must_be_false")
+			failures.append("base02_foundation_battle_activation_must_be_false")
+	else:
+		# Once C66.1+ promotes real art, this gate keeps validating the foundation
+		# invariants instead of permanently demanding an empty pack.
+		if modules.is_empty():
+			failures.append("base02_promoted_pack_modules_missing")
+		if not bool(promotion.get("art_assets_present", false)):
+			failures.append("base02_promoted_pack_art_assets_false")
 
+	# The immutable C66.0 production record still documents the original
+	# foundation checkpoint; later packs supersede its promotion blocker without
+	# rewriting that historical evidence.
 	if String(contract.get("component_id", "")) != "BASE02_HAIR_FOUNDATION":
 		failures.append("base02_contract_missing")
-	if String(contract.get("status", "")) != "foundation_candidate_art_blocked":
-		failures.append("base02_contract_status")
-	var contract_promotion = contract.get("promotion", {})
-	if not (contract_promotion is Dictionary) or bool(contract_promotion.get("hair_art_promotion_allowed", true)):
-		failures.append("base02_art_promotion_fail_closed")
+	if String(contract.get("stage", "")) != "C66.0":
+		failures.append("base02_contract_stage")
+	var style_contract = contract.get("style_contract", {})
+	if not (style_contract is Dictionary):
+		failures.append("base02_style_contract_missing")
+	else:
+		if String(style_contract.get("creator_selection_unit", "")) != "hair_style":
+			failures.append("base02_atomic_style_unit")
+		var atomic_slots = style_contract.get("atomic_pair_slots", [])
+		if not (atomic_slots is Array) or atomic_slots != ["hair_back", "hair_front"]:
+			failures.append("base02_atomic_pair_slots")
+		if bool(style_contract.get("cross_style_mixing", true)):
+			failures.append("base02_cross_style_mixing")
 
 	var slots = standard.get("slots", [])
 	var creator_slots = standard.get("creator_v1_editable_slots", [])
@@ -79,11 +110,14 @@ func _run() -> void:
 		return
 
 	print("C66_0_HAIR_FOUNDATION=PASS")
+	print("C66_0_FOUNDATION_INVARIANTS=PASS manifest_status=%s" % status)
 	print("C66_0_HAIR_SLOTS=PASS back=hair_back front=hair_front")
 	print("C66_0_HAIR_LAYER_ORDER=PASS back=5 body=10 face_plate=15 face=20 eyes=30 brows=40 front=50 head_accessory=60")
 	print("C66_0_PROFILE_STORAGE=PASS generic_modules=true")
-	print("C66_0_ART_PROMOTION=BLOCKED reason=first_canonical_hair_art_pack_missing")
-	print("C66_0_CREATOR_EXPOSURE=BLOCKED")
+	if status == "foundation_no_art_assets":
+		print("C66_0_ART_STAGE=FOUNDATION_BLOCKED")
+	else:
+		print("C66_0_ART_STAGE=SUPERSEDED_BY_PROMOTED_PACK")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
 
