@@ -1,9 +1,7 @@
 name: C67.1 Uniform Promote Once
 
 on:
-  push:
-    branches:
-      - agent/c67-1-lian-uniform-pack-production
+  pull_request:
     paths:
       - '.github/workflows/c67-1-uniform-promote-once.yml'
   workflow_dispatch:
@@ -13,7 +11,7 @@ permissions:
 
 jobs:
   materialize-cleanup-and-retire:
-    if: github.ref == 'refs/heads/agent/c67-1-lian-uniform-pack-production'
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/c67-1-lian-uniform-pack-production' && github.base_ref == 'agent/c67-1-materialization-base'
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
