@@ -31,6 +31,7 @@ html, body {{
   max-height: 100vh !important;
   margin: 0 !important;
 }}
+</style>
 <!-- /{STYLE_MARKER} -->
 """.strip()
 
