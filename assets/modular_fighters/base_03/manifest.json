@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "pack_id": "BASE03_MARTIAL_ARTS_UNIFORMS",
   "version": "1.0.0",
-  "status": "production_approved_creator_control_pending",
+  "status": "production_approved_creator_control_candidate_review_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -153,7 +153,7 @@
   "promotion": {
     "art_pack_required": true,
     "art_assets_present": true,
-    "creator_exposure": false,
+    "creator_exposure": true,
     "battle_activation": true,
     "runtime_validation": "pass",
     "owner_visual_review": "pass",
@@ -167,7 +167,9 @@
       "hair_interaction": "pass",
       "seams_or_duplicate_regions": false
     },
-    "blocker": "creator_uniform_control"
+    "creator_control_validation": "pending",
+    "creator_visual_review": "pending",
+    "blocker": "c67_2_creator_control_review"
   },
-  "next_stage": "C67_2_BASE03_UNIFORM_CREATOR_CONTROL"
+  "next_stage": "C67_2_CREATOR_CONTROL_REVIEW_AND_PROMOTION"
 }
