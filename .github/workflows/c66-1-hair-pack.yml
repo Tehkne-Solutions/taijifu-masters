@@ -1,0 +1,152 @@
+name: C66.1 BASE-02 Hair Pack 01
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_02/**'
+      - 'scripts/characters/modular_fighter_hair_runtime.gd'
+      - 'scripts/characters/modular_fighter_layer_policy.gd'
+      - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/ci/base02_hair_pack_01_runtime_smoke.gd'
+      - 'scripts/ci/base02_hair_pack_01_visual_review.gd'
+      - 'tools/materialize_base02_lian_topknot.py'
+      - '.github/workflows/c66-1-hair-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hair-pack-runtime:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact Hair binaries and manifest
+        run: |
+          set -euo pipefail
+          pip install --disable-pip-version-check pillow==11.1.0
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from PIL import Image
+
+          root = Path('.')
+          manifest = json.loads((root/'assets/modular_fighters/base_02/manifest.json').read_text())
+          assert manifest['pack_id'] == 'BASE02_HAIR'
+          assert manifest['status'] == 'production_candidate_runtime_validation_pending'
+          style = manifest['styles']['hair_01_lian_topknot']
+          assert style['hair_back'] == 'hair_01_lian_topknot_back'
+          assert style['hair_front'] == 'hair_01_lian_topknot_front'
+          assert style['production_ready'] is False
+          assert manifest['promotion']['creator_exposure'] is False
+          assert manifest['promotion']['battle_activation'] is False
+
+          expected = {
+            'hair_01_lian_topknot_back': '45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b',
+            'hair_01_lian_topknot_front': '11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4',
+          }
+          for module_id, expected_sha in expected.items():
+              contract = manifest['modules'][module_id]
+              path = root / contract['path']
+              assert path.is_file(), path
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest == expected_sha == contract['sha256'], (module_id, digest)
+              image = Image.open(path).convert('RGBA')
+              assert image.size == (1024, 1024)
+              assert image.getchannel('A').getbbox() == tuple(contract['alpha_bbox'])
+              assert contract['pivot'] == [0.5, 0.92]
+              source = contract['source']
+              assert source['redraw'] is False
+              assert source['resampling'] is False
+              assert source['source_pixel_mutation'] is False
+          print('C66_1_HAIR_BINARIES=PASS modules=2 exact_sha=true canvas=1024')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Ensure no write-enabled promotion workflow remains
+        run: |
+          test ! -e .github/workflows/c66-1-hair-promote-once.yml
+          echo 'C66_1_WRITE_WORKFLOW=ABSENT'
+
+      - name: Install Godot 4.3 and Xvfb
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c66-1-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed' c66-1-import.log; then
+            echo 'C66_1_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Preserve C65 no-Hair regression
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/c65_shared_modular_animation_runtime_smoke.gd 2>&1 | tee c66-1-c65-regression.log
+          grep -q 'C65_SHARED_MODULAR_ANIMATION_RUNTIME=PASS' c66-1-c65-regression.log
+          grep -q 'C65_NO_PRESET_FALLBACK=PASS' c66-1-c65-regression.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C65_SHARED_RUNTIME=BLOCKED' c66-1-c65-regression.log; then
+            exit 1
+          fi
+
+      - name: Run Hair pack profile assembler and battle smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base02_hair_pack_01_runtime_smoke.gd 2>&1 | tee c66-1-runtime.log
+          grep -q 'C66_1_PROFILE_ATOMIC_STYLE=PASS' c66-1-runtime.log
+          grep -q 'C66_1_ASSEMBLER=PASS back_z=5 front_z=50' c66-1-runtime.log
+          grep -q 'C66_1_PRESET_ROUNDTRIP=PASS' c66-1-runtime.log
+          grep -q 'C66_1_BATTLE_RUNTIME=PASS style=hair_01_lian_topknot build=lian_wu' c66-1-runtime.log
+          grep -q 'C66_1_CREATOR_CONTROL=BLOCKED stage=C66.2' c66-1-runtime.log
+          grep -q 'C66_1_HAIR_PACK_RUNTIME=PASS' c66-1-runtime.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C66_1_RUNTIME=BLOCKED' c66-1-runtime.log; then
+            exit 1
+          fi
+
+      - name: Capture active-fight Hair visual review
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/base02_hair_pack_01_visual_review.gd \
+            2>&1 | tee c66-1-visual.log
+          grep -q 'C66_1_VISUAL_REVIEW=PASS style=hair_01_lian_topknot' c66-1-visual.log
+          grep -q 'C66_1_VISUAL_LAYERING=PASS back_z=5 front_z=50' c66-1-visual.log
+          grep -q 'C66_1_VISUAL_PHASE=PASS active_fight=true' c66-1-visual.log
+          test -s artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C66_1_VISUAL=BLOCKED' c66-1-visual.log; then
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C66-1-BASE02-HAIR-PACK-01-EVIDENCE
+          path: |
+            c66-1-import.log
+            c66-1-c65-regression.log
+            c66-1-runtime.log
+            c66-1-visual.log
+            artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png
+            assets/modular_fighters/base_02/manifest.json
+            assets/modular_fighters/base_02/production/BASE02_HAIR_PACK_01_LIAN_TOPKNOT.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C66.1 BASE-02 Hair Pack 01 runtime + active-fight visual review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
