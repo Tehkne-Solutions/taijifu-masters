@@ -1,0 +1,29 @@
+{
+  "schema": "tehkne/taijifu-first-playable-lot/v1",
+  "signature": "Tehkné Solutions",
+  "lot_id": "pack_01_lian_wu_first_playable_lot_01",
+  "stage": "C64",
+  "status": "approved_first_playable_runtime",
+  "character_id": "lian_wu",
+  "visual_method": "whole_sprite_continuous_affine_v1",
+  "source_character_lock_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+  "source_character_lock_rgba_sha256": "0bedec17308acd2c7b392f2c989cf97238908aa4f18b73371aa67c741eb6030b",
+  "required_animations": [
+    "idle",
+    "run",
+    "jump_start",
+    "airborne",
+    "fall",
+    "attack_light",
+    "guard",
+    "dodge",
+    "hit",
+    "ko"
+  ],
+  "animation_count": 10,
+  "frame_count": 45,
+  "spriteframes": "assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres",
+  "c64_families_metadata": "assets/pack_01_characters/lian_wu/metadata/c64_first_playable_families.json",
+  "visual_review": "pass",
+  "promotion_record": "config/c64_lot01_promotion.json"
+}

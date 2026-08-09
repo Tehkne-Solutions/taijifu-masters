@@ -1,0 +1,12 @@
+{
+  "schema": "tehkne/taijifu-first-playable-approval/v1",
+  "signature": "Tehkné Solutions",
+  "status": "approved",
+  "technical_generation": "pass",
+  "binary_promotion_allowed": true,
+  "required_review_artifact": "c64-lian-first-playable-contact-sheet.png",
+  "visual_review": "pass",
+  "approved_scope": "first_playable_runtime",
+  "final_authored_animation_claimed": false,
+  "promotion_record": "config/c64_lot01_promotion.json"
+}

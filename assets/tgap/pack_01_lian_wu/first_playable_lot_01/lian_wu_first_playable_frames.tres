@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" load_steps=46 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f01.png" id="1"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f02.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f03.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f04.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f05.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/idle/char_lian_wu__idle__f06.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f01.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f02.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f03.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f04.png" id="10"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f05.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f06.png" id="12"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f07.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/run/char_lian_wu__run__f08.png" id="14"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/jump_start/char_lian_wu__jump_start__f01.png" id="15"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/jump_start/char_lian_wu__jump_start__f02.png" id="16"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/jump_start/char_lian_wu__jump_start__f03.png" id="17"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/jump_start/char_lian_wu__jump_start__f04.png" id="18"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/airborne/char_lian_wu__airborne__f01.png" id="19"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/airborne/char_lian_wu__airborne__f02.png" id="20"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/airborne/char_lian_wu__airborne__f03.png" id="21"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/fall/char_lian_wu__fall__f01.png" id="22"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/fall/char_lian_wu__fall__f02.png" id="23"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/fall/char_lian_wu__fall__f03.png" id="24"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f01.png" id="25"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f02.png" id="26"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f03.png" id="27"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f04.png" id="28"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f05.png" id="29"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/attack_light/char_lian_wu__attack_light__f06.png" id="30"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/guard/char_lian_wu__guard__f01.png" id="31"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/dodge/char_lian_wu__dodge__f01.png" id="32"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/dodge/char_lian_wu__dodge__f02.png" id="33"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/dodge/char_lian_wu__dodge__f03.png" id="34"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/dodge/char_lian_wu__dodge__f04.png" id="35"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/dodge/char_lian_wu__dodge__f05.png" id="36"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/hit/char_lian_wu__hit__f01.png" id="37"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/hit/char_lian_wu__hit__f02.png" id="38"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/hit/char_lian_wu__hit__f03.png" id="39"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/hit/char_lian_wu__hit__f04.png" id="40"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/ko/char_lian_wu__ko__f01.png" id="41"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/ko/char_lian_wu__ko__f02.png" id="42"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/ko/char_lian_wu__ko__f03.png" id="43"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/ko/char_lian_wu__ko__f04.png" id="44"]
+[ext_resource type="Texture2D" path="res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/animations/ko/char_lian_wu__ko__f05.png" id="45"]
+
+[resource]
+animations = [{"frames": [{"duration": 1.0, "texture": ExtResource("1")}, {"duration": 1.0, "texture": ExtResource("2")}, {"duration": 1.0, "texture": ExtResource("3")}, {"duration": 1.0, "texture": ExtResource("4")}, {"duration": 1.0, "texture": ExtResource("5")}, {"duration": 1.0, "texture": ExtResource("6")}], "loop": true, "name": &"idle", "speed": 8.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("7")}, {"duration": 1.0, "texture": ExtResource("8")}, {"duration": 1.0, "texture": ExtResource("9")}, {"duration": 1.0, "texture": ExtResource("10")}, {"duration": 1.0, "texture": ExtResource("11")}, {"duration": 1.0, "texture": ExtResource("12")}, {"duration": 1.0, "texture": ExtResource("13")}, {"duration": 1.0, "texture": ExtResource("14")}], "loop": true, "name": &"run", "speed": 12.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("15")}, {"duration": 1.0, "texture": ExtResource("16")}, {"duration": 1.0, "texture": ExtResource("17")}, {"duration": 1.0, "texture": ExtResource("18")}], "loop": false, "name": &"jump_start", "speed": 12.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("19")}, {"duration": 1.0, "texture": ExtResource("20")}, {"duration": 1.0, "texture": ExtResource("21")}], "loop": true, "name": &"airborne", "speed": 10.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("22")}, {"duration": 1.0, "texture": ExtResource("23")}, {"duration": 1.0, "texture": ExtResource("24")}], "loop": false, "name": &"fall", "speed": 12.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("25")}, {"duration": 1.0, "texture": ExtResource("26")}, {"duration": 1.0, "texture": ExtResource("27")}, {"duration": 1.0, "texture": ExtResource("28")}, {"duration": 1.0, "texture": ExtResource("29")}, {"duration": 1.0, "texture": ExtResource("30")}], "loop": false, "name": &"attack_light", "speed": 10.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("31")}], "loop": true, "name": &"guard", "speed": 6.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("32")}, {"duration": 1.0, "texture": ExtResource("33")}, {"duration": 1.0, "texture": ExtResource("34")}, {"duration": 1.0, "texture": ExtResource("35")}, {"duration": 1.0, "texture": ExtResource("36")}], "loop": false, "name": &"dodge", "speed": 14.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("37")}, {"duration": 1.0, "texture": ExtResource("38")}, {"duration": 1.0, "texture": ExtResource("39")}, {"duration": 1.0, "texture": ExtResource("40")}], "loop": false, "name": &"hit", "speed": 12.000},
+{"frames": [{"duration": 1.0, "texture": ExtResource("41")}, {"duration": 1.0, "texture": ExtResource("42")}, {"duration": 1.0, "texture": ExtResource("43")}, {"duration": 1.0, "texture": ExtResource("44")}, {"duration": 1.0, "texture": ExtResource("45")}], "loop": false, "name": &"ko", "speed": 8.000}]

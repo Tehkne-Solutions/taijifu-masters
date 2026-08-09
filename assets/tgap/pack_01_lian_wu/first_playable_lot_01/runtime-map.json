@@ -1,0 +1,66 @@
+{
+  "schema": "tehkne/taijifu-first-playable-runtime-map/v1",
+  "signature": "Tehkné Solutions",
+  "animations": {
+    "idle": {
+      "path": "animations/idle",
+      "fps": 8.0,
+      "loop": true,
+      "frames": 6
+    },
+    "run": {
+      "path": "animations/run",
+      "fps": 12.0,
+      "loop": true,
+      "frames": 8
+    },
+    "jump_start": {
+      "path": "animations/jump_start",
+      "fps": 12.0,
+      "loop": false,
+      "frames": 4
+    },
+    "airborne": {
+      "path": "animations/airborne",
+      "fps": 10.0,
+      "loop": true,
+      "frames": 3
+    },
+    "fall": {
+      "path": "animations/fall",
+      "fps": 12.0,
+      "loop": false,
+      "frames": 3
+    },
+    "attack_light": {
+      "path": "animations/attack_light",
+      "fps": 10.0,
+      "loop": false,
+      "frames": 6
+    },
+    "guard": {
+      "path": "animations/guard",
+      "fps": 6.0,
+      "loop": true,
+      "frames": 1
+    },
+    "dodge": {
+      "path": "animations/dodge",
+      "fps": 14.0,
+      "loop": false,
+      "frames": 5
+    },
+    "hit": {
+      "path": "animations/hit",
+      "fps": 12.0,
+      "loop": false,
+      "frames": 4
+    },
+    "ko": {
+      "path": "animations/ko",
+      "fps": 8.0,
+      "loop": false,
+      "frames": 5
+    }
+  }
+}
