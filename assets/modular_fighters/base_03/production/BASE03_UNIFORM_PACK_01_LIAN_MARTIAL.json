@@ -1,0 +1,57 @@
+{
+  "schema": "tehkne/taijifu-base03-uniform-pack/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE03_UNIFORM_PACK_01_LIAN_MARTIAL",
+  "stage": "C67.1",
+  "status": "candidate_runtime_visual_review_pending",
+  "set_id": "uniform_01_lian_martial",
+  "label": "Traje Marcial Lian",
+  "source": {
+    "method": "semantic_source_pixel_uniform_palette_body_matte_v4_final_sanitized",
+    "historical_lian_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "probe_workflow_run": 31333133016,
+    "probe_artifact_id": 9043506141,
+    "probe_artifact_digest": "sha256:d27c81a78cb04e08ba5cf4fdae6a2d60aa360f3ba204d5324d1390f942ff0f10",
+    "source_owner_visual_review": "pass",
+    "redraw": false,
+    "resampling": false,
+    "source_pixel_mutation": false,
+    "contamination_zero": true
+  },
+  "slots": {
+    "torso_inner": null,
+    "torso_outer": "uniform_01_lian_martial_torso_outer",
+    "arms": "uniform_01_lian_martial_arms",
+    "hands": null,
+    "waist": "uniform_01_lian_martial_waist",
+    "legs": "uniform_01_lian_martial_legs",
+    "feet": "uniform_01_lian_martial_feet"
+  },
+  "intentionally_empty_slots": ["torso_inner", "hands"],
+  "expected_sha256": {
+    "uniform_01_lian_martial_torso_outer": "0aa6afd9614f60d99bbb1d64ea8917d6b0c44689f111503ef28221959ac1096f",
+    "uniform_01_lian_martial_arms": "b98aaf87c0b92892ee3ccbc0d662944c6f8ab56813c3f269e94452564496df05",
+    "uniform_01_lian_martial_waist": "0c8bfaa609ce93e0df310b136f52d229f87e4fa7fa18e686a6433217cc75ef5a",
+    "uniform_01_lian_martial_legs": "987c9528ddb72c5fb404e985674d6c128e7ce0258ea9452f2397ff168c676f0a",
+    "uniform_01_lian_martial_feet": "5a7fb1dec6275fddaca49a236adfe095092174d04ffa166bfafaff1f99e8655b"
+  },
+  "runtime_contract": {
+    "boundary": "ModularFighterUniformRuntime",
+    "selection_unit": "uniform_set",
+    "atomic_profile_mutation": true,
+    "atomic_assembler_mutation": true,
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "layer_policy": "modular_fighter_layer_policy_v1",
+    "hair_interaction_required": true,
+    "preset_specific_sprite_sheet": false,
+    "combat_changes": false
+  },
+  "promotion": {
+    "runtime_validation": "pending",
+    "battle_activation": false,
+    "battle_visual_review": "pending",
+    "creator_exposure": false,
+    "creator_control": "blocked_until_C67.2"
+  },
+  "next_stage": "C67.1 — runtime + active-fight visual review"
+}
