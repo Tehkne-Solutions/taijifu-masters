@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate C66.2 control contract
+      - name: Validate approved C66.2 control contract
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -30,11 +30,16 @@ jobs:
           from pathlib import Path
           manifest = json.loads(Path('assets/modular_fighters/base_02/manifest.json').read_text())
           contract = json.loads(Path('assets/modular_fighters/base_02/production/BASE02_HAIR_CREATOR_CONTROL.json').read_text())
-          assert manifest['status'] == 'production_approved_creator_control_validation_pending'
-          assert manifest['promotion']['creator_exposure'] is True
-          assert manifest['promotion']['creator_control_validation'] == 'pending'
+          assert manifest['version'] == '1.1.0'
+          assert manifest['status'] == 'production_approved_creator_control'
+          promotion = manifest['promotion']
+          assert promotion['creator_exposure'] is True
+          assert promotion['creator_control_validation'] == 'pass'
+          assert promotion['creator_evidence']['workflow_run'] == 31331687918
+          assert promotion['creator_evidence']['artifact_id'] == 9043113353
           assert contract['component_id'] == 'BASE02_HAIR_CREATOR_CONTROL'
           assert contract['stage'] == 'C66.2'
+          assert contract['status'] == 'production_approved'
           control = contract['control_contract']
           assert control['public_control'] == 'hair_style'
           assert control['internal_slots'] == ['hair_back', 'hair_front']
@@ -45,7 +50,12 @@ jobs:
           assert preset['schema'] == 'tehkne/taijifu-modular-fighter-preset/v2'
           assert preset['legacy_schema_change'] is False
           assert preset['cross_style_mixing_allowed'] is False
-          print('C66_2_STATIC_CONTRACT=PASS control=hair_style slots_internal=true')
+          validation = contract['validation']
+          assert validation['creator_smoke'] == 'pass'
+          assert validation['preset_roundtrip'] == 'pass'
+          assert validation['battle_handoff'] == 'pass'
+          assert validation['graphical_creator_review'] == 'pass'
+          print('C66_2_STATIC_CONTRACT=PASS status=production_approved control=hair_style slots_internal=true')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -93,7 +103,7 @@ jobs:
             exit 1
           fi
 
-      - name: Capture graphical Creator review
+      - name: Capture graphical Creator regression
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1280x720x24' \
@@ -124,4 +134,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C66.2 Hair Creator Control — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C66.2 Hair Creator Control approved + graphical regression — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
