@@ -1,0 +1,76 @@
+name: C63 Lian v1.0.1 Tag LFS Probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/c63-lian-lfs-tag-probe.yml'
+      - '.github/workflows/c63-lian-release-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe-tag-lfs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe historical tag and exact canonical PNG bytes
+        run: |
+          set -euo pipefail
+          ASSETS='https://github.com/Tehkne-Solutions/taijifu-masters-assets.git'
+          git ls-remote --tags "$ASSETS" | tee c63-assets-tags.txt
+          if ! grep -q 'refs/tags/assets-pack-01-v1.0.1' c63-assets-tags.txt; then
+            echo 'C63_V101_TAG=BLOCKED missing'
+            exit 2
+          fi
+          echo 'C63_V101_TAG=PASS'
+          rm -rf /tmp/c63-assets
+          git clone --no-checkout --filter=blob:none "$ASSETS" /tmp/c63-assets
+          git -C /tmp/c63-assets fetch --depth=1 origin 'refs/tags/assets-pack-01-v1.0.1:refs/tags/assets-pack-01-v1.0.1'
+          git -C /tmp/c63-assets checkout --detach refs/tags/assets-pack-01-v1.0.1
+          git -C /tmp/c63-assets lfs install --local
+          git -C /tmp/c63-assets lfs pull
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root=Path('/tmp/c63-assets')
+          expected={
+            'front':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+            'side_left':'1144177a07b0775acac309eca0498e2401e03941b03b81b7326bc672725549ac',
+            'back':'fbfa0c5a678d515cde9b61fbee445ff35efa0713415960f15e43efa88359c3b3',
+            'side_right':'660280433b6ab5828f34e756205569a535c0c5e4238f1c308ff45ae4a4259c5f',
+            'neutral':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+            'combat_stance':'c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c',
+          }
+          matches={k:[] for k in expected}
+          files=[]
+          for path in root.rglob('*.png'):
+              try: data=path.read_bytes()
+              except OSError: continue
+              digest=hashlib.sha256(data).hexdigest()
+              rel=path.relative_to(root).as_posix()
+              files.append({'path':rel,'sha256':digest,'size_bytes':len(data)})
+              for key,want in expected.items():
+                  if digest==want: matches[key].append(rel)
+          report={'schema':'tehkne/c63-v101-tag-lfs-probe/v1','signature':'Tehkné Solutions','png_count':len(files),'matches':matches,'files':files}
+          Path('c63-v101-lfs-probe.json').write_text(json.dumps(report,indent=2)+'\n')
+          for key,value in matches.items(): print('C63_V101_MATCH %s=%s' % (key,value))
+          if not matches['neutral']:
+              raise SystemExit('C63_V101_EXACT_NEUTRAL=BLOCKED')
+          print('C63_V101_EXACT_NEUTRAL=PASS')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C63-LIAN-V101-TAG-LFS-PROBE
+          path: |
+            c63-assets-tags.txt
+            c63-v101-lfs-probe.json
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C63.0 v1.0.1 tag/LFS exact-byte recovery probe — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
