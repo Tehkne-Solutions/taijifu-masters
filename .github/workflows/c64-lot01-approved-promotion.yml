@@ -1,0 +1,149 @@
+name: C64 Approved LOT01 Promotion
+
+on:
+  push:
+    branches:
+      - 'agent/c64-lian-first-playable-lot01'
+    paths:
+      - 'config/c64_lot01_promotion.json'
+      - '.github/workflows/c64-lot01-approved-promotion.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  promote-approved-lot01:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/c64-lian-first-playable-lot01
+          fetch-depth: 1
+
+      - name: Skip until explicit promotion record exists
+        id: marker
+        run: |
+          if [ ! -f config/c64_lot01_promotion.json ]; then
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'C64_PROMOTION=SKIPPED reason=promotion_record_missing'
+          else
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate visual approval record
+        if: steps.marker.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('config/c64_lot01_promotion.json')
+          d=json.loads(p.read_text())
+          assert d['signature']=='Tehkné Solutions'
+          assert d['status']=='approved_for_first_playable_promotion'
+          assert d['source_head_sha']=='189accae33eeb6b4d3c499d4ef0891fb0b7025da'
+          assert d['review_artifact']['id']==9040703879
+          assert d['review_artifact']['sha256']=='4ec167789bea576bb2374a0a6607018c8d7f4c32ed61e27d4ddb8ddfbd67188a'
+          assert d['visual_review']['regional_seam_artifacts']==False
+          assert d['visual_review']['character_integrity']=='pass'
+          assert d['visual_review']['first_playable_readability']=='pass'
+          assert d['policy']['final_authored_animation_claimed']==False
+          print('C64_PROMOTION_RECORD=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install deterministic image dependency
+        if: steps.marker.outputs.ready == 'true'
+        run: python3 -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+
+      - name: Generate exact approved candidate
+        if: steps.marker.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          python3 tools/materialize_lian_wu_first_playable_c64.py --repo-root . 2>&1 | tee c64-promotion-materialize.log
+          grep -q 'C64_LOT01_MATERIALIZATION=PASS' c64-promotion-materialize.log
+          grep -q 'animations=10/10' c64-promotion-materialize.log
+          grep -q 'regional_seam_artifacts_removed=PASS' c64-promotion-materialize.log
+
+      - name: Promote candidate contracts
+        if: steps.marker.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root=Path('assets/tgap/pack_01_lian_wu/first_playable_lot_01')
+          manifest=json.loads((root/'manifest.json').read_text())
+          runtime=json.loads((root/'runtime-map.json').read_text())
+          approval=json.loads((root/'approval.json').read_text())
+          meta_path=Path('assets/pack_01_characters/lian_wu/metadata/c64_first_playable_families.json')
+          metadata=json.loads(meta_path.read_text())
+
+          manifest['status']='approved_first_playable_runtime'
+          manifest['visual_review']='pass'
+          manifest['promotion_record']='config/c64_lot01_promotion.json'
+          approval.update({
+              'status':'approved',
+              'visual_review':'pass',
+              'binary_promotion_allowed':True,
+              'approved_scope':'first_playable_runtime',
+              'final_authored_animation_claimed':False,
+              'promotion_record':'config/c64_lot01_promotion.json',
+          })
+          metadata['status']='approved_first_playable_runtime'
+          metadata['visual_review']='pass'
+          metadata['promotion_record']='config/c64_lot01_promotion.json'
+
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          (root/'approval.json').write_text(json.dumps(approval,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          meta_path.write_text(json.dumps(metadata,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+
+          required=['idle','run','jump_start','airborne','fall','attack_light','guard','dodge','hit','ko']
+          assert list(runtime['animations'])==required
+          assert manifest['animation_count']==10
+          assert manifest['frame_count']==45
+          assert approval['binary_promotion_allowed'] is True
+          assert approval['final_authored_animation_claimed'] is False
+
+          checks=[]
+          for path in sorted(root.rglob('*')):
+              if path.is_file() and path.name!='checksums.sha256' and not path.name.endswith('.import'):
+                  digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                  checks.append(f'{digest}  {path.relative_to(root).as_posix()}')
+          (root/'checksums.sha256').write_text('\n'.join(checks)+'\n',encoding='utf-8')
+          print('C64_PROMOTED_CONTRACT=PASS animations=10 frames=45')
+          PY
+
+      - name: Verify no generated import/cache files are promoted
+        if: steps.marker.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          if find assets/tgap/pack_01_lian_wu/first_playable_lot_01 -type f -name '*.import' | grep -q .; then
+            echo 'C64_PROMOTION=BLOCKED generated_import_files'
+            exit 1
+          fi
+          test ! -e .godot || true
+          echo 'C64_PROMOTION_SOURCE_FILES_ONLY=PASS'
+
+      - name: Commit approved LOT01 source assets
+        if: steps.marker.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            assets/tgap/pack_01_lian_wu/first_playable_lot_01 \
+            assets/pack_01_characters/lian_wu/metadata/c64_first_playable_families.json
+          if git diff --cached --quiet; then
+            echo 'C64_PROMOTION=PASS already_materialized=true'
+            exit 0
+          fi
+          git commit -m 'C64 promote approved Lian Wu First Playable LOT01'
+          git push origin HEAD:agent/c64-lian-first-playable-lot01
+          echo 'C64_PROMOTION=PASS animations=10 frames=45'
+          echo 'SIGNATURE=Tehkné Solutions'
+
+      - name: Summary
+        if: always()
+        run: echo 'C64 approved LOT01 one-shot promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
