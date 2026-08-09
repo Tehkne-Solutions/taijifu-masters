@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'tools/lian_wu_canonical_identity.py'
-      - 'assets/characters/lian_wu/character_lock/C63_2_CANONICAL_VISUAL_IDENTITY.json'
+      - 'config/character_identity/lian_wu_canonical_visual_identity.json'
       - '.github/workflows/c63-2-lian-canonical-visual-fingerprint.yml'
   workflow_dispatch:
 
