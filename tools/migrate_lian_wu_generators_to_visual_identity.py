@@ -58,10 +58,13 @@ MARKER_RE = re.compile(r'([A-Z][A-Z0-9_]+)=BLOCKED\s+source_hash_mismatch')
 def _inject_import(text: str, path: Path) -> str:
     if IMPORT_LINE in text:
         return text
-    anchor = re.search(r'^try:\s*\n[ \t]+from PIL\b', text, re.MULTILINE)
-    if anchor is None:
-        raise ValueError(f"{path}: Pillow import anchor not found")
-    return text[: anchor.start()] + IMPORT_LINE + "\n\n" + text[anchor.start() :]
+    guarded = re.search(r'^try:\s*\n[ \t]+from PIL\b', text, re.MULTILINE)
+    if guarded is not None:
+        return text[: guarded.start()] + IMPORT_LINE + "\n\n" + text[guarded.start() :]
+    direct = re.search(r'^from PIL\b', text, re.MULTILINE)
+    if direct is not None:
+        return text[: direct.start()] + IMPORT_LINE + "\n" + text[direct.start() :]
+    raise ValueError(f"{path}: Pillow import anchor not found")
 
 
 def _replace_preflight(text: str, path: Path) -> tuple[str, str, str]:
