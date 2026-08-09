@@ -3,6 +3,8 @@ name: C63.3 Lian Generator Visual Identity Migration
 on:
   pull_request:
     paths:
+      - 'assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
+      - 'config/character_identity/lian_wu_canonical_visual_identity.json'
       - 'tools/migrate_lian_wu_generators_to_visual_identity.py'
       - 'tools/lian_wu_canonical_identity.py'
       - 'tools/generate_lian_wu_*.py'
@@ -10,29 +12,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  migrate-and-validate:
+  migrated-contract:
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 8
     steps:
-      - name: Checkout PR head
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-          fetch-depth: 0
-
-      - name: Install image dependency
-        run: python3 -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
-
-      - name: Apply mechanical identity migration
+      - uses: actions/checkout@v4
+      - name: Validate migration is fully materialized and syntactically safe
         run: |
           set -euo pipefail
           python3 tools/migrate_lian_wu_generators_to_visual_identity.py \
             --repo-root . \
-            --apply \
-            --report /tmp/c63-3-generator-migration.json
+            --report /tmp/c63-3-generator-migration.json | tee /tmp/c63-3-migration.log
+          grep -q 'C63_3_GENERATOR_MIGRATION=PLANNED targets=10 changed=0 already=10' /tmp/c63-3-migration.log
+          git diff --exit-code
           git diff --check
           python3 -m py_compile \
             tools/lian_wu_canonical_identity.py \
@@ -47,52 +42,61 @@ jobs:
             tools/generate_lian_wu_riposte6.py \
             tools/generate_lian_wu_run8.py \
             tools/generate_lian_wu_walk8.py
-
-      - name: Commit migrated generators to same-repo PR
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          set -euo pipefail
-          mapfile -t targets < <(python3 - <<'PY'
-          import importlib.util
+          python3 - <<'PY'
           from pathlib import Path
-          spec=importlib.util.spec_from_file_location('migration', Path('tools/migrate_lian_wu_generators_to_visual_identity.py'))
-          module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-          print('\n'.join(module.TARGETS))
+          old='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          locked=[]
+          for path in sorted(Path('tools').glob('generate_lian_wu_*.py')):
+              if old in path.read_text(encoding='utf-8'):
+                  locked.append(path.as_posix())
+          if locked:
+              raise SystemExit('C63_3_LEGACY_BINARY_LOCKS=BLOCKED '+','.join(locked))
+          print('C63_3_LEGACY_BINARY_LOCKS=PASS count=0')
+          print('C63_3_MIGRATED_CONTRACT=PASS targets=10')
+          print('SIGNATURE=Tehkné Solutions')
           PY
-          )
-          if git diff --quiet -- "${targets[@]}"; then
-            echo 'C63_3_SELF_MIGRATION_COMMIT=NOT_NEEDED'
-          else
-            git config user.name 'Tehkne Solutions Automation'
-            git config user.email 'actions@users.noreply.github.com'
-            git add -- "${targets[@]}"
-            git commit -m 'C63.3 migrate Lian generators to canonical visual identity'
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-            echo 'C63_3_SELF_MIGRATION_COMMIT=PASS'
-          fi
 
-      - name: Reconstruct canonical neutral from official lineage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C63-3-MIGRATION-CONTRACT
+          path: |
+            /tmp/c63-3-generator-migration.json
+            /tmp/c63-3-migration.log
+          if-no-files-found: warn
+
+  exact-source-generator-smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require recovered exact historical neutral
         run: |
           set -euo pipefail
-          URL='https://github.com/Tehkne-Solutions/taijifu-masters-assets/releases/download/assets-pack-01-v1.0.0/PACK_01_LIAN_WU_BASE_FINAL_v1.0.0.zip'
-          curl --fail --location --retry 3 --output /tmp/pack01.zip "$URL"
-          echo '0aea374365b8736ae2134312e94d8128260a9c7650cc840aa2e588a4ab70872a  /tmp/pack01.zip' | sha256sum -c -
-          rm -rf /tmp/c63-3-pack /tmp/c63-3-clean
-          mkdir -p /tmp/c63-3-pack /tmp/c63-3-clean
-          unzip -q /tmp/pack01.zip -d /tmp/c63-3-pack
-          echo '047de240f47d6b8ba1e0605dd3353dc3bd6921ae7589163b74c1855d1b5cf1ec  /tmp/c63-3-pack/turnaround/char_lian_wu__front_raw.png' | sha256sum -c -
-          curl --fail --location --retry 3 \
-            'https://raw.githubusercontent.com/Tehkne-Solutions/taijifu-masters-assets/f2f64600ce93396887e88d7b781553da54572da5/tools/build_lian_wu_canonical_clean_v101.py' \
-            --output /tmp/build_lian_wu_canonical_clean_v101.py
-          python3 /tmp/build_lian_wu_canonical_clean_v101.py /tmp/c63-3-pack /tmp/c63-3-clean
-          mkdir -p assets/characters/lian_wu/character_lock
-          cp /tmp/c63-3-clean/char_lian_wu__front_clean.png assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+          path='assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
+          expected='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          if [ ! -f "$path" ]; then
+            echo 'C63_3_EXACT_SOURCE=BLOCKED reason=historical_character_lock_not_recovered dependency=PR_373'
+            exit 12
+          fi
+          actual="$(sha256sum "$path" | awk '{print $1}')"
+          if [ "$actual" != "$expected" ]; then
+            echo "C63_3_EXACT_SOURCE=BLOCKED expected=$expected actual=$actual"
+            exit 13
+          fi
+          echo 'C63_3_EXACT_SOURCE=PASS historical_bytes=true'
+
+      - name: Install image dependency
+        run: python3 -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+
+      - name: Validate exact neutral against decoded identity contract
+        run: |
+          set -euo pipefail
           python3 tools/lian_wu_canonical_identity.py \
             assets/characters/lian_wu/character_lock/lian_wu_neutral.png \
-            --json /tmp/c63-3-neutral-identity.json
-          echo 'C63_3_REMOTE_NEUTRAL=PASS'
+            --json /tmp/c63-3-exact-neutral-identity.json
 
-      - name: Run all migrated generators
+      - name: Run all 10 generators against exact historical source
         run: |
           set -euo pipefail
           mkdir -p /tmp/c63-3-logs
@@ -113,33 +117,17 @@ jobs:
             echo "=== $generator ==="
             python3 "$generator" --repo-root . 2>&1 | tee "/tmp/c63-3-logs/${name}.log"
           done
-          echo 'C63_3_ALL_GENERATORS=PASS count=10'
+          echo 'C63_3_ALL_GENERATORS_EXACT_SOURCE=PASS count=10'
+          echo 'SIGNATURE=Tehkné Solutions'
 
-      - name: Enforce zero legacy binary locks
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          old='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
-          files=[]
-          for path in sorted(Path('tools').glob('generate_lian_wu_*.py')):
-              if old in path.read_text(encoding='utf-8'):
-                  files.append(path.as_posix())
-          if files:
-              raise SystemExit('C63_3_LEGACY_BINARY_LOCKS=BLOCKED ' + ','.join(files))
-          print('C63_3_LEGACY_BINARY_LOCKS=PASS count=0')
-          PY
-
-      - name: Publish evidence
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: C63-3-LIAN-GENERATOR-VISUAL-IDENTITY
+          name: C63-3-EXACT-SOURCE-GENERATOR-EVIDENCE
           path: |
-            /tmp/c63-3-generator-migration.json
-            /tmp/c63-3-neutral-identity.json
+            /tmp/c63-3-exact-neutral-identity.json
             /tmp/c63-3-logs
           if-no-files-found: warn
 
       - name: Summary
-        run: echo 'C63.3 Lian generator visual identity migration — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63.3 exact-source generator validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
