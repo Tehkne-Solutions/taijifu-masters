@@ -59,6 +59,45 @@ jobs:
           print('SIGNATURE=Tehkné Solutions')
           PY
 
+      - name: Compare exact historical neutral with C63.2 decoded fingerprint
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          from PIL import Image
+
+          path=Path('assets/characters/lian_wu/character_lock/lian_wu_neutral.png')
+          expected='c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2'
+          if not path.is_file():
+              raise SystemExit('C63_2_RGBA_FINGERPRINT=BLOCKED exact_neutral_missing')
+          with Image.open(path) as opened:
+              rgba=opened.convert('RGBA')
+              canvas=rgba.size
+              actual=hashlib.sha256(rgba.tobytes()).hexdigest()
+              alpha=rgba.getchannel('A').point(lambda v:255 if v>=3 else 0)
+              bounds=alpha.getbbox() or (0,0,0,0)
+          report={
+              'schema':'tehkne/c63-2-exact-vs-reconstructed-rgba/v1',
+              'signature':'Tehkné Solutions',
+              'historical_file_sha256':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+              'exact_decoded_rgba_sha256':actual,
+              'c63_2_reconstructed_decoded_rgba_sha256':expected,
+              'canvas':list(canvas),
+              'alpha_bounds_threshold_3':list(bounds),
+              'pixel_identity_matches_reconstruction':actual==expected,
+          }
+          Path('c63-2-exact-vs-reconstructed-rgba.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+          print(f'C63_2_EXACT_RGBA_SHA256={actual}')
+          print(f'C63_2_EXACT_ALPHA_BOUNDS={bounds}')
+          if actual != expected:
+              print('C63_2_RGBA_FINGERPRINT=BLOCKED classification=HISTORICAL_PIXELS_DIVERGE_FROM_RECONSTRUCTED_CANDIDATE')
+              raise SystemExit(9)
+          print('C63_2_RGBA_FINGERPRINT=PASS classification=EXACT_HISTORICAL_PIXELS_MATCH_RECONSTRUCTED')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
       - name: Install Godot 4.3
         run: |
           sudo apt-get update
@@ -113,6 +152,7 @@ jobs:
         with:
           name: C63-2-EXACT-CHARACTER-LOCK-RECOVERY-EVIDENCE
           path: |
+            c63-2-exact-vs-reconstructed-rgba.json
             c63-2-import.log
             c63-2-texture.log
             assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json
