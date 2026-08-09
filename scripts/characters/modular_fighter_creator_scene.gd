@@ -13,6 +13,7 @@ const HAIR_CONTROL_SIZE := Vector2(310.0, 42.0)
 
 var _hair_style_option: OptionButton
 var _hair_syncing := false
+var _hair_skip_next_state_reassembly := false
 
 func _ready() -> void:
 	super._ready()
@@ -55,6 +56,12 @@ func set_hair_style(style_id: StringName) -> PackedStringArray:
 
 	_sync_hair_option_selection()
 	_set_status("Cabelo atualizado: %s" % ModularFighterHairRuntime.style_label(style_id), false)
+	# The Hair preview is already assembled above. Keep the public state signal for
+	# observers, but skip only this scene's next signal-driven reassembly. Without
+	# this guard, attach_visual_module() queues the first Hair nodes for deletion and
+	# immediately creates a second pair in the same frame, producing transient node
+	# names and breaking deterministic live-preview lookup.
+	_hair_skip_next_state_reassembly = true
 	creator_state_changed.emit()
 	return failures
 
@@ -75,6 +82,7 @@ func hair_creator_signature() -> Dictionary:
 		"live_preview": true,
 		"preset_roundtrip": true,
 		"battle_handoff": true,
+		"signal_reassembly_guard": true,
 		"signature": "Tehkné Solutions",
 	}
 
@@ -165,6 +173,10 @@ func _on_hair_style_selected(index: int) -> void:
 	set_hair_style(style_id)
 
 func _on_creator_state_changed_hair() -> void:
+	if _hair_skip_next_state_reassembly:
+		_hair_skip_next_state_reassembly = false
+		_sync_hair_option_selection()
+		return
 	_sync_hair_control_and_preview()
 
 func _apply_reviewed_scene_layout() -> void:
