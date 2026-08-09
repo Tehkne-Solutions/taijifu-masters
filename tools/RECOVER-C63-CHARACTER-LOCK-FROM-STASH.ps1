@@ -1,7 +1,7 @@
 param(
     [string]$RepoRoot = "W:\TEHKNE-SOLUTIONS\PROJETOS\JOGO-TAIJIFU-MASTERS\taijifu-masters",
     [string]$StashMessage = "backup-local-before-c56-canonical",
-    [string]$Branch = "agent/c63-2-lian-character-lock-exact-recovery"
+    [string]$Branch = "agent/c63-4-exact-character-lock-postmerge"
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,14 +14,28 @@ $Expected = [ordered]@{
 $ExpectedPaths = [string[]]@($Expected.Keys)
 
 function Fail([string]$Message) {
-    Write-Host "C63_2_EXACT_RECOVERY=BLOCKED $Message" -ForegroundColor Red
+    Write-Host "C63_4_EXACT_RECOVERY=BLOCKED $Message" -ForegroundColor Red
     exit 1
 }
 
 function Invoke-RepoGit([string[]]$GitArgs) {
-    $result = & git -C $RepoRoot @GitArgs 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Fail ("git_failed=" + ($GitArgs -join " ") + " output=" + ($result -join " | "))
+    # Windows PowerShell 5.1 can promote native stderr lines captured via 2>&1
+    # to NativeCommandError records when ErrorActionPreference is Stop. Git
+    # writes normal progress (for example "Preparing worktree") to stderr, so
+    # capture native output under Continue and decide success only by exit code.
+    $previousErrorActionPreference = $ErrorActionPreference
+    $result = @()
+    $exitCode = 1
+    try {
+        $ErrorActionPreference = "Continue"
+        $result = @(& git -C $RepoRoot @GitArgs 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) {
+        Fail ("git_failed=" + ($GitArgs -join " ") + " exit_code=$exitCode output=" + ($result -join " | "))
     }
     return $result
 }
@@ -39,31 +53,30 @@ function Assert-Png1024Rgba([string]$Path, [string]$Label) {
     if ($bitDepth -ne 8 -or $colorType -ne 6) { Fail "png_rgba_invalid=$Label bit_depth=$bitDepth color_type=$colorType" }
 }
 
-Write-Host "=== TEHKNÉ SOLUTIONS — C63.2 EXACT CHARACTER LOCK RECOVERY ==="
+Write-Host "=== TEHKNE SOLUTIONS — C63.4 EXACT CHARACTER LOCK POST-MERGE RECOVERY ==="
 Write-Host "POLICY=NO_STASH_POP_NO_PRIMARY_WORKTREE_MUTATION_NO_REDRAW"
 
 if (-not (Test-Path $RepoRoot)) { Fail "repo_not_found=$RepoRoot" }
 if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { Fail "not_git_repo=$RepoRoot" }
 
 $stashLines = @(Invoke-RepoGit @("stash", "list", "--format=%gd%x09%gs"))
-$match = $stashLines | Where-Object { $_ -like "*$StashMessage*" } | Select-Object -First 1
+$match = $stashLines | Where-Object { "$_" -like "*$StashMessage*" } | Select-Object -First 1
 if (-not $match) { Fail "stash_message_not_found=$StashMessage" }
-$stashRef = (($match -split "`t", 2)[0]).Trim()
+$stashRef = (("$match" -split "`t", 2)[0]).Trim()
 if (-not $stashRef) { Fail "stash_ref_parse_failed" }
 Write-Host "STASH_REF=$stashRef"
 
-$untrackedCommitOutput = & git -C $RepoRoot rev-parse "$stashRef^3" 2>&1
-if ($LASTEXITCODE -ne 0) { Fail "stash_untracked_parent_missing ref=$stashRef" }
-$untrackedCommit = ($untrackedCommitOutput | Select-Object -First 1).Trim()
+$untrackedCommitOutput = @(Invoke-RepoGit @("rev-parse", "$stashRef^3"))
+$untrackedCommit = ("$($untrackedCommitOutput | Select-Object -First 1)").Trim()
+if (-not $untrackedCommit) { Fail "stash_untracked_parent_missing ref=$stashRef" }
 Write-Host "STASH_UNTRACKED_COMMIT=$untrackedCommit"
 
 foreach ($path in $ExpectedPaths) {
-    & git -C $RepoRoot cat-file -e "${untrackedCommit}:$path" 2>$null
-    if ($LASTEXITCODE -ne 0) { Fail "stash_path_missing=$path" }
+    Invoke-RepoGit @("cat-file", "-e", "${untrackedCommit}:$path") | Out-Null
     Write-Host "STASH_PATH=PASS $path"
 }
 
-$tempRoot = Join-Path $env:TEMP ("taijifu-c63-2-" + [guid]::NewGuid().ToString("N"))
+$tempRoot = Join-Path $env:TEMP ("taijifu-c63-4-" + [guid]::NewGuid().ToString("N"))
 $archivePath = Join-Path $tempRoot "character-lock.zip"
 $extractRoot = Join-Path $tempRoot "extracted"
 $worktree = Join-Path $tempRoot "worktree"
@@ -88,11 +101,9 @@ try {
     $refspec = "+refs/heads/$Branch`:refs/remotes/origin/$Branch"
     Invoke-RepoGit @("fetch", "origin", $refspec) | Out-Null
     $remoteRef = "origin/$Branch"
-    & git -C $RepoRoot rev-parse --verify $remoteRef *> $null
-    if ($LASTEXITCODE -ne 0) { Fail "remote_recovery_branch_missing=$Branch" }
+    Invoke-RepoGit @("rev-parse", "--verify", $remoteRef) | Out-Null
 
-    $worktreeOutput = & git -C $RepoRoot worktree add --detach $worktree $remoteRef 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail ("worktree_add_failed=" + ($worktreeOutput -join " | ")) }
+    Invoke-RepoGit @("worktree", "add", "--detach", $worktree, $remoteRef) | Out-Null
 
     foreach ($entry in $Expected.GetEnumerator()) {
         $source = Join-Path $extractRoot ($entry.Key -replace "/", "\")
@@ -120,11 +131,11 @@ try {
     }
 
     $userName = (& git -C $worktree config user.name 2>$null)
-    if (-not $userName) { & git -C $worktree config user.name "Tehkné Solutions" }
+    if (-not $userName) { & git -C $worktree config user.name "Tehkne Solutions" }
     $userEmail = (& git -C $worktree config user.email 2>$null)
     if (-not $userEmail) { & git -C $worktree config user.email "master-taijifu@tehkne.com" }
 
-    & git -C $worktree commit -m "fix(c63.2): recover exact canonical Lian Wu Character Lock bytes"
+    & git -C $worktree commit -m "fix(c63.4): recover exact canonical Lian Wu Character Lock bytes"
     if ($LASTEXITCODE -ne 0) { Fail "git_commit_failed" }
     $head = (& git -C $worktree rev-parse HEAD).Trim()
 
@@ -132,18 +143,25 @@ try {
     if ($LASTEXITCODE -ne 0) { Fail "git_push_failed" }
 
     Write-Host ""
-    Write-Host "C63_2_EXACT_RECOVERY=PASS" -ForegroundColor Green
+    Write-Host "C63_4_EXACT_RECOVERY=PASS" -ForegroundColor Green
     Write-Host "BRANCH=$Branch"
     Write-Host "HEAD=$head"
     Write-Host "FILES=2"
     Write-Host "STASH_MUTATED=NO"
     Write-Host "PRIMARY_WORKTREE_MUTATED=NO"
-    Write-Host "NEXT=REMOTE_C63_2_SHA_GODOT_GATE"
-    Write-Host "SIGNATURE=Tehkné Solutions"
+    Write-Host "NEXT=REMOTE_EXACT_SHA_RGBA_GODOT_GATE"
+    Write-Host "SIGNATURE=Tehkne Solutions"
 }
 finally {
     if (Test-Path $worktree) {
-        & git -C $RepoRoot worktree remove --force $worktree *> $null
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            & git -C $RepoRoot worktree remove --force $worktree *> $null
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
     }
     if (Test-Path $tempRoot) {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
