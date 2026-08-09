@@ -1,0 +1,94 @@
+{
+  "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE04_ARMOR_ACCESSORIES",
+  "version": "0.1.0-foundation",
+  "status": "foundation_no_art_assets",
+  "depends_on": {
+    "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
+    "base_body": "base_fighter_v1",
+    "hair_pack": "BASE02_HAIR",
+    "uniform_pack": "BASE03_MARTIAL_ARTS_UNIFORMS",
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1"
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false,
+    "preset_specific_sprite_sheet": false
+  },
+  "slots": [
+    "head_accessory",
+    "shoulders",
+    "back_accessory"
+  ],
+  "public_controls": {
+    "armor_set": {
+      "atomic_slots": ["head_accessory", "shoulders"],
+      "direct_slot_controls": false,
+      "default_id": "armor_none",
+      "selection_atomic": true
+    },
+    "back_accessory": {
+      "slot": "back_accessory",
+      "default_id": "back_none",
+      "selection_atomic": true
+    }
+  },
+  "armor_sets": {
+    "armor_none": {
+      "label": "Sem armadura externa",
+      "head_accessory": null,
+      "shoulders": null,
+      "requires_art_assets": false,
+      "runtime_ready": true,
+      "production_ready": true
+    }
+  },
+  "back_accessories": {
+    "back_none": {
+      "label": "Sem acessório de costas",
+      "back_accessory": null,
+      "requires_art_assets": false,
+      "runtime_ready": true,
+      "production_ready": true
+    }
+  },
+  "modules": {},
+  "layer_contract": {
+    "weapon_back": 3,
+    "back_accessory": 4,
+    "hair_back": 5,
+    "body_base": 10,
+    "hair_front": 50,
+    "head_accessory": 60,
+    "torso_outer": 65,
+    "shoulders": 70,
+    "required_relations": [
+      "weapon_back < back_accessory < hair_back < body_base",
+      "hair_front < head_accessory",
+      "torso_outer < shoulders"
+    ]
+  },
+  "compatibility": {
+    "hair_head_accessory_visual_review_required": true,
+    "uniform_shoulders_visual_review_required": true,
+    "weapon_back_back_accessory_visual_review_required": true,
+    "cross_pack_clipping_review_required": true,
+    "future_art_pack_must_test_topknot_and_lian_uniform": true
+  },
+  "promotion": {
+    "art_assets_present": false,
+    "armor_runtime_activation": false,
+    "back_accessory_runtime_activation": false,
+    "creator_exposure": false,
+    "battle_activation": false,
+    "owner_visual_review": "not_applicable_foundation",
+    "blocker": "base04_art_pack_required"
+  },
+  "next_stage": "C68_1_BASE04_FIRST_ARMOR_ACCESSORY_ART_PACK"
+}
