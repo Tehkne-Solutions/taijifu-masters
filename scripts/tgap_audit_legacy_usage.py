@@ -44,7 +44,18 @@ def load_policy(path: Path | None) -> dict:
 
 
 def matches_any(value: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatch(value, pattern) for pattern in patterns)
+    for pattern in patterns:
+        candidates = [pattern]
+        # fnmatch treats ** like *, so "scripts/**/*.gd" misses a direct child
+        # such as "scripts/consumer.gd". A recursive glob must also accept the
+        # zero-directory form to match pathlib/GitHub-style ** semantics.
+        reduced = pattern
+        while "**/" in reduced:
+            reduced = reduced.replace("**/", "", 1)
+            candidates.append(reduced)
+        if any(fnmatch.fnmatch(value, candidate) for candidate in candidates):
+            return True
+    return False
 
 
 def iter_files(root: Path):
