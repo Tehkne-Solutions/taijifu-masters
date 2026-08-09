@@ -1,0 +1,52 @@
+{
+  "schema": "tehkne/taijifu-base02-hair-manifest/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE02_HAIR",
+  "version": "0.1.0-foundation",
+  "status": "foundation_no_art_assets",
+  "depends_on": {
+    "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
+    "base_body": "base_fighter_v1",
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1"
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false
+  },
+  "slots": {
+    "back": "hair_back",
+    "front": "hair_front"
+  },
+  "composition": {
+    "style_selection_atomic": true,
+    "front_and_back_may_be_independently_empty": true,
+    "cross_style_front_back_mixing_allowed": false,
+    "identity_layers_must_remain_separate": true,
+    "preset_specific_sprite_sheet": false,
+    "shared_animation_source": true
+  },
+  "default_style_id": "hair_none",
+  "styles": {
+    "hair_none": {
+      "label": "Sem cabelo",
+      "hair_back": null,
+      "hair_front": null,
+      "requires_art_assets": false,
+      "production_ready": true
+    }
+  },
+  "modules": {},
+  "promotion": {
+    "art_pack_required": true,
+    "art_assets_present": false,
+    "creator_exposure": false,
+    "battle_activation": false,
+    "owner_visual_review": "not_applicable_until_art_exists"
+  },
+  "next_stage": "C66_1_BASE02_FIRST_HAIR_ART_PACK"
+}
