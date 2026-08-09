@@ -1,0 +1,126 @@
+name: C68.0 BASE-04 Armor Accessories Foundation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_04/**'
+      - 'scripts/ci/base04_armor_accessories_foundation_smoke.gd'
+      - 'scripts/characters/modular_fighter_layer_policy.gd'
+      - 'config/modular-fighter-standard-v1.json'
+      - '.github/workflows/c68-0-base04-armor-accessories-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  base04-foundation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate BASE-04 static contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
+          contract = json.loads(Path('assets/modular_fighters/base_04/production/BASE04_ARMOR_ACCESSORIES_FOUNDATION.json').read_text())
+          standard = json.loads(Path('config/modular-fighter-standard-v1.json').read_text())
+
+          assert manifest['signature'] == 'Tehkné Solutions'
+          assert manifest['pack_id'] == 'BASE04_ARMOR_ACCESSORIES'
+          assert manifest['status'] == 'foundation_no_art_assets'
+          assert manifest['modules'] == {}
+          assert not list(Path('assets/modular_fighters/base_04').rglob('*.png'))
+          assert manifest['slots'] == ['head_accessory','shoulders','back_accessory']
+
+          armor = manifest['public_controls']['armor_set']
+          back = manifest['public_controls']['back_accessory']
+          assert armor['atomic_slots'] == ['head_accessory','shoulders']
+          assert armor['direct_slot_controls'] is False
+          assert armor['selection_atomic'] is True
+          assert armor['default_id'] == 'armor_none'
+          assert back['slot'] == 'back_accessory'
+          assert back['default_id'] == 'back_none'
+          assert manifest['armor_sets']['armor_none']['head_accessory'] is None
+          assert manifest['armor_sets']['armor_none']['shoulders'] is None
+          assert manifest['back_accessories']['back_none']['back_accessory'] is None
+
+          p = manifest['promotion']
+          assert p['art_assets_present'] is False
+          assert p['armor_runtime_activation'] is False
+          assert p['back_accessory_runtime_activation'] is False
+          assert p['creator_exposure'] is False
+          assert p['battle_activation'] is False
+
+          assert contract['component_id'] == 'BASE04_ARMOR_ACCESSORIES_FOUNDATION'
+          assert contract['stage'] == 'C68.0'
+          assert contract['status'] == 'foundation_candidate_art_blocked'
+          assert contract['selection_contract']['armor_set']['atomic_slots'] == ['head_accessory','shoulders']
+          assert contract['selection_contract']['armor_set']['direct_piece_controls'] is False
+          assert contract['selection_contract']['armor_set']['cross_set_piece_mixing'] is False
+          assert contract['selection_contract']['back_accessory']['atomic_slots'] == ['back_accessory']
+          assert contract['profile_contract']['schema_change_required'] is False
+          assert contract['compatibility_contract']['reference_hair'] == 'hair_01_lian_topknot'
+          assert contract['compatibility_contract']['reference_uniform'] == 'uniform_01_lian_martial'
+
+          for slot in ('head_accessory','shoulders','back_accessory'):
+              assert slot in standard['slots']
+          # `shoulders` intentionally stays outside the legacy direct Creator slot
+          # list. C68 exposes it only through the future atomic ArmorSetOption.
+          assert 'shoulders' not in standard['creator_v1_editable_slots']
+          assert 'head_accessory' in standard['creator_v1_editable_slots']
+          assert 'back_accessory' in standard['creator_v1_editable_slots']
+          print('C68_0_STATIC_CONTRACT=PASS armor_slots=2 back_slots=1 art=false creator=false direct_shoulders=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --import 2>&1 | tee c68-0-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed' c68-0-import.log; then
+            echo 'C68_0_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run BASE-04 foundation smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base04_armor_accessories_foundation_smoke.gd 2>&1 | tee c68-0-foundation.log
+          grep -q 'C68_0_BASE04_FOUNDATION=PASS' c68-0-foundation.log
+          grep -q 'C68_0_ARMOR_SET=PASS slots=head_accessory,shoulders atomic=true' c68-0-foundation.log
+          grep -q 'C68_0_BACK_ACCESSORY=PASS independent=true' c68-0-foundation.log
+          grep -q 'C68_0_LAYER_POLICY=PASS' c68-0-foundation.log
+          grep -q 'C68_0_PROFILE_STORAGE=PASS schema=v2' c68-0-foundation.log
+          grep -q 'C68_0_CREATOR_EXPOSURE=BLOCKED art_required=true' c68-0-foundation.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_0_BASE04_FOUNDATION=BLOCKED' c68-0-foundation.log; then
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C68-0-BASE04-ARMOR-ACCESSORIES-FOUNDATION-EVIDENCE
+          path: |
+            c68-0-import.log
+            c68-0-foundation.log
+            assets/modular_fighters/base_04/manifest.json
+            assets/modular_fighters/base_04/production/BASE04_ARMOR_ACCESSORIES_FOUNDATION.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C68.0 BASE-04 Armor & Accessories foundation gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
