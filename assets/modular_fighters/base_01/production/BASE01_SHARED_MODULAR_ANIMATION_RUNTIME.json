@@ -1,0 +1,75 @@
+{
+  "schema": "tehkne/taijifu-base01-shared-modular-animation-runtime/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE01_SHARED_MODULAR_ANIMATION_RUNTIME",
+  "version": "1.0.0",
+  "stage": "C65",
+  "status": "integrated_candidate_runtime_validation_pending",
+  "depends_on": {
+    "creator_battle_handoff": "BASE01_CREATOR_BATTLE_HANDOFF",
+    "identity_preset_serialization": "BASE01_IDENTITY_PRESET_SERIALIZATION",
+    "identity_creator_control": "BASE01_IDENTITY_CREATOR_CONTROL",
+    "lian_first_playable_lot01": "C64_APPROVED_FIRST_PLAYABLE_RUNTIME"
+  },
+  "animation_contract": {
+    "runtime_id": "shared_modular_animation_runtime_v1",
+    "states": [
+      "idle",
+      "run",
+      "jump_start",
+      "airborne",
+      "fall",
+      "attack_light",
+      "guard",
+      "dodge",
+      "hit",
+      "ko"
+    ],
+    "state_count": 10,
+    "identity_animation_policy": "animate_complete_assembler",
+    "world_translation_owner": "fighter_physics",
+    "preset_specific_sprite_sheet": false,
+    "regional_cutouts": false,
+    "static_creator_sprite_regression_allowed": false
+  },
+  "identity_contract": {
+    "base": "BASE-00",
+    "runtime": "ModularFighterAssembler",
+    "profile_schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "creator_slots": ["skin", "face", "eyes", "brows"],
+    "internal_slots": ["face_plate"],
+    "skin_palette_propagation": ["body_base", "face_plate", "face"],
+    "non_skin_tinted_slots": ["eyes", "brows"],
+    "canonical_pivot": [0.5, 0.92],
+    "gameplay_visual_height": 132
+  },
+  "activation_contract": {
+    "session_selection_visual_activation": false,
+    "session_visual_blocker": "shared_modular_animation_runtime",
+    "battle_activation_requires_complete_assembly": true,
+    "battle_metadata_promotes_visual_activation": true,
+    "battle_visual_blocker_after_success": "",
+    "lian_lot01_must_be_active_before_overlay": true,
+    "lian_lot01_preserved_as_fallback": true,
+    "failed_modular_assembly_keeps_lian_visible": true
+  },
+  "combat_invariants": {
+    "combat_build": "lian_wu_first_playable",
+    "character_id": "lian_wu",
+    "damage_changes": false,
+    "collision_changes": false,
+    "physics_changes": false,
+    "balance_changes": false
+  },
+  "validation": {
+    "creator_to_battle_end_to_end": true,
+    "deep_broad_fierce_sharp_identity": true,
+    "all_five_visual_nodes_required": true,
+    "ten_state_contract_required": true,
+    "no_preset_lian_fallback_required": true,
+    "godot_import_required": true,
+    "first_playable_regression_required": true,
+    "owner_visual_review": "pending"
+  },
+  "next_stage": "C65_VISUAL_REVIEW_AND_PROMOTION"
+}
