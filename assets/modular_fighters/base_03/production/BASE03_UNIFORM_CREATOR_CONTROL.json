@@ -1,0 +1,74 @@
+{
+  "schema": "tehkne/taijifu-base03-uniform-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE03_UNIFORM_CREATOR_CONTROL",
+  "stage": "C67.2",
+  "status": "production_approved",
+  "control_contract": {
+    "public_control": "uniform_set",
+    "internal_slots": ["torso_inner", "torso_outer", "arms", "hands", "waist", "legs", "feet"],
+    "direct_internal_slot_controls": false,
+    "cross_set_piece_mixing_allowed": false,
+    "production_ready_sets_only": true,
+    "default_set": "uniform_none",
+    "initial_options": ["uniform_none", "uniform_01_lian_martial"],
+    "live_preview": true,
+    "selection_transactional": true,
+    "cross_pack_reassembly_guard": true
+  },
+  "preset_contract": {
+    "schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "storage": "existing generic modules dictionary",
+    "save_roundtrip_required": true,
+    "load_roundtrip_required": true,
+    "atomic_set_roundtrip_required": true,
+    "legacy_schema_change": false
+  },
+  "battle_contract": {
+    "session_selection": "preset_saved_or_loaded",
+    "shared_runtime": "shared_modular_animation_runtime_v1",
+    "uniform_set_handoff_required": true,
+    "hair_uniform_composition_required": true,
+    "combat_build_changes": false,
+    "collision_changes": false,
+    "physics_changes": false,
+    "balance_changes": false
+  },
+  "ui_contract": {
+    "viewport": [1280, 720],
+    "location": "creator_header",
+    "option_node": "UniformSetOption",
+    "label": "UNIFORME • BASE-03",
+    "position": [600, 38],
+    "size": [310, 42],
+    "hair_option_position": [930, 38],
+    "controls_overlap": false,
+    "keyboard_gamepad_focus": true,
+    "base01_shell_rewritten": false,
+    "base01_identity_controls_preserved": true,
+    "base02_hair_control_preserved": true
+  },
+  "validation": {
+    "creator_smoke": "pass",
+    "preset_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "graphical_creator_review": "pass",
+    "evidence": {
+      "workflow_run": 31338013778,
+      "artifact_id": 9044932691,
+      "artifact_digest": "sha256:acd6db9af872f3129fbe8cf42e66c7596c6c86898c3af17f30a165fffa45393b",
+      "head_sha": "e3aa7c399924b2ac8fe0cac857f6b86a1c853995",
+      "capture": "C67_2_UNIFORM_CREATOR_CONTROL.review-1280x720.png",
+      "uniform_set": "uniform_01_lian_martial",
+      "hair_style": "hair_01_lian_topknot",
+      "controls_overlap": false,
+      "owner_visual_review": "pass"
+    }
+  },
+  "promotion": {
+    "creator_exposure": true,
+    "production_approval": true,
+    "blocker": ""
+  },
+  "next_stage": "C68_BASE04_ARMOR_ACCESSORIES_FOUNDATION"
+}
