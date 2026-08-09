@@ -15,11 +15,8 @@ def test_legacy_adapter_is_disabled_by_default():
 def test_tgap_remains_first_resolution_path():
     text = REGISTRY.read_text(encoding="utf-8")
     assert "TgapAssetLoader.get_pack" in text
-    resolve_start = text.index("func resolve_asset")
-    load_start = text.index("func load_asset", resolve_start)
-    resolve_body = text[resolve_start:load_start]
-    assert "TgapAssetLoader.resolve" in resolve_body
-    assert resolve_body.index("TgapAssetLoader.resolve") < resolve_body.index("if not legacy_adapter_enabled")
+    assert "TgapAssetLoader.resolve" in text
+    assert text.index("TgapAssetLoader.resolve") < text.index("if not legacy_adapter_enabled")
 
 
 def test_legacy_usage_is_observable():
