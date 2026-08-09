@@ -29,6 +29,37 @@ def require_markers(source: str, markers: tuple[str, ...], label: str) -> None:
             fail(f"{label} não contém o contrato obrigatório: {marker}")
 
 
+def validate_html_structure(html: str) -> None:
+    """Fail closed when post-processing swallows the Godot body/canvas into CSS."""
+    lower = html.lower()
+    head_close = lower.find("</head>")
+    body_open = lower.find("<body")
+    canvas_open = lower.find("<canvas")
+    body_close = lower.rfind("</body>")
+    html_close = lower.rfind("</html>")
+
+    if min(head_close, body_open, canvas_open, body_close, html_close) < 0:
+        fail("estrutura HTML incompleta: head/body/canvas não encontrados")
+    if not (head_close < body_open < canvas_open < body_close < html_close):
+        fail("estrutura HTML inválida: canvas deve existir dentro do body após </head>")
+
+    style_opens = lower.count("<style")
+    style_closes = lower.count("</style>")
+    if style_opens != style_closes:
+        fail(f"blocos <style> desbalanceados: opens={style_opens} closes={style_closes}")
+
+    viewport_marker = "taijifu_web_viewport_fix"
+    marker_pos = lower.find(viewport_marker)
+    if marker_pos < 0:
+        fail("viewport fix não foi injetado")
+    viewport_style_open = lower.find("<style", marker_pos)
+    viewport_style_close = lower.find("</style>", viewport_style_open)
+    if viewport_style_open < 0 or viewport_style_close < 0:
+        fail("viewport fix não fecha o próprio bloco <style>")
+    if viewport_style_close > head_close:
+        fail("viewport fix atravessa </head> e engole o body/canvas")
+
+
 def main() -> None:
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "web-build").resolve()
     if not output.is_dir():
@@ -79,6 +110,7 @@ def main() -> None:
         (
             "TAIJIFU_WEB_SHELL_HEAD",
             "TAIJIFU_WEB_SHELL_BODY",
+            "TAIJIFU_WEB_VIEWPORT_FIX",
             '<canvas',
             'id="taijifu-shell"',
             'id="taijifu-enter"',
@@ -88,6 +120,7 @@ def main() -> None:
         ),
         "index.html",
     )
+    validate_html_structure(html)
     for asset in (wasm, pack, runtime_js, shell_css, shell_js, menu_css, menu_js):
         if asset.name not in html:
             fail(f"index.html não referencia {asset.name}")
@@ -145,6 +178,7 @@ def main() -> None:
         json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    print("[taijifu-web] Estrutura DOM do canvas validada")
     print("[taijifu-web] Validação essencial concluída")
 
 
