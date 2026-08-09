@@ -100,7 +100,7 @@ jobs:
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Servir e validar o First Playable no navegador
+      - name: Servir e validar o First Playable essencial no navegador
         env:
           BASE_URL: http://127.0.0.1:4173
         run: |
@@ -120,10 +120,14 @@ jobs:
             sleep 1
           done
 
+          # Sprint 0 external-playtest exports only the essential Web shell.
+          # Controller Mastery and the advanced Gamepad surface remain intentionally
+          # non-injected by scripts/build-web.sh; running their historical specs here
+          # waited on readiness globals that cannot exist in this build contract.
+          # Their source/specs remain available for a future explicit experimental
+          # surface workflow. The production release gate tests only what is shipped.
           npm --prefix web-tests test -- \
             web-smoke.spec.cjs \
-            controller-mastery-web.spec.cjs \
-            gamepad-web.spec.cjs \
             --reporter=line 2>&1 | tee web-test.log
 
       - name: Publicar build Web
