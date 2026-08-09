@@ -1,15 +1,13 @@
 name: C63 Lian Release Recovery Probe
 
 on:
-  push:
-    branches:
-      - 'agent/c63-0-lian-release-recovery'
-    paths:
-      - '.recovery/c63-lian-release.trigger'
   pull_request:
     paths:
       - '.github/workflows/c63-lian-release-probe.yml'
       - '.recovery/c63-lian-release.trigger'
+      - 'tools/generate_lian_wu_*.py'
+      - 'tools/materialize_c50_lian_spriteframes.py'
+      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
   workflow_dispatch:
 
 permissions:
@@ -18,11 +16,11 @@ permissions:
 jobs:
   probe-release:
     runs-on: ubuntu-22.04
-    timeout-minutes: 12
+    timeout-minutes: 28
     steps:
       - uses: actions/checkout@v4
 
-      - name: Discover official Pack 01 releases
+      - name: Discover official Pack 01 release
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 \
@@ -52,21 +50,17 @@ jobs:
                   if lower.endswith('.zip') and 'lian_wu' in lower and ('base_final' in lower or 'first_playable' in lower or 'pack_01' in lower):
                       candidates.append(row)
           Path('c63-release-inventory.json').write_text(json.dumps({'schema':'tehkne/c63-release-inventory/v1','signature':'Tehkné Solutions','inventory':inventory,'candidates':candidates},indent=2)+'\n')
-          print('C63_RELEASE_COUNT='+str(len(releases)))
-          print('C63_RELEASE_ASSET_COUNT='+str(len(inventory)))
-          for row in candidates:
-              print('C63_RELEASE_CANDIDATE tag=%s asset=%s size=%s' % (row['tag'],row['asset_name'],row['size']))
           if not candidates:
               raise SystemExit('C63_RELEASE_DISCOVERY=BLOCKED no_pack01_zip_candidate')
-          # Prefer exact v1.0.1 base-final, otherwise newest matching asset from API order.
-          chosen=next((r for r in candidates if r['asset_name']=='PACK_01_LIAN_WU_BASE_FINAL_v1.0.1.zip'), candidates[0])
+          exact=next((r for r in candidates if r['asset_name']=='PACK_01_LIAN_WU_BASE_FINAL_v1.0.0.zip'), None)
+          chosen=exact or candidates[0]
           Path('c63-release-selected.json').write_text(json.dumps(chosen,indent=2)+'\n')
           Path('/tmp/c63-release-url').write_text(chosen['browser_download_url'])
           print('C63_RELEASE_SELECTED tag=%s asset=%s' % (chosen['tag'],chosen['asset_name']))
           print('C63_RELEASE_DISCOVERY=PASS')
           PY
 
-      - name: Download selected official Pack 01 asset
+      - name: Download and validate raw Pack 01 lineage
         run: |
           set -euo pipefail
           URL="$(cat /tmp/c63-release-url)"
@@ -74,58 +68,214 @@ jobs:
           test -s /tmp/pack01.zip
           sha256sum /tmp/pack01.zip | tee c63-release-zip.sha256
           unzip -t /tmp/pack01.zip >/dev/null
-          echo 'C63_RELEASE_DOWNLOAD=PASS'
-
-      - name: Inspect archive for canonical Character Lock lineage
-        run: |
-          set -euo pipefail
           rm -rf /tmp/c63-pack && mkdir -p /tmp/c63-pack
           unzip -q /tmp/pack01.zip -d /tmp/c63-pack
           python - <<'PY'
           from pathlib import Path
           import hashlib, json
-
           root=Path('/tmp/c63-pack')
           expected={
-            'neutral':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
-            'combat_stance':'c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c',
+            'turnaround/char_lian_wu__front_raw.png':'047de240f47d6b8ba1e0605dd3353dc3bd6921ae7589163b74c1855d1b5cf1ec',
+            'turnaround/char_lian_wu__side_left_raw.png':'458a3ed289dad5f2f9714625847e87e270ea6e027d8d281f67c3507ee77465df',
+            'turnaround/char_lian_wu__back_raw.png':'fbfa0c5a678d515cde9b61fbee445ff35efa0713415960f15e43efa88359c3b3',
+            'turnaround/char_lian_wu__side_right_raw.png':'7858b89976d8fd5968ca404e490927d37894f1146dd2452c872992c797a39168',
           }
-          matches={key:[] for key in expected}
-          pngs=[]
-          for path in sorted(root.rglob('*.png')):
-            digest=hashlib.sha256(path.read_bytes()).hexdigest()
-            rel=path.relative_to(root).as_posix()
-            pngs.append({'path':rel,'sha256':digest,'size_bytes':path.stat().st_size})
-            for key, want in expected.items():
-              if digest==want:
-                matches[key].append(rel)
-          report={
-            'schema':'tehkne/c63-lian-release-probe/v1',
+          rows=[]
+          for rel,want in expected.items():
+              path=root/rel
+              if not path.is_file():
+                  raise SystemExit('C63_RAW_LINEAGE=BLOCKED missing='+rel)
+              got=hashlib.sha256(path.read_bytes()).hexdigest()
+              if got!=want:
+                  raise SystemExit('C63_RAW_LINEAGE=BLOCKED hash='+rel+' actual='+got)
+              rows.append({'path':rel,'sha256':got})
+          Path('c63-raw-lineage.json').write_text(json.dumps({'schema':'tehkne/c63-raw-lineage/v1','signature':'Tehkné Solutions','files':rows},indent=2)+'\n')
+          print('C63_RAW_LINEAGE=PASS files=4')
+          PY
+
+      - name: Reconstruct canonical clean v1.0.1 neutral
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check Pillow
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/Tehkne-Solutions/taijifu-masters-assets/f2f64600ce93396887e88d7b781553da54572da5/tools/build_lian_wu_canonical_clean_v101.py' \
+            --output /tmp/build_lian_wu_canonical_clean_v101.py
+          rm -rf /tmp/c63-clean && mkdir -p /tmp/c63-clean
+          python /tmp/build_lian_wu_canonical_clean_v101.py /tmp/c63-pack /tmp/c63-clean
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          expected={
+            'char_lian_wu__front_clean.png':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+            'char_lian_wu__side_left_clean.png':'1144177a6fe20debe64b7b806a7a59bc0c4263cd6d21a29e04d070ec9040d7ae',
+            'char_lian_wu__back_clean.png':'fbfa0c5a678d515cde9b61fbee445ff35efa0713415960f15e43efa88359c3b3',
+            'char_lian_wu__side_right_clean.png':'660280bf3ef0918a274f3837e683711fa76776767f8a219782d0f0b102aeb9df',
+          }
+          rows=[]
+          for name,want in expected.items():
+              path=Path('/tmp/c63-clean')/name
+              got=hashlib.sha256(path.read_bytes()).hexdigest()
+              if got!=want:
+                  raise SystemExit('C63_CANONICAL_CLEAN=BLOCKED '+name+' actual='+got)
+              rows.append({'file':name,'sha256':got})
+          Path('c63-canonical-clean.json').write_text(json.dumps({'schema':'tehkne/c63-canonical-clean/v1','signature':'Tehkné Solutions','files':rows},indent=2)+'\n')
+          print('C63_CANONICAL_CLEAN=PASS front=0e435757 side_left=1144177a back=fbfa0c5a side_right=660280bf')
+          PY
+          mkdir -p assets/characters/lian_wu/character_lock
+          cp /tmp/c63-clean/char_lian_wu__front_clean.png assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+
+      - name: Regenerate reviewed Lian Wu animation families
+        run: |
+          set -euo pipefail
+          python tools/generate_lian_wu_idle6.py --repo-root .
+          python tools/generate_lian_wu_run8.py --repo-root .
+          python tools/generate_lian_wu_jump_start4.py --repo-root .
+          python tools/generate_lian_wu_jump_loop3.py --repo-root .
+          python tools/generate_lian_wu_fall3.py --repo-root .
+          python tools/generate_lian_wu_land4.py --repo-root .
+          python tools/generate_lian_wu_body_hook6.py --repo-root .
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          expected={
+            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f01.png':'233741f7258860f03305fac05b4cadb604d8136b47effb9b9b4c0f8d25396dea',
+            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f02.png':'d139b163f7eb408d27849eb7f781a020d05cd807adc1ebbae3ab9b03c91cd126',
+            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f03.png':'59b7ad2eeba90fcd6f5bcb499406c7459bb4025d77f7eb4f36705f07cd43c7ea',
+            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f02.png':'e27f8e24bd9e0a411413e8fb99b6e7ad723dd23071799b4966d62a6520d21cdc',
+            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f03.png':'e60128afc94809782bfc44a4a9c3658271b6542e71fc9cb483aac0ae2cedbcf4',
+            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f04.png':'d0f6a13f7dff2f57d8d75f8a70d649f2fac0ef8de355a5571713c2092c4a9d80',
+            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f05.png':'fe0a4f9f851ab8eaadda66541beed1c838c564cc850f8371172822a8936afabb',
+            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f01.png':'d9e954da7fe9edd425cf18db1f0472c733192b31aacaa4d80f39814a0fe624f8',
+            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f02.png':'167afe9866661a071a2f95f6d64f50d4ffcfd3c1c28fe4fe727b8d633ec45c6d',
+            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f03.png':'83bb432ad059799439fe0486150478e5fc8fd321a6997d7dea052c661815ca41',
+            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f04.png':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+          }
+          verified=[]
+          for rel,want in expected.items():
+              path=Path(rel)
+              if not path.is_file(): raise SystemExit('C63_FRAME_REPRO=BLOCKED missing='+rel)
+              got=hashlib.sha256(path.read_bytes()).hexdigest()
+              if got!=want: raise SystemExit('C63_FRAME_REPRO=BLOCKED hash='+rel+' actual='+got)
+              verified.append({'path':rel,'sha256':got})
+          Path('c63-frame-reproduction.json').write_text(json.dumps({'schema':'tehkne/c63-frame-reproduction/v1','signature':'Tehkné Solutions','verified_historical_hashes':verified},indent=2)+'\n')
+          print('C63_FRAME_REPRO=PASS historical_hashes=%d' % len(verified))
+          PY
+
+      - name: Materialize canonical First Playable SpriteFrames
+        run: |
+          set -euo pipefail
+          python tools/materialize_c50_lian_spriteframes.py --repo-root . | tee c63-materialize.log
+          grep -q 'VM02_C50_LIAN_MATERIALIZATION=PASS' c63-materialize.log
+          test -s assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres
+          test -s assets/tgap/pack_01_lian_wu/first_playable_lot_01/materialization-manifest.json
+          echo 'C63_SPRITEFRAMES_MATERIALIZATION=PASS'
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          mv /tmp/Godot_v4.3-stable_linux.x86_64 /tmp/godot
+          chmod +x /tmp/godot
+
+      - name: Import recovered runtime and require real presenter assets
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          /tmp/godot --headless --path . --import 2>&1 | tee c63-godot-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c63-godot-import.log; then
+            echo 'C63_GODOT_IMPORT=BLOCKED'
+            exit 1
+          fi
+          cat > scripts/ci/_c63_recovered_lian_presenter_smoke.gd <<'GD'
+          extends SceneTree
+          func _init() -> void:
+              call_deferred("_run")
+          func _run() -> void:
+              var presenter := FirstPlayableLot01Presenter.new()
+              get_root().add_child(presenter)
+              for _frame in range(6):
+                  await process_frame
+              if not presenter.using_real_assets():
+                  push_error("C63_LIAN_PRESENTER=BLOCKED using_real_assets=false")
+                  quit(2)
+                  return
+              var sprite := presenter.get_node_or_null("CanonicalLianWuSprite") as AnimatedSprite2D
+              if sprite == null or sprite.sprite_frames == null:
+                  push_error("C63_LIAN_PRESENTER=BLOCKED spriteframes_missing")
+                  quit(2)
+                  return
+              var required := [&"idle", &"run", &"jump_start", &"airborne", &"fall", &"attack_light", &"guard", &"dodge", &"hit", &"ko"]
+              for animation in required:
+                  if not sprite.sprite_frames.has_animation(animation):
+                      push_error("C63_LIAN_PRESENTER=BLOCKED animation_missing=" + String(animation))
+                      quit(2)
+                      return
+              print("C63_LIAN_PRESENTER=PASS using_real_assets=true animations=10")
+              print("C63_SHARED_LINEAGE_RECOVERY=PASS")
+              print("SIGNATURE=Tehkné Solutions")
+              quit(0)
+          GD
+          /tmp/godot --headless --path . --script res://scripts/ci/_c63_recovered_lian_presenter_smoke.gd 2>&1 | tee c63-presenter.log
+          grep -q 'C63_LIAN_PRESENTER=PASS using_real_assets=true animations=10' c63-presenter.log
+          grep -q 'C63_SHARED_LINEAGE_RECOVERY=PASS' c63-presenter.log
+          rm scripts/ci/_c63_recovered_lian_presenter_smoke.gd
+
+      - name: Build recovery manifest
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          files=[]
+          roots=[
+            Path('assets/characters/lian_wu/character_lock'),
+            Path('assets/pack_01_characters/lian_wu/frames'),
+            Path('assets/pack_01_characters/lian_wu/metadata'),
+            Path('assets/tgap/pack_01_lian_wu/first_playable_lot_01'),
+          ]
+          for root in roots:
+              if not root.exists(): continue
+              for path in sorted(root.rglob('*')):
+                  if path.is_file() and path.suffix in {'.png','.json','.tres'}:
+                      files.append({'path':path.as_posix(),'size_bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+          manifest={
+            'schema':'tehkne/c63-lian-runtime-recovery/v1',
             'signature':'Tehkné Solutions',
-            'png_count':len(pngs),
-            'matches':matches,
-            'pngs':pngs,
+            'source_release':json.loads(Path('c63-release-selected.json').read_text()),
+            'neutral_sha256':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+            'recovery_method':'official_release_raw_v100_to_deterministic_clean_v101_to_reviewed_generators_to_c50_spriteframes',
+            'using_real_assets':True,
+            'files':files,
           }
-          Path('c63-release-probe.json').write_text(json.dumps(report,indent=2)+'\n')
-          print(f"C63_RELEASE_PNG_COUNT={len(pngs)}")
-          print('C63_NEUTRAL_MATCHES='+str(matches['neutral']))
-          print('C63_STANCE_MATCHES='+str(matches['combat_stance']))
-          if not matches['neutral']:
-            raise SystemExit('C63_RELEASE_PROBE=BLOCKED neutral_hash_missing')
-          print('C63_RELEASE_PROBE=PASS neutral_hash_found')
+          Path('c63-runtime-recovery-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          print('C63_RECOVERY_MANIFEST=PASS files=%d' % len(files))
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: C63-LIAN-RELEASE-PROBE
+          name: C63-LIAN-RUNTIME-RECOVERY-CANDIDATE
           path: |
             c63-releases.json
             c63-release-inventory.json
             c63-release-selected.json
             c63-release-zip.sha256
-            c63-release-probe.json
+            c63-raw-lineage.json
+            c63-canonical-clean.json
+            c63-frame-reproduction.json
+            c63-materialize.log
+            c63-godot-import.log
+            c63-presenter.log
+            c63-runtime-recovery-manifest.json
+            assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+            assets/pack_01_characters/lian_wu/frames/
+            assets/pack_01_characters/lian_wu/metadata/
+            assets/tgap/pack_01_lian_wu/first_playable_lot_01/
           if-no-files-found: ignore
+          compression-level: 6
 
       - name: Summary
-        run: echo 'C63.0 official Pack 01 release probe — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63.0 Lian release lineage reconstructed and real presenter bench required — no asset promotion in this PR — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
