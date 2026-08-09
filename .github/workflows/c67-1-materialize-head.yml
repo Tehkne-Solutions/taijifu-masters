@@ -1,0 +1,70 @@
+name: C67.1 Disposable Base Materializer
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-production-head:
+    if: github.head_ref == 'agent/c67-1-lian-uniform-pack-production' && github.base_ref == 'agent/c67-1-materialization-base'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/c67-1-lian-uniform-pack-production
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Regenerate and verify exact reviewed C67.1 source pixels
+        run: |
+          set -euo pipefail
+          pip install --disable-pip-version-check pillow==11.1.0
+          python tools/probe_base03_lian_uniform_source_v4.py 2>&1 | tee c67-1-materialize.log
+          grep -q 'C67_1_UNIFORM_SOURCE_PROBE=PASS method=semantic_v4' c67-1-materialize.log
+          grep -q 'C67_1_CONTAMINATION=PASS skin=0 hair=0 hands_weapon=0 collar=0 boot_spill=0 baseline=0 extra_weapon=0' c67-1-materialize.log
+
+          out='assets/modular_fighters/base_03/uniform_01_lian_martial'
+          mkdir -p "$out"
+          cp artifacts/c67_1_uniform_source_probe/02_torso_outer_FULL_CANVAS_DIAGNOSTIC.png "$out/torso_outer.png"
+          cp artifacts/c67_1_uniform_source_probe/03_arms_FULL_CANVAS_DIAGNOSTIC.png "$out/arms.png"
+          cp artifacts/c67_1_uniform_source_probe/05_waist_FULL_CANVAS_DIAGNOSTIC.png "$out/waist.png"
+          cp artifacts/c67_1_uniform_source_probe/06_legs_FULL_CANVAS_DIAGNOSTIC.png "$out/legs.png"
+          cp artifacts/c67_1_uniform_source_probe/07_feet_FULL_CANVAS_DIAGNOSTIC.png "$out/feet.png"
+
+          printf '%s  %s\n' \
+            '0aa6afd9614f60d99bbb1d64ea8917d6b0c44689f111503ef28221959ac1096f' "$out/torso_outer.png" \
+            'b98aaf87c0b92892ee3ccbc0d662944c6f8ab56813c3f269e94452564496df05' "$out/arms.png" \
+            '0c8bfaa609ce93e0df310b136f52d229f87e4fa7fa18e686a6433217cc75ef5a' "$out/waist.png" \
+            '987c9528ddb72c5fb404e985674d6c128e7ce0258ea9452f2397ff168c676f0a' "$out/legs.png" \
+            '5a7fb1dec6275fddaca49a236adfe095092174d04ffa166bfafaff1f99e8655b' "$out/feet.png" \
+            | sha256sum --check --strict
+
+      - name: Strip all diagnostic/write-only files from production head
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/c67-1-uniform-source-feasibility.yml
+          rm -f .github/workflows/c67-1-uniform-promote-once.yml
+          rm -f tools/probe_base03_lian_uniform_source.py
+          rm -f tools/probe_base03_lian_uniform_source_v3.py
+          rm -f tools/probe_base03_lian_uniform_source_v4.py
+
+      - name: Commit immutable candidate to production branch
+        env:
+          BRANCH: agent/c67-1-lian-uniform-pack-production
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'C67.1 publish exact Lian martial uniform binaries and retire diagnostics'
+          git push origin "HEAD:${BRANCH}"
+
+      - name: Summary
+        run: echo 'Disposable materializer completed; production head contains exact binaries and no write workflow — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
