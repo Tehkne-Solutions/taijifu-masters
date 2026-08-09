@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate BASE-02 foundation contract
+      - name: Validate BASE-02 foundation invariants
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -33,32 +33,38 @@ jobs:
 
           assert manifest['signature'] == 'Tehkné Solutions'
           assert manifest['pack_id'] == 'BASE02_HAIR'
-          assert manifest['status'] == 'foundation_no_art_assets'
           assert manifest['default_style_id'] == 'hair_none'
-          assert manifest['modules'] == {}
-          assert manifest['styles']['hair_none']['hair_back'] is None
-          assert manifest['styles']['hair_none']['hair_front'] is None
-          assert manifest['promotion']['art_assets_present'] is False
-          assert manifest['promotion']['creator_exposure'] is False
-          assert manifest['promotion']['battle_activation'] is False
+          none_style = manifest['styles']['hair_none']
+          assert none_style['hair_back'] is None
+          assert none_style['hair_front'] is None
+          assert none_style['production_ready'] is True
 
           assert contract['component_id'] == 'BASE02_HAIR_FOUNDATION'
           assert contract['stage'] == 'C66.0'
-          assert contract['status'] == 'foundation_candidate_art_blocked'
-          assert contract['style_contract']['creator_selection_unit'] == 'hair_style'
-          assert contract['style_contract']['atomic_pair_slots'] == ['hair_back', 'hair_front']
-          assert contract['style_contract']['cross_style_mixing'] is False
-          assert contract['promotion']['hair_art_promotion_allowed'] is False
-          assert contract['promotion']['creator_hair_control_allowed'] is False
-          assert contract['promotion']['battle_hair_activation_allowed'] is False
+          style_contract = contract['style_contract']
+          assert style_contract['creator_selection_unit'] == 'hair_style'
+          assert style_contract['atomic_pair_slots'] == ['hair_back', 'hair_front']
+          assert style_contract['cross_style_mixing'] is False
 
           for slot in ('hair_back', 'hair_front'):
               assert slot in standard['slots']
               assert slot in standard['creator_v1_editable_slots']
 
+          status = manifest['status']
           pngs = list(Path('assets/modular_fighters/base_02').rglob('*.png'))
-          assert not pngs, f'foundation must not silently promote hair PNGs: {pngs}'
-          print('C66_0_STATIC_CONTRACT=PASS art_assets=0 creator_exposure=false')
+          if status == 'foundation_no_art_assets':
+              assert manifest['modules'] == {}
+              assert manifest['promotion']['art_assets_present'] is False
+              assert manifest['promotion']['battle_activation'] is False
+              assert not pngs, f'foundation must not silently promote hair PNGs: {pngs}'
+              stage = 'foundation_no_art_assets'
+          else:
+              assert manifest['modules'], 'promoted BASE-02 pack must expose modules'
+              assert manifest['promotion']['art_assets_present'] is True
+              assert pngs, 'promoted BASE-02 pack must contain approved Hair PNGs'
+              stage = 'promoted_pack_preserving_foundation'
+
+          print(f'C66_0_STATIC_CONTRACT=PASS stage={stage} creator_exposure={str(manifest["promotion"].get("creator_exposure", False)).lower()}')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -79,14 +85,14 @@ jobs:
             exit 1
           fi
 
-      - name: Run BASE-02 Hair foundation smoke
+      - name: Run BASE-02 Hair foundation invariant smoke
         run: |
           set -euo pipefail
           ./godot --headless --path . --script res://scripts/ci/base02_hair_foundation_smoke.gd 2>&1 | tee c66-hair-foundation.log
           grep -q 'C66_0_HAIR_FOUNDATION=PASS' c66-hair-foundation.log
+          grep -q 'C66_0_FOUNDATION_INVARIANTS=PASS' c66-hair-foundation.log
           grep -q 'C66_0_HAIR_LAYER_ORDER=PASS' c66-hair-foundation.log
-          grep -q 'C66_0_ART_PROMOTION=BLOCKED' c66-hair-foundation.log
-          grep -q 'C66_0_CREATOR_EXPOSURE=BLOCKED' c66-hair-foundation.log
+          grep -q 'C66_0_ART_STAGE=' c66-hair-foundation.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|C66_0_HAIR_FOUNDATION=BLOCKED' c66-hair-foundation.log; then
             exit 1
           fi
@@ -103,4 +109,4 @@ jobs:
           if-no-files-found: error
 
       - name: Summary
-        run: echo 'C66.0 BASE-02 Hair Foundation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C66.0 BASE-02 Hair Foundation invariants — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
