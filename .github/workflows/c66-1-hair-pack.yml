@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate exact approved Hair binaries and manifest
+      - name: Validate exact approved Hair binaries and pack invariants
         run: |
           set -euo pipefail
           pip install --disable-pip-version-check pillow==11.1.0
@@ -40,19 +40,23 @@ jobs:
           manifest = json.loads((root/'assets/modular_fighters/base_02/manifest.json').read_text())
           contract = json.loads((root/'assets/modular_fighters/base_02/production/BASE02_HAIR_PACK_01_LIAN_TOPKNOT.json').read_text())
           assert manifest['pack_id'] == 'BASE02_HAIR'
-          assert manifest['version'] == '1.0.0'
-          assert manifest['status'] == 'production_approved_creator_control_pending'
+          assert manifest['status'].startswith('production_approved_creator_control')
           style = manifest['styles']['hair_01_lian_topknot']
           assert style['hair_back'] == 'hair_01_lian_topknot_back'
           assert style['hair_front'] == 'hair_01_lian_topknot_front'
           assert style['production_ready'] is True
           promotion = manifest['promotion']
-          assert promotion['creator_exposure'] is False
           assert promotion['battle_activation'] is True
           assert promotion['owner_visual_review'] == 'pass'
           assert promotion['runtime_validation'] == 'pass'
           assert promotion['visual_evidence']['workflow_run'] == 31330696902
           assert promotion['visual_evidence']['artifact_id'] == 9042838843
+          # C66.1 froze the pack/battle contract. C66.2+ may promote the same
+          # approved style to the Creator without rewriting C66.1 evidence.
+          if manifest['status'] == 'production_approved_creator_control_pending':
+              assert promotion['creator_exposure'] is False
+          else:
+              assert promotion['creator_exposure'] is True
 
           assert contract['status'] == 'production_approved_creator_control_pending'
           assert contract['promotion']['runtime_validation'] == 'pass'
@@ -79,8 +83,7 @@ jobs:
               assert source['redraw'] is False
               assert source['resampling'] is False
               assert source['source_pixel_mutation'] is False
-          print('C66_1_HAIR_BINARIES=PASS modules=2 exact_sha=true canvas=1024 production_ready=true')
-          print('C66_1_PROMOTION_STATE=PASS battle=true creator=false next=C66.2')
+          print(f"C66_1_HAIR_BINARIES=PASS modules=2 exact_sha=true canvas=1024 production_ready=true creator={str(promotion['creator_exposure']).lower()}")
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -127,7 +130,6 @@ jobs:
           grep -q 'C66_1_ASSEMBLER=PASS back_z=5 front_z=50' c66-1-runtime.log
           grep -q 'C66_1_PRESET_ROUNDTRIP=PASS' c66-1-runtime.log
           grep -q 'C66_1_BATTLE_RUNTIME=PASS style=hair_01_lian_topknot build=lian_wu' c66-1-runtime.log
-          grep -q 'C66_1_CREATOR_CONTROL=BLOCKED stage=C66.2' c66-1-runtime.log
           grep -q 'C66_1_HAIR_PACK_RUNTIME=PASS' c66-1-runtime.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|C66_1_RUNTIME=BLOCKED' c66-1-runtime.log; then
             exit 1
@@ -164,4 +166,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C66.1 BASE-02 Hair Pack 01 approved runtime + active-fight visual regression — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C66.1 BASE-02 Hair Pack 01 invariants after later Creator promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
