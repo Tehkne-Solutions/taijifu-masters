@@ -55,10 +55,10 @@ jobs:
           print('SIGNATURE=Tehkné Solutions')
           PY
 
-      - name: Install Godot 4.3
+      - name: Install Godot 4.3 and Xvfb
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
           curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
           unzip -q godot.zip
           mv Godot_v4.3-stable_linux.x86_64 godot
@@ -102,10 +102,13 @@ jobs:
             exit 1
           fi
 
-      - name: Capture real battle modular visual review
+      - name: Capture real battle modular visual review with graphical renderer
         run: |
           set -euo pipefail
-          ./godot --headless --path . --script res://scripts/ci/c65_shared_modular_visual_review.gd 2>&1 | tee c65-visual-review.log
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility \
+            --script res://scripts/ci/c65_shared_modular_visual_review.gd \
+            2>&1 | tee c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW=PASS' c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW_IDENTITY=PASS skin=deep face=broad eyes=fierce brows=sharp' c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW_OUTPUT=res://artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png' c65-visual-review.log
@@ -129,4 +132,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C65 shared modular animation runtime + isolated visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C65 shared modular animation runtime + Xvfb visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
