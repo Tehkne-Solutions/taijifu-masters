@@ -1,0 +1,99 @@
+name: BASE-01 Creator Battle Handoff
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_session.gd'
+      - 'scripts/vertical_slice/first_playable_character_identity.gd'
+      - 'scripts/characters/modular_fighter_creator_scene.gd'
+      - 'scripts/characters/modular_fighter_creator_shell.gd'
+      - 'scripts/characters/modular_fighter_preset_store.gd'
+      - 'scripts/ci/base01_creator_battle_handoff_smoke.gd'
+      - 'assets/modular_fighters/base_01/production/BASE01_CREATOR_BATTLE_HANDOFF.json'
+      - '.github/workflows/base01-creator-battle-handoff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  creator-battle-handoff:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate C62.8 handoff contract
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('assets/modular_fighters/base_01/production/BASE01_CREATOR_BATTLE_HANDOFF.json')
+          data=json.loads(p.read_text())
+          assert data['signature']=='Tehkné Solutions'
+          assert data['status']=='handoff_integrated_animation_runtime_blocked'
+          sel=data['selection_contract']
+          assert sel['source']=='ModularFighterCreatorScene'
+          assert sel['triggers']==['preset_saved','preset_loaded']
+          assert sel['canonical_base01_identity_required'] is True
+          assert sel['legacy_v1_auto_activation'] is False
+          battle=data['battle_contract']
+          assert battle['player']==1
+          assert battle['session_to_battle'] is True
+          assert battle['visual_activation'] is False
+          assert battle['visual_blocker']=='shared_modular_animation_runtime'
+          assert battle['combat_build_fallback']=='lian_wu_first_playable'
+          assert battle['animated_presenter_fallback']=='FirstPlayableLot01Presenter'
+          assert battle['static_creator_sprite_regression_allowed'] is False
+          assert data['release_policy']['visual_activation_requires']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME_PASS'
+          assert data['next_stage']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME'
+          print('C62_8_CONTRACT=PASS handoff=true visual_activation=false')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c62-8-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-8-import.log; then
+            echo 'C62_8_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run creator to battle end-to-end smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base01_creator_battle_handoff_smoke.gd 2>&1 | tee c62-8-runtime.log
+          grep -q 'C62_8_CREATOR_TO_SESSION=PASS' c62-8-runtime.log
+          grep -q 'C62_8_SESSION_TO_BATTLE=PASS metadata=true' c62-8-runtime.log
+          grep -q 'C62_8_CREATOR_VISUAL_ACTIVATION=BLOCKED blocker=shared_modular_animation_runtime' c62-8-runtime.log
+          grep -q 'C62_8_ANIMATED_FALLBACK=PRESERVED character=lian_wu' c62-8-runtime.log
+          grep -q 'C62_8_STATIC_SPRITE_REGRESSION=BLOCKED' c62-8-runtime.log
+          grep -q 'C62_8_CREATOR_BATTLE_HANDOFF=PASS' c62-8-runtime.log
+          grep -q 'NEXT_STAGE=C63_SHARED_MODULAR_ANIMATION_RUNTIME' c62-8-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-8-runtime.log; then
+            echo 'C62_8_RUNTIME_ERRORS=BLOCKED'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE01-CREATOR-BATTLE-HANDOFF-EVIDENCE
+          path: |
+            c62-8-import.log
+            c62-8-runtime.log
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C62.8 creator battle handoff PASS; visual activation intentionally blocked until C63 shared modular animation runtime — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
