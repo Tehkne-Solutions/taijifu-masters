@@ -61,13 +61,15 @@ func _run() -> void:
 	if sprite == null or sprite.sprite_frames == null:
 		_fail("C64_LOT01_GODOT=BLOCKED animated_sprite_missing")
 		return
-	var fallback := battle.player_one.get_node_or_null("FirstPlayableIdentity") as CanvasItem
-	if fallback != null and fallback.visible:
-		_fail("C64_LOT01_GODOT=BLOCKED procedural_visual_still_visible")
-		return
+	for node_name in ["FirstPlayableIdentity", "SpritePresenter"]:
+		var legacy_surface := battle.player_one.get_node_or_null(node_name) as CanvasItem
+		if legacy_surface != null and legacy_surface.visible:
+			_fail("C64_LOT01_GODOT=BLOCKED legacy_visual_still_visible:%s" % node_name)
+			return
 
 	print("C64_LOT01_SPRITEFRAMES=PASS animations=10 frames=%d" % total_frames)
 	print("C64_LOT01_PRESENTER=PASS real_assets=true")
+	print("C64_LOT01_LEGACY_VISUALS=HIDDEN surfaces=FirstPlayableIdentity,SpritePresenter")
 	print("C64_LOT01_PROCEDURAL_VISUAL=HIDDEN")
 	print("C64_LOT01_GODOT=PASS")
 	print("SIGNATURE=Tehkné Solutions")
