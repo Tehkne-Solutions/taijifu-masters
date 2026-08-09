@@ -59,6 +59,13 @@ def validate_html_structure(html: str) -> None:
     if viewport_style_close > head_close:
         fail("viewport fix atravessa </head> e engole o body/canvas")
 
+    bridge_marker = lower.find("taijifu_godot_bridge_facade")
+    bridge_object = lower.find("window.taijifugodotbridge")
+    if bridge_marker < 0 or bridge_object < 0:
+        fail("façade canônica Web ↔ Godot não foi injetada")
+    if not (body_open < bridge_marker < body_close and body_open < bridge_object < body_close):
+        fail("façade Web ↔ Godot deve existir dentro do body")
+
 
 def main() -> None:
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "web-build").resolve()
@@ -111,6 +118,8 @@ def main() -> None:
             "TAIJIFU_WEB_SHELL_HEAD",
             "TAIJIFU_WEB_SHELL_BODY",
             "TAIJIFU_WEB_VIEWPORT_FIX",
+            "TAIJIFU_GODOT_BRIDGE_FACADE",
+            "window.taijifuGodotBridge",
             '<canvas',
             'id="taijifu-shell"',
             'id="taijifu-enter"',
@@ -166,6 +175,7 @@ def main() -> None:
         "web_contract": "sprint0-essential-shell-v1",
         "features": {
             "godot_canvas": True,
+            "godot_bridge_facade": True,
             "direct_arena_entry": True,
             "pause_menu": True,
             "closable_dialog": True,
@@ -179,6 +189,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print("[taijifu-web] Estrutura DOM do canvas validada")
+    print("[taijifu-web] Façade canônica Web ↔ Godot validada")
     print("[taijifu-web] Validação essencial concluída")
 
 
