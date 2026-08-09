@@ -1,0 +1,116 @@
+name: C65 Shared Modular Animation Runtime
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
+      - 'scripts/ci/c65_shared_modular_animation_runtime_smoke.gd'
+      - 'assets/modular_fighters/base_01/production/BASE01_SHARED_MODULAR_ANIMATION_RUNTIME.json'
+      - '.github/workflows/c65-shared-modular-animation-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shared-modular-animation-runtime:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate C65 contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('assets/modular_fighters/base_01/production/BASE01_SHARED_MODULAR_ANIMATION_RUNTIME.json')
+          d=json.loads(p.read_text())
+          assert d['signature']=='Tehkné Solutions'
+          assert d['stage']=='C65'
+          a=d['animation_contract']
+          assert a['runtime_id']=='shared_modular_animation_runtime_v1'
+          assert a['state_count']==10
+          assert a['states']==['idle','run','jump_start','airborne','fall','attack_light','guard','dodge','hit','ko']
+          assert a['identity_animation_policy']=='animate_complete_assembler'
+          assert a['world_translation_owner']=='fighter_physics'
+          assert a['preset_specific_sprite_sheet'] is False
+          assert a['regional_cutouts'] is False
+          activation=d['activation_contract']
+          assert activation['session_selection_visual_activation'] is False
+          assert activation['session_visual_blocker']=='shared_modular_animation_runtime'
+          assert activation['battle_activation_requires_complete_assembly'] is True
+          assert activation['battle_metadata_promotes_visual_activation'] is True
+          assert activation['lian_lot01_preserved_as_fallback'] is True
+          combat=d['combat_invariants']
+          assert combat['combat_build']=='lian_wu_first_playable'
+          assert combat['damage_changes'] is False
+          assert combat['collision_changes'] is False
+          assert combat['physics_changes'] is False
+          assert combat['balance_changes'] is False
+          print('C65_CONTRACT=PASS states=10 fallback=lian_lot01')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c65-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c65-import.log; then
+            echo 'C65_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run C64 canonical LOT01 fallback smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/c64_lian_first_playable_lot01_smoke.gd 2>&1 | tee c65-c64-fallback.log
+          grep -q 'C64_LOT01_GODOT=PASS' c65-c64-fallback.log
+          grep -q 'C64_LOT01_PRESENTER=PASS real_assets=true' c65-c64-fallback.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|ERROR:' c65-c64-fallback.log; then
+            echo 'C65_C64_FALLBACK=BLOCKED runtime_error'
+            exit 1
+          fi
+
+      - name: Run creator to battle shared animation smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/c65_shared_modular_animation_runtime_smoke.gd 2>&1 | tee c65-runtime.log
+          grep -q 'C65_CREATOR_TO_BATTLE=PASS' c65-runtime.log
+          grep -q 'C65_MODULAR_IDENTITY=PASS' c65-runtime.log
+          grep -q 'C65_SHARED_STATE_CONTRACT=PASS states=10' c65-runtime.log
+          grep -q 'C65_VISUAL_ACTIVATION=PASS runtime=shared_modular_animation_runtime_v1' c65-runtime.log
+          grep -q 'C65_LIAN_FALLBACK=PASS preserved=true hidden_when_modular_active=true' c65-runtime.log
+          grep -q 'C65_COMBAT_BUILD=PASS character=lian_wu unchanged=true' c65-runtime.log
+          grep -q 'C65_NO_PRESET_FALLBACK=PASS lian_visible=true modular_absent=true' c65-runtime.log
+          grep -q 'C65_SHARED_MODULAR_ANIMATION_RUNTIME=PASS' c65-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|ERROR:' c65-runtime.log; then
+            echo 'C65_RUNTIME_ERRORS=BLOCKED'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C65-SHARED-MODULAR-ANIMATION-RUNTIME-EVIDENCE
+          path: |
+            c65-import.log
+            c65-c64-fallback.log
+            c65-runtime.log
+            assets/modular_fighters/base_01/production/BASE01_SHARED_MODULAR_ANIMATION_RUNTIME.json
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C65 shared modular animation runtime gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
