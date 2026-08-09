@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base03-uniform-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE03_MARTIAL_ARTS_UNIFORMS",
-  "version": "0.1.0-foundation",
-  "status": "foundation_no_art_assets",
+  "version": "1.0.0-candidate",
+  "status": "production_candidate_first_uniform_runtime_review_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -49,16 +49,115 @@
       "legs": null,
       "feet": null,
       "requires_art_assets": false,
+      "runtime_ready": true,
       "production_ready": true
+    },
+    "uniform_01_lian_martial": {
+      "label": "Traje Marcial Lian",
+      "torso_inner": null,
+      "torso_outer": "uniform_01_lian_martial_torso_outer",
+      "arms": "uniform_01_lian_martial_arms",
+      "hands": null,
+      "waist": "uniform_01_lian_martial_waist",
+      "legs": "uniform_01_lian_martial_legs",
+      "feet": "uniform_01_lian_martial_feet",
+      "requires_art_assets": true,
+      "runtime_ready": true,
+      "production_ready": false,
+      "intentionally_empty_slots": ["torso_inner", "hands"]
     }
   },
-  "modules": {},
+  "modules": {
+    "uniform_01_lian_martial_torso_outer": {
+      "slot": "torso_outer",
+      "path": "assets/modular_fighters/base_03/uniform_01_lian_martial/torso_outer.png",
+      "sha256": "0aa6afd9614f60d99bbb1d64ea8917d6b0c44689f111503ef28221959ac1096f",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [418, 335, 622, 610],
+      "visible_pixels": 38826,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "uniform_01_lian_martial_arms": {
+      "slot": "arms",
+      "path": "assets/modular_fighters/base_03/uniform_01_lian_martial/arms.png",
+      "sha256": "b98aaf87c0b92892ee3ccbc0d662944c6f8ab56813c3f269e94452564496df05",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [340, 345, 720, 625],
+      "visible_pixels": 30195,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "uniform_01_lian_martial_waist": {
+      "slot": "waist",
+      "path": "assets/modular_fighters/base_03/uniform_01_lian_martial/waist.png",
+      "sha256": "0c8bfaa609ce93e0df310b136f52d229f87e4fa7fa18e686a6433217cc75ef5a",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [355, 610, 667, 735],
+      "visible_pixels": 31701,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "uniform_01_lian_martial_legs": {
+      "slot": "legs",
+      "path": "assets/modular_fighters/base_03/uniform_01_lian_martial/legs.png",
+      "sha256": "987c9528ddb72c5fb404e985674d6c128e7ce0258ea9452f2397ff168c676f0a",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [363, 735, 685, 895],
+      "visible_pixels": 37604,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    },
+    "uniform_01_lian_martial_feet": {
+      "slot": "feet",
+      "path": "assets/modular_fighters/base_03/uniform_01_lian_martial/feet.png",
+      "sha256": "5a7fb1dec6275fddaca49a236adfe095092174d04ffa166bfafaff1f99e8655b",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [358, 895, 673, 943],
+      "visible_pixels": 7336,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center"
+    }
+  },
+  "source_evidence": {
+    "method": "semantic_source_pixel_uniform_palette_body_matte_v4_final_sanitized",
+    "lian_source_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "base00_sha256": "fd07d14d744e3433ad1f13877e333650e5ce26a4d41d4b14d7646b6bcd47e3fe",
+    "hair_back_sha256": "45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b",
+    "hair_front_sha256": "11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4",
+    "workflow_run": 31333133016,
+    "artifact_id": 9043506141,
+    "artifact_digest": "sha256:d27c81a78cb04e08ba5cf4fdae6a2d60aa360f3ba204d5324d1390f942ff0f10",
+    "difference_improvement_ratio": 0.6905173652855401,
+    "source_pixel_mutation": false,
+    "redraw": false,
+    "resampling": false,
+    "contamination": {
+      "slot_overlap": 0,
+      "skin": 0,
+      "hair": 0,
+      "left_hand_weapon": 0,
+      "right_hand": 0,
+      "collar_warm": 0,
+      "boot_spill": 0,
+      "baseline": 0,
+      "extra_weapon": 0
+    },
+    "source_owner_visual_review": "pass"
+  },
   "promotion": {
     "art_pack_required": true,
-    "art_assets_present": false,
+    "art_assets_present": true,
     "creator_exposure": false,
     "battle_activation": false,
-    "owner_visual_review": "not_applicable_until_art_exists"
+    "runtime_validation": "pending",
+    "owner_visual_review": "battle_capture_pending",
+    "blocker": "c67_1_runtime_and_battle_visual_review"
   },
-  "next_stage": "C67_1_BASE03_FIRST_UNIFORM_ART_PACK"
+  "next_stage": "C67_1_RUNTIME_VISUAL_REVIEW_AND_PROMOTION"
 }
