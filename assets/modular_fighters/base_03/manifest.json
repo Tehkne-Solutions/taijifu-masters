@@ -1,0 +1,64 @@
+{
+  "schema": "tehkne/taijifu-base03-uniform-manifest/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE03_MARTIAL_ARTS_UNIFORMS",
+  "version": "0.1.0-foundation",
+  "status": "foundation_no_art_assets",
+  "depends_on": {
+    "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
+    "base_body": "base_fighter_v1",
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "hair_pack": "BASE02_HAIR"
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false
+  },
+  "slots": [
+    "torso_inner",
+    "torso_outer",
+    "arms",
+    "hands",
+    "waist",
+    "legs",
+    "feet"
+  ],
+  "composition": {
+    "creator_selection_unit": "uniform_set",
+    "set_selection_atomic": true,
+    "internal_slots_remain_independent_runtime_nodes": true,
+    "cross_set_piece_mixing_allowed": false,
+    "future_piece_level_controls_allowed_after_compatibility_contract": true,
+    "preset_specific_sprite_sheet": false,
+    "shared_animation_source": true
+  },
+  "default_set_id": "uniform_none",
+  "sets": {
+    "uniform_none": {
+      "label": "Sem uniforme externo",
+      "torso_inner": null,
+      "torso_outer": null,
+      "arms": null,
+      "hands": null,
+      "waist": null,
+      "legs": null,
+      "feet": null,
+      "requires_art_assets": false,
+      "production_ready": true
+    }
+  },
+  "modules": {},
+  "promotion": {
+    "art_pack_required": true,
+    "art_assets_present": false,
+    "creator_exposure": false,
+    "battle_activation": false,
+    "owner_visual_review": "not_applicable_until_art_exists"
+  },
+  "next_stage": "C67_1_BASE03_FIRST_UNIFORM_ART_PACK"
+}
