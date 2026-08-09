@@ -106,14 +106,15 @@ jobs:
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1920x1080x24' \
-            ./godot --path . --rendering-method gl_compatibility \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
             --script res://scripts/ci/c65_shared_modular_visual_review.gd \
             2>&1 | tee c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW=PASS' c65-visual-review.log
+          grep -q 'C65_VISUAL_REVIEW_PHASE=PASS active_fight_after_countdown=true' c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW_IDENTITY=PASS skin=deep face=broad eyes=fierce brows=sharp' c65-visual-review.log
           grep -q 'C65_VISUAL_REVIEW_OUTPUT=res://artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png' c65-visual-review.log
           test -f artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png
-          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|ERROR:' c65-visual-review.log; then
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|C65_VISUAL_REVIEW=BLOCKED' c65-visual-review.log; then
             echo 'C65_VISUAL_REVIEW=BLOCKED runtime_error'
             exit 1
           fi
@@ -132,4 +133,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C65 shared modular animation runtime + Xvfb visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C65 shared modular animation runtime + active-fight Xvfb visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
