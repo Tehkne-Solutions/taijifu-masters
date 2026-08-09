@@ -8,9 +8,9 @@ Non-looping landing sequence: impact -> deep compression -> recovery -> neutral.
 from __future__ import annotations
 import argparse, hashlib, json, shutil, sys
 from pathlib import Path
+from lian_wu_canonical_identity import validate_source
 from PIL import Image, ImageDraw, ImageFilter
 
-EXPECTED_SOURCE_SHA256="0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS=(1024,1024); FRAME_COUNT=4; ALPHA_THRESHOLD=3; FPS=12.0
 
 def sha256(path:Path)->str:
@@ -80,9 +80,12 @@ def main()->int:
     ap=argparse.ArgumentParser(); ap.add_argument('--repo-root',default='.'); ap.add_argument('--source',default='assets/characters/lian_wu/character_lock/lian_wu_neutral.png'); args=ap.parse_args()
     repo=Path(args.repo_root).resolve(); source=(repo/args.source).resolve()
     if not source.is_file(): print(f'VM02_A8_LAND4=BLOCKED source_missing={source}'); return 2
-    actual=sha256(source)
-    if actual!=EXPECTED_SOURCE_SHA256: print('VM02_A8_LAND4=BLOCKED source_hash_mismatch'); return 3
-    image=Image.open(source).convert('RGBA')
+    try:
+        canonical_identity = validate_source(source)
+    except (OSError, ValueError) as exc:
+        print(f"VM02_A8_LAND4=BLOCKED canonical_visual_identity={exc}"); return 3
+    actual = str(canonical_identity["file_sha256"])
+    image = Image.open(source).convert("RGBA")
     if image.size!=CANVAS: print(f'VM02_A8_LAND4=BLOCKED canvas={image.size}'); return 4
     b=alpha_bounds(image); base=b[3]-1; masks=build_masks(image.size,b)
     frames_dir=repo/'assets/pack_01_characters/lian_wu/frames/land'; meta_dir=repo/'assets/pack_01_characters/lian_wu/metadata'; frames_dir.mkdir(parents=True,exist_ok=True); meta_dir.mkdir(parents=True,exist_ok=True)

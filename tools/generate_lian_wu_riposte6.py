@@ -15,12 +15,13 @@ import shutil
 import sys
 from pathlib import Path
 
+from lian_wu_canonical_identity import validate_source
+
 try:
     from PIL import Image, ImageDraw, ImageFilter
 except ImportError as exc:
     raise SystemExit("VM02_C20_RIPOSTE6=BLOCKED missing Pillow") from exc
 
-EXPECTED_SOURCE_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS = (1024, 1024)
 FRAME_COUNT = 6
 ALPHA_THRESHOLD = 3
@@ -111,10 +112,11 @@ def main() -> int:
     if not source_path.is_file():
         print(f"VM02_C20_RIPOSTE6=BLOCKED source_missing={source_path}")
         return 2
-    source_sha = sha256(source_path)
-    if source_sha != EXPECTED_SOURCE_SHA256:
-        print(f"VM02_C20_RIPOSTE6=BLOCKED source_hash={source_sha}")
-        return 3
+    try:
+        canonical_identity = validate_source(source_path)
+    except (OSError, ValueError) as exc:
+        print(f"VM02_C20_RIPOSTE6=BLOCKED canonical_visual_identity={exc}"); return 3
+    source_sha = str(canonical_identity["file_sha256"])
     source = Image.open(source_path).convert("RGBA")
     if source.size != CANVAS:
         print(f"VM02_C20_RIPOSTE6=BLOCKED canvas={source.size}")

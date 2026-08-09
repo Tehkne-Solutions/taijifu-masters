@@ -10,9 +10,9 @@ from __future__ import annotations
 import argparse, hashlib, json
 from pathlib import Path
 import sys
+from lian_wu_canonical_identity import validate_source
 from PIL import Image, ImageDraw, ImageFilter
 
-EXPECTED_SOURCE_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS = (1024, 1024)
 FRAME_COUNT = 4
 ALPHA_THRESHOLD = 3
@@ -116,10 +116,11 @@ def main():
     if not source.is_file():
         print(f"VM02_A5_JUMP_START4=BLOCKED source_missing={source}")
         return 2
-    actual = sha256(source)
-    if actual != EXPECTED_SOURCE_SHA256:
-        print("VM02_A5_JUMP_START4=BLOCKED source_hash_mismatch")
-        return 3
+    try:
+        canonical_identity = validate_source(source)
+    except (OSError, ValueError) as exc:
+        print(f"VM02_A5_JUMP_START4=BLOCKED canonical_visual_identity={exc}"); return 3
+    actual = str(canonical_identity["file_sha256"])
     image = Image.open(source).convert("RGBA")
     if image.size != CANVAS:
         print(f"VM02_A5_JUMP_START4=BLOCKED canvas={image.size}")

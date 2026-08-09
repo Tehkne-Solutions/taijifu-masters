@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 import sys
 
+from lian_wu_canonical_identity import validate_source
+
 try:
     from PIL import Image
 except ImportError as exc:
@@ -22,7 +24,6 @@ except ImportError as exc:
         "VM02_A2_IDLE6=BLOCKED missing dependency Pillow. Install with: python -m pip install Pillow"
     ) from exc
 
-EXPECTED_SOURCE_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS = (1024, 1024)
 FRAME_PHASES = (0, 1, 2, 1, 0, -1)
 FRAME_COUNT = len(FRAME_PHASES)
@@ -92,13 +93,11 @@ def main() -> int:
         print(f"VM02_A2_IDLE6=BLOCKED source_missing={source}")
         return 2
 
-    actual_source_sha = sha256(source)
-    if actual_source_sha != EXPECTED_SOURCE_SHA256:
-        print("VM02_A2_IDLE6=BLOCKED source_hash_mismatch")
-        print(f"expected={EXPECTED_SOURCE_SHA256}")
-        print(f"actual={actual_source_sha}")
-        return 3
-
+    try:
+        canonical_identity = validate_source(source)
+    except (OSError, ValueError) as exc:
+        print(f"VM02_A2_IDLE6=BLOCKED canonical_visual_identity={exc}"); return 3
+    actual_source_sha = str(canonical_identity["file_sha256"])
     image = Image.open(source).convert("RGBA")
     if image.size != CANVAS:
         print(f"VM02_A2_IDLE6=BLOCKED canvas={image.size} expected={CANVAS}")

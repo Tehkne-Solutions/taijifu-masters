@@ -6,9 +6,9 @@ Tehkné Solutions
 from __future__ import annotations
 import argparse, hashlib, json, shutil, sys
 from pathlib import Path
+from lian_wu_canonical_identity import validate_source
 from PIL import Image, ImageDraw, ImageFilter
 
-EXPECTED_SOURCE_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
 CANVAS=(1024,1024); FRAME_COUNT=6; ALPHA_THRESHOLD=3
 KEYPOSES=["guard","drop_load","chamber","sweep_active","follow_through","recover"]
 ACTIVE_KEYPOSES=[4]
@@ -64,9 +64,12 @@ def main()->int:
     ap=argparse.ArgumentParser(); ap.add_argument('--repo-root',default='.'); ap.add_argument('--source',default='assets/characters/lian_wu/character_lock/lian_wu_neutral.png'); args=ap.parse_args()
     repo=Path(args.repo_root).resolve(); sp=(repo/args.source).resolve()
     if not sp.is_file(): print(f'VM02_C6_JI_SWEEP6=BLOCKED source_missing={sp}'); return 2
-    sh=sha256(sp)
-    if sh!=EXPECTED_SOURCE_SHA256: print('VM02_C6_JI_SWEEP6=BLOCKED source_hash_mismatch'); return 3
-    src=Image.open(sp).convert('RGBA'); b=alpha_bounds(src); baseline=b[3]-1
+    try:
+        canonical_identity = validate_source(sp)
+    except (OSError, ValueError) as exc:
+        print(f"VM02_C6_JI_SWEEP6=BLOCKED canonical_visual_identity={exc}"); return 3
+    sh = str(canonical_identity["file_sha256"])
+    src = Image.open(sp).convert("RGBA"); b=alpha_bounds(src); baseline=b[3]-1
     frames=repo/'assets/pack_01_characters/lian_wu/frames/attacks/ji_sweep'; meta_dir=repo/'assets/pack_01_characters/lian_wu/metadata'; frames.mkdir(parents=True,exist_ok=True); meta_dir.mkdir(parents=True,exist_ok=True)
     for s in frames.glob('char_lian_wu__ji_sweep__f*.png'): s.unlink()
     presets=[None,
