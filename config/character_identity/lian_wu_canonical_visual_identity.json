@@ -1,26 +1,37 @@
 {
-  "schema": "tehkne/c63-2-lian-canonical-visual-identity/v1",
+  "schema": "tehkne/c63-4-lian-canonical-visual-identity/v1",
   "signature": "Tehkné Solutions",
-  "stage": "C63.2",
-  "status": "visual_fingerprint_defined_generator_migration_pending",
+  "stage": "C63.4",
+  "status": "exact_historical_character_lock_recovered_and_authoritative",
   "character_id": "lian_wu",
   "source_role": "character_lock_neutral",
   "canvas": [1024, 1024],
   "historical_binary_provenance": {
     "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
-    "policy": "preserve_as_forensic_lineage_not_as_sole_art_identity"
+    "source": "git stash untracked parent recovered by C63.4",
+    "policy": "preserve_exact_bytes_as_primary_forensic_lineage"
   },
   "canonical_visual_identity": {
     "decoded_format": "RGBA",
-    "decoded_pixel_sha256": "c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2",
-    "evidence": "C63.1 reproduced one identical decoded RGBA digest across Pillow 9.5.0 through 12.3.0 from the official assets-pack-01-v1.0.0 raw lineage and canonical clean builder",
+    "decoded_pixel_sha256": "0bedec17308acd2c7b392f2c989cf97238908aa4f18b73371aa67c741eb6030b",
+    "alpha_bounds_threshold_3": [325, 70, 720, 970],
+    "evidence": "C63.4 recovered the exact historical Character Lock PNG with SHA-256 0e435757... and remote Actions measured its decoded RGBA digest and threshold-3 alpha bounds directly",
     "png_encoder_byte_variation_allowed": true,
     "pixel_variation_allowed": false,
-    "canvas_variation_allowed": false
+    "canvas_variation_allowed": false,
+    "alpha_bounds_variation_allowed": false
+  },
+  "superseded_reconstruction_candidate": {
+    "decoded_pixel_sha256": "c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2",
+    "observed_alpha_bounds_threshold_3": [303, 70, 720, 970],
+    "classification": "noncanonical_reconstruction_candidate",
+    "reason": "deterministic reconstruction was reproducible across Pillow versions but diverged from exact historical pixels and changed validated Land4 silhouette behavior",
+    "land4_observed_profile": [901, 900, 900, 900],
+    "historical_land4_approved_profile": [898, 896, 900, 900]
   },
   "generator_migration_inventory": {
-    "legacy_binary_lock_count": 10,
-    "source": "C63.2 remote Actions inventory",
+    "legacy_binary_lock_count": 0,
+    "migration_status": "materialized_on_main_by_c63_3",
     "generators": [
       "tools/generate_lian_wu_body_hook6.py",
       "tools/generate_lian_wu_fall3.py",
@@ -35,20 +46,22 @@
     ]
   },
   "acceptance": {
-    "exact_historical_png": "pass_if_decoded_rgba_also_matches",
-    "pixel_equivalent_png_encoding": "pass",
+    "exact_historical_png": "pass",
+    "historical_pixel_equivalent_png_encoding": "pass_if_decoded_rgba_and_alpha_bounds_match_exactly",
+    "superseded_reconstruction_candidate": "blocked",
     "different_decoded_rgba": "blocked",
+    "different_alpha_bounds": "blocked",
     "different_canvas": "blocked"
   },
   "safety": {
-    "does_not_promote_binary_asset": true,
+    "does_not_redraw_character": true,
+    "does_not_relax_animation_thresholds": true,
     "does_not_activate_creator_visual_in_battle": true,
     "does_not_change_collision_or_gameplay": true,
     "shared_modular_animation_runtime_still_required": true
   },
   "next": [
-    "migrate_lian_generators_to_canonical_visual_identity_validator",
-    "reconstruct_neutral_in_remote_ci",
+    "run_all_10_migrated_generators_against_exact_historical_neutral",
     "materialize_required_first_playable_animation_families",
     "generate_lian_wu_first_playable_frames_tres",
     "run_godot_presenter_and_creator_handoff_gates"

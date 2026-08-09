@@ -1,4 +1,4 @@
-name: C63.2 Lian Character Lock Exact Recovery
+name: C63.4 Lian Character Lock Exact Recovery
 
 on:
   pull_request:
@@ -6,6 +6,8 @@ on:
       - 'assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
       - 'assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png'
       - 'assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json'
+      - 'tools/lian_wu_canonical_identity.py'
+      - 'config/character_identity/lian_wu_canonical_visual_identity.json'
       - 'tools/RECOVER-C63-CHARACTER-LOCK-FROM-STASH.ps1'
       - '.github/workflows/c63-lian-character-lock-exact-recovery.yml'
   workflow_dispatch:
@@ -41,60 +43,40 @@ jobs:
           for path, target in expected.items():
               p=Path(path)
               if not p.is_file():
-                  raise SystemExit(f'C63_2_EXACT_SHA256=BLOCKED missing={path}')
+                  raise SystemExit(f'C63_4_EXACT_SHA256=BLOCKED missing={path}')
               data=p.read_bytes()
               digest=hashlib.sha256(data).hexdigest()
               if digest != target:
-                  raise SystemExit(f'C63_2_EXACT_SHA256=BLOCKED path={path} expected={target} actual={digest}')
+                  raise SystemExit(f'C63_4_EXACT_SHA256=BLOCKED path={path} expected={target} actual={digest}')
               if data[:8] != b'\x89PNG\r\n\x1a\n':
-                  raise SystemExit(f'C63_2_PNG=BLOCKED signature={path}')
+                  raise SystemExit(f'C63_4_PNG=BLOCKED signature={path}')
               width,height=struct.unpack('>II',data[16:24])
               bit_depth=data[24]
               color_type=data[25]
               if (width,height)!=(1024,1024) or bit_depth!=8 or color_type!=6:
-                  raise SystemExit(f'C63_2_PNG=BLOCKED path={path} size={width}x{height} bit={bit_depth} color={color_type}')
-              print(f'C63_2_EXACT_SHA256=PASS {path} {digest}')
-              print(f'C63_2_PNG_1024_RGBA=PASS {path}')
-          print('C63_2_BINARY_LINEAGE=PASS files=2 historical_hashes_preserved=true')
+                  raise SystemExit(f'C63_4_PNG=BLOCKED path={path} size={width}x{height} bit={bit_depth} color={color_type}')
+              print(f'C63_4_EXACT_SHA256=PASS {path} {digest}')
+              print(f'C63_4_PNG_1024_RGBA=PASS {path}')
+          print('C63_4_BINARY_LINEAGE=PASS files=2 historical_hashes_preserved=true')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
-      - name: Compare exact historical neutral with C63.2 decoded fingerprint
+      - name: Validate exact historical decoded identity
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
+          python3 tools/lian_wu_canonical_identity.py \
+            assets/characters/lian_wu/character_lock/lian_wu_neutral.png \
+            --json c63-4-exact-historical-identity.json
           python - <<'PY'
+          import json
           from pathlib import Path
-          import hashlib, json
-          from PIL import Image
-
-          path=Path('assets/characters/lian_wu/character_lock/lian_wu_neutral.png')
-          expected='c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2'
-          if not path.is_file():
-              raise SystemExit('C63_2_RGBA_FINGERPRINT=BLOCKED exact_neutral_missing')
-          with Image.open(path) as opened:
-              rgba=opened.convert('RGBA')
-              canvas=rgba.size
-              actual=hashlib.sha256(rgba.tobytes()).hexdigest()
-              alpha=rgba.getchannel('A').point(lambda v:255 if v>=3 else 0)
-              bounds=alpha.getbbox() or (0,0,0,0)
-          report={
-              'schema':'tehkne/c63-2-exact-vs-reconstructed-rgba/v1',
-              'signature':'Tehkné Solutions',
-              'historical_file_sha256':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
-              'exact_decoded_rgba_sha256':actual,
-              'c63_2_reconstructed_decoded_rgba_sha256':expected,
-              'canvas':list(canvas),
-              'alpha_bounds_threshold_3':list(bounds),
-              'pixel_identity_matches_reconstruction':actual==expected,
-          }
-          Path('c63-2-exact-vs-reconstructed-rgba.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
-          print(f'C63_2_EXACT_RGBA_SHA256={actual}')
-          print(f'C63_2_EXACT_ALPHA_BOUNDS={bounds}')
-          if actual != expected:
-              print('C63_2_RGBA_FINGERPRINT=BLOCKED classification=HISTORICAL_PIXELS_DIVERGE_FROM_RECONSTRUCTED_CANDIDATE')
-              raise SystemExit(9)
-          print('C63_2_RGBA_FINGERPRINT=PASS classification=EXACT_HISTORICAL_PIXELS_MATCH_RECONSTRUCTED')
+          report=json.loads(Path('c63-4-exact-historical-identity.json').read_text())
+          assert report['file_sha256']=='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          assert report['decoded_rgba_sha256']=='0bedec17308acd2c7b392f2c989cf97238908aa4f18b73371aa67c741eb6030b'
+          assert report['alpha_bounds_threshold_3']==[325,70,720,970]
+          assert report['art_identity']=='exact_historical_character_lock'
+          print('C63_4_HISTORICAL_VISUAL_IDENTITY=PASS')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -111,12 +93,12 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .godot
-          ./godot --headless --path . --import 2>&1 | tee c63-2-import.log
-          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c63-2-import.log; then
-            echo 'C63_2_GODOT_IMPORT=BLOCKED'
+          ./godot --headless --path . --import 2>&1 | tee c63-4-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c63-4-import.log; then
+            echo 'C63_4_GODOT_IMPORT=BLOCKED'
             exit 1
           fi
-          cat > /tmp/c63_2_texture_smoke.gd <<'GD'
+          cat > /tmp/c63_4_texture_smoke.gd <<'GD'
           extends SceneTree
           const PATHS = [
             "res://assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
@@ -125,38 +107,38 @@ jobs:
           func _init() -> void:
             for path in PATHS:
               if not ResourceLoader.exists(path):
-                push_error("C63_2_GODOT_TEXTURE=BLOCKED missing=" + path)
+                push_error("C63_4_GODOT_TEXTURE=BLOCKED missing=" + path)
                 quit(2)
                 return
               var texture := load(path) as Texture2D
               if texture == null or texture.get_width() != 1024 or texture.get_height() != 1024:
-                push_error("C63_2_GODOT_TEXTURE=BLOCKED invalid=" + path)
+                push_error("C63_4_GODOT_TEXTURE=BLOCKED invalid=" + path)
                 quit(2)
                 return
-              print("C63_2_GODOT_TEXTURE=PASS path=%s size=%dx%d" % [path, texture.get_width(), texture.get_height()])
-            print("C63_2_GODOT_IMPORT=PASS textures=2")
+              print("C63_4_GODOT_TEXTURE=PASS path=%s size=%dx%d" % [path, texture.get_width(), texture.get_height()])
+            print("C63_4_GODOT_IMPORT=PASS textures=2")
             print("SIGNATURE=Tehkné Solutions")
             quit(0)
           GD
-          cp /tmp/c63_2_texture_smoke.gd scripts/ci/c63_2_texture_smoke.tmp.gd
-          ./godot --headless --path . --script res://scripts/ci/c63_2_texture_smoke.tmp.gd 2>&1 | tee c63-2-texture.log
-          rm scripts/ci/c63_2_texture_smoke.tmp.gd
-          grep -q 'C63_2_GODOT_IMPORT=PASS textures=2' c63-2-texture.log
-          if grep -Eq 'SCRIPT ERROR|Parse Error|ERROR:' c63-2-texture.log; then
-            echo 'C63_2_GODOT_TEXTURE=BLOCKED runtime_error'
+          cp /tmp/c63_4_texture_smoke.gd scripts/ci/c63_4_texture_smoke.tmp.gd
+          ./godot --headless --path . --script res://scripts/ci/c63_4_texture_smoke.tmp.gd 2>&1 | tee c63-4-texture.log
+          rm scripts/ci/c63_4_texture_smoke.tmp.gd
+          grep -q 'C63_4_GODOT_IMPORT=PASS textures=2' c63-4-texture.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|ERROR:' c63-4-texture.log; then
+            echo 'C63_4_GODOT_TEXTURE=BLOCKED runtime_error'
             exit 1
           fi
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: C63-2-EXACT-CHARACTER-LOCK-RECOVERY-EVIDENCE
+          name: C63-4-EXACT-CHARACTER-LOCK-EVIDENCE
           path: |
-            c63-2-exact-vs-reconstructed-rgba.json
-            c63-2-import.log
-            c63-2-texture.log
+            c63-4-exact-historical-identity.json
+            c63-4-import.log
+            c63-4-texture.log
             assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C63.2 exact historical Character Lock recovery gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63.4 exact historical Character Lock gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
