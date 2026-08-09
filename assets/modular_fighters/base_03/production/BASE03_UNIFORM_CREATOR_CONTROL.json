@@ -1,0 +1,63 @@
+{
+  "schema": "tehkne/taijifu-base03-uniform-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE03_UNIFORM_CREATOR_CONTROL",
+  "stage": "C67.2",
+  "status": "candidate_visual_review_pending",
+  "control_contract": {
+    "public_control": "uniform_set",
+    "internal_slots": ["torso_inner", "torso_outer", "arms", "hands", "waist", "legs", "feet"],
+    "direct_internal_slot_controls": false,
+    "cross_set_piece_mixing_allowed": false,
+    "production_ready_sets_only": true,
+    "default_set": "uniform_none",
+    "initial_options": ["uniform_none", "uniform_01_lian_martial"],
+    "live_preview": true,
+    "selection_transactional": true
+  },
+  "preset_contract": {
+    "schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "storage": "existing generic modules dictionary",
+    "save_roundtrip_required": true,
+    "load_roundtrip_required": true,
+    "atomic_set_roundtrip_required": true,
+    "legacy_schema_change": false
+  },
+  "battle_contract": {
+    "session_selection": "preset_saved_or_loaded",
+    "shared_runtime": "shared_modular_animation_runtime_v1",
+    "uniform_set_handoff_required": true,
+    "hair_uniform_composition_required": true,
+    "combat_build_changes": false,
+    "collision_changes": false,
+    "physics_changes": false,
+    "balance_changes": false
+  },
+  "ui_contract": {
+    "viewport": [1280, 720],
+    "location": "creator_header",
+    "option_node": "UniformSetOption",
+    "label": "UNIFORME • BASE-03",
+    "position": [600, 38],
+    "size": [310, 42],
+    "hair_option_position": [930, 38],
+    "controls_overlap": false,
+    "keyboard_gamepad_focus": true,
+    "base01_shell_rewritten": false,
+    "base01_identity_controls_preserved": true,
+    "base02_hair_control_preserved": true
+  },
+  "validation": {
+    "creator_smoke": "pending",
+    "preset_roundtrip": "pending",
+    "battle_handoff": "pending",
+    "graphical_creator_review": "pending",
+    "evidence": null
+  },
+  "promotion": {
+    "creator_exposure": true,
+    "production_approval": false,
+    "blocker": "c67_2_creator_control_review"
+  },
+  "next_stage": "C67.2 — Creator control visual review and promotion"
+}
