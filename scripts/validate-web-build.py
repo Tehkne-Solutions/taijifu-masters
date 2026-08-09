@@ -60,7 +60,27 @@ def validate_html_structure(html: str) -> None:
         fail("viewport fix atravessa </head> e engole o body/canvas")
 
 
+def validate_bridge_contract(project_root: Path) -> None:
+    bridge_path = project_root / "scripts/runtime/web_platform_bridge_runtime.gd"
+    if not bridge_path.is_file():
+        fail("runtime da ponte Godot Web ausente")
+    source = bridge_path.read_text(encoding="utf-8", errors="replace")
+    require_markers(
+        source,
+        (
+            "taijifuGodotBridgeReady",
+            "taijifuGodotSetPaused",
+            "taijifuGodotApplyBindings",
+            "root.taijifuGodotBridge = facade",
+            "sprint0-essential-shell-v1",
+            "Tehkné Solutions",
+        ),
+        "runtime da ponte Godot Web",
+    )
+
+
 def main() -> None:
+    project_root = Path(__file__).resolve().parents[1]
     output = Path(sys.argv[1] if len(sys.argv) > 1 else "web-build").resolve()
     if not output.is_dir():
         fail(f"diretório de saída inexistente: {output}")
@@ -148,6 +168,8 @@ def main() -> None:
         "menu Web",
     )
 
+    validate_bridge_contract(project_root)
+
     manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
     if manifest_data.get("display") != "standalone":
         fail("manifesto PWA não está em modo standalone")
@@ -166,6 +188,7 @@ def main() -> None:
         "web_contract": "sprint0-essential-shell-v1",
         "features": {
             "godot_canvas": True,
+            "godot_bridge_facade": True,
             "direct_arena_entry": True,
             "pause_menu": True,
             "closable_dialog": True,
@@ -179,6 +202,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print("[taijifu-web] Estrutura DOM do canvas validada")
+    print("[taijifu-web] Contrato da ponte Godot Web validado")
     print("[taijifu-web] Validação essencial concluída")
 
 
