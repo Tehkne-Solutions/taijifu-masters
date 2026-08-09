@@ -1,0 +1,71 @@
+name: C67.1 Uniform Source Feasibility Probe
+
+on:
+  pull_request:
+    paths:
+      - 'tools/probe_base03_lian_uniform_source.py'
+      - '.github/workflows/c67-1-uniform-source-feasibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-feasibility:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic image dependency
+        run: pip install --disable-pip-version-check pillow==11.1.0
+
+      - name: Probe exact Lian uniform source against BASE-00 and Hair
+        run: |
+          set -euo pipefail
+          python tools/probe_base03_lian_uniform_source.py 2>&1 | tee c67-1-uniform-source-probe.log
+          grep -q 'C67_1_UNIFORM_SOURCE_PROBE=PASS' c67-1-uniform-source-probe.log
+          grep -q 'C67_1_HAIR_INTERACTION=MEASURED' c67-1-uniform-source-probe.log
+          grep -q 'C67_1_PRODUCTION_PROMOTION=BLOCKED owner_visual_review_required' c67-1-uniform-source-probe.log
+          test -s artifacts/c67_1_uniform_source_probe/C67_1_LIAN_UNIFORM_SOURCE_FEASIBILITY.contact.png
+          test -s artifacts/c67_1_uniform_source_probe/C67_1_UNIFORM_SLOT_SPLIT.contact.png
+          test -s artifacts/c67_1_uniform_source_probe/09_base00_hair_uniform_composition_FULL_CANVAS_DIAGNOSTIC.png
+          test -s artifacts/c67_1_uniform_source_probe/10_base00_hair_uniform_gameplay_132px.png
+          test -s artifacts/c67_1_uniform_source_probe/report.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('artifacts/c67_1_uniform_source_probe/report.json').read_text())
+          assert data['schema']=='tehkne/taijifu-c67-1-uniform-source-feasibility/v1'
+          candidate=data['candidate']
+          assert candidate['source_pixel_mutation'] is False
+          assert candidate['redraw'] is False
+          assert candidate['resampling'] is False
+          assert candidate['slot_overlap_pixels']=={}
+          assert candidate['nonempty_slots']
+          comp=data['composition']
+          assert comp['gameplay_review_height_px']==132
+          policy=data['policy']
+          assert policy['automatic_uniform_promotion_allowed'] is False
+          assert policy['hair_interaction_visual_review_required'] is True
+          assert policy['layer_policy_change_allowed_from_metrics_only'] is False
+          print('C67_1_DIAGNOSTIC_CONTRACT=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C67-1-UNIFORM-SOURCE-FEASIBILITY
+          path: |
+            c67-1-uniform-source-probe.log
+            artifacts/c67_1_uniform_source_probe/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C67.1 diagnostic only — no uniform asset promotion — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
