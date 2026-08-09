@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE02_HAIR_PACK_01_LIAN_TOPKNOT",
   "stage": "C66.1",
-  "status": "production_candidate_runtime_validation_pending",
+  "status": "production_approved_creator_control_pending",
   "style_id": "hair_01_lian_topknot",
   "modules": {
     "hair_back": "hair_01_lian_topknot_back",
@@ -20,26 +20,37 @@
     }
   },
   "authoring": {
-    "canvas": [
-      1024,
-      1024
-    ],
+    "canvas": [1024, 1024],
     "mode": "RGBA",
-    "pivot": [
-      0.5,
-      0.92
-    ],
+    "pivot": [0.5, 0.92],
     "root_anchor": "bottom_center",
     "redraw": false,
     "resampling": false,
     "source_pixel_mutation": false
   },
+  "runtime": {
+    "style_selection_atomic": true,
+    "profile_storage": "generic_modules_v2",
+    "hair_back_z": 5,
+    "hair_front_z": 50,
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "combat_build_changed": false,
+    "creator_control": false
+  },
   "promotion": {
     "binary_materialized": true,
-    "runtime_validation": "pending",
-    "battle_visual_review": "pending",
+    "runtime_validation": "pass",
+    "battle_visual_review": "pass",
+    "battle_activation": true,
     "creator_exposure": false,
-    "creator_control_stage": "C66.2"
+    "creator_control_stage": "C66.2",
+    "evidence": {
+      "workflow_run": 31330696902,
+      "artifact_id": 9042838843,
+      "artifact_sha256": "4ddaeabdf13d6f2943c4f5ffc0bd477fea9bcba6797f62e400e17d740724b7c7",
+      "capture": "artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png"
+    }
   },
+  "next_stage": "C66.2 — Hair Creator Control",
   "signature_note": "Tehkné Solutions"
 }
