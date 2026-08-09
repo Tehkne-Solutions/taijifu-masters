@@ -3,6 +3,7 @@ extends Node2D
 
 const LOT_ROOT := "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01"
 const SPRITE_FRAMES_PATH := LOT_ROOT + "/lian_wu_first_playable_frames.tres"
+const MODULAR_FIGHTER_PRESENTER := preload("res://scripts/vertical_slice/first_playable_modular_fighter_presenter.gd")
 const CANONICAL_CANVAS_SIZE := Vector2(1024.0, 1024.0)
 const CANONICAL_BASELINE_Y := 969.0
 const TARGET_VISUAL_HEIGHT := 132.0
@@ -24,6 +25,10 @@ func _ready() -> void:
 		_last_health = _fighter.health
 	z_index = 5
 	_try_activate_real_assets()
+	# C65 starts only from an already valid canonical LOT01. The modular creator
+	# presenter overlays this node after complete BASE-01 assembly; if anything
+	# fails, this presenter simply stays visible as the production fallback.
+	call_deferred("_install_modular_creator_overlay")
 
 func _process(delta: float) -> void:
 	if not _using_real_assets or not is_instance_valid(_fighter):
@@ -68,6 +73,17 @@ func _try_activate_real_assets() -> void:
 	print("V2_LIAN_CANONICAL_PRESENTER=PASS")
 	print("V2_LIAN_CANONICAL_SCALE=%.6f" % CANONICAL_SCALE)
 	print("V2_LIAN_CANONICAL_BASELINE=PASS")
+
+func _install_modular_creator_overlay() -> void:
+	if not _using_real_assets or not is_instance_valid(_fighter):
+		return
+	if _fighter.player_index != 1 or not FirstPlayableSession.has_creator_preset():
+		return
+	if _fighter.has_node("FirstPlayableModularFighterPresenter"):
+		return
+	var modular := MODULAR_FIGHTER_PRESENTER.new() as FirstPlayableModularFighterPresenter
+	modular.name = "FirstPlayableModularFighterPresenter"
+	_fighter.add_child(modular)
 
 func _hide_procedural_fallback() -> void:
 	if not is_instance_valid(_fighter):
