@@ -6,6 +6,10 @@ on:
       - 'agent/c63-0-lian-release-recovery'
     paths:
       - '.recovery/c63-lian-release.trigger'
+  pull_request:
+    paths:
+      - '.github/workflows/c63-lian-release-probe.yml'
+      - '.recovery/c63-lian-release.trigger'
   workflow_dispatch:
 
 permissions:
