@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""Migrate Lian Wu generators from encoded-PNG SHA locks to canonical RGBA identity.
+
+This migration is deliberately mechanical: it replaces only the source identity
+preflight in the ten known generators. Animation construction, frame counts,
+FPS, bounds, baseline rules, naming and review gates remain untouched.
+
+Tehkné Solutions
+"""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import re
+import sys
+
+OLD_BINARY_SHA256 = "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
+IMPORT_LINE = "from lian_wu_canonical_identity import validate_source"
+SIGNATURE = "Tehkné Solutions"
+
+TARGETS = (
+    "tools/generate_lian_wu_body_hook6.py",
+    "tools/generate_lian_wu_fall3.py",
+    "tools/generate_lian_wu_idle6.py",
+    "tools/generate_lian_wu_ji_sweep6.py",
+    "tools/generate_lian_wu_jump_loop3.py",
+    "tools/generate_lian_wu_jump_start4.py",
+    "tools/generate_lian_wu_land4.py",
+    "tools/generate_lian_wu_riposte6.py",
+    "tools/generate_lian_wu_run8.py",
+    "tools/generate_lian_wu_walk8.py",
+)
+
+HASH_CONSTANT_RE = re.compile(
+    r'^EXPECTED_SOURCE_SHA256\s*=\s*["\']'
+    + re.escape(OLD_BINARY_SHA256)
+    + r'["\']\s*\n',
+    re.MULTILINE,
+)
+
+# Match only the legacy source-hash preflight. Stop exactly at the first RGBA
+# open so no animation logic can be swallowed by this migration.
+LEGACY_PREFLIGHT_RE = re.compile(
+    r'(?P<indent>^[ \t]*)actual_source_sha\s*=\s*sha256\(source\)\s*\n'
+    r'(?P<body>.*?)'
+    r'(?P=indent)image\s*=\s*Image\.open\(source\)\.convert\(["\']RGBA["\']\)',
+    re.MULTILINE | re.DOTALL,
+)
+MARKER_RE = re.compile(r'([A-Z][A-Z0-9_]+)=BLOCKED\s+source_hash_mismatch')
+
+
+def _inject_import(text: str, path: Path) -> str:
+    if IMPORT_LINE in text:
+        return text
+    anchor = re.search(r'^try:\s*\n[ \t]+from PIL\b', text, re.MULTILINE)
+    if anchor is None:
+        raise ValueError(f"{path}: Pillow import anchor not found")
+    return text[: anchor.start()] + IMPORT_LINE + "\n\n" + text[anchor.start() :]
+
+
+def _replace_preflight(text: str, path: Path) -> tuple[str, str]:
+    matches = list(LEGACY_PREFLIGHT_RE.finditer(text))
+    if len(matches) != 1:
+        raise ValueError(f"{path}: expected one legacy preflight, found {len(matches)}")
+    match = matches[0]
+    body = match.group("body")
+    marker_match = MARKER_RE.search(body)
+    if marker_match is None:
+        raise ValueError(f"{path}: legacy BLOCKED marker not found in hash preflight")
+    marker = marker_match.group(1)
+    indent = match.group("indent")
+    replacement = (
+        f"{indent}try:\n"
+        f"{indent}    canonical_identity = validate_source(source)\n"
+        f"{indent}except (OSError, ValueError) as exc:\n"
+        f"{indent}    print(f\"{marker}=BLOCKED canonical_visual_identity={{exc}}\"); return 3\n"
+        f"{indent}actual_source_sha = str(canonical_identity[\"file_sha256\"])\n"
+        f"{indent}image = Image.open(source).convert(\"RGBA\")"
+    )
+    return text[: match.start()] + replacement + text[match.end() :], marker
+
+
+def migrate_one(path: Path, apply: bool) -> dict:
+    if not path.is_file():
+        raise ValueError(f"target_missing={path}")
+    original = path.read_text(encoding="utf-8")
+
+    # Already migrated is valid and makes the tool idempotent.
+    if OLD_BINARY_SHA256 not in original:
+        if IMPORT_LINE not in original or "canonical_identity = validate_source(source)" not in original:
+            raise ValueError(f"{path}: old binary lock absent but canonical validator wiring is incomplete")
+        return {
+            "path": path.as_posix(),
+            "state": "already_migrated",
+            "changed": False,
+        }
+
+    migrated = _inject_import(original, path)
+    migrated, marker = _replace_preflight(migrated, path)
+    migrated, removed = HASH_CONSTANT_RE.subn("", migrated, count=1)
+    if removed != 1:
+        raise ValueError(f"{path}: expected one historical hash constant, removed {removed}")
+    if OLD_BINARY_SHA256 in migrated:
+        raise ValueError(f"{path}: historical binary SHA remains after migration")
+
+    # Guard against broad accidental rewrites: one import + one preflight + one
+    # constant are the only intended semantic edits.
+    if migrated.count(IMPORT_LINE) != 1:
+        raise ValueError(f"{path}: canonical validator import count is not one")
+    if migrated.count("canonical_identity = validate_source(source)") != 1:
+        raise ValueError(f"{path}: canonical validator call count is not one")
+
+    if apply:
+        path.write_text(migrated, encoding="utf-8")
+    return {
+        "path": path.as_posix(),
+        "state": "migrated" if apply else "migration_required",
+        "changed": True,
+        "block_marker": marker,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo-root", type=Path, default=Path("."))
+    parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--report", type=Path)
+    args = parser.parse_args()
+
+    root = args.repo_root.resolve()
+    records = []
+    try:
+        for relative in TARGETS:
+            records.append(migrate_one(root / relative, args.apply))
+    except (OSError, ValueError) as exc:
+        print(f"C63_3_GENERATOR_MIGRATION=BLOCKED {exc}", file=sys.stderr)
+        return 2
+
+    changed = sum(1 for item in records if item["changed"])
+    already = sum(1 for item in records if item["state"] == "already_migrated")
+    report = {
+        "schema": "tehkne/c63-3-lian-generator-identity-migration/v1",
+        "signature": SIGNATURE,
+        "apply": args.apply,
+        "target_count": len(TARGETS),
+        "changed_count": changed,
+        "already_migrated_count": already,
+        "historical_binary_sha256": OLD_BINARY_SHA256,
+        "canonical_identity_validator": "tools/lian_wu_canonical_identity.py",
+        "animation_semantics_changed": False,
+        "records": records,
+    }
+    if args.report:
+        report_path = args.report if args.report.is_absolute() else root / args.report
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    mode = "APPLIED" if args.apply else "PLANNED"
+    print(
+        f"C63_3_GENERATOR_MIGRATION={mode} targets={len(TARGETS)} "
+        f"changed={changed} already={already}"
+    )
+    print(f"SIGNATURE={SIGNATURE}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
