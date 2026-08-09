@@ -1,0 +1,43 @@
+{
+  "schema": "tehkne/taijifu-lian-wu-character-lock-recovery/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "C63.2",
+  "status": "awaiting_exact_binary_recovery",
+  "character_id": "lian_wu",
+  "recovery_policy": "historical_bytes_only_no_redraw_no_hash_migration",
+  "source": {
+    "kind": "git_stash_untracked_parent",
+    "stash_message": "backup-local-before-c56-canonical",
+    "stash_parent": 3,
+    "reason": "remote GitHub releases, historical Actions artifacts and clean checkout do not retain the final Character Lock PNG bytes; user workspace log proves the exact assets were materialized before this stash was created"
+  },
+  "assets": {
+    "lian_wu_neutral.png": {
+      "path": "assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
+      "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+      "canvas": [1024, 1024],
+      "mode": "RGBA"
+    },
+    "lian_wu_combat_stance.png": {
+      "path": "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png",
+      "sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c",
+      "canvas": [1024, 1024],
+      "mode": "RGBA"
+    }
+  },
+  "historical_evidence": {
+    "vm01_a5_promotion": "PASS",
+    "godot_4_7_1_bench": "PASS",
+    "neutral_historical_sha_preserved": true,
+    "combat_stance_historical_sha_preserved": true,
+    "c63_1_neutral_reconstruction_sha256": "3da81e472862eea3519fc2390ddfc081603b9205efdb98493d83db8552a9063d",
+    "c63_1_reconstruction_policy": "forensic_only_not_promotable_over_historical_bytes"
+  },
+  "promotion_gate": {
+    "exact_sha256_2_of_2": true,
+    "png_1024_rgba_2_of_2": true,
+    "godot_texture_import_2_of_2": true,
+    "no_generated_replacement": true,
+    "merge_only_after_remote_gate": true
+  }
+}
