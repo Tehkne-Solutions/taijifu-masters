@@ -1,0 +1,64 @@
+{
+  "schema": "tehkne/taijifu-base03-uniform-foundation/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE03_UNIFORM_FOUNDATION",
+  "stage": "C67.0",
+  "status": "foundation_candidate_art_blocked",
+  "purpose": "Establish canonical Martial Arts Uniform set composition before any uniform art is exposed.",
+  "set_contract": {
+    "public_selection_unit": "uniform_set",
+    "atomic_slots": [
+      "torso_inner",
+      "torso_outer",
+      "arms",
+      "hands",
+      "waist",
+      "legs",
+      "feet"
+    ],
+    "direct_piece_controls": false,
+    "cross_set_piece_mixing": false,
+    "default_set_id": "uniform_none",
+    "none_set_requires_png": false,
+    "non_none_set_requires_manifest_modules": true,
+    "non_none_set_requires_owner_visual_review": true
+  },
+  "runtime_contract": {
+    "profile_storage": "existing generic modules dictionary",
+    "shared_animation_runtime": "shared_modular_animation_runtime_v1",
+    "internal_slots_remain_independent_runtime_nodes": true,
+    "flatten_uniform_to_sprite_sheet": false,
+    "runtime_wiring_of_art_sets": "blocked_until_C67.1"
+  },
+  "layer_contract": {
+    "policy": "modular_fighter_layer_policy_v1",
+    "current_slot_z": {
+      "torso_inner": 11,
+      "legs": 11,
+      "feet": 12,
+      "arms": 12,
+      "hands": 13,
+      "waist": 14,
+      "torso_outer": 65
+    },
+    "hair_interaction_visual_review_required": true,
+    "layer_policy_changes_require_art_evidence": true
+  },
+  "quality_gate": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "transparent_background": true,
+    "stable_gameplay_readability": true,
+    "no_text_or_border": true,
+    "no_silent_creator_exposure_without_art": true
+  },
+  "promotion": {
+    "foundation_merge_allowed": true,
+    "uniform_art_promotion_allowed": false,
+    "creator_uniform_control_allowed": false,
+    "battle_uniform_activation_allowed": false,
+    "blocker": "first_canonical_uniform_art_pack_missing"
+  },
+  "next_stage": "C67.1 — first canonical Martial Arts Uniform art pack + runtime wiring"
+}
