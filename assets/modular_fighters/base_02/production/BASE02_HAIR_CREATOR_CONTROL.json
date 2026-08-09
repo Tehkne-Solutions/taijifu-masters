@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE02_HAIR_CREATOR_CONTROL",
   "stage": "C66.2",
-  "status": "validation_pending",
+  "status": "production_approved",
   "control_contract": {
     "public_control": "hair_style",
     "internal_slots": ["hair_back", "hair_front"],
@@ -41,10 +41,16 @@
     "base01_identity_controls_preserved": true
   },
   "validation": {
-    "creator_smoke": "pending",
-    "preset_roundtrip": "pending",
-    "battle_handoff": "pending",
-    "graphical_creator_review": "pending"
+    "creator_smoke": "pass",
+    "preset_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "graphical_creator_review": "pass",
+    "evidence": {
+      "workflow_run": 31331687918,
+      "artifact_id": 9043113353,
+      "artifact_sha256": "a789e72f72e38b67fe051a382bd0a805dd4386d05bf9097c0b3d7901ca5e5939",
+      "capture": "artifacts/c66_2/C66_2_HAIR_CREATOR_CONTROL.review-1280x720.png"
+    }
   },
-  "next_stage": "C66.2_VALIDATION"
+  "next_stage": "C67_BASE03_MARTIAL_ARTS_UNIFORMS_FOUNDATION"
 }
