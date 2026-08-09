@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "pack_id": "BASE03_MARTIAL_ARTS_UNIFORMS",
   "version": "1.0.0",
-  "status": "production_approved_creator_control_candidate_review_pending",
+  "status": "production_approved_creator_control",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -167,9 +167,20 @@
       "hair_interaction": "pass",
       "seams_or_duplicate_regions": false
     },
-    "creator_control_validation": "pending",
-    "creator_visual_review": "pending",
-    "blocker": "c67_2_creator_control_review"
+    "creator_control_validation": "pass",
+    "creator_visual_review": "pass",
+    "creator_control_evidence": {
+      "workflow_run": 31338013778,
+      "artifact_id": 9044932691,
+      "artifact_digest": "sha256:acd6db9af872f3129fbe8cf42e66c7596c6c86898c3af17f30a165fffa45393b",
+      "head_sha": "e3aa7c399924b2ac8fe0cac857f6b86a1c853995",
+      "capture": "C67_2_UNIFORM_CREATOR_CONTROL.review-1280x720.png",
+      "uniform_set": "uniform_01_lian_martial",
+      "hair_style": "hair_01_lian_topknot",
+      "controls_overlap": false,
+      "owner_visual_review": "pass"
+    },
+    "blocker": ""
   },
-  "next_stage": "C67_2_CREATOR_CONTROL_REVIEW_AND_PROMOTION"
+  "next_stage": "C68_BASE04_ARMOR_ACCESSORIES_FOUNDATION"
 }
