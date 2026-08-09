@@ -12,7 +12,6 @@ const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playabl
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
-const MODULAR_FIGHTER_PRESENTER := preload("res://scripts/vertical_slice/first_playable_modular_fighter_presenter.gd")
 const VISUAL_SCALE := Vector2(1.28, 1.28)
 
 var _fighter: FighterController
@@ -86,23 +85,6 @@ func _install_real_asset_presenter() -> void:
 			return
 	presenter.name = "FirstPlayableRealAssetPresenter"
 	_fighter.add_child(presenter)
-	# C65 deliberately installs the creator visual after the canonical Lian LOT01.
-	# The LOT01 remains alive as a fail-closed fallback and is hidden only after a
-	# complete BASE-01 modular identity is assembled successfully.
-	call_deferred("_install_creator_modular_presenter")
-
-func _install_creator_modular_presenter() -> void:
-	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
-		return
-	if not is_instance_valid(_fighter.build) or _fighter.build.character_id != &"lian_wu":
-		return
-	if not FirstPlayableSession.has_creator_preset():
-		return
-	if _fighter.has_node("FirstPlayableModularFighterPresenter"):
-		return
-	var modular := MODULAR_FIGHTER_PRESENTER.new() as FirstPlayableModularFighterPresenter
-	modular.name = "FirstPlayableModularFighterPresenter"
-	_fighter.add_child(modular)
 
 func _receive_creator_battle_handoff() -> void:
 	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
@@ -141,11 +123,8 @@ func presentation_signature() -> Dictionary:
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
 		"creator_battle_handoff": true,
-		"creator_modular_animation_runtime": true,
 		"creator_visual_activation": false,
-		"creator_visual_activation_policy": "battle_runtime_after_complete_assembly",
 		"creator_visual_blocker": FirstPlayableSession.CREATOR_VISUAL_BLOCKER,
-		"lian_fallback_preserved": true,
 		"static_creator_sprite_regression_allowed": false,
 		"procedural_character_renderer": false,
 		"procedural_fallback_until_real_assets": false,
@@ -155,6 +134,7 @@ func presentation_signature() -> Dictionary:
 	}
 
 # C50 intentionally contains no _draw() fallback.
-# C65 preserves the canonical Lian LOT01 beneath the modular creator presenter;
-# creator visual activation happens only after complete BASE-01 runtime assembly.
+# Production fighters must render through canonical SpriteFrames presenters only.
+# Creator battle handoff remains visual-fail-closed until the shared modular
+# animation runtime can preserve the First Playable animation contract.
 # Tehkné Solutions
