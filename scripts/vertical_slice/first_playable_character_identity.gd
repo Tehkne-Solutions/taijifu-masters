@@ -74,6 +74,7 @@ func _install_real_asset_presenter() -> void:
 		return
 	if _fighter.has_node("FirstPlayableRealAssetPresenter"):
 		return
+	_receive_creator_battle_handoff()
 	var presenter: Node2D
 	match _fighter.build.character_id:
 		&"lian_wu":
@@ -84,6 +85,25 @@ func _install_real_asset_presenter() -> void:
 			return
 	presenter.name = "FirstPlayableRealAssetPresenter"
 	_fighter.add_child(presenter)
+
+func _receive_creator_battle_handoff() -> void:
+	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
+		return
+	var handoff := FirstPlayableSession.creator_battle_handoff_signature()
+	_fighter.set_meta("creator_battle_handoff", handoff)
+	if not bool(handoff.get("preset_selected", false)):
+		return
+	print("C62_8_CREATOR_BATTLE_HANDOFF=PASS preset=%s" % String(handoff.get("preset_id", "")))
+	print("C62_8_CREATOR_VISUAL_ACTIVATION=BLOCKED blocker=%s" % String(handoff.get("visual_blocker", "")))
+	print("C62_8_ANIMATED_FALLBACK=PRESERVED presenter=lian_wu_first_playable")
+
+func creator_battle_handoff_signature() -> Dictionary:
+	if not is_instance_valid(_fighter) or _fighter.player_index != 1:
+		return {}
+	if _fighter.has_meta("creator_battle_handoff"):
+		var value = _fighter.get_meta("creator_battle_handoff")
+		return (value as Dictionary).duplicate(true) if value is Dictionary else {}
+	return FirstPlayableSession.creator_battle_handoff_signature()
 
 func presentation_signature() -> Dictionary:
 	return {
@@ -102,6 +122,10 @@ func presentation_signature() -> Dictionary:
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
+		"creator_battle_handoff": true,
+		"creator_visual_activation": false,
+		"creator_visual_blocker": FirstPlayableSession.CREATOR_VISUAL_BLOCKER,
+		"static_creator_sprite_regression_allowed": false,
 		"procedural_character_renderer": false,
 		"procedural_fallback_until_real_assets": false,
 		"canonical_visual_cutover_required": true,
@@ -111,4 +135,6 @@ func presentation_signature() -> Dictionary:
 
 # C50 intentionally contains no _draw() fallback.
 # Production fighters must render through canonical SpriteFrames presenters only.
+# Creator battle handoff remains visual-fail-closed until the shared modular
+# animation runtime can preserve the First Playable animation contract.
 # Tehkné Solutions
