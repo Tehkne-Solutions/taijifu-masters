@@ -1,0 +1,122 @@
+name: C63.2 Lian Character Lock Exact Recovery
+
+on:
+  pull_request:
+    paths:
+      - 'assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
+      - 'assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png'
+      - 'assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json'
+      - 'tools/RECOVER-C63-CHARACTER-LOCK-FROM-STASH.ps1'
+      - '.github/workflows/c63-lian-character-lock-exact-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-character-lock:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate exact historical hashes and PNG structure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, struct
+
+          contract=json.loads(Path('assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json').read_text())
+          assert contract['signature']=='Tehkné Solutions'
+          assert contract['recovery_policy']=='historical_bytes_only_no_redraw_no_hash_migration'
+          assert contract['source']['kind']=='git_stash_untracked_parent'
+          assert contract['source']['stash_message']=='backup-local-before-c56-canonical'
+          assert contract['source']['stash_parent']==3
+
+          expected={
+            'assets/characters/lian_wu/character_lock/lian_wu_neutral.png':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+            'assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png':'c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c',
+          }
+          for path, target in expected.items():
+              p=Path(path)
+              if not p.is_file():
+                  raise SystemExit(f'C63_2_EXACT_SHA256=BLOCKED missing={path}')
+              data=p.read_bytes()
+              digest=hashlib.sha256(data).hexdigest()
+              if digest != target:
+                  raise SystemExit(f'C63_2_EXACT_SHA256=BLOCKED path={path} expected={target} actual={digest}')
+              if data[:8] != b'\x89PNG\r\n\x1a\n':
+                  raise SystemExit(f'C63_2_PNG=BLOCKED signature={path}')
+              width,height=struct.unpack('>II',data[16:24])
+              bit_depth=data[24]
+              color_type=data[25]
+              if (width,height)!=(1024,1024) or bit_depth!=8 or color_type!=6:
+                  raise SystemExit(f'C63_2_PNG=BLOCKED path={path} size={width}x{height} bit={bit_depth} color={color_type}')
+              print(f'C63_2_EXACT_SHA256=PASS {path} {digest}')
+              print(f'C63_2_PNG_1024_RGBA=PASS {path}')
+          print('C63_2_BINARY_LINEAGE=PASS files=2 historical_hashes_preserved=true')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import exact Character Lock resources fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c63-2-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c63-2-import.log; then
+            echo 'C63_2_GODOT_IMPORT=BLOCKED'
+            exit 1
+          fi
+          cat > /tmp/c63_2_texture_smoke.gd <<'GD'
+          extends SceneTree
+          const PATHS = [
+            "res://assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
+            "res://assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png",
+          ]
+          func _init() -> void:
+            for path in PATHS:
+              if not ResourceLoader.exists(path):
+                push_error("C63_2_GODOT_TEXTURE=BLOCKED missing=" + path)
+                quit(2)
+                return
+              var texture := load(path) as Texture2D
+              if texture == null or texture.get_width() != 1024 or texture.get_height() != 1024:
+                push_error("C63_2_GODOT_TEXTURE=BLOCKED invalid=" + path)
+                quit(2)
+                return
+              print("C63_2_GODOT_TEXTURE=PASS path=%s size=%dx%d" % [path, texture.get_width(), texture.get_height()])
+            print("C63_2_GODOT_IMPORT=PASS textures=2")
+            print("SIGNATURE=Tehkné Solutions")
+            quit(0)
+          GD
+          cp /tmp/c63_2_texture_smoke.gd scripts/ci/c63_2_texture_smoke.tmp.gd
+          ./godot --headless --path . --script res://scripts/ci/c63_2_texture_smoke.tmp.gd 2>&1 | tee c63-2-texture.log
+          rm scripts/ci/c63_2_texture_smoke.tmp.gd
+          grep -q 'C63_2_GODOT_IMPORT=PASS textures=2' c63-2-texture.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|ERROR:' c63-2-texture.log; then
+            echo 'C63_2_GODOT_TEXTURE=BLOCKED runtime_error'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C63-2-EXACT-CHARACTER-LOCK-RECOVERY-EVIDENCE
+          path: |
+            c63-2-import.log
+            c63-2-texture.log
+            assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C63.2 exact historical Character Lock recovery gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
