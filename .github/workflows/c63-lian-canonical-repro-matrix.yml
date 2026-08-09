@@ -1,0 +1,141 @@
+name: C63.1 Lian Canonical Reproducibility Matrix
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/c63-lian-canonical-repro-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce-neutral:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download official v1.0.0 raw lineage
+        run: |
+          set -euo pipefail
+          URL='https://github.com/Tehkne-Solutions/taijifu-masters-assets/releases/download/assets-pack-01-v1.0.0/PACK_01_LIAN_WU_BASE_FINAL_v1.0.0.zip'
+          curl --fail --location --retry 3 --output /tmp/pack01.zip "$URL"
+          echo '0aea374365b8736ae2134312e94d8128260a9c7650cc840aa2e588a4ab70872a  /tmp/pack01.zip' | sha256sum -c -
+          rm -rf /tmp/c63-1-pack && mkdir -p /tmp/c63-1-pack
+          unzip -q /tmp/pack01.zip -d /tmp/c63-1-pack
+          echo '047de240f47d6b8ba1e0605dd3353dc3bd6921ae7589163b74c1855d1b5cf1ec  /tmp/c63-1-pack/turnaround/char_lian_wu__front_raw.png' | sha256sum -c -
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/Tehkne-Solutions/taijifu-masters-assets/f2f64600ce93396887e88d7b781553da54572da5/tools/build_lian_wu_canonical_clean_v101.py' \
+            --output /tmp/build_lian_wu_canonical_clean_v101.py
+          echo 'C63_1_RAW_LINEAGE=PASS release=assets-pack-01-v1.0.0'
+
+      - name: Reproduce across Pillow and zlib generations
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('/tmp/c63-1-results').mkdir(parents=True, exist_ok=True)
+          PY
+          versions=(9.5.0 10.0.1 10.4.0 11.0.0 11.3.0 12.0.0 12.1.0 12.2.0 12.3.0)
+          for version in "${versions[@]}"; do
+            safe="${version//./_}"
+            envdir="/tmp/c63-1-pillow-${safe}"
+            outdir="/tmp/c63-1-output-${safe}"
+            python3 -m venv "$envdir"
+            "$envdir/bin/python" -m pip install --disable-pip-version-check --quiet "Pillow==$version"
+            rm -rf "$outdir" && mkdir -p "$outdir"
+            "$envdir/bin/python" /tmp/build_lian_wu_canonical_clean_v101.py /tmp/c63-1-pack "$outdir"
+            C63_VERSION="$version" C63_OUTPUT="$outdir/char_lian_wu__front_clean.png" C63_RESULT="/tmp/c63-1-results/${safe}.json" "$envdir/bin/python" - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, zlib
+          from PIL import Image, __version__ as pillow_version
+          try:
+              from PIL import features
+              pillow_zlib = features.version_codec('zlib')
+          except Exception:
+              pillow_zlib = None
+          path=Path(os.environ['C63_OUTPUT'])
+          data=path.read_bytes()
+          image=Image.open(path).convert('RGBA')
+          pixel_bytes=image.tobytes()
+          target='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          variants=[]
+          for optimize in (False, True):
+              for level in range(10):
+                  variant=path.with_name('variant-o%d-l%d.png' % (1 if optimize else 0, level))
+                  image.save(variant, optimize=optimize, compress_level=level)
+                  digest=hashlib.sha256(variant.read_bytes()).hexdigest()
+                  if digest == target:
+                      variants.append({'optimize':optimize,'compress_level':level,'sha256':digest})
+                  variant.unlink()
+          result={
+              'requested_pillow':os.environ['C63_VERSION'],
+              'pillow':pillow_version,
+              'python_zlib':zlib.ZLIB_VERSION,
+              'pillow_zlib':pillow_zlib,
+              'file_sha256':hashlib.sha256(data).hexdigest(),
+              'pixel_sha256':hashlib.sha256(pixel_bytes).hexdigest(),
+              'size':[image.width,image.height],
+              'mode':image.mode,
+              'exact_default_match':hashlib.sha256(data).hexdigest()==target,
+              'exact_resave_variants':variants,
+          }
+          Path(os.environ['C63_RESULT']).write_text(json.dumps(result,indent=2)+'\n')
+          print('C63_1_VERSION pillow=%s zlib=%s file=%s pixels=%s exact=%s' % (
+              pillow_version, zlib.ZLIB_VERSION, result['file_sha256'], result['pixel_sha256'], result['exact_default_match']))
+          PY
+          done
+
+      - name: Classify byte versus pixel reproducibility
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          rows=[json.loads(p.read_text()) for p in sorted(Path('/tmp/c63-1-results').glob('*.json'))]
+          target='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          pixel_digests=sorted(set(r['pixel_sha256'] for r in rows))
+          exact_default=[r['pillow'] for r in rows if r['file_sha256']==target]
+          exact_variants=[]
+          for r in rows:
+              for v in r['exact_resave_variants']:
+                  exact_variants.append({'pillow':r['pillow'], **v})
+          report={
+              'schema':'tehkne/c63-1-lian-canonical-repro-matrix/v1',
+              'signature':'Tehkné Solutions',
+              'canonical_expected_sha256':target,
+              'versions_tested':len(rows),
+              'rows':rows,
+              'pixel_digests':pixel_digests,
+              'pixel_convergence':len(pixel_digests)==1,
+              'exact_default_versions':exact_default,
+              'exact_resave_variants':exact_variants,
+              'classification':None,
+          }
+          if len(pixel_digests) != 1:
+              report['classification']='PIXEL_DIVERGENCE'
+          elif exact_default or exact_variants:
+              report['classification']='EXACT_BYTE_REPRODUCED'
+          else:
+              report['classification']='PIXEL_EQUIVALENT_BYTE_ENCODING_DIVERGENCE'
+          Path('c63-1-lian-canonical-repro-matrix.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('C63_1_PIXEL_DIGESTS=%d' % len(pixel_digests))
+          print('C63_1_CLASSIFICATION='+report['classification'])
+          print('C63_1_EXACT_DEFAULT_VERSIONS='+','.join(exact_default))
+          print('C63_1_EXACT_RESAVE_VARIANTS='+json.dumps(exact_variants,separators=(',',':')))
+          if len(pixel_digests) != 1:
+              raise SystemExit('C63_1_PIXEL_REPRO=BLOCKED divergent_pixels')
+          print('C63_1_PIXEL_REPRO=PASS versions=%d' % len(rows))
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C63-1-LIAN-CANONICAL-REPRO-MATRIX
+          path: c63-1-lian-canonical-repro-matrix.json
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: echo 'C63.1 canonical byte/pixel reproducibility matrix — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
