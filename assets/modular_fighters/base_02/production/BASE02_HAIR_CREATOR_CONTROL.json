@@ -1,0 +1,56 @@
+{
+  "schema": "tehkne/taijifu-base02-hair-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE02_HAIR_CREATOR_CONTROL",
+  "stage": "C66.2",
+  "status": "production_approved",
+  "control_contract": {
+    "public_control": "hair_style",
+    "internal_slots": ["hair_back", "hair_front"],
+    "direct_internal_slot_controls": false,
+    "production_ready_styles_only": true,
+    "default_style": "hair_none",
+    "initial_options": ["hair_none", "hair_01_lian_topknot"],
+    "live_preview": true,
+    "selection_transactional": true
+  },
+  "preset_contract": {
+    "schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "storage": "existing generic modules dictionary",
+    "save_roundtrip_required": true,
+    "load_roundtrip_required": true,
+    "cross_style_mixing_allowed": false,
+    "legacy_schema_change": false
+  },
+  "battle_contract": {
+    "session_selection": "preset_saved_or_loaded",
+    "shared_runtime": "shared_modular_animation_runtime_v1",
+    "hair_style_handoff_required": true,
+    "combat_build_changes": false,
+    "collision_changes": false,
+    "physics_changes": false,
+    "balance_changes": false
+  },
+  "ui_contract": {
+    "viewport": [1280, 720],
+    "location": "creator_header",
+    "option_node": "HairStyleOption",
+    "label": "CABELO • BASE-02",
+    "keyboard_gamepad_focus": true,
+    "base01_shell_rewritten": false,
+    "base01_identity_controls_preserved": true
+  },
+  "validation": {
+    "creator_smoke": "pass",
+    "preset_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "graphical_creator_review": "pass",
+    "evidence": {
+      "workflow_run": 31331687918,
+      "artifact_id": 9043113353,
+      "artifact_sha256": "a789e72f72e38b67fe051a382bd0a805dd4386d05bf9097c0b3d7901ca5e5939",
+      "capture": "artifacts/c66_2/C66_2_HAIR_CREATOR_CONTROL.review-1280x720.png"
+    }
+  },
+  "next_stage": "C67_BASE03_MARTIAL_ARTS_UNIFORMS_FOUNDATION"
+}

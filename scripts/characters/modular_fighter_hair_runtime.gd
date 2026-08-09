@@ -21,6 +21,36 @@ static func style_ids() -> PackedStringArray:
 	result.sort()
 	return result
 
+static func creator_style_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	var manifest := _manifest()
+	var styles = manifest.get("styles", {})
+	if not (styles is Dictionary):
+		return result
+	for raw_id in styles.keys():
+		var style_id := str(raw_id)
+		var style = styles[style_id]
+		if style is Dictionary and bool(style.get("production_ready", false)):
+			result.append(style_id)
+	result.sort()
+	return result
+
+static func style_label(style_id: StringName) -> String:
+	var manifest := _manifest()
+	var styles = manifest.get("styles", {})
+	var key := str(style_id)
+	if not (styles is Dictionary) or not styles.has(key):
+		return key
+	var style = styles[key]
+	if not (style is Dictionary):
+		return key
+	return str(style.get("label", key))
+
+static func creator_exposure_enabled() -> bool:
+	var manifest := _manifest()
+	var promotion = manifest.get("promotion", {})
+	return promotion is Dictionary and bool(promotion.get("creator_exposure", false))
+
 static func set_profile_style(profile: ModularFighterProfile, style_id: StringName) -> PackedStringArray:
 	var failures := PackedStringArray()
 	if profile == null:
@@ -40,8 +70,8 @@ static func set_profile_style(profile: ModularFighterProfile, style_id: StringNa
 		failures.append("hair_style_contract_invalid:%s" % style_name)
 		return failures
 
-	var back_id := str(style.get("hair_back", ""))
-	var front_id := str(style.get("hair_front", ""))
+	var back_id := _module_ref(style.get("hair_back", null))
+	var front_id := _module_ref(style.get("hair_front", null))
 	if style_name == str(DEFAULT_STYLE):
 		if not back_id.is_empty() or not front_id.is_empty():
 			failures.append("hair_none_must_be_empty")
@@ -87,7 +117,7 @@ static func profile_style_id(profile: ModularFighterProfile) -> StringName:
 		var style = styles[style_name]
 		if not (style is Dictionary):
 			continue
-		if str(style.get("hair_back", "")) == back_id and str(style.get("hair_front", "")) == front_id:
+		if _module_ref(style.get("hair_back", null)) == back_id and _module_ref(style.get("hair_front", null)) == front_id:
 			return StringName(style_name)
 	return &""
 
@@ -135,7 +165,7 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 
 	# Build both sprites before attaching either one. This keeps runtime mutation atomic.
 	var pending: Array[Dictionary] = []
-	for pair in [[HAIR_BACK, str(style.get("hair_back", ""))], [HAIR_FRONT, str(style.get("hair_front", ""))]]:
+	for pair in [[HAIR_BACK, _module_ref(style.get("hair_back", null))], [HAIR_FRONT, _module_ref(style.get("hair_front", null))]]:
 		var slot: StringName = pair[0]
 		var module_name: String = pair[1]
 		if module_name.is_empty() or not modules.has(module_name):
@@ -193,9 +223,12 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		"hair_back_z": back.z_index if back != null else -1,
 		"hair_front_z": front.z_index if front != null else -1,
 		"atomic_pair": true,
-		"creator_exposure": false,
+		"creator_exposure": creator_exposure_enabled(),
 		"signature": "Tehkné Solutions",
 	}
+
+static func _module_ref(value: Variant) -> String:
+	return "" if value == null else str(value)
 
 static func _manifest() -> Dictionary:
 	if not FileAccess.file_exists(MANIFEST_PATH):
