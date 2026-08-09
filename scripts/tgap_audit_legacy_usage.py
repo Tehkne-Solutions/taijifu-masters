@@ -22,7 +22,14 @@ SAFE_REWRITES = (
     ("AssetPackRegistry.resolve_asset(", "TgapAssetLoader.resolve("),
 )
 DEFAULT_POLICY = {
-    "production_globs": ["scripts/**/*.gd", "scenes/**/*.tscn", "resources/**/*.tres"],
+    "production_globs": [
+        "scripts/*.gd",
+        "scripts/**/*.gd",
+        "scenes/*.tscn",
+        "scenes/**/*.tscn",
+        "resources/*.tres",
+        "resources/**/*.tres",
+    ],
     "allowed_globs": [
         "scripts/runtime/asset_pack_registry.gd",
         "scripts/tgap_audit_legacy_usage.py",
@@ -44,18 +51,7 @@ def load_policy(path: Path | None) -> dict:
 
 
 def matches_any(value: str, patterns: list[str]) -> bool:
-    for pattern in patterns:
-        candidates = [pattern]
-        # fnmatch treats ** like *, so "scripts/**/*.gd" misses a direct child
-        # such as "scripts/consumer.gd". A recursive glob must also accept the
-        # zero-directory form to match pathlib/GitHub-style ** semantics.
-        reduced = pattern
-        while "**/" in reduced:
-            reduced = reduced.replace("**/", "", 1)
-            candidates.append(reduced)
-        if any(fnmatch.fnmatch(value, candidate) for candidate in candidates):
-            return True
-    return False
+    return any(fnmatch.fnmatch(value, pattern) for pattern in patterns)
 
 
 def iter_files(root: Path):
