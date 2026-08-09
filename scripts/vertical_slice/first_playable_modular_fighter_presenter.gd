@@ -26,6 +26,7 @@ var _visual_state: StringName = &"idle"
 var _state_time := 0.0
 var _preset_id: StringName = &""
 var _hair_style_id: StringName = &"hair_none"
+var _uniform_set_id: StringName = &"uniform_none"
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -57,6 +58,9 @@ func active_preset_id() -> StringName:
 func active_hair_style_id() -> StringName:
 	return _hair_style_id
 
+func active_uniform_set_id() -> StringName:
+	return _uniform_set_id
+
 func visual_state() -> StringName:
 	return _visual_state
 
@@ -69,6 +73,7 @@ func runtime_signature() -> Dictionary:
 		"active": _active,
 		"preset_id": String(_preset_id),
 		"hair_style_id": String(_hair_style_id),
+		"uniform_set_id": String(_uniform_set_id),
 		"states": ANIMATION_STATES.duplicate(),
 		"state_count": ANIMATION_STATES.size(),
 		"world_translation_owner": "fighter_physics",
@@ -138,7 +143,7 @@ func _try_activate() -> void:
 		print("C65_MODULAR_PRESENTER=BLOCKED reason=identity_assembly failures=%s" % ",".join(failures))
 		return
 
-	# C66.1 composes optional Hair after BASE-01 identity is valid. hair_none is a
+	# C66 composes optional Hair after BASE-01 identity is valid. hair_none is a
 	# no-op, so all existing presets preserve the exact C65 visual behavior.
 	failures = ModularFighterHairRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
 	if not failures.is_empty():
@@ -146,6 +151,15 @@ func _try_activate() -> void:
 		print("C65_MODULAR_PRESENTER=BLOCKED reason=hair_assembly failures=%s" % ",".join(failures))
 		return
 	_hair_style_id = ModularFighterHairRuntime.profile_style_id(profile as ModularFighterProfile)
+
+	# C67 composes the atomic BASE-03 uniform set after Hair. Individual garment
+	# nodes keep canonical z-order, while selection/persistence remains one set.
+	failures = ModularFighterUniformRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
+	if not failures.is_empty():
+		candidate.queue_free()
+		print("C65_MODULAR_PRESENTER=BLOCKED reason=uniform_assembly failures=%s" % ",".join(failures))
+		return
+	_uniform_set_id = ModularFighterUniformRuntime.profile_set_id(profile as ModularFighterProfile)
 
 	_base_scale = TARGET_VISUAL_HEIGHT / float(used.size.y)
 	candidate.scale = Vector2.ONE * _base_scale
@@ -179,6 +193,12 @@ func _try_activate() -> void:
 			int(hair_signature.get("hair_back_z", -1)),
 			int(hair_signature.get("hair_front_z", -1)),
 		])
+	if _uniform_set_id != &"uniform_none":
+		var uniform_signature := ModularFighterUniformRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
+		print("C67_1_UNIFORM_RUNTIME=PASS set=%s nodes=%s" % [
+			String(_uniform_set_id),
+			str(uniform_signature.get("nodes", {})),
+		])
 	print("C65_LIAN_FALLBACK=HIDDEN_PRESERVED")
 	print("SIGNATURE=Tehkné Solutions")
 
@@ -196,6 +216,7 @@ func _promote_battle_handoff() -> void:
 	handoff["visual_runtime"] = RUNTIME_ID
 	handoff["animation_states"] = ANIMATION_STATES.duplicate()
 	handoff["hair_style_id"] = String(_hair_style_id)
+	handoff["uniform_set_id"] = String(_uniform_set_id)
 	handoff["static_sprite_regression_allowed"] = false
 	handoff["lian_fallback_preserved"] = true
 	handoff["preset_specific_sprite_sheet"] = false
