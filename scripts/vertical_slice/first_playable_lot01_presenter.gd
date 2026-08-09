@@ -62,19 +62,26 @@ func _try_activate_real_assets() -> void:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_using_real_assets = true
-	_hide_procedural_fallback()
+	_hide_legacy_visual_surfaces()
 	_active_animation = &"idle"
 	_sprite.play(_active_animation)
 	print("V2_LIAN_CANONICAL_PRESENTER=PASS")
 	print("V2_LIAN_CANONICAL_SCALE=%.6f" % CANONICAL_SCALE)
 	print("V2_LIAN_CANONICAL_BASELINE=PASS")
+	print("V2_LIAN_LEGACY_ATLAS=HIDDEN")
 
-func _hide_procedural_fallback() -> void:
+func _hide_legacy_visual_surfaces() -> void:
 	if not is_instance_valid(_fighter):
 		return
-	var fallback := _fighter.get_node_or_null("FirstPlayableIdentity") as CanvasItem
-	if fallback != null:
-		fallback.visible = false
+	# FirstPlayableIdentity is the old character-identity surface. The fighter scene
+	# also owns a ProvisionalSpritePresenter atlas at `SpritePresenter`; once the
+	# canonical LOT01 is valid both legacy surfaces must be hidden or the character
+	# renders twice. Only CanvasItem visibility changes here: controller, collision,
+	# outcome, weapon trail and combat state remain untouched.
+	for node_name in ["FirstPlayableIdentity", "SpritePresenter"]:
+		var surface := _fighter.get_node_or_null(node_name) as CanvasItem
+		if surface != null:
+			surface.visible = false
 
 func _has_required_animations(frames: SpriteFrames) -> bool:
 	for animation_name in [
