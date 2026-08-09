@@ -36,6 +36,13 @@ static func creator_set_ids() -> PackedStringArray:
 		if set_contract is Dictionary and bool(set_contract.get("production_ready", false)):
 			result.append(set_id)
 	result.sort()
+	# The public control always presents the neutral/default option first, even
+	# though production pack IDs sort before "uniform_none" lexicographically.
+	var default_text := str(DEFAULT_SET)
+	var default_index := result.find(default_text)
+	if default_index > 0:
+		result.remove_at(default_index)
+		result.insert(0, default_text)
 	return result
 
 static func set_label(set_id: StringName) -> String:
