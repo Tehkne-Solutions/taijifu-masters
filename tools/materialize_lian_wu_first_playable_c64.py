@@ -165,11 +165,11 @@ def generate_c64_families(repo: Path) -> dict:
         neutral.copy(),
     ]
 
-    # Hit reaction: compact recoil, stronger recoil, recovery, exact neutral handoff.
+    # Hit reaction: compact recoil, stronger recoil, distinct recovery, exact neutral handoff.
     hit = [
         whole_pose(neutral, bounds, 4.0, 8),
         whole_pose(neutral, bounds, 8.0, 17),
-        whole_pose(neutral, bounds, 4.0, 8),
+        whole_pose(neutral, bounds, 2.0, 4),
         neutral.copy(),
     ]
 
