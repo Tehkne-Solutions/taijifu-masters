@@ -1,6 +1,9 @@
 name: C65 Shared Modular Animation Runtime
 
 on:
+  push:
+    branches:
+      - 'agent/c65-shared-modular-animation-runtime'
   pull_request:
     paths:
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
