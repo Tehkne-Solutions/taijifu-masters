@@ -1,0 +1,113 @@
+name: C67.0 BASE-03 Uniform Foundation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_03/**'
+      - 'scripts/characters/modular_fighter_layer_policy.gd'
+      - 'scripts/ci/base03_uniform_foundation_smoke.gd'
+      - 'config/modular-fighter-standard-v1.json'
+      - '.github/workflows/base03-uniform-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  uniform-foundation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate BASE-03 foundation contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          manifest = json.loads(Path('assets/modular_fighters/base_03/manifest.json').read_text())
+          contract = json.loads(Path('assets/modular_fighters/base_03/production/BASE03_UNIFORM_FOUNDATION.json').read_text())
+          standard = json.loads(Path('config/modular-fighter-standard-v1.json').read_text())
+
+          assert manifest['signature'] == 'Tehkné Solutions'
+          assert manifest['pack_id'] == 'BASE03_MARTIAL_ARTS_UNIFORMS'
+          assert manifest['status'] == 'foundation_no_art_assets'
+          assert manifest['default_set_id'] == 'uniform_none'
+          assert manifest['modules'] == {}
+          none_set = manifest['sets']['uniform_none']
+          for slot in ('torso_inner','torso_outer','arms','hands','waist','legs','feet'):
+              assert none_set[slot] is None
+          assert none_set['production_ready'] is True
+          assert manifest['promotion']['art_assets_present'] is False
+          assert manifest['promotion']['creator_exposure'] is False
+          assert manifest['promotion']['battle_activation'] is False
+
+          assert contract['component_id'] == 'BASE03_UNIFORM_FOUNDATION'
+          assert contract['stage'] == 'C67.0'
+          assert contract['status'] == 'foundation_candidate_art_blocked'
+          set_contract = contract['set_contract']
+          assert set_contract['public_selection_unit'] == 'uniform_set'
+          assert set_contract['atomic_slots'] == ['torso_inner','torso_outer','arms','hands','waist','legs','feet']
+          assert set_contract['direct_piece_controls'] is False
+          assert set_contract['cross_set_piece_mixing'] is False
+          assert contract['promotion']['uniform_art_promotion_allowed'] is False
+          assert contract['promotion']['creator_uniform_control_allowed'] is False
+          assert contract['promotion']['battle_uniform_activation_allowed'] is False
+          assert contract['layer_contract']['hair_interaction_visual_review_required'] is True
+
+          for slot in set_contract['atomic_slots']:
+              assert slot in standard['slots']
+              assert slot in standard['creator_v1_editable_slots']
+
+          pngs = list(Path('assets/modular_fighters/base_03').rglob('*.png'))
+          assert not pngs, f'foundation must not silently promote uniform PNGs: {pngs}'
+          print('C67_0_STATIC_CONTRACT=PASS art_assets=0 unit=uniform_set slots=7')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --import 2>&1 | tee c67-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed' c67-import.log; then
+            echo 'C67_0_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run BASE-03 Uniform foundation smoke
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --script res://scripts/ci/base03_uniform_foundation_smoke.gd 2>&1 | tee c67-uniform-foundation.log
+          grep -q 'C67_0_UNIFORM_FOUNDATION=PASS' c67-uniform-foundation.log
+          grep -q 'C67_0_UNIFORM_SET=PASS unit=uniform_set slots=7 atomic=true' c67-uniform-foundation.log
+          grep -q 'C67_0_PROFILE_STORAGE=PASS generic_modules=true' c67-uniform-foundation.log
+          grep -q 'C67_0_LAYER_POLICY=PASS' c67-uniform-foundation.log
+          grep -q 'C67_0_ART_PROMOTION=BLOCKED' c67-uniform-foundation.log
+          grep -q 'C67_0_CREATOR_EXPOSURE=BLOCKED' c67-uniform-foundation.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C67_0_UNIFORM_FOUNDATION=BLOCKED' c67-uniform-foundation.log; then
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C67-0-BASE03-UNIFORM-FOUNDATION-EVIDENCE
+          path: |
+            c67-import.log
+            c67-uniform-foundation.log
+            assets/modular_fighters/base_03/manifest.json
+            assets/modular_fighters/base_03/production/BASE03_UNIFORM_FOUNDATION.json
+          if-no-files-found: error
+
+      - name: Summary
+        run: echo 'C67.0 BASE-03 Martial Arts Uniforms Foundation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
