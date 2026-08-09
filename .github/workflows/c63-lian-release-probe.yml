@@ -22,10 +22,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download official Pack 01 release
+      - name: Discover official Pack 01 releases
         run: |
           set -euo pipefail
-          URL='https://github.com/Tehkne-Solutions/taijifu-masters-assets/releases/download/assets-pack-01-v1.0.1/PACK_01_LIAN_WU_BASE_FINAL_v1.0.1.zip'
+          curl --fail --location --retry 3 \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/Tehkne-Solutions/taijifu-masters-assets/releases?per_page=100' \
+            --output c63-releases.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          releases=json.loads(Path('c63-releases.json').read_text())
+          inventory=[]
+          candidates=[]
+          for release in releases:
+              tag=str(release.get('tag_name',''))
+              name=str(release.get('name',''))
+              for asset in release.get('assets',[]):
+                  row={
+                      'tag':tag,
+                      'release_name':name,
+                      'asset_name':str(asset.get('name','')),
+                      'size':int(asset.get('size',0)),
+                      'browser_download_url':str(asset.get('browser_download_url','')),
+                  }
+                  inventory.append(row)
+                  lower=row['asset_name'].lower()
+                  if lower.endswith('.zip') and 'lian_wu' in lower and ('base_final' in lower or 'first_playable' in lower or 'pack_01' in lower):
+                      candidates.append(row)
+          Path('c63-release-inventory.json').write_text(json.dumps({'schema':'tehkne/c63-release-inventory/v1','signature':'Tehkné Solutions','inventory':inventory,'candidates':candidates},indent=2)+'\n')
+          print('C63_RELEASE_COUNT='+str(len(releases)))
+          print('C63_RELEASE_ASSET_COUNT='+str(len(inventory)))
+          for row in candidates:
+              print('C63_RELEASE_CANDIDATE tag=%s asset=%s size=%s' % (row['tag'],row['asset_name'],row['size']))
+          if not candidates:
+              raise SystemExit('C63_RELEASE_DISCOVERY=BLOCKED no_pack01_zip_candidate')
+          # Prefer exact v1.0.1 base-final, otherwise newest matching asset from API order.
+          chosen=next((r for r in candidates if r['asset_name']=='PACK_01_LIAN_WU_BASE_FINAL_v1.0.1.zip'), candidates[0])
+          Path('c63-release-selected.json').write_text(json.dumps(chosen,indent=2)+'\n')
+          Path('/tmp/c63-release-url').write_text(chosen['browser_download_url'])
+          print('C63_RELEASE_SELECTED tag=%s asset=%s' % (chosen['tag'],chosen['asset_name']))
+          print('C63_RELEASE_DISCOVERY=PASS')
+          PY
+
+      - name: Download selected official Pack 01 asset
+        run: |
+          set -euo pipefail
+          URL="$(cat /tmp/c63-release-url)"
           curl --fail --location --retry 3 --output /tmp/pack01.zip "$URL"
           test -s /tmp/pack01.zip
           sha256sum /tmp/pack01.zip | tee c63-release-zip.sha256
@@ -76,6 +120,9 @@ jobs:
         with:
           name: C63-LIAN-RELEASE-PROBE
           path: |
+            c63-releases.json
+            c63-release-inventory.json
+            c63-release-selected.json
             c63-release-zip.sha256
             c63-release-probe.json
           if-no-files-found: ignore
