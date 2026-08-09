@@ -1,9 +1,6 @@
 name: C65 Shared Modular Animation Runtime
 
 on:
-  push:
-    branches:
-      - 'agent/c65-shared-modular-animation-runtime'
   pull_request:
     paths:
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
@@ -99,6 +96,8 @@ jobs:
           grep -q 'C65_COMBAT_BUILD=PASS character=lian_wu unchanged=true' c65-runtime.log
           grep -q 'C65_NO_PRESET_FALLBACK=PASS lian_visible=true modular_absent=true' c65-runtime.log
           grep -q 'C65_SHARED_MODULAR_ANIMATION_RUNTIME=PASS' c65-runtime.log
+          grep -q 'C65_VISUAL_REVIEW_OUTPUT=res://artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png' c65-runtime.log
+          test -f artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png
           if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|ERROR:' c65-runtime.log; then
             echo 'C65_RUNTIME_ERRORS=BLOCKED'
             exit 1
@@ -112,6 +111,7 @@ jobs:
             c65-import.log
             c65-c64-fallback.log
             c65-runtime.log
+            artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png
             assets/modular_fighters/base_01/production/BASE01_SHARED_MODULAR_ANIMATION_RUNTIME.json
           if-no-files-found: ignore
 
