@@ -33,7 +33,19 @@ func _run() -> void:
 	profile.authored_facing = 1
 	profile.set_skin_palette_id(&"skin_tone_03_warm")
 
-	var failures := ModularFighterHairRuntime.set_profile_style(profile, STYLE)
+	# FirstPlayableSession intentionally accepts only canonical v2 Creator battle
+	# presets with explicit BASE-01 identity slots. The assembler may visually
+	# fall back to defaults, but persistence/session handoff must not. Serialize
+	# the approved default identity here so this fixture exercises the same
+	# contract as a real Creator-produced preset.
+	var failures := profile.set_base01_identity_module(&"face", &"face_01_balanced")
+	failures.append_array(profile.set_base01_identity_module(&"eyes", &"eyes_01_focused"))
+	failures.append_array(profile.set_base01_identity_module(&"brows", &"brows_01_focused"))
+	if not failures.is_empty():
+		_fail("C66_1_RUNTIME=BLOCKED base01_identity:%s" % ",".join(failures))
+		return
+
+	failures = ModularFighterHairRuntime.set_profile_style(profile, STYLE)
 	if not failures.is_empty():
 		_fail("C66_1_RUNTIME=BLOCKED profile_style:%s" % ",".join(failures))
 		return
@@ -105,7 +117,7 @@ func _run() -> void:
 	assembler.queue_free()
 	await process_frame
 
-	# Persist through the existing v2 generic modules boundary and activate the real battle.
+	# Persist through the same canonical v2 boundary used by the Creator and activate the real battle.
 	failures = ModularFighterPresetStore.save_user_preset(profile, TEST_PRESET)
 	if not failures.is_empty():
 		_fail("C66_1_RUNTIME=BLOCKED preset_save:%s" % ",".join(failures))
@@ -151,7 +163,7 @@ func _run() -> void:
 
 	print("C66_1_PROFILE_ATOMIC_STYLE=PASS style=hair_01_lian_topknot")
 	print("C66_1_ASSEMBLER=PASS back_z=5 front_z=50")
-	print("C66_1_PRESET_ROUNDTRIP=PASS generic_modules=true")
+	print("C66_1_PRESET_ROUNDTRIP=PASS generic_modules=true canonical_base01_identity=true")
 	print("C66_1_BATTLE_RUNTIME=PASS style=hair_01_lian_topknot build=lian_wu")
 	print("C66_1_CREATOR_CONTROL=BLOCKED stage=C66.2")
 	print("C66_1_HAIR_PACK_RUNTIME=PASS")
