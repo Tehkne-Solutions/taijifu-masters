@@ -63,7 +63,10 @@ func set_hair_style(style_id: StringName) -> PackedStringArray:
 
 	_sync_hair_option_selection()
 	_set_status("Cabelo atualizado: %s" % ModularFighterHairRuntime.style_label(style_id), false)
+	# This state event informs external observers, but neither atomic pack needs to
+	# reassemble: Hair was applied above and Uniform did not change.
 	_hair_skip_next_state_reassembly = true
+	_uniform_skip_next_state_reassembly = true
 	creator_state_changed.emit()
 	return failures
 
@@ -90,8 +93,6 @@ func set_uniform_set(set_id: StringName) -> PackedStringArray:
 	if failures.is_empty():
 		failures.append_array(ModularFighterUniformRuntime.assemble_profile(profile, assembler))
 	if not failures.is_empty():
-		# Selection is transactional across all seven internal uniform slots and the
-		# live preview. Never expose a half-applied garment set in the Creator.
 		ModularFighterUniformRuntime.set_profile_set(profile, previous)
 		ModularFighterUniformRuntime.assemble_profile(profile, assembler)
 		_sync_uniform_option_selection()
@@ -100,7 +101,10 @@ func set_uniform_set(set_id: StringName) -> PackedStringArray:
 
 	_sync_uniform_option_selection()
 	_set_status("Uniforme atualizado: %s" % ModularFighterUniformRuntime.set_label(set_id), false)
+	# Uniform was applied above and Hair did not change. Skip only this one signal-
+	# driven reassembly in both pack handlers to keep canonical node names stable.
 	_uniform_skip_next_state_reassembly = true
+	_hair_skip_next_state_reassembly = true
 	creator_state_changed.emit()
 	return failures
 
@@ -145,6 +149,7 @@ func uniform_creator_signature() -> Dictionary:
 		"preset_roundtrip": true,
 		"battle_handoff": true,
 		"signal_reassembly_guard": true,
+		"cross_pack_reassembly_guard": true,
 		"signature": "Tehkné Solutions",
 	}
 
@@ -166,7 +171,6 @@ func flow_signature() -> Dictionary:
 func _build_hair_control() -> void:
 	if _hair_style_option != null:
 		return
-
 	var label := Label.new()
 	label.name = "HairStyleLabel"
 	label.position = Vector2(930, 18)
@@ -175,7 +179,6 @@ func _build_hair_control() -> void:
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
 	add_child(label)
-
 	_hair_style_option = OptionButton.new()
 	_hair_style_option.name = "HairStyleOption"
 	_hair_style_option.position = HAIR_CONTROL_POSITION
@@ -184,7 +187,6 @@ func _build_hair_control() -> void:
 	_hair_style_option.item_selected.connect(_on_hair_style_selected)
 	_style_option_button(_hair_style_option)
 	add_child(_hair_style_option)
-
 	for child in get_children():
 		if child is Label and String((child as Label).text).begins_with("BASE-01 •"):
 			(child as Label).text = "BASE-01 + BASE-02 • identidade modular • cabelo • preview ao vivo • presets locais"
@@ -194,7 +196,6 @@ func _build_hair_control() -> void:
 func _build_uniform_control() -> void:
 	if _uniform_set_option != null:
 		return
-
 	var label := Label.new()
 	label.name = "UniformSetLabel"
 	label.position = Vector2(600, 18)
@@ -203,7 +204,6 @@ func _build_uniform_control() -> void:
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
 	add_child(label)
-
 	_uniform_set_option = OptionButton.new()
 	_uniform_set_option.name = "UniformSetOption"
 	_uniform_set_option.position = UNIFORM_CONTROL_POSITION
@@ -212,7 +212,6 @@ func _build_uniform_control() -> void:
 	_uniform_set_option.item_selected.connect(_on_uniform_set_selected)
 	_style_option_button(_uniform_set_option)
 	add_child(_uniform_set_option)
-
 	for child in get_children():
 		if child is Label and String((child as Label).text).begins_with("BASE-01 + BASE-02"):
 			var subtitle := child as Label
@@ -336,12 +335,10 @@ func _apply_reviewed_scene_layout() -> void:
 	if assembler != null:
 		assembler.position = REVIEWED_PREVIEW_POSITION
 		assembler.scale = Vector2.ONE * REVIEWED_PREVIEW_SCALE
-
 	var status := get_node_or_null("StatusLabel") as Label
 	if status != null:
 		status.position = Vector2(48, 440)
 		status.size = Vector2(370, 30)
-
 	for child in get_children():
 		if child is Label and String((child as Label).text).begins_with("preview modular"):
 			(child as Label).position = Vector2(65, 660)
