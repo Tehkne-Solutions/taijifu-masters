@@ -91,11 +91,14 @@ func _run() -> void:
 	if presenter == null or not (presenter is FirstPlayableLot01Presenter):
 		_fail("C62_8_HANDOFF=BLOCKED animated_fallback_missing")
 		return
+	if not (presenter as FirstPlayableLot01Presenter).using_real_assets():
+		_fail("C62_8_HANDOFF=BLOCKED animated_fallback_not_active")
+		return
 
 	print("C62_8_CREATOR_TO_SESSION=PASS preset=%s" % String(TEST_PRESET))
 	print("C62_8_SESSION_TO_BATTLE=PASS metadata=true")
 	print("C62_8_CREATOR_VISUAL_ACTIVATION=BLOCKED blocker=shared_modular_animation_runtime")
-	print("C62_8_ANIMATED_FALLBACK=PRESERVED character=lian_wu")
+	print("C62_8_ANIMATED_FALLBACK=PRESERVED character=lian_wu real_assets=true")
 	print("C62_8_STATIC_SPRITE_REGRESSION=BLOCKED")
 	print("C62_8_CREATOR_BATTLE_HANDOFF=PASS")
 	print("NEXT_STAGE=C63_SHARED_MODULAR_ANIMATION_RUNTIME")
