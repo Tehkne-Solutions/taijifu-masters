@@ -64,6 +64,9 @@ python3 "${ROOT_DIR}/scripts/prepare-web-pwa.py" "${OUTPUT_DIR}"
 log "Centralizando canvas Godot no viewport"
 python3 "${ROOT_DIR}/scripts/fix-web-viewport.py" "${OUTPUT_DIR}"
 
+log "Restaurando façade canônica Web ↔ Godot"
+python3 "${ROOT_DIR}/scripts/fix-web-bridge-facade.py" "${OUTPUT_DIR}"
+
 # Sprint 0: o build padrão não injeta painéis experimentais independentes.
 # Gamepad avançado, maestria, fantasmas, ranking, séries e multirrival permanecem
 # no repositório para futura reintrodução por um menu único e explícito.
