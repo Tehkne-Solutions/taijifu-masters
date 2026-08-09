@@ -106,6 +106,12 @@ func _run() -> void:
 	if not failures.is_empty() or creator.current_hair_style_id() != STYLE_NONE:
 		_fail("C66_2_CREATOR=BLOCKED switch_none")
 		return
+	# ModularFighterAssembler intentionally releases replaced/cleared visual nodes
+	# with queue_free(). The slot contract is cleared immediately, while the scene
+	# node exits at end-of-frame. Respect that lifecycle before asserting absence or
+	# reloading another pair with the same canonical node names.
+	for _frame in range(2):
+		await process_frame
 	if preview.get_node_or_null("Module_hair_back") != null or preview.get_node_or_null("Module_hair_front") != null:
 		_fail("C66_2_CREATOR=BLOCKED none_preview_not_clear")
 		return
@@ -125,7 +131,7 @@ func _run() -> void:
 	preview = creator.current_assembler()
 	back = preview.get_node_or_null("Module_hair_back") as Sprite2D
 	front = preview.get_node_or_null("Module_hair_front") as Sprite2D
-	if back == null or front == null:
+	if back == null or front == null or back.z_index != 5 or front.z_index != 50:
 		_fail("C66_2_CREATOR=BLOCKED load_preview_roundtrip")
 		return
 
