@@ -5,6 +5,7 @@ on:
     paths:
       - 'tools/materialize_lian_wu_first_playable_c64.py'
       - 'scripts/ci/c64_lian_first_playable_lot01_smoke.gd'
+      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
       - '.github/workflows/c64-lian-first-playable-lot01.yml'
       - 'tools/generate_lian_wu_*.py'
       - 'tools/lian_wu_canonical_identity.py'
