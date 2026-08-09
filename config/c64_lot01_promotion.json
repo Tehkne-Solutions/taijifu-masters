@@ -1,0 +1,51 @@
+{
+  "schema": "tehkne/taijifu-c64-lot01-promotion/v1",
+  "signature": "Tehkné Solutions",
+  "status": "approved_for_first_playable_promotion",
+  "source_head_sha": "189accae33eeb6b4d3c499d4ef0891fb0b7025da",
+  "review_artifact": {
+    "workflow_run_id": 31322947374,
+    "id": 9040703879,
+    "sha256": "4ec167789bea576bb2374a0a6607018c8d7f4c32ed61e27d4ddb8ddfbd67188a",
+    "name": "C64-LIAN-FIRST-PLAYABLE-LOT01-CANDIDATE"
+  },
+  "visual_review": {
+    "contact_sheet": "pass",
+    "fixed_canvas_review": "pass",
+    "enlarged_frame_review": "pass",
+    "character_integrity": "pass",
+    "first_playable_readability": "pass",
+    "regional_seam_artifacts": false,
+    "duplicate_region_artifacts": false,
+    "reviewed_families": [
+      "idle",
+      "run",
+      "jump_start",
+      "airborne",
+      "fall",
+      "attack_light",
+      "guard",
+      "dodge",
+      "hit",
+      "ko"
+    ]
+  },
+  "technical_review": {
+    "materialization": "pass",
+    "animations": 10,
+    "frames": 45,
+    "godot_import": "pass",
+    "real_battle_presenter": "pass",
+    "procedural_visual_hidden": "pass",
+    "first_playable_smoke": "pass"
+  },
+  "policy": {
+    "scope": "first_playable_runtime",
+    "source_character_lock_exact": true,
+    "redraw": false,
+    "regional_cutouts": false,
+    "fighter_physics_owns_world_translation": true,
+    "final_authored_animation_claimed": false,
+    "future_authored_animation_replacement_allowed": true
+  }
+}
