@@ -1,0 +1,59 @@
+{
+  "schema": "tehkne/taijifu-base02-hair-foundation/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE02_HAIR_FOUNDATION",
+  "stage": "C66.0",
+  "status": "foundation_candidate_art_blocked",
+  "purpose": "Establish canonical Hair slot composition and promotion safety before any production hair art is exposed.",
+  "slot_contract": {
+    "hair_back": {
+      "z_index": 5,
+      "relation": "behind_body_and_face",
+      "creator_editable_directly": false
+    },
+    "hair_front": {
+      "z_index": 50,
+      "relation": "above_brows_below_head_accessory",
+      "creator_editable_directly": false
+    },
+    "head_accessory_reference_z_index": 60,
+    "body_reference_z_index": 10,
+    "face_plate_reference_z_index": 15,
+    "face_reference_z_index": 20,
+    "eyes_reference_z_index": 30,
+    "brows_reference_z_index": 40
+  },
+  "style_contract": {
+    "creator_selection_unit": "hair_style",
+    "atomic_pair_slots": ["hair_back", "hair_front"],
+    "cross_style_mixing": false,
+    "default_style_id": "hair_none",
+    "none_style_requires_png": false,
+    "non_none_style_requires_manifest_modules": true,
+    "non_none_style_requires_owner_visual_review": true
+  },
+  "runtime_contract": {
+    "profile_storage": "existing generic modules dictionary",
+    "assembler_allowed_slots": ["hair_back", "hair_front"],
+    "world_animation_owner": "shared_modular_animation_runtime_v1",
+    "flatten_identity_to_sprite_sheet": false,
+    "runtime_wiring_of_art_styles": "blocked_until_C66.1"
+  },
+  "quality_gate": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "transparent_background": true,
+    "stable_gameplay_readability": true,
+    "no_text_or_border": true,
+    "no_silent_creator_exposure_without_art": true
+  },
+  "promotion": {
+    "foundation_merge_allowed": true,
+    "hair_art_promotion_allowed": false,
+    "creator_hair_control_allowed": false,
+    "battle_hair_activation_allowed": false,
+    "blocker": "first_canonical_hair_art_pack_missing"
+  },
+  "next_stage": "C66.1 — first canonical Hair art pack + runtime wiring"
+}
