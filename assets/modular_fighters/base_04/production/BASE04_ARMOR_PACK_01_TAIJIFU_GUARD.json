@@ -8,7 +8,10 @@
   "label": "Guarda Marcial Taijifu",
   "selection": {
     "unit": "armor_set",
-    "atomic_slots": ["head_accessory", "shoulders"],
+    "atomic_slots": [
+      "head_accessory",
+      "shoulders"
+    ],
     "direct_piece_controls": false,
     "cross_set_piece_mixing": false
   },
@@ -24,7 +27,8 @@
     },
     "candidate_v2": {
       "status": "selected",
-      "reason": "paired_compact_shoulders_best_gameplay_readability_and_topknot_face_preservation"
+      "reason": "paired_compact_shoulders_best_gameplay_readability_and_topknot_face_preservation",
+      "materialization": "deterministic_pixel_exact_crc_valid"
     },
     "candidate_v3": {
       "status": "rejected",
@@ -32,12 +36,22 @@
     }
   },
   "expected_sha256": {
-    "armor_01_taijifu_guard_head_accessory": "e166fbf51f4b62383026ae95eef2a2f4b0925f484cc616cd1b77284100d70602",
-    "armor_01_taijifu_guard_shoulders": "cf643a6467281e7d1a5bd9606b5e94c7de5b3ffff5d4e7138ac50747357281fd"
+    "armor_01_taijifu_guard_head_accessory": "ce47889483c41003cdb696640d08787fdeeb9ab13e0012d9c73f650bbbe1f58b",
+    "armor_01_taijifu_guard_shoulders": "fcc80bb6fe2b10d0a6664a0306c6dcdca71545dc26c50fd3fdac4da314d3f82a"
   },
   "expected_alpha_bbox": {
-    "armor_01_taijifu_guard_head_accessory": [496, 132, 620, 192],
-    "armor_01_taijifu_guard_shoulders": [340, 328, 716, 420]
+    "armor_01_taijifu_guard_head_accessory": [
+      496,
+      132,
+      620,
+      192
+    ],
+    "armor_01_taijifu_guard_shoulders": [
+      340,
+      328,
+      716,
+      420
+    ]
   },
   "runtime_contract": {
     "boundary": "ModularFighterArmorRuntime",
