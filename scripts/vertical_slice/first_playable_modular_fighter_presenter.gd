@@ -117,11 +117,14 @@ func _try_activate() -> void:
 	var body := Sprite2D.new()
 	body.texture = texture
 	body.centered = true
-	var last_visible_y := float(used.position.y + used.size.y - 1)
-	var bottom_offset := last_visible_y - float(texture.get_height()) * 0.5
+	# BASE-01 identity modules are authored on the same 1024x1024 canvas with the
+	# canonical root pivot (0.5, 0.92). The first C65 candidate incorrectly moved
+	# body_base by its visible-alpha bottom while face/eyes/brows used this pivot,
+	# creating a floating head over a displaced body in the real battle capture.
+	# Align the body by the exact same authoring pivot as every identity module.
 	body.position = Vector2(
 		texture.get_width() * (0.5 - CANONICAL_PIVOT.x),
-		-bottom_offset
+		texture.get_height() * (0.5 - CANONICAL_PIVOT.y)
 	)
 	body.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if not candidate.attach_visual_module(&"body_base", body):
@@ -147,6 +150,13 @@ func _try_activate() -> void:
 	_hide_lian_fallback()
 	_promote_battle_handoff()
 	print("C65_MODULAR_PRESENTER=PASS preset=%s state_count=%d" % [String(_preset_id), ANIMATION_STATES.size()])
+	print("C65_MODULAR_BASE_ALIGNMENT=PASS pivot=%.2f,%.2f used=%s body_position=%s scale=%.6f" % [
+		CANONICAL_PIVOT.x,
+		CANONICAL_PIVOT.y,
+		str(used),
+		str(body.position),
+		_base_scale,
+	])
 	print("C65_MODULAR_IDENTITY=PASS skin=%s face=%s eyes=%s brows=%s" % [
 		String(_assembler.active_skin_palette_id()),
 		String(_assembler.active_identity_module_id(&"face")),
