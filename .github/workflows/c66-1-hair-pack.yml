@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate exact Hair binaries and manifest
+      - name: Validate exact approved Hair binaries and manifest
         run: |
           set -euo pipefail
           pip install --disable-pip-version-check pillow==11.1.0
@@ -38,34 +38,49 @@ jobs:
 
           root = Path('.')
           manifest = json.loads((root/'assets/modular_fighters/base_02/manifest.json').read_text())
+          contract = json.loads((root/'assets/modular_fighters/base_02/production/BASE02_HAIR_PACK_01_LIAN_TOPKNOT.json').read_text())
           assert manifest['pack_id'] == 'BASE02_HAIR'
-          assert manifest['status'] == 'production_candidate_runtime_validation_pending'
+          assert manifest['version'] == '1.0.0'
+          assert manifest['status'] == 'production_approved_creator_control_pending'
           style = manifest['styles']['hair_01_lian_topknot']
           assert style['hair_back'] == 'hair_01_lian_topknot_back'
           assert style['hair_front'] == 'hair_01_lian_topknot_front'
-          assert style['production_ready'] is False
-          assert manifest['promotion']['creator_exposure'] is False
-          assert manifest['promotion']['battle_activation'] is False
+          assert style['production_ready'] is True
+          promotion = manifest['promotion']
+          assert promotion['creator_exposure'] is False
+          assert promotion['battle_activation'] is True
+          assert promotion['owner_visual_review'] == 'pass'
+          assert promotion['runtime_validation'] == 'pass'
+          assert promotion['visual_evidence']['workflow_run'] == 31330696902
+          assert promotion['visual_evidence']['artifact_id'] == 9042838843
+
+          assert contract['status'] == 'production_approved_creator_control_pending'
+          assert contract['promotion']['runtime_validation'] == 'pass'
+          assert contract['promotion']['battle_visual_review'] == 'pass'
+          assert contract['promotion']['battle_activation'] is True
+          assert contract['promotion']['creator_exposure'] is False
+          assert contract['next_stage'] == 'C66.2 — Hair Creator Control'
 
           expected = {
             'hair_01_lian_topknot_back': '45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b',
             'hair_01_lian_topknot_front': '11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4',
           }
           for module_id, expected_sha in expected.items():
-              contract = manifest['modules'][module_id]
-              path = root / contract['path']
+              module = manifest['modules'][module_id]
+              path = root / module['path']
               assert path.is_file(), path
               digest = hashlib.sha256(path.read_bytes()).hexdigest()
-              assert digest == expected_sha == contract['sha256'], (module_id, digest)
+              assert digest == expected_sha == module['sha256'], (module_id, digest)
               image = Image.open(path).convert('RGBA')
               assert image.size == (1024, 1024)
-              assert image.getchannel('A').getbbox() == tuple(contract['alpha_bbox'])
-              assert contract['pivot'] == [0.5, 0.92]
-              source = contract['source']
+              assert image.getchannel('A').getbbox() == tuple(module['alpha_bbox'])
+              assert module['pivot'] == [0.5, 0.92]
+              source = module['source']
               assert source['redraw'] is False
               assert source['resampling'] is False
               assert source['source_pixel_mutation'] is False
-          print('C66_1_HAIR_BINARIES=PASS modules=2 exact_sha=true canvas=1024')
+          print('C66_1_HAIR_BINARIES=PASS modules=2 exact_sha=true canvas=1024 production_ready=true')
+          print('C66_1_PROMOTION_STATE=PASS battle=true creator=false next=C66.2')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -118,7 +133,7 @@ jobs:
             exit 1
           fi
 
-      - name: Capture active-fight Hair visual review
+      - name: Capture active-fight Hair visual regression
         run: |
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1920x1080x24' \
@@ -149,4 +164,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C66.1 BASE-02 Hair Pack 01 runtime + active-fight visual review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C66.1 BASE-02 Hair Pack 01 approved runtime + active-fight visual regression — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
