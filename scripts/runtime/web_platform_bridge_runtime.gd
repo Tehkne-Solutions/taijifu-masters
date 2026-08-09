@@ -83,6 +83,39 @@ func _register_web_bridge() -> void:
 	_window.taijifuGodotPaused = get_tree().paused
 	_window.taijifuGodotBindingsJson = JSON.stringify(current_keyboard_bindings())
 	_window.taijifuGodotBridgeReady = true
+	_install_compat_facade()
+
+func _install_compat_facade() -> void:
+	# C64.1: the current Godot runtime intentionally publishes primitive globals,
+	# while the essential Web shell/tests historically consumed an object facade.
+	# Keep one source of truth: getters below always read the primitive globals and
+	# methods delegate to the callbacks registered immediately above.
+	JavaScriptBridge.eval("""
+(() => {
+  const root = window;
+  const facade = root.taijifuGodotBridge || {};
+  Object.defineProperties(facade, {
+    ready: { configurable: true, enumerable: true, get: () => Boolean(root.taijifuGodotBridgeReady) },
+    paused: { configurable: true, enumerable: true, get: () => Boolean(root.taijifuGodotPaused) },
+    version: { configurable: true, enumerable: true, get: () => Number(root.taijifuGodotBridgeVersion || 0) },
+    bindings: {
+      configurable: true,
+      enumerable: true,
+      get: () => {
+        try { return JSON.parse(root.taijifuGodotBindingsJson || '{}'); }
+        catch (_error) { return {}; }
+      }
+    }
+  });
+  facade.setPaused = (value) => root.taijifuGodotSetPaused?.(Boolean(value));
+  facade.applyBindings = (bindings) => root.taijifuGodotApplyBindings?.(JSON.stringify(bindings || {}));
+  facade.resetBindings = () => root.taijifuGodotResetBindings?.();
+  facade.getState = () => root.taijifuGodotGetState?.();
+  facade.contract = 'sprint0-essential-shell-v1';
+  facade.signature = 'Tehkné Solutions';
+  root.taijifuGodotBridge = facade;
+})();
+""", true)
 
 func set_paused_from_web(paused: bool) -> bool:
 	if not is_inside_tree():
