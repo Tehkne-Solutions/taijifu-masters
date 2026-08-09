@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base03-uniform-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE03_MARTIAL_ARTS_UNIFORMS",
-  "version": "1.0.0-candidate",
-  "status": "production_candidate_first_uniform_runtime_review_pending",
+  "version": "1.0.0",
+  "status": "production_approved_creator_control_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -63,7 +63,7 @@
       "feet": "uniform_01_lian_martial_feet",
       "requires_art_assets": true,
       "runtime_ready": true,
-      "production_ready": false,
+      "production_ready": true,
       "intentionally_empty_slots": ["torso_inner", "hands"]
     }
   },
@@ -154,10 +154,20 @@
     "art_pack_required": true,
     "art_assets_present": true,
     "creator_exposure": false,
-    "battle_activation": false,
-    "runtime_validation": "pending",
-    "owner_visual_review": "battle_capture_pending",
-    "blocker": "c67_1_runtime_and_battle_visual_review"
+    "battle_activation": true,
+    "runtime_validation": "pass",
+    "owner_visual_review": "pass",
+    "visual_evidence": {
+      "workflow_run": 31337194080,
+      "artifact_id": 9044695914,
+      "artifact_digest": "sha256:6eb4d6cd278dc7c385a1aedf098cba9170e0a7a7af4d97698ca14a0155adb1b6",
+      "head_sha": "42cf93b28808ab1cbfe8735d5834721ed779e601",
+      "capture": "C67_1_BASE03_LIAN_MARTIAL_UNIFORM.review-1920x1080.png",
+      "active_fight": true,
+      "hair_interaction": "pass",
+      "seams_or_duplicate_regions": false
+    },
+    "blocker": "creator_uniform_control"
   },
-  "next_stage": "C67_1_RUNTIME_VISUAL_REVIEW_AND_PROMOTION"
+  "next_stage": "C67_2_BASE03_UNIFORM_CREATOR_CONTROL"
 }
