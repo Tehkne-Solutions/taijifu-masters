@@ -188,6 +188,20 @@ def generate_c64_families(repo: Path) -> dict:
         "hit": save_family(repo, "hit", hit, "hit", baseline),
         "ko": save_family(repo, "ko", ko, "ko", baseline),
     }
+
+    # The final hit frame is a semantic handoff back to idle. Preserve the exact
+    # historical PNG bytes rather than allowing Pillow to re-encode identical pixels.
+    hit_handoff = repo / families["hit"][-1]["path"]
+    shutil.copyfile(neutral_path, hit_handoff)
+    with Image.open(hit_handoff) as opened:
+        handoff_bounds = assert_frame(opened.convert("RGBA"), "hit:handoff", baseline)
+    families["hit"][-1].update({
+        "sha256": sha256(hit_handoff),
+        "alpha_bounds": list(handoff_bounds),
+        "baseline_y": handoff_bounds[3] - 1,
+    })
+    if len({row["sha256"] for row in families["hit"]}) != len(families["hit"]):
+        raise ValueError("hit:duplicate_frames_after_exact_handoff")
     if families["hit"][-1]["sha256"] != NEUTRAL_FILE_SHA:
         raise ValueError("hit_neutral_handoff_hash")
 
