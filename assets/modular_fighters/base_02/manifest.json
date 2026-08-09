@@ -2,23 +2,17 @@
   "schema": "tehkne/taijifu-base02-hair-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE02_HAIR",
-  "version": "1.0.0-candidate",
-  "status": "production_candidate_runtime_validation_pending",
+  "version": "1.0.0",
+  "status": "production_approved_creator_control_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
     "shared_animation_runtime": "shared_modular_animation_runtime_v1"
   },
   "authoring": {
-    "canvas": [
-      1024,
-      1024
-    ],
+    "canvas": [1024, 1024],
     "mode": "RGBA",
-    "pivot": [
-      0.5,
-      0.92
-    ],
+    "pivot": [0.5, 0.92],
     "root_anchor": "bottom_center",
     "native_transparency_required": true,
     "background_allowed": false,
@@ -50,7 +44,7 @@
       "hair_back": "hair_01_lian_topknot_back",
       "hair_front": "hair_01_lian_topknot_front",
       "requires_art_assets": true,
-      "production_ready": false,
+      "production_ready": true,
       "source_lineage": "exact_historical_lian_character_lock"
     }
   },
@@ -59,21 +53,10 @@
       "slot": "hair_back",
       "path": "assets/modular_fighters/base_02/hair_01_lian_topknot/hair_01_lian_topknot_back.png",
       "sha256": "45198a1def4f4fc22f72c01579d4468d0dd36afbbd99fe2fcd60292e8728ce7b",
-      "canvas": [
-        1024,
-        1024
-      ],
+      "canvas": [1024, 1024],
       "mode": "RGBA",
-      "alpha_bbox": [
-        464,
-        70,
-        688,
-        362
-      ],
-      "pivot": [
-        0.5,
-        0.92
-      ],
+      "alpha_bbox": [464, 70, 688, 362],
+      "pivot": [0.5, 0.92],
       "root_anchor": "bottom_center",
       "source": {
         "method": "exact_character_lock_source_pixel_matte_v1",
@@ -88,21 +71,10 @@
       "slot": "hair_front",
       "path": "assets/modular_fighters/base_02/hair_01_lian_topknot/hair_01_lian_topknot_front.png",
       "sha256": "11f1bc72ecee3f78ad8b35f8f3a7be8dc82b6d1391fbda1ddf17876c03f744d4",
-      "canvas": [
-        1024,
-        1024
-      ],
+      "canvas": [1024, 1024],
       "mode": "RGBA",
-      "alpha_bbox": [
-        385,
-        125,
-        636,
-        361
-      ],
-      "pivot": [
-        0.5,
-        0.92
-      ],
+      "alpha_bbox": [385, 125, 636, 361],
+      "pivot": [0.5, 0.92],
       "root_anchor": "bottom_center",
       "source": {
         "method": "exact_character_lock_source_pixel_matte_v1",
@@ -118,8 +90,15 @@
     "art_pack_required": true,
     "art_assets_present": true,
     "creator_exposure": false,
-    "battle_activation": false,
-    "owner_visual_review": "diagnostic_split_pass_runtime_pending"
+    "battle_activation": true,
+    "owner_visual_review": "pass",
+    "runtime_validation": "pass",
+    "visual_evidence": {
+      "workflow_run": 31330696902,
+      "artifact_id": 9042838843,
+      "artifact_sha256": "4ddaeabdf13d6f2943c4f5ffc0bd477fea9bcba6797f62e400e17d740724b7c7",
+      "capture": "artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png"
+    }
   },
-  "next_stage": "C66_1_RUNTIME_AND_BATTLE_VALIDATION"
+  "next_stage": "C66_2_HAIR_CREATOR_CONTROL"
 }
