@@ -39,12 +39,17 @@ HASH_CONSTANT_RE = re.compile(
     re.MULTILINE,
 )
 
-# Match only the legacy source-hash preflight. Stop exactly at the first RGBA
-# open so no animation logic can be swallowed by this migration.
+# The historical scripts have two equivalent naming shapes:
+# locomotion: actual_source_sha = sha256(source); image = Image.open(source)...
+# combat:     source_sha = sha256(source_path); source = Image.open(source_path)...
+# Capture those variable names rather than changing animation-specific code.
 LEGACY_PREFLIGHT_RE = re.compile(
-    r'(?P<indent>^[ \t]*)actual_source_sha\s*=\s*sha256\(source\)\s*\n'
+    r'(?P<indent>^[ \t]*)'
+    r'(?P<hashvar>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*sha256\('
+    r'(?P<pathvar>[A-Za-z_][A-Za-z0-9_]*)\)\s*\n'
     r'(?P<body>.*?)'
-    r'(?P=indent)image\s*=\s*Image\.open\(source\)\.convert\(["\']RGBA["\']\)',
+    r'(?P=indent)(?P<imgvar>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*Image\.open\('
+    r'(?P=pathvar)\)\.convert\(["\']RGBA["\']\)',
     re.MULTILINE | re.DOTALL,
 )
 MARKER_RE = re.compile(r'([A-Z][A-Z0-9_]+)=BLOCKED\s+source_hash_mismatch')
@@ -59,26 +64,36 @@ def _inject_import(text: str, path: Path) -> str:
     return text[: anchor.start()] + IMPORT_LINE + "\n\n" + text[anchor.start() :]
 
 
-def _replace_preflight(text: str, path: Path) -> tuple[str, str]:
+def _replace_preflight(text: str, path: Path) -> tuple[str, str, str]:
     matches = list(LEGACY_PREFLIGHT_RE.finditer(text))
-    if len(matches) != 1:
-        raise ValueError(f"{path}: expected one legacy preflight, found {len(matches)}")
-    match = matches[0]
+    candidates = []
+    for match in matches:
+        if "EXPECTED_SOURCE_SHA256" in match.group("body"):
+            candidates.append(match)
+    if len(candidates) != 1:
+        raise ValueError(
+            f"{path}: expected one legacy hash preflight, found {len(candidates)} "
+            f"among {len(matches)} sha256-to-RGBA candidates"
+        )
+    match = candidates[0]
     body = match.group("body")
     marker_match = MARKER_RE.search(body)
     if marker_match is None:
         raise ValueError(f"{path}: legacy BLOCKED marker not found in hash preflight")
     marker = marker_match.group(1)
     indent = match.group("indent")
+    hashvar = match.group("hashvar")
+    pathvar = match.group("pathvar")
+    imgvar = match.group("imgvar")
     replacement = (
         f"{indent}try:\n"
-        f"{indent}    canonical_identity = validate_source(source)\n"
+        f"{indent}    canonical_identity = validate_source({pathvar})\n"
         f"{indent}except (OSError, ValueError) as exc:\n"
         f"{indent}    print(f\"{marker}=BLOCKED canonical_visual_identity={{exc}}\"); return 3\n"
-        f"{indent}actual_source_sha = str(canonical_identity[\"file_sha256\"])\n"
-        f"{indent}image = Image.open(source).convert(\"RGBA\")"
+        f"{indent}{hashvar} = str(canonical_identity[\"file_sha256\"])\n"
+        f"{indent}{imgvar} = Image.open({pathvar}).convert(\"RGBA\")"
     )
-    return text[: match.start()] + replacement + text[match.end() :], marker
+    return text[: match.start()] + replacement + text[match.end() :], marker, pathvar
 
 
 def migrate_one(path: Path, apply: bool) -> dict:
@@ -88,7 +103,7 @@ def migrate_one(path: Path, apply: bool) -> dict:
 
     # Already migrated is valid and makes the tool idempotent.
     if OLD_BINARY_SHA256 not in original:
-        if IMPORT_LINE not in original or "canonical_identity = validate_source(source)" not in original:
+        if IMPORT_LINE not in original or "canonical_identity = validate_source(" not in original:
             raise ValueError(f"{path}: old binary lock absent but canonical validator wiring is incomplete")
         return {
             "path": path.as_posix(),
@@ -97,7 +112,7 @@ def migrate_one(path: Path, apply: bool) -> dict:
         }
 
     migrated = _inject_import(original, path)
-    migrated, marker = _replace_preflight(migrated, path)
+    migrated, marker, source_variable = _replace_preflight(migrated, path)
     migrated, removed = HASH_CONSTANT_RE.subn("", migrated, count=1)
     if removed != 1:
         raise ValueError(f"{path}: expected one historical hash constant, removed {removed}")
@@ -108,7 +123,7 @@ def migrate_one(path: Path, apply: bool) -> dict:
     # constant are the only intended semantic edits.
     if migrated.count(IMPORT_LINE) != 1:
         raise ValueError(f"{path}: canonical validator import count is not one")
-    if migrated.count("canonical_identity = validate_source(source)") != 1:
+    if migrated.count("canonical_identity = validate_source(") != 1:
         raise ValueError(f"{path}: canonical validator call count is not one")
 
     if apply:
@@ -118,6 +133,7 @@ def migrate_one(path: Path, apply: bool) -> dict:
         "state": "migrated" if apply else "migration_required",
         "changed": True,
         "block_marker": marker,
+        "source_variable": source_variable,
     }
 
 
