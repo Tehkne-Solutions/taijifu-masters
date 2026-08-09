@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate C62.8 handoff contract
+      - name: Validate immutable C62.8 historical contract
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -39,16 +39,15 @@ jobs:
           assert sel['canonical_base01_identity_required'] is True
           assert sel['legacy_v1_auto_activation'] is False
           battle=data['battle_contract']
-          assert battle['player']==1
-          assert battle['session_to_battle'] is True
+          # This JSON is the immutable C62.8 checkpoint. Its battle-time blocker was
+          # intentionally superseded by C65; pre-battle fail-closed semantics remain.
           assert battle['visual_activation'] is False
           assert battle['visual_blocker']=='shared_modular_animation_runtime'
           assert battle['combat_build_fallback']=='lian_wu_first_playable'
           assert battle['animated_presenter_fallback']=='FirstPlayableLot01Presenter'
           assert battle['static_creator_sprite_regression_allowed'] is False
           assert data['release_policy']['visual_activation_requires']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME_PASS'
-          assert data['next_stage']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME'
-          print('C62_8_CONTRACT=PASS handoff=true visual_activation=false')
+          print('C62_8_HISTORICAL_CONTRACT=PASS immutable=true superseded_by=C65')
           PY
 
       - name: Install Godot 4.3
@@ -70,18 +69,19 @@ jobs:
             exit 1
           fi
 
-      - name: Run creator to battle end-to-end smoke
+      - name: Run current creator to battle end-to-end smoke
         run: |
           set -euo pipefail
           ./godot --headless --path . --script res://scripts/ci/base01_creator_battle_handoff_smoke.gd 2>&1 | tee c62-8-runtime.log
+          grep -q 'C62_8_PREBATTLE_FAIL_CLOSED=PASS blocker=shared_modular_animation_runtime' c62-8-runtime.log
           grep -q 'C62_8_CREATOR_TO_SESSION=PASS' c62-8-runtime.log
           grep -q 'C62_8_SESSION_TO_BATTLE=PASS metadata=true' c62-8-runtime.log
-          grep -q 'C62_8_CREATOR_VISUAL_ACTIVATION=BLOCKED blocker=shared_modular_animation_runtime' c62-8-runtime.log
+          grep -q 'C62_8_MODULAR_RUNTIME_PROMOTION=PASS runtime=shared_modular_animation_runtime_v1' c62-8-runtime.log
           grep -q 'C62_8_ANIMATED_FALLBACK=PRESERVED character=lian_wu' c62-8-runtime.log
           grep -q 'C62_8_STATIC_SPRITE_REGRESSION=BLOCKED' c62-8-runtime.log
           grep -q 'C62_8_CREATOR_BATTLE_HANDOFF=PASS' c62-8-runtime.log
-          grep -q 'NEXT_STAGE=C63_SHARED_MODULAR_ANIMATION_RUNTIME' c62-8-runtime.log
-          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' c62-8-runtime.log; then
+          grep -q 'SUPERSEDED_STAGE=C65_SHARED_MODULAR_ANIMATION_RUNTIME_PASS' c62-8-runtime.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|C62_8_HANDOFF=BLOCKED' c62-8-runtime.log; then
             echo 'C62_8_RUNTIME_ERRORS=BLOCKED'
             exit 1
           fi
@@ -96,4 +96,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C62.8 creator battle handoff PASS; visual activation intentionally blocked until C63 shared modular animation runtime — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.8 pre-battle fail-closed preserved; C65 modular battle promotion validated — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
