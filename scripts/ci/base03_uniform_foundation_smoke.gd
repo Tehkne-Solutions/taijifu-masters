@@ -15,16 +15,35 @@ func _run() -> void:
 	var manifest := _load_json(MANIFEST_PATH)
 	var contract := _load_json(CONTRACT_PATH)
 	var standard := _load_json(STANDARD_PATH)
+	var status := String(manifest.get("status", ""))
+	var foundation_stage := status == "foundation_no_art_assets"
+	var evolved_stage := status.begins_with("production_candidate_") or status.begins_with("production_approved_")
 
 	if String(manifest.get("pack_id", "")) != "BASE03_MARTIAL_ARTS_UNIFORMS":
 		failures.append("base03_manifest_missing")
-	if String(manifest.get("status", "")) != "foundation_no_art_assets":
-		failures.append("base03_foundation_status")
+	if not foundation_stage and not evolved_stage:
+		failures.append("base03_stage_unknown:%s" % status)
 	if String(manifest.get("default_set_id", "")) != "uniform_none":
 		failures.append("base03_default_set")
+
 	var modules = manifest.get("modules", {})
-	if not (modules is Dictionary) or not modules.is_empty():
+	if not (modules is Dictionary):
+		failures.append("base03_modules_contract")
+	elif foundation_stage and not modules.is_empty():
 		failures.append("base03_foundation_must_not_claim_art_modules")
+	elif evolved_stage:
+		for module_id in modules.keys():
+			var module = modules[module_id]
+			if not (module is Dictionary):
+				failures.append("base03_module_invalid:%s" % String(module_id))
+				continue
+			var slot := StringName(String(module.get("slot", "")))
+			if not UNIFORM_SLOTS.has(slot):
+				failures.append("base03_module_slot_invalid:%s" % String(module_id))
+			var path := "res://%s" % String(module.get("path", ""))
+			if not ResourceLoader.exists(path):
+				failures.append("base03_module_asset_missing:%s" % String(module_id))
+
 	var sets = manifest.get("sets", {})
 	if not (sets is Dictionary) or not sets.has("uniform_none"):
 		failures.append("base03_uniform_none_missing")
@@ -42,14 +61,18 @@ func _run() -> void:
 	var promotion = manifest.get("promotion", {})
 	if not (promotion is Dictionary):
 		failures.append("base03_promotion_contract")
-	else:
+	elif foundation_stage:
 		if bool(promotion.get("art_assets_present", true)):
 			failures.append("base03_art_assets_must_be_false")
 		if bool(promotion.get("creator_exposure", true)):
 			failures.append("base03_creator_exposure_must_be_false")
 		if bool(promotion.get("battle_activation", true)):
 			failures.append("base03_battle_activation_must_be_false")
+	elif not bool(promotion.get("art_assets_present", false)):
+		failures.append("base03_evolved_art_assets_missing")
 
+	# C67.0 is an immutable historical foundation contract. Later stages may
+	# promote art/runtime/Creator state, but may never rewrite the set semantics.
 	if String(contract.get("component_id", "")) != "BASE03_UNIFORM_FOUNDATION":
 		failures.append("base03_contract_missing")
 	if String(contract.get("status", "")) != "foundation_candidate_art_blocked":
@@ -90,7 +113,7 @@ func _run() -> void:
 		if resolved != int(expected_z[slot_name]):
 			failures.append("uniform_layer_policy_mismatch:%s:%d" % [slot_name, resolved])
 
-	# Existing profile schema already owns all required slots and can clear them.
+	# Existing profile schema must continue to own all required slots in every stage.
 	var profile := ModularFighterProfile.new()
 	profile.profile_id = &"c67_uniform_foundation_probe"
 	profile.base_body_id = &"base_fighter_v1"
@@ -115,8 +138,12 @@ func _run() -> void:
 	print("C67_0_UNIFORM_SET=PASS unit=uniform_set slots=7 atomic=true")
 	print("C67_0_PROFILE_STORAGE=PASS generic_modules=true")
 	print("C67_0_LAYER_POLICY=PASS current_policy_frozen=true hair_visual_review_required=true")
-	print("C67_0_ART_PROMOTION=BLOCKED reason=first_canonical_uniform_art_pack_missing")
-	print("C67_0_CREATOR_EXPOSURE=BLOCKED")
+	print("C67_0_FOUNDATION_INVARIANTS=PASS stage=%s" % ("foundation" if foundation_stage else "evolved"))
+	print("C67_0_CURRENT_PROMOTION=art:%s battle:%s creator:%s" % [
+		str(bool(promotion.get("art_assets_present", false))).to_lower(),
+		str(bool(promotion.get("battle_activation", false))).to_lower(),
+		str(bool(promotion.get("creator_exposure", false))).to_lower(),
+	])
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
 
