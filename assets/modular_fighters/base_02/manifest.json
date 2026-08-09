@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base02-hair-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE02_HAIR",
-  "version": "1.1.0-candidate",
-  "status": "production_approved_creator_control_validation_pending",
+  "version": "1.1.0",
+  "status": "production_approved_creator_control",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -90,7 +90,7 @@
     "art_pack_required": true,
     "art_assets_present": true,
     "creator_exposure": true,
-    "creator_control_validation": "pending",
+    "creator_control_validation": "pass",
     "battle_activation": true,
     "owner_visual_review": "pass",
     "runtime_validation": "pass",
@@ -99,7 +99,13 @@
       "artifact_id": 9042838843,
       "artifact_sha256": "4ddaeabdf13d6f2943c4f5ffc0bd477fea9bcba6797f62e400e17d740724b7c7",
       "capture": "artifacts/c66_1/C66_1_HAIR_PACK_01_LIAN_TOPKNOT.review-1920x1080.png"
+    },
+    "creator_evidence": {
+      "workflow_run": 31331687918,
+      "artifact_id": 9043113353,
+      "artifact_sha256": "a789e72f72e38b67fe051a382bd0a805dd4386d05bf9097c0b3d7901ca5e5939",
+      "capture": "artifacts/c66_2/C66_2_HAIR_CREATOR_CONTROL.review-1280x720.png"
     }
   },
-  "next_stage": "C66_2_HAIR_CREATOR_CONTROL_VALIDATION"
+  "next_stage": "C67_BASE03_MARTIAL_ARTS_UNIFORMS_FOUNDATION"
 }
