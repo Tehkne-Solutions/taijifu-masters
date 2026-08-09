@@ -17,7 +17,7 @@ static func style_ids() -> PackedStringArray:
 	if not (styles is Dictionary):
 		return result
 	for raw_id in styles.keys():
-		result.append(String(raw_id))
+		result.append(str(raw_id))
 	result.sort()
 	return result
 
@@ -31,7 +31,7 @@ static func set_profile_style(profile: ModularFighterProfile, style_id: StringNa
 		failures.append("hair_manifest_missing")
 		return failures
 	var styles = manifest.get("styles", {})
-	var style_name := String(style_id)
+	var style_name := str(style_id)
 	if not (styles is Dictionary) or not styles.has(style_name):
 		failures.append("hair_style_unknown:%s" % style_name)
 		return failures
@@ -40,9 +40,9 @@ static func set_profile_style(profile: ModularFighterProfile, style_id: StringNa
 		failures.append("hair_style_contract_invalid:%s" % style_name)
 		return failures
 
-	var back_id := String(style.get("hair_back", ""))
-	var front_id := String(style.get("hair_front", ""))
-	if style_name == String(DEFAULT_STYLE):
+	var back_id := str(style.get("hair_back", ""))
+	var front_id := str(style.get("hair_front", ""))
+	if style_name == str(DEFAULT_STYLE):
 		if not back_id.is_empty() or not front_id.is_empty():
 			failures.append("hair_none_must_be_empty")
 			return failures
@@ -54,14 +54,14 @@ static func set_profile_style(profile: ModularFighterProfile, style_id: StringNa
 	if not (modules is Dictionary):
 		failures.append("hair_modules_contract_invalid")
 		return failures
-	for pair in [[String(HAIR_BACK), back_id], [String(HAIR_FRONT), front_id]]:
+	for pair in [[str(HAIR_BACK), back_id], [str(HAIR_FRONT), front_id]]:
 		var slot_name: String = pair[0]
 		var module_name: String = pair[1]
 		if module_name.is_empty() or not modules.has(module_name):
 			failures.append("hair_style_module_missing:%s:%s" % [style_name, slot_name])
 			continue
 		var contract = modules[module_name]
-		if not (contract is Dictionary) or String(contract.get("slot", "")) != slot_name:
+		if not (contract is Dictionary) or str(contract.get("slot", "")) != slot_name:
 			failures.append("hair_style_slot_mismatch:%s:%s" % [style_name, slot_name])
 	if not failures.is_empty():
 		return failures
@@ -74,20 +74,20 @@ static func set_profile_style(profile: ModularFighterProfile, style_id: StringNa
 static func profile_style_id(profile: ModularFighterProfile) -> StringName:
 	if profile == null:
 		return &""
-	var back_id := String(profile.module_id(HAIR_BACK))
-	var front_id := String(profile.module_id(HAIR_FRONT))
+	var back_id := str(profile.module_id(HAIR_BACK))
+	var front_id := str(profile.module_id(HAIR_FRONT))
 	var manifest := _manifest()
 	var styles = manifest.get("styles", {})
 	if not (styles is Dictionary):
 		return &""
 	if back_id.is_empty() and front_id.is_empty():
-		return StringName(String(manifest.get("default_style_id", String(DEFAULT_STYLE))))
+		return StringName(str(manifest.get("default_style_id", "hair_none")))
 	for raw_style in styles.keys():
-		var style_name := String(raw_style)
+		var style_name := str(raw_style)
 		var style = styles[style_name]
 		if not (style is Dictionary):
 			continue
-		if String(style.get("hair_back", "")) == back_id and String(style.get("hair_front", "")) == front_id:
+		if str(style.get("hair_back", "")) == back_id and str(style.get("hair_front", "")) == front_id:
 			return StringName(style_name)
 	return &""
 
@@ -96,8 +96,8 @@ static func validate_profile_pair(profile: ModularFighterProfile) -> PackedStrin
 	if profile == null:
 		failures.append("hair_profile_missing")
 		return failures
-	var back_id := String(profile.module_id(HAIR_BACK))
-	var front_id := String(profile.module_id(HAIR_FRONT))
+	var back_id := str(profile.module_id(HAIR_BACK))
+	var front_id := str(profile.module_id(HAIR_FRONT))
 	if back_id.is_empty() and front_id.is_empty():
 		return failures
 	if profile_style_id(profile) == &"":
@@ -124,9 +124,9 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 
 	var manifest := _manifest()
 	var styles = manifest.get("styles", {})
-	var style = styles.get(String(style_id), {}) if styles is Dictionary else {}
+	var style = styles.get(str(style_id), {}) if styles is Dictionary else {}
 	if not (style is Dictionary):
-		failures.append("hair_style_contract_invalid:%s" % String(style_id))
+		failures.append("hair_style_contract_invalid:%s" % str(style_id))
 		return failures
 	var modules = manifest.get("modules", {})
 	if not (modules is Dictionary):
@@ -135,17 +135,17 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 
 	# Build both sprites before attaching either one. This keeps runtime mutation atomic.
 	var pending: Array[Dictionary] = []
-	for pair in [[HAIR_BACK, String(style.get("hair_back", ""))], [HAIR_FRONT, String(style.get("hair_front", ""))]]:
+	for pair in [[HAIR_BACK, str(style.get("hair_back", ""))], [HAIR_FRONT, str(style.get("hair_front", ""))]]:
 		var slot: StringName = pair[0]
 		var module_name: String = pair[1]
 		if module_name.is_empty() or not modules.has(module_name):
 			failures.append("hair_runtime_module_missing:%s" % module_name)
 			continue
 		var contract = modules[module_name]
-		if not (contract is Dictionary) or String(contract.get("slot", "")) != String(slot):
+		if not (contract is Dictionary) or str(contract.get("slot", "")) != str(slot):
 			failures.append("hair_runtime_slot_mismatch:%s" % module_name)
 			continue
-		var asset_path := "res://%s" % String(contract.get("path", ""))
+		var asset_path := "res://%s" % str(contract.get("path", ""))
 		if not ResourceLoader.exists(asset_path):
 			failures.append("hair_asset_missing:%s" % module_name)
 			continue
@@ -176,7 +176,7 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 		var slot := item["slot"] as StringName
 		var sprite := item["sprite"] as Sprite2D
 		if not assembler.attach_visual_module(slot, sprite):
-			failures.append("hair_attach_failed:%s" % String(item["module"]))
+			failures.append("hair_attach_failed:%s" % str(item["module"]))
 			break
 	if not failures.is_empty():
 		assembler.clear_visual_module(HAIR_BACK)
@@ -187,7 +187,7 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 	var back := assembler.get_node_or_null("Module_hair_back") as Sprite2D if assembler != null else null
 	var front := assembler.get_node_or_null("Module_hair_front") as Sprite2D if assembler != null else null
 	return {
-		"style_id": String(profile_style_id(profile)),
+		"style_id": str(profile_style_id(profile)),
 		"hair_back_present": back != null,
 		"hair_front_present": front != null,
 		"hair_back_z": back.z_index if back != null else -1,
@@ -204,7 +204,7 @@ static func _manifest() -> Dictionary:
 	if file == null:
 		return {}
 	var parsed = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary) or String(parsed.get("pack_id", "")) != "BASE02_HAIR":
+	if not (parsed is Dictionary) or str(parsed.get("pack_id", "")) != "BASE02_HAIR":
 		return {}
 	return parsed
 
