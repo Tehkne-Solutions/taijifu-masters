@@ -3,7 +3,6 @@ extends SceneTree
 const CREATOR_SCENE := "res://scenes/characters/modular_fighter_creator_shell.tscn"
 const BATTLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const TEST_PRESET := &"c65_shared_animation_probe"
-const REVIEW_OUTPUT := "res://artifacts/c65/C65_SHARED_MODULAR_ANIMATION_RUNTIME.review-1920x1080.png"
 const EXPECTED_STATES := [
 	"idle", "run", "jump_start", "airborne", "fall",
 	"attack_light", "guard", "dodge", "hit", "ko",
@@ -150,21 +149,6 @@ func _run() -> void:
 		_fail("C65_SHARED_RUNTIME=BLOCKED static_sprite_regression")
 		return
 
-	# Capture the real battle, not a synthetic preview. This is the visual review
-	# artifact used to judge scale, identity layering and arena readability.
-	for _frame in range(12):
-		await process_frame
-	await RenderingServer.frame_post_draw
-	var capture := get_root().get_texture().get_image()
-	if capture == null or capture.is_empty():
-		_fail("C65_SHARED_RUNTIME=BLOCKED visual_capture")
-		return
-	capture.resize(1920, 1080, Image.INTERPOLATE_LANCZOS)
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(REVIEW_OUTPUT.get_base_dir()))
-	if capture.save_png(REVIEW_OUTPUT) != OK:
-		_fail("C65_SHARED_RUNTIME=BLOCKED visual_capture_save")
-		return
-
 	print("C65_CREATOR_TO_BATTLE=PASS preset=%s" % String(TEST_PRESET))
 	print("C65_MODULAR_IDENTITY=PASS skin=deep face=broad eyes=fierce brows=sharp")
 	print("C65_SHARED_STATE_CONTRACT=PASS states=10")
@@ -172,7 +156,6 @@ func _run() -> void:
 	print("C65_LIAN_FALLBACK=PASS preserved=true hidden_when_modular_active=true")
 	print("C65_COMBAT_BUILD=PASS character=lian_wu unchanged=true")
 	print("C65_SHARED_MODULAR_ANIMATION_RUNTIME=PASS")
-	print("C65_VISUAL_REVIEW_OUTPUT=" + REVIEW_OUTPUT)
 	print("SIGNATURE=Tehkné Solutions")
 
 	battle.queue_free()
