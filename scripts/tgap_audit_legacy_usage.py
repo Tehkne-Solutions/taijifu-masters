@@ -22,14 +22,7 @@ SAFE_REWRITES = (
     ("AssetPackRegistry.resolve_asset(", "TgapAssetLoader.resolve("),
 )
 DEFAULT_POLICY = {
-    "production_globs": [
-        "scripts/*.gd",
-        "scripts/**/*.gd",
-        "scenes/*.tscn",
-        "scenes/**/*.tscn",
-        "resources/*.tres",
-        "resources/**/*.tres",
-    ],
+    "production_globs": ["scripts/**/*.gd", "scenes/**/*.tscn", "resources/**/*.tres"],
     "allowed_globs": [
         "scripts/runtime/asset_pack_registry.gd",
         "scripts/tgap_audit_legacy_usage.py",
@@ -71,14 +64,13 @@ def classify(path: str, policy: dict) -> str:
     return "non_production"
 
 
-def audit(root: Path, policy: dict | None = None) -> dict:
-    effective_policy = policy or DEFAULT_POLICY
+def audit(root: Path, policy: dict) -> dict:
     findings = []
     counts = Counter()
     scope_counts = Counter()
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        scope = classify(relative, effective_policy)
+        scope = classify(relative, policy)
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
@@ -104,7 +96,7 @@ def audit(root: Path, policy: dict | None = None) -> dict:
     return {
         "schema": "tgap/legacy-audit/v2",
         "root": root.as_posix(),
-        "policy": effective_policy,
+        "policy": policy,
         "summary": {
             "total_findings": len(findings),
             "production_findings": len(production),
@@ -117,12 +109,11 @@ def audit(root: Path, policy: dict | None = None) -> dict:
     }
 
 
-def migrate(root: Path, policy: dict | None = None) -> list[str]:
-    effective_policy = policy or DEFAULT_POLICY
+def migrate(root: Path, policy: dict) -> list[str]:
     changed = []
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        if path.suffix.lower() != ".gd" or classify(relative, effective_policy) != "production":
+        if path.suffix.lower() != ".gd" or classify(relative, policy) != "production":
             continue
         text = path.read_text(encoding="utf-8")
         updated = text
