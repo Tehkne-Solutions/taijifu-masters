@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE05_WEAPONS",
-  "version": "1.2.0",
-  "status": "weapon_main_runtime_validation_pending",
+  "version": "1.3.0",
+  "status": "production_approved_weapon_main_runtime",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -70,7 +70,7 @@
       "combat_reference": "serene_katana",
       "requires_art_assets": true,
       "runtime_ready": true,
-      "production_ready": false,
+      "production_ready": true,
       "creator_ready": false
     }
   },
@@ -91,7 +91,7 @@
       "source_candidate_sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
       "source_art_review": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
       "runtime_ready": true,
-      "production_ready": false,
+      "production_ready": true,
       "creator_ready": false
     }
   },
@@ -100,8 +100,8 @@
       "slot": "weapon_main",
       "required_by": ["preset_lian_wu"],
       "profile_reference_status": "present",
-      "standalone_visual_status": "materialized_exact_selected_art",
-      "production_ready": false,
+      "standalone_visual_status": "production_ready_state_aware_runtime",
+      "production_ready": true,
       "combat_catalog_reference": "serene_katana",
       "combat_catalog_reference_status": "existing_kit_verified",
       "visual_to_combat_binding_status": "verified_via_current_first_playable_fallback",
@@ -144,6 +144,22 @@
     "artifact_digest": "sha256:d4f3753905242061d26831117d39d0b29491f18046ac9811a8fac2c54aaaa6b2",
     "owner_visual_review": "pass"
   },
+  "runtime_evidence": {
+    "stage": "BASE-05.3",
+    "workflow_run": 31418424009,
+    "head_sha": "ea5dbea49be62d45c0b09c4471cd6a49ac414f5a",
+    "artifact_id": 9074360706,
+    "artifact_digest": "sha256:86ccb396e8b3de329fc74c84fef6c93a8081ec003bc4075103b02ecdc53e44a1",
+    "capture": "artifacts/base05_3/BASE05_3_ACTIVE_FIGHT_ATTACK.review-1920x1080.png",
+    "godot_import": "pass",
+    "runtime_smoke": "pass",
+    "active_fight": "pass",
+    "state_aware_visibility": "pass",
+    "same_node_idempotence": "pass",
+    "battle_handoff": "pass",
+    "combat_binding": "serene_katana",
+    "owner_visual_review": "pass"
+  },
   "compatibility": {
     "existing_weapon_back_reference": "sheath_lian_wu_blue",
     "weapon_back_must_survive_weapon_main_changes": true,
@@ -157,15 +173,12 @@
   "promotion": {
     "weapon_main_runtime_activation": true,
     "weapon_offhand_runtime_activation": false,
-    "presenter_integration": false,
+    "presenter_integration": true,
     "creator_exposure": false,
     "art_assets_present": true,
-    "runtime_validation": "pending",
+    "runtime_validation": "pass",
     "owner_visual_review": "pass_selected_v1",
-    "blockers": [
-      "weapon_main_state_aware_runtime_not_validated",
-      "active_fight_visual_handoff_not_validated"
-    ]
+    "blockers": []
   },
-  "next_stage": "BASE-05.3 — validate exact katana_lian_wu as state-aware weapon_main in active First Playable before any Creator exposure"
+  "next_stage": "BASE-05.4 — Weapon Set Creator Control, preserving atomic selection, no direct slot controls and no combat-loadout mutation"
 }
