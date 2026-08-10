@@ -17,8 +17,9 @@ def digest(path: Path) -> str:
 
 def write_bundle(root: Path, version: str = "1.0.0") -> Path:
     bundle = root / f"taijifu-masters-tgap-{version}.zip"
+    pack_root = "packs/pack_00_test"
     with zipfile.ZipFile(bundle, "w") as archive:
-        archive.writestr("packs/pack_00_test/data.txt", "conteudo-v1")
+        archive.writestr(f"{pack_root}/data.txt", "conteudo-v1")
     manifest = {
         "schema": "tgap/bundle/v1",
         "project_id": "taijifu-masters",
@@ -32,23 +33,19 @@ def write_bundle(root: Path, version: str = "1.0.0") -> Path:
             "pack_id": "pack_00_test",
             "version": "1.0.0",
             "asset_class": "prop",
+            "root": pack_root,
+            "pipeline_approved": True,
             "file_count": 1,
             "sha256": hashlib.sha256(b"conteudo-v1").hexdigest(),
         }],
-        "archive": {"file_count": 1, "sha256": digest(bundle)},
+        "archive": {"path": bundle.name, "file_count": 1, "sha256": digest(bundle)},
     }
     bundle.with_suffix(".manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     return bundle
 
 
 def run(*args: object) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, str(INSTALLER), *(str(arg) for arg in args)],
-        cwd=REPO,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return subprocess.run([sys.executable, str(INSTALLER), *(str(arg) for arg in args)], cwd=REPO, text=True, capture_output=True, check=False)
 
 
 def test_installs_bundle_and_updates_catalog(tmp_path: Path) -> None:
@@ -88,13 +85,11 @@ def test_explicit_rollback_restores_previous_generation(tmp_path: Path) -> None:
     runtime = tmp_path / "runtime"
     first = run(bundle, "--runtime-root", runtime, "--keep-backup")
     assert first.returncode == 0
-
     active_file = runtime / "tgap-current/packs/pack_00_test/data.txt"
     active_file.write_text("alterado")
     second = run(bundle, "--runtime-root", runtime, "--allow-replace", "--keep-backup")
     assert second.returncode == 0
     transaction_id = json.loads(second.stdout)["transaction_id"]
-
     rolled = run("--runtime-root", runtime, "--rollback", transaction_id)
     assert rolled.returncode == 0, rolled.stdout + rolled.stderr
     assert active_file.read_text() == "alterado"
