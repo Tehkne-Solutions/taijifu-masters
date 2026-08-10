@@ -27,7 +27,7 @@ def test_audit_separates_production_from_documentation(tmp_path: Path):
     )
     (tmp_path / "docs/migration.md").write_text("AssetPackRegistry", encoding="utf-8")
     report = legacy_audit.audit(tmp_path, legacy_audit.DEFAULT_POLICY)
-    assert report["schema"] == "tgap/legacy-audit/v2"
+    assert report["schema"] == "tgap/legacy-audit/v3"
     assert report["summary"]["production_findings"] == 1
     assert report["summary"]["by_scope"]["allowed_infrastructure"] == 1
 
