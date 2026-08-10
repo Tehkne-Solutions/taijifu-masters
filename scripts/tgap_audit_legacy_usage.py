@@ -43,8 +43,27 @@ def load_policy(path: Path | None) -> dict:
     }
 
 
+def _glob_variants(pattern: str) -> tuple[str, ...]:
+    """Approximate pathspec-style **/ semantics with Python fnmatch.
+
+    fnmatch treats ``**`` as ordinary ``*``, so ``scripts/**/*.gd`` does not
+    match ``scripts/foo.gd``.  TGAP policy globs are pathspec-style and are
+    intended to include both direct children and deeper descendants.
+    """
+    variants = [pattern]
+    collapsed = pattern
+    while "/**/" in collapsed:
+        collapsed = collapsed.replace("/**/", "/", 1)
+        variants.append(collapsed)
+    return tuple(dict.fromkeys(variants))
+
+
 def matches_any(value: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatch(value, pattern) for pattern in patterns)
+    return any(
+        fnmatch.fnmatch(value, variant)
+        for pattern in patterns
+        for variant in _glob_variants(pattern)
+    )
 
 
 def iter_files(root: Path):
@@ -64,13 +83,14 @@ def classify(path: str, policy: dict) -> str:
     return "non_production"
 
 
-def audit(root: Path, policy: dict) -> dict:
+def audit(root: Path, policy: dict | None = None) -> dict:
+    effective_policy = policy if policy is not None else DEFAULT_POLICY
     findings = []
     counts = Counter()
     scope_counts = Counter()
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        scope = classify(relative, policy)
+        scope = classify(relative, effective_policy)
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
@@ -96,7 +116,7 @@ def audit(root: Path, policy: dict) -> dict:
     return {
         "schema": "tgap/legacy-audit/v2",
         "root": root.as_posix(),
-        "policy": policy,
+        "policy": effective_policy,
         "summary": {
             "total_findings": len(findings),
             "production_findings": len(production),
@@ -109,11 +129,12 @@ def audit(root: Path, policy: dict) -> dict:
     }
 
 
-def migrate(root: Path, policy: dict) -> list[str]:
+def migrate(root: Path, policy: dict | None = None) -> list[str]:
+    effective_policy = policy if policy is not None else DEFAULT_POLICY
     changed = []
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        if path.suffix.lower() != ".gd" or classify(relative, policy) != "production":
+        if path.suffix.lower() != ".gd" or classify(relative, effective_policy) != "production":
             continue
         text = path.read_text(encoding="utf-8")
         updated = text
