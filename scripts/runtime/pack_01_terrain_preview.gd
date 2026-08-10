@@ -1,6 +1,5 @@
 extends Node2D
 
-const PACK_ID := "PACK_01"
 const TILE_SIZE := 256
 const GRID_SIZE := Vector2i(5, 4)
 const TILE_IDS := [
@@ -12,9 +11,6 @@ const TILE_IDS := [
 var loaded_textures: Array[Texture2D] = []
 
 func _ready() -> void:
-    if not AssetPackRegistry.has_pack(PACK_ID):
-        push_warning("PACK_01 não foi registrado pelo AssetPackRegistry")
-        return
     _load_grass_tiles()
     queue_redraw()
 
@@ -48,7 +44,7 @@ func _draw_missing_state() -> void:
     draw_string(
         ThemeDB.fallback_font,
         Vector2(40, 80),
-        "PACK 01 registrado. Importe os arquivos WebP para visualizar os tiles.",
+        "Importe os arquivos WebP do PACK 01 para visualizar os tiles.",
         HORIZONTAL_ALIGNMENT_LEFT,
         -1,
         24,
