@@ -1,0 +1,132 @@
+name: BASE-05.3 Weapon Main Runtime Validation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_05/**'
+      - 'assets/modular_fighters/shared_equipment/**'
+      - 'scripts/characters/modular_fighter_equipment_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/ci/base05_3_weapon_main_runtime_smoke.gd'
+      - 'scripts/ci/base05_3_active_fight_visual_review.gd'
+      - '.github/workflows/base05-3-disposable-production-materializer.yml'
+      - '.github/workflows/base05-3-weapon-main-runtime-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-validation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate BASE-05.3 candidate runtime contract statically
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          m=json.loads(Path('assets/modular_fighters/base_05/manifest.json').read_text())
+          a=json.loads(Path('assets/modular_fighters/base_05/production/BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW.json').read_text())
+          r=json.loads(Path('assets/modular_fighters/base_05/production/BASE05_KATANA_LIAN_WU_PACK_01_RUNTIME.json').read_text())
+          c=json.loads(Path('assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidates.json').read_text())
+          writer=Path('.github/workflows/base05-3-disposable-production-materializer.yml').read_text()
+
+          assert m['pack_id']=='BASE05_WEAPONS'
+          assert m['status'] in ('weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime')
+          assert m['promotion']['weapon_main_runtime_activation'] is True
+          assert m['promotion']['weapon_offhand_runtime_activation'] is False
+          assert m['promotion']['creator_exposure'] is False
+          assert m['ownership']['combat_logic_owner']=='WeaponKitCatalog_and_BattleLoadoutCatalog'
+          katana=m['modules']['katana_lian_wu']
+          assert katana['slot']=='weapon_main' and katana['layer']==80
+          assert katana['combat_reference']=='serene_katana'
+          assert katana['source_candidate']=='v1_serene_forward'
+          assert katana['runtime_ready'] is True
+          path=Path(katana['path'])
+          assert path.is_file()
+          digest=hashlib.sha256(path.read_bytes()).hexdigest()
+          assert digest==katana['sha256']=='9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7'
+
+          assert a['selected_candidate']=='v1_serene_forward'
+          assert a['selected_candidate_sha256']==digest
+          assert a['runtime_promotion'] is False and a['creator_exposure'] is False
+          assert c['selected_candidate'] is None
+          assert c['runtime_promotion'] is False and c['creator_exposure'] is False
+          assert r['weapon_main']['sha256']==digest
+          assert r['weapon_main']['combat_reference']=='serene_katana'
+          assert r['state_visibility_contract']['neutral_weapon_main_visible'] is False
+          assert r['state_visibility_contract']['neutral_weapon_back_visible'] is True
+          assert r['state_visibility_contract']['same_node_visibility_toggle_required'] is True
+          assert r['ownership']['visual_owner']=='ModularFighterEquipmentRuntime'
+          assert r['ownership']['combat_behavior_owner']=='WeaponKitCatalog'
+          assert r['promotion']['creator_exposure'] is False
+          assert r['promotion']['weapon_main_runtime_activation'] is True
+          assert 'contents: write' not in writer
+          assert 'push:' not in writer
+          assert 'contents: read' in writer
+          print('BASE05_3_STATIC=PASS bitmap=exact_v1 sha256='+digest)
+          print('BASE05_3_FAIL_CLOSED=PASS creator=false offhand=false writer=false')
+          print('BASE05_3_OWNERSHIP=PASS visual=ModularFighterEquipmentRuntime combat=WeaponKitCatalog')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3 and Xvfb
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project fail closed
+        run: |
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee base05-3-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed|ERR_FILE_CORRUPT' base05-3-import.log; then exit 1; fi
+
+      - name: Validate weapon_main runtime idempotence and layering
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/base05_3_weapon_main_runtime_smoke.gd 2>&1 | tee base05-3-runtime.log
+          grep -q 'BASE05_3_WEAPON_MAIN_RUNTIME=PASS module=katana_lian_wu initial_visible=false toggle=true combat_reference=serene_katana' base05-3-runtime.log
+          grep -q 'BASE05_3_LAYER_CHAIN=PASS weapon_back=3 back_accessory=4 hair_back=5 weapon_main=80' base05-3-runtime.log
+          grep -q 'BASE05_3_IDEMPOTENCE=PASS weapon_back=true back_accessory=true hair=true uniform=true armor=true' base05-3-runtime.log
+          grep -q 'BASE05_3_OWNERSHIP=PASS visual=ModularFighterEquipmentRuntime combat=WeaponKitCatalog_and_BattleLoadoutCatalog' base05-3-runtime.log
+          grep -q 'BASE05_3_CREATOR=BLOCKED expected=true' base05-3-runtime.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_3_RUNTIME=BLOCKED' base05-3-runtime.log; then exit 1; fi
+
+      - name: Validate state-aware active-fight presenter integration
+        run: |
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/base05_3_active_fight_visual_review.gd 2>&1 | tee base05-3-active-fight.log
+          grep -q 'BASE05_3_ACTIVE_FIGHT=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat=serene_katana auto_activation=true handoff=true' base05-3-active-fight.log
+          grep -q 'BASE05_3_STATE_AWARE=PASS idle=false attack_light=true idle_return=false same_node=true' base05-3-active-fight.log
+          grep -q 'BASE05_3_ACTIVE_LAYERING=PASS weapon_back=3 back_accessory=4 hair_back=5 weapon_main=80' base05-3-active-fight.log
+          grep -q 'BASE05_3_ACTIVE_COMPOSITION=PASS hair=hair_01_lian_topknot uniform=uniform_01_lian_martial armor=armor_01_taijifu_guard back=back_01_guardian_panel' base05-3-active-fight.log
+          test -s artifacts/base05_3/BASE05_3_ACTIVE_FIGHT_ATTACK.review-1920x1080.png
+          if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_3_ACTIVE_FIGHT=BLOCKED' base05-3-active-fight.log; then exit 1; fi
+
+      - name: Upload BASE-05.3 evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE05-3-WEAPON-MAIN-RUNTIME-VALIDATION
+          path: |
+            base05-3-import.log
+            base05-3-runtime.log
+            base05-3-active-fight.log
+            artifacts/base05_3/*.png
+            assets/modular_fighters/base_05/manifest.json
+            assets/modular_fighters/base_05/production/BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW.json
+            assets/modular_fighters/base_05/production/BASE05_KATANA_LIAN_WU_PACK_01_RUNTIME.json
+            assets/modular_fighters/base_05/katana_lian_wu/weapon_main.png
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'BASE-05.3 state-aware weapon_main runtime validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
