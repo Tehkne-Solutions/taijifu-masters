@@ -1,0 +1,54 @@
+{
+  "schema": "tehkne/taijifu-base04-back-accessory-candidates/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "C68.3",
+  "status": "candidate_binaries_materialized_visual_selection_pending",
+  "runtime_activation": false,
+  "creator_exposure": false,
+  "canvas": [1024, 1024],
+  "mode": "RGBA",
+  "pivot": [0.5, 0.92],
+  "root_anchor": "bottom_center",
+  "constraints": {
+    "connected_single_object_required": true,
+    "large_mmo_cape_forbidden": true,
+    "disconnected_two_strip_silhouette_forbidden": true,
+    "max_bottom_y": 700,
+    "transparent_border_required": true,
+    "candidate_count": 3
+  },
+  "candidates": {
+    "v1_guardian_yoke": {
+      "label": "Manto Curto da Guarda",
+      "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v1_guardian_yoke/back_accessory.png",
+      "sha256": "a9a326a92ed293d5ffc33708055ab43af0820ccc33356822caa94b9a133d3e64",
+      "alpha_bbox": [364, 276, 664, 560],
+      "visible_pixels": 44368,
+      "connected_components": 1,
+      "art_read": "compact shoulder-blade yoke with short central panel"
+    },
+    "v2_martial_knot": {
+      "label": "Laço Marcial Taijifu",
+      "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v2_martial_knot/back_accessory.png",
+      "sha256": "0c3c2afd0d74daae786f1367fd4fea3345d2f93010583027e8655b5faae0b812",
+      "alpha_bbox": [424, 416, 604, 580],
+      "visible_pixels": 12720,
+      "connected_components": 1,
+      "art_read": "small central martial knot with two short connected tapered tails"
+    },
+    "v3_guardian_panel": {
+      "label": "Painel Guardião",
+      "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v3_guardian_panel/back_accessory.png",
+      "sha256": "f16b132c2f68fcf0a85c62e52a0e3e941d61905342b37bd3546c44eea4a39f93",
+      "alpha_bbox": [412, 328, 616, 652],
+      "visible_pixels": 38576,
+      "connected_components": 1,
+      "art_read": "compact upper-back guard with one attached short flexible panel"
+    }
+  },
+  "selection": {
+    "selected_candidate": null,
+    "review_state": "pending_real_composition_capture"
+  },
+  "next_stage": "C68.3 — real composition capture and visual selection"
+}
