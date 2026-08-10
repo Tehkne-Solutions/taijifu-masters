@@ -4,7 +4,7 @@ const ROOT := "user://tgap-smoke"
 const PACK_ID := "pack_smoke_runtime"
 const VERSION := "1.0.0"
 const RESOURCE_PATH := "runtime/smoke_resource.tres"
-const MAIN_SCENES: Array[String] = ["res://scenes/main.tscn"]
+const MAIN_SCENES: Array[String] = ["res://scenes/vertical_slice/first_playable_menu.tscn"]
 
 var failures: Array[String] = []
 
@@ -15,7 +15,7 @@ func _run() -> void:
 	_prepare_fixture()
 	var loader: Node = root.get_node_or_null("TgapAssetLoader")
 	_check(loader != null, "autoload TgapAssetLoader ausente")
-	_check(root.get_node_or_null("AssetPackRegistry") != null, "autoload AssetPackRegistry ausente")
+	_check(root.get_node_or_null("AssetPackRegistry") == null, "autoload AssetPackRegistry legado ainda ativo")
 	if loader != null:
 		loader.runtime_root = ROOT
 		loader.catalog_filename = "tgap-catalog.json"
