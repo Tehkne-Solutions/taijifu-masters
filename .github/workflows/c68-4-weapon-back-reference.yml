@@ -1,0 +1,75 @@
+name: C68.4 Weapon Back Reference
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/c68-4-weapon-back-reference.yml'
+      - 'assets/characters/lian_wu/character_lock/**'
+      - 'config/fighter-presets/preset_lian_wu.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-reference:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pillow
+        run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Validate canonical sheath reference source
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+
+          root=Path('.')
+          preset=json.loads((root/'config/fighter-presets/preset_lian_wu.json').read_text())
+          assert preset['modules']['weapon_back']=='sheath_lian_wu_blue'
+          source=root/'assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
+          assert source.is_file()
+          im=Image.open(source).convert('RGBA')
+          im.load()
+          print('C68_4_WEAPON_BACK_ID=sheath_lian_wu_blue')
+          print(f'C68_4_REFERENCE_SIZE={im.width}x{im.height}')
+          print(f'C68_4_REFERENCE_ALPHA_BBOX={im.getchannel("A").getbbox()}')
+
+          out=root/'artifacts/c68_4'
+          out.mkdir(parents=True,exist_ok=True)
+          # Preserve the exact canonical source and add large neutral crops for visual recovery.
+          im.save(out/'C68_4_LIAN_WU_NEUTRAL_CANONICAL.png')
+          sheet=Image.new('RGB',(1920,1080),(24,28,35))
+          draw=ImageDraw.Draw(sheet)
+          full=im.copy(); full.thumbnail((760,960),Image.Resampling.NEAREST)
+          sheet.paste(full.convert('RGB'),(40,70))
+          # Three overlapping high-resolution zones cover torso/hip/back equipment without guessing the final module bounds.
+          zones=[('UPPER',(180,80,844,600)),('TORSO_HIP',(180,260,844,860)),('LOWER_HIP',(180,430,844,1010))]
+          x=830
+          y=40
+          for label,box in zones:
+            crop=im.crop(box)
+            crop.thumbnail((1000,300),Image.Resampling.NEAREST)
+            sheet.paste(crop.convert('RGB'),(x,y))
+            draw.text((x,y-22),label,fill=(240,240,240))
+            y+=340
+          draw.text((40,20),'C68.4 • canonical Lian Wu neutral • weapon_back=sheath_lian_wu_blue • Tehkné Solutions',fill=(240,240,240))
+          sheet.save(out/'C68_4_WEAPON_BACK_REFERENCE.review-1920x1080.png')
+          print('C68_4_REFERENCE_CAPTURE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Upload canonical weapon-back reference
+        uses: actions/upload-artifact@v4
+        with:
+          name: c68-4-weapon-back-reference
+          path: artifacts/c68_4/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C68.4 canonical weapon_back reference extraction — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
