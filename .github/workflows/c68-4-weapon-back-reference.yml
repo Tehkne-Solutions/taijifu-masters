@@ -21,45 +21,49 @@ jobs:
       - name: Install Pillow
         run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
 
-      - name: Validate canonical sheath reference source
+      - name: Validate both exact Character Lock references
         run: |
           python3 - <<'PY'
-          import json
+          import hashlib, json
           from pathlib import Path
           from PIL import Image, ImageDraw
 
           root=Path('.')
           preset=json.loads((root/'config/fighter-presets/preset_lian_wu.json').read_text())
+          lock=json.loads((root/'assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json').read_text())
           assert preset['modules']['weapon_back']=='sheath_lian_wu_blue'
-          source=root/'assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
-          assert source.is_file()
-          im=Image.open(source).convert('RGBA')
-          im.load()
-          print('C68_4_WEAPON_BACK_ID=sheath_lian_wu_blue')
-          print(f'C68_4_REFERENCE_SIZE={im.width}x{im.height}')
-          print(f'C68_4_REFERENCE_ALPHA_BBOX={im.getchannel("A").getbbox()}')
+          expected={name:spec['sha256'] for name,spec in lock['assets'].items()}
+          sources={
+            'neutral':root/'assets/characters/lian_wu/character_lock/lian_wu_neutral.png',
+            'combat':root/'assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png',
+          }
+          images={}
+          for key,path in sources.items():
+            assert path.is_file()
+            raw=path.read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==expected[path.name]
+            im=Image.open(path).convert('RGBA'); im.load(); images[key]=im
+            assert im.size==(1024,1024)
+            print(f'C68_4_{key.upper()}_SHA=PASS')
+            print(f'C68_4_{key.upper()}_ALPHA_BBOX={im.getchannel("A").getbbox()}')
 
-          out=root/'artifacts/c68_4'
-          out.mkdir(parents=True,exist_ok=True)
-          # Preserve the exact canonical source and add large neutral crops for visual recovery.
-          im.save(out/'C68_4_LIAN_WU_NEUTRAL_CANONICAL.png')
-          sheet=Image.new('RGB',(1920,1080),(24,28,35))
-          draw=ImageDraw.Draw(sheet)
-          full=im.copy(); full.thumbnail((760,960),Image.Resampling.NEAREST)
-          sheet.paste(full.convert('RGB'),(40,70))
-          # Three overlapping high-resolution zones cover torso/hip/back equipment without guessing the final module bounds.
-          zones=[('UPPER',(180,80,844,600)),('TORSO_HIP',(180,260,844,860)),('LOWER_HIP',(180,430,844,1010))]
-          x=830
-          y=40
-          for label,box in zones:
-            crop=im.crop(box)
-            crop.thumbnail((1000,300),Image.Resampling.NEAREST)
-            sheet.paste(crop.convert('RGB'),(x,y))
-            draw.text((x,y-22),label,fill=(240,240,240))
-            y+=340
-          draw.text((40,20),'C68.4 • canonical Lian Wu neutral • weapon_back=sheath_lian_wu_blue • Tehkné Solutions',fill=(240,240,240))
+          out=root/'artifacts/c68_4'; out.mkdir(parents=True,exist_ok=True)
+          images['neutral'].save(out/'C68_4_LIAN_WU_NEUTRAL_CANONICAL.png')
+          images['combat'].save(out/'C68_4_LIAN_WU_COMBAT_CANONICAL.png')
+
+          sheet=Image.new('RGB',(1920,1080),(24,28,35)); draw=ImageDraw.Draw(sheet)
+          for col,(key,im) in enumerate(images.items()):
+            x=30+col*950
+            full=im.copy(); full.thumbnail((500,920),Image.Resampling.NEAREST)
+            sheet.paste(full.convert('RGB'),(x,80))
+            draw.text((x,30),key.upper(),fill=(240,240,240))
+            # hip/weapon zone is shown at native-nearest scale beside each full reference.
+            crop=im.crop((180,260,844,900)); crop.thumbnail((420,760),Image.Resampling.NEAREST)
+            sheet.paste(crop.convert('RGB'),(x+510,150))
+            draw.text((x+510,110),'TORSO / HIP / WEAPON ZONE',fill=(220,220,220))
+          draw.text((30,1040),'C68.4 • exact C63 neutral + combat references • weapon_back=sheath_lian_wu_blue • Tehkné Solutions',fill=(240,240,240))
           sheet.save(out/'C68_4_WEAPON_BACK_REFERENCE.review-1920x1080.png')
-          print('C68_4_REFERENCE_CAPTURE=PASS')
+          print('C68_4_REFERENCE_CAPTURE=PASS neutral=true combat=true')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -72,4 +76,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C68.4 canonical weapon_back reference extraction — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.4 exact neutral + combat weapon_back reference extraction — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
