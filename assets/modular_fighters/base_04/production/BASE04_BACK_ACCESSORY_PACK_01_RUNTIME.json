@@ -1,0 +1,68 @@
+{
+  "schema": "tehkne/taijifu-base04-back-accessory-runtime/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_BACK_ACCESSORY_PACK_01_RUNTIME",
+  "stage": "C68.4",
+  "status": "production_approved_active_fight",
+  "back_accessory": {
+    "id": "back_01_guardian_panel",
+    "label": "Painel Guardião",
+    "module_id": "back_01_guardian_panel_back_accessory",
+    "source_candidate": "v3_guardian_panel",
+    "sha256": "e26ba3bd7b15e94fc430fd74905164c58ff13dce682e224a3559168c107ba960",
+    "layer": 4,
+    "runtime_ready": true,
+    "production_ready": true,
+    "creator_exposure": false
+  },
+  "weapon_back_dependency": {
+    "id": "sheath_lian_wu_blue",
+    "registry": "SHARED_MODULAR_EQUIPMENT",
+    "sha256": "87972fa2393df583da283e1aa2bbd47f76a61a2727359b498ca8367cbaf7951e",
+    "layer": 3,
+    "runtime_ready": true,
+    "production_ready": true,
+    "creator_exposure": false,
+    "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog"
+  },
+  "layer_contract": {
+    "weapon_back": 3,
+    "back_accessory": 4,
+    "hair_back": 5,
+    "relation": "weapon_back < back_accessory < hair_back"
+  },
+  "readability": {
+    "sheath_retained_pixels": 13795,
+    "sheath_retained_ratio": 0.571,
+    "back_retained_pixels": 11151,
+    "back_retained_ratio": 0.129,
+    "combined_distinct_pixels": 24930,
+    "sheath_contribution_with_back": 13779,
+    "back_contribution_with_sheath": 11135,
+    "authored_facing": "pass",
+    "flipped_facing": "pass",
+    "gameplay_scale": "pass"
+  },
+  "active_fight": {
+    "workflow_run": 31393333269,
+    "artifact_id": 9064573876,
+    "artifact_digest": "sha256:69c83aa1252ca7338e5887abf8a618bd317fc77dadddd787d7260b0a43decff5",
+    "capture": "artifacts/c68_4/C68_4_ACTIVE_FIGHT.review-1920x1080.png",
+    "composition_capture": "artifacts/c68_4/C68_4_WEAPON_BACK_BACK_ACCESSORY.review-1920x1080.png",
+    "auto_activation": true,
+    "battle_handoff": true,
+    "hair": "hair_01_lian_topknot",
+    "uniform": "uniform_01_lian_martial",
+    "armor": "armor_01_taijifu_guard",
+    "weapon_back": "sheath_lian_wu_blue",
+    "back_accessory": "back_01_guardian_panel",
+    "result": "pass"
+  },
+  "promotion": {
+    "battle_runtime": true,
+    "presenter_integration": true,
+    "creator_exposure": false,
+    "blocker": "back_accessory_creator_control_pending"
+  },
+  "next_stage": "C68.5 — Back Accessory Creator Control"
+}

@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "1.1.0",
-  "status": "production_approved_armor_pack_01_creator_control",
+  "version": "1.2.0",
+  "status": "production_approved_armor_pack_01_back_accessory_pack_01_active_fight",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -62,6 +62,13 @@
       "requires_art_assets": false,
       "runtime_ready": true,
       "production_ready": true
+    },
+    "back_01_guardian_panel": {
+      "label": "Painel Guardião",
+      "back_accessory": "back_01_guardian_panel_back_accessory",
+      "requires_art_assets": true,
+      "runtime_ready": true,
+      "production_ready": true
     }
   },
   "modules": {
@@ -102,6 +109,25 @@
         "resampling": false,
         "materializer": "C68.1 disposable GitHub Actions materializer"
       }
+    },
+    "back_01_guardian_panel_back_accessory": {
+      "slot": "back_accessory",
+      "path": "assets/modular_fighters/base_04/back_01_guardian_panel/back_accessory.png",
+      "sha256": "e26ba3bd7b15e94fc430fd74905164c58ff13dce682e224a3559168c107ba960",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [304, 292, 724, 680],
+      "visible_pixels": 86464,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "exact_c68_3_selected_candidate_promotion",
+        "candidate": "v3_guardian_panel",
+        "redraw": false,
+        "resampling": false,
+        "selection_evidence_workflow": 31390044029,
+        "compatibility_evidence_workflow": 31392050422
+      }
     }
   },
   "layer_contract": {
@@ -131,12 +157,22 @@
       "candidate_v2_selected": true,
       "candidate_v1_rejected": "oversized_shoulders_and_weak_back_accessory",
       "candidate_v3_rejected": "single_effective_shoulder_module"
+    },
+    "back_accessory_review": {
+      "selected_candidate": "v3_guardian_panel",
+      "production_id": "back_01_guardian_panel",
+      "reference_weapon_back": "sheath_lian_wu_blue",
+      "layer_order": "weapon_back_3<back_accessory_4<hair_back_5",
+      "authored_facing": "pass",
+      "flipped_facing": "pass",
+      "gameplay_scale": "pass",
+      "active_fight": "pass"
     }
   },
   "promotion": {
     "art_assets_present": true,
     "armor_runtime_activation": true,
-    "back_accessory_runtime_activation": false,
+    "back_accessory_runtime_activation": true,
     "creator_exposure": true,
     "back_accessory_creator_exposure": false,
     "battle_activation": true,
@@ -172,7 +208,24 @@
       "raw_armor_controls": false,
       "back_accessory_control": false
     },
-    "blocker": "back_accessory_art"
+    "back_accessory_evidence": {
+      "workflow_run": 31393333269,
+      "artifact_id": 9064573876,
+      "artifact_digest": "sha256:69c83aa1252ca7338e5887abf8a618bd317fc77dadddd787d7260b0a43decff5",
+      "composition_capture": "artifacts/c68_4/C68_4_WEAPON_BACK_BACK_ACCESSORY.review-1920x1080.png",
+      "active_fight_capture": "artifacts/c68_4/C68_4_ACTIVE_FIGHT.review-1920x1080.png",
+      "selected_candidate": "v3_guardian_panel",
+      "production_id": "back_01_guardian_panel",
+      "weapon_back": "sheath_lian_wu_blue",
+      "active_fight": true,
+      "auto_activation": true,
+      "battle_handoff": true,
+      "layering": "weapon_back_3<back_accessory_4<hair_back_5",
+      "sheath_retained_pixels": 13795,
+      "back_retained_pixels": 11151,
+      "combined_distinct_pixels": 24930
+    },
+    "blocker": "back_accessory_creator_control_pending"
   },
-  "next_stage": "C68_3_BASE04_BACK_ACCESSORY_PACK01_ART_REVIEW"
+  "next_stage": "C68.5 — Back Accessory Creator Control; weapon_back remains internal visual equipment"
 }

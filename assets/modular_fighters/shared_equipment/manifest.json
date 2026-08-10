@@ -1,0 +1,80 @@
+{
+  "schema": "tehkne/taijifu-shared-modular-equipment/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "SHARED_MODULAR_EQUIPMENT",
+  "version": "1.0.0",
+  "status": "production_approved_weapon_back_pack_01_active_fight",
+  "ownership": {
+    "purpose": "shared visual equipment modules that occupy canonical modular-fighter weapon slots without owning combat loadout logic",
+    "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
+    "visual_profile_owner": "ModularFighterProfile.modules",
+    "assembly_owner": "ModularFighterEquipmentRuntime",
+    "creator_exposure": false
+  },
+  "slots": ["weapon_main", "weapon_offhand", "weapon_back"],
+  "runtime_slots": ["weapon_back"],
+  "future_slots": ["weapon_main", "weapon_offhand"],
+  "modules": {
+    "sheath_lian_wu_blue": {
+      "slot": "weapon_back",
+      "path": "assets/modular_fighters/shared_equipment/weapon_back/sheath_lian_wu_blue/sheath_lian_wu_blue.png",
+      "sha256": "87972fa2393df583da283e1aa2bbd47f76a61a2727359b498ca8367cbaf7951e",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [200, 436, 480, 780],
+      "visible_pixels": 24160,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center",
+      "layer": 3,
+      "runtime_ready": true,
+      "production_ready": true,
+      "source": {
+        "method": "c68_4_controlled_standalone_redraw",
+        "historical_character_lock_modified": false,
+        "historical_exact_sheath_bitmap_available": false,
+        "identity_reference": "Lian Wu blue/gold martial equipment",
+        "placement": "left_hip_diagonal_weapon_back"
+      }
+    }
+  },
+  "required_reference_modules": {
+    "sheath_lian_wu_blue": {
+      "slot": "weapon_back",
+      "status": "production_ready_active_fight_pass",
+      "required_by": ["preset_lian_wu", "C68.4_back_accessory_compatibility"],
+      "canonical_layer": 3,
+      "pivot": [0.5, 0.92],
+      "canvas": [1024, 1024],
+      "mode": "RGBA"
+    }
+  },
+  "compatibility_evidence": {
+    "workflow_run": 31393333269,
+    "artifact_id": 9064573876,
+    "artifact_digest": "sha256:69c83aa1252ca7338e5887abf8a618bd317fc77dadddd787d7260b0a43decff5",
+    "composition_capture": "artifacts/c68_4/C68_4_WEAPON_BACK_BACK_ACCESSORY.review-1920x1080.png",
+    "active_fight_capture": "artifacts/c68_4/C68_4_ACTIVE_FIGHT.review-1920x1080.png",
+    "sheath_retained_pixels": 13795,
+    "sheath_retained_ratio": 0.571,
+    "selected_back_retained_pixels": 11151,
+    "selected_back_retained_ratio": 0.129,
+    "combined_distinct_pixels": 24930,
+    "sheath_contribution_with_back": 13779,
+    "back_contribution_with_sheath": 11135,
+    "authored_facing": true,
+    "flipped_facing": true,
+    "gameplay_scale": true,
+    "active_fight": true,
+    "auto_activation": true,
+    "battle_handoff": true,
+    "layer_order": "weapon_back_3<back_accessory_4<hair_back_5"
+  },
+  "promotion": {
+    "runtime_activation": true,
+    "presenter_integration": true,
+    "creator_exposure": false,
+    "active_fight_validation": "pass",
+    "blocker": null
+  },
+  "next_stage": "C68.5 — Back Accessory Creator Control; weapon_back remains internal visual equipment"
+}

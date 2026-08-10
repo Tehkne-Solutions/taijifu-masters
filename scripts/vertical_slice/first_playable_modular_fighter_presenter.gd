@@ -29,6 +29,7 @@ var _hair_style_id: StringName = &"hair_none"
 var _uniform_set_id: StringName = &"uniform_none"
 var _armor_set_id: StringName = &"armor_none"
 var _back_accessory_id: StringName = &"back_none"
+var _weapon_back_id: StringName = &""
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -69,6 +70,9 @@ func active_armor_set_id() -> StringName:
 func active_back_accessory_id() -> StringName:
 	return _back_accessory_id
 
+func active_weapon_back_id() -> StringName:
+	return _weapon_back_id
+
 func visual_state() -> StringName:
 	return _visual_state
 
@@ -84,6 +88,7 @@ func runtime_signature() -> Dictionary:
 		"uniform_set_id": String(_uniform_set_id),
 		"armor_set_id": String(_armor_set_id),
 		"back_accessory_id": String(_back_accessory_id),
+		"weapon_back_id": String(_weapon_back_id),
 		"states": ANIMATION_STATES.duplicate(),
 		"state_count": ANIMATION_STATES.size(),
 		"world_translation_owner": "fighter_physics",
@@ -161,6 +166,14 @@ func _try_activate() -> void:
 		return
 	_hair_style_id = ModularFighterHairRuntime.profile_style_id(profile as ModularFighterProfile)
 
+	# C68.4 composes shared visual equipment independently from combat loadout logic.
+	failures = ModularFighterEquipmentRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
+	if not failures.is_empty():
+		candidate.queue_free()
+		print("C68_4_MODULAR_PRESENTER=BLOCKED reason=equipment_assembly failures=%s" % ",".join(failures))
+		return
+	_weapon_back_id = (profile as ModularFighterProfile).module_id(&"weapon_back")
+
 	# C67 composes the atomic BASE-03 uniform set after Hair.
 	failures = ModularFighterUniformRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
 	if not failures.is_empty():
@@ -217,6 +230,10 @@ func _try_activate() -> void:
 			String(_uniform_set_id),
 			str(uniform_signature.get("nodes", {})),
 		])
+	if not String(_weapon_back_id).is_empty():
+		var equipment_signature := ModularFighterEquipmentRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
+		var weapon_back = equipment_signature.get("nodes", {}).get("weapon_back", {})
+		print("C68_4_EQUIPMENT_RUNTIME=PASS weapon_back=%s z=%d" % [String(_weapon_back_id), int(weapon_back.get("z", -1))])
 	if _armor_set_id != &"armor_none" or _back_accessory_id != &"back_none":
 		var armor_signature := ModularFighterArmorRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
 		print("C68_1_ARMOR_RUNTIME=PASS armor=%s back=%s head_z=%d shoulders_z=%d back_z=%d" % [
@@ -246,6 +263,7 @@ func _promote_battle_handoff() -> void:
 	handoff["uniform_set_id"] = String(_uniform_set_id)
 	handoff["armor_set_id"] = String(_armor_set_id)
 	handoff["back_accessory_id"] = String(_back_accessory_id)
+	handoff["weapon_back_id"] = String(_weapon_back_id)
 	handoff["static_sprite_regression_allowed"] = false
 	handoff["lian_fallback_preserved"] = true
 	handoff["preset_specific_sprite_sheet"] = false
