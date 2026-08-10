@@ -1,8 +1,8 @@
 class_name FirstPlayableLot01Presenter
 extends Node2D
 
-const LOT_ROOT := "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01"
-const SPRITE_FRAMES_PATH := LOT_ROOT + "/lian_wu_first_playable_frames.tres"
+const TGAP_PACK_ALIAS := "lian_wu"
+const SPRITE_FRAMES_LOGICAL := "first_playable_spriteframes"
 const MODULAR_FIGHTER_PRESENTER := preload("res://scripts/vertical_slice/first_playable_modular_fighter_presenter.gd")
 const CANONICAL_CANVAS_SIZE := Vector2(1024.0, 1024.0)
 const CANONICAL_BASELINE_Y := 969.0
@@ -47,13 +47,14 @@ func using_real_assets() -> bool:
 	return _using_real_assets
 
 func expected_sprite_frames_path() -> String:
-	return SPRITE_FRAMES_PATH
+	return TgapAssetLoader.resolve(TGAP_PACK_ALIAS, SPRITE_FRAMES_LOGICAL)
 
 func _try_activate_real_assets() -> void:
-	if not ResourceLoader.exists(SPRITE_FRAMES_PATH):
+	var sprite_frames_path := expected_sprite_frames_path()
+	if sprite_frames_path.is_empty() or not ResourceLoader.exists(sprite_frames_path):
 		print("V2_LIAN_CANONICAL_PRESENTER=BLOCKED missing_spriteframes")
 		return
-	var frames := load(SPRITE_FRAMES_PATH) as SpriteFrames
+	var frames := load(sprite_frames_path) as SpriteFrames
 	if frames == null or not _has_required_animations(frames):
 		push_warning("Lot 01 encontrado, mas contrato de animações está incompleto")
 		print("V2_LIAN_CANONICAL_PRESENTER=BLOCKED incomplete_animation_contract")
