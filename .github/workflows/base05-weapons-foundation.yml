@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate immutable BASE-05 foundation across later audits
+      - name: Validate immutable BASE-05 foundation across later runtime stages
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -39,26 +39,32 @@ jobs:
           weapon_source=Path('scripts/combat/weapon_kit_catalog.gd').read_text()
 
           assert m['pack_id']=='BASE05_WEAPONS'
-          assert m['status'] in ('specified_foundation_fail_closed','reference_audit_complete_redraw_required')
+          assert m['status'] in ('specified_foundation_fail_closed','reference_audit_complete_redraw_required','weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime')
           assert m['slots']==['weapon_main','weapon_offhand']
           assert m['delegated_slots']['weapon_back']=='SHARED_MODULAR_EQUIPMENT'
           assert m['ownership']['combat_logic_owner']=='WeaponKitCatalog_and_BattleLoadoutCatalog'
           assert m['ownership']['visual_assembly_owner']=='ModularFighterEquipmentRuntime'
           assert m['ownership']['duplicate_combat_catalog_forbidden'] is True
-          assert m['promotion']['weapon_main_runtime_activation'] is False
           assert m['promotion']['weapon_offhand_runtime_activation'] is False
-          assert m['promotion']['presenter_integration'] is False
           assert m['promotion']['creator_exposure'] is False
-          assert m['promotion']['art_assets_present'] is False
-          assert m['modules']=={}
+          runtime_main=bool(m['promotion']['weapon_main_runtime_activation'])
+          if runtime_main:
+              assert m['promotion']['art_assets_present'] is True
+              assert 'katana_lian_wu' in m['modules']
+              katana=m['modules']['katana_lian_wu']
+              assert katana['slot']=='weapon_main' and katana['combat_reference']=='serene_katana'
+              assert katana['runtime_ready'] is True
+          else:
+              assert m['modules']=={}
+
           ref=m['required_references']['katana_lian_wu']
           assert ref['slot']=='weapon_main'
-          assert ref['standalone_visual_status'] in ('not_materialized','redraw_required')
+          assert ref['standalone_visual_status'] in ('not_materialized','redraw_required','materialized_exact_selected_art')
           assert ref['combat_catalog_reference']=='serene_katana'
           assert ref['visual_to_combat_binding_status'] in ('pending_battle_loadout_verification','verified_via_current_first_playable_fallback')
           assert ref['must_not_extract_without_visual_review'] is True
 
-          # Immutable foundation record remains unchanged even when the live manifest advances.
+          # Immutable foundation record remains unchanged even when live manifest advances.
           assert c['status']=='specified_fail_closed'
           assert c['owned_visual_slots']==['weapon_main','weapon_offhand']
           assert c['delegated_visual_slots']['weapon_back']=='SHARED_MODULAR_EQUIPMENT'
@@ -74,10 +80,9 @@ jobs:
           assert preset['modules']['weapon_main']=='katana_lian_wu'
           assert preset['modules']['weapon_back']=='sheath_lian_wu_blue'
           assert shared['runtime_slots']==['weapon_back']
-          assert shared['future_slots']==['weapon_main','weapon_offhand']
           assert shared['promotion']['creator_exposure'] is False
           assert '&"serene_katana"' in weapon_source
-          print('BASE05_STATIC_CONTRACT=PASS fail_closed=true modules=0 creator=false')
+          print(f"BASE05_STATIC_CONTRACT=PASS lifecycle=true runtime_main={str(runtime_main).lower()} creator=false")
           print('BASE05_OWNERSHIP=PASS combat=existing_catalog visual=shared_runtime')
           print('BASE05_FOUNDATION_LIFECYCLE=PASS status='+m['status'])
           print('SIGNATURE=Tehkné Solutions')
@@ -105,7 +110,8 @@ jobs:
           ./godot --headless --path . --script res://scripts/ci/base05_weapons_foundation_smoke.gd 2>&1 | tee base05-foundation.log
           grep -q 'BASE05_FOUNDATION=PASS pack=BASE05_WEAPONS' base05-foundation.log
           grep -q 'BASE05_OWNERSHIP=PASS combat=WeaponKitCatalog_and_BattleLoadoutCatalog visual=ModularFighterEquipmentRuntime' base05-foundation.log
-          grep -q 'BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=false runtime_offhand=false' base05-foundation.log
+          grep -q 'BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=' base05-foundation.log
+          grep -q 'runtime_offhand=false' base05-foundation.log
           grep -q 'BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=' base05-foundation.log
           grep -q 'BASE05_CREATOR=BLOCKED expected=true' base05-foundation.log
           grep -q 'BASE05_FOUNDATION_LIFECYCLE=PASS status=' base05-foundation.log
@@ -124,4 +130,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'BASE-05 Weapons foundation fail-closed, lifecycle-aware — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'BASE-05 Weapons foundation immutable ownership, lifecycle-aware runtime evolution — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
