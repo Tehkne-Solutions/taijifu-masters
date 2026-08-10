@@ -54,23 +54,40 @@ func _init() -> void:
 	if String(weapon_ref.get("visual_to_combat_binding_status", "")) != "verified_via_current_first_playable_fallback":
 		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED binding_state")
 		return
-	if String(weapon_ref.get("standalone_visual_status", "")) != "redraw_required":
-		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED art_state")
+	var live_art_state := String(weapon_ref.get("standalone_visual_status", ""))
+	if not ["redraw_required", "materialized_exact_selected_art"].has(live_art_state):
+		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED art_lifecycle:%s" % live_art_state)
 		return
 
-	var manifest_modules_value: Variant = manifest.get("modules", {})
-	if not (manifest_modules_value is Dictionary) or not (manifest_modules_value as Dictionary).is_empty():
-		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED premature_module")
-		return
 	var promotion_value: Variant = manifest.get("promotion", {})
 	if not (promotion_value is Dictionary):
 		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED promotion_contract")
 		return
 	var promotion: Dictionary = promotion_value as Dictionary
-	if bool(promotion.get("weapon_main_runtime_activation", true)) or bool(promotion.get("creator_exposure", true)):
-		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED premature_promotion")
+	if bool(promotion.get("creator_exposure", true)):
+		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED creator_premature")
 		return
+	var runtime_main := bool(promotion.get("weapon_main_runtime_activation", false))
+	var manifest_modules_value: Variant = manifest.get("modules", {})
+	if not (manifest_modules_value is Dictionary):
+		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED modules_contract")
+		return
+	var live_modules := manifest_modules_value as Dictionary
+	if runtime_main:
+		if not live_modules.has("katana_lian_wu"):
+			_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED runtime_module_missing")
+			return
+		var live_katana = live_modules["katana_lian_wu"]
+		if not (live_katana is Dictionary) or String(live_katana.get("combat_reference", "")) != "serene_katana":
+			_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED runtime_module_binding")
+			return
+	else:
+		if not live_modules.is_empty():
+			_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED pre_runtime_modules")
+			return
 
+	# The immutable BASE-05.1 audit remains historical evidence: at that exact
+	# stage no complete blade was recoverable and redraw was mandatory.
 	var source_review_value: Variant = audit.get("character_lock_source_review", {})
 	if not (source_review_value is Dictionary):
 		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED source_review_contract")
@@ -82,11 +99,18 @@ func _init() -> void:
 	if not bool(source_review.get("whole_character_crop_as_weapon_module_forbidden", false)):
 		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED unsafe_extraction_allowed")
 		return
+	var audit_promotion = audit.get("promotion", {})
+	if not (audit_promotion is Dictionary) or not bool(audit_promotion.get("binding_verified", false)):
+		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED historical_binding_evidence")
+		return
+	if bool(audit_promotion.get("standalone_art_ready", true)):
+		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED historical_art_state_mutated")
+		return
 
 	print("BASE05_1_COMBAT_BINDING=PASS visual=katana_lian_wu kit=serene_katana owner=BuildProfile_fallback")
 	print("BASE05_1_MODULAR_LOADOUT_METADATA=PASS id=combat_lian_wu_first_playable runtime_owner=false")
 	print("BASE05_1_SOURCE_REVIEW=PASS neutral=partial_hilt combat=partial_hilt standalone=false redraw_required=true")
-	print("BASE05_1_RUNTIME=BLOCKED expected=true weapon_main=false creator=false")
+	print("BASE05_1_RUNTIME_LIFECYCLE=PASS weapon_main=%s creator=false live_art=%s" % [str(runtime_main).to_lower(), live_art_state])
 	print("BASE05_1_REFERENCE_AUDIT=PASS")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
