@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "pack_id": "SHARED_MODULAR_EQUIPMENT",
   "version": "1.0.0-c68.4",
-  "status": "c68_4_sheath_candidate_materialized_compatibility_pass",
+  "status": "production_ready_weapon_back_pack_01_presenter_pending",
   "ownership": {
     "purpose": "shared visual equipment modules that occupy canonical modular-fighter weapon slots without owning combat loadout logic",
     "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
@@ -11,23 +11,43 @@
     "assembly_owner": "ModularFighterEquipmentRuntime",
     "creator_exposure": false
   },
-  "slots": ["weapon_main", "weapon_offhand", "weapon_back"],
-  "runtime_slots": ["weapon_back"],
-  "future_slots": ["weapon_main", "weapon_offhand"],
+  "slots": [
+    "weapon_main",
+    "weapon_offhand",
+    "weapon_back"
+  ],
+  "runtime_slots": [
+    "weapon_back"
+  ],
+  "future_slots": [
+    "weapon_main",
+    "weapon_offhand"
+  ],
   "modules": {
     "sheath_lian_wu_blue": {
       "slot": "weapon_back",
       "path": "assets/modular_fighters/shared_equipment/weapon_back/sheath_lian_wu_blue/sheath_lian_wu_blue.png",
       "sha256": "87972fa2393df583da283e1aa2bbd47f76a61a2727359b498ca8367cbaf7951e",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [200, 436, 480, 780],
+      "alpha_bbox": [
+        200,
+        436,
+        480,
+        780
+      ],
       "visible_pixels": 24160,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center",
       "layer": 3,
-      "runtime_ready": false,
-      "production_ready": false,
+      "runtime_ready": true,
+      "production_ready": true,
       "source": {
         "method": "c68_4_controlled_standalone_redraw",
         "historical_character_lock_modified": false,
@@ -40,11 +60,20 @@
   "required_reference_modules": {
     "sheath_lian_wu_blue": {
       "slot": "weapon_back",
-      "status": "candidate_materialized_compatibility_pass",
-      "required_by": ["preset_lian_wu", "C68.4_back_accessory_compatibility"],
+      "status": "production_ready",
+      "required_by": [
+        "preset_lian_wu",
+        "C68.4_back_accessory_compatibility"
+      ],
       "canonical_layer": 3,
-      "pivot": [0.5, 0.92],
-      "canvas": [1024, 1024],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA"
     }
   },
@@ -54,9 +83,9 @@
     "artifact_digest": "sha256:ed0f4c631eb5b74add894da4f3704481b043d0175ddf7569755b1df43255e8a2",
     "capture": "artifacts/c68_4/C68_4_WEAPON_BACK_BACK_ACCESSORY.review-1920x1080.png",
     "sheath_retained_pixels": 13795,
-    "sheath_retained_ratio": 0.5710,
+    "sheath_retained_ratio": 0.571,
     "selected_back_retained_pixels": 11151,
-    "selected_back_retained_ratio": 0.1290,
+    "selected_back_retained_ratio": 0.129,
     "combined_distinct_pixels": 24930,
     "sheath_contribution_with_back": 13779,
     "back_contribution_with_sheath": 11135,
@@ -66,10 +95,10 @@
     "layer_order": "weapon_back_3<back_accessory_4<hair_back_5"
   },
   "promotion": {
-    "runtime_activation": false,
+    "runtime_activation": true,
     "presenter_integration": false,
     "creator_exposure": false,
-    "blocker": "production_manifest_promotion_and_active_fight_validation_required"
+    "blocker": "presenter_integration_and_active_fight_validation_required"
   },
-  "next_stage": "C68.4 — promote validated sheath and selected Back Accessory to runtime-ready state, then validate active fight"
+  "next_stage": "C68.4 — presenter integration and active-fight validation with Painel Guardião"
 }

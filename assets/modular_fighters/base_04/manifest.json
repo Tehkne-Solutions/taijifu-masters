@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "1.1.0",
-  "status": "production_approved_armor_pack_01_creator_control",
+  "version": "1.2.0",
+  "status": "production_approved_armor_pack_01_back_accessory_pack_01_runtime",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -12,19 +12,32 @@
     "shared_animation_runtime": "shared_modular_animation_runtime_v1"
   },
   "authoring": {
-    "canvas": [1024, 1024],
+    "canvas": [
+      1024,
+      1024
+    ],
     "mode": "RGBA",
-    "pivot": [0.5, 0.92],
+    "pivot": [
+      0.5,
+      0.92
+    ],
     "root_anchor": "bottom_center",
     "native_transparency_required": true,
     "background_allowed": false,
     "text_allowed": false,
     "preset_specific_sprite_sheet": false
   },
-  "slots": ["head_accessory", "shoulders", "back_accessory"],
+  "slots": [
+    "head_accessory",
+    "shoulders",
+    "back_accessory"
+  ],
   "public_controls": {
     "armor_set": {
-      "atomic_slots": ["head_accessory", "shoulders"],
+      "atomic_slots": [
+        "head_accessory",
+        "shoulders"
+      ],
       "direct_slot_controls": false,
       "default_id": "armor_none",
       "selection_atomic": true,
@@ -62,6 +75,13 @@
       "requires_art_assets": false,
       "runtime_ready": true,
       "production_ready": true
+    },
+    "back_01_guardian_panel": {
+      "label": "Painel Guardião",
+      "back_accessory": "back_01_guardian_panel_back_accessory",
+      "requires_art_assets": true,
+      "runtime_ready": true,
+      "production_ready": true
     }
   },
   "modules": {
@@ -69,11 +89,22 @@
       "slot": "head_accessory",
       "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/head_accessory.png",
       "sha256": "ce47889483c41003cdb696640d08787fdeeb9ab13e0012d9c73f650bbbe1f58b",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [496, 132, 620, 192],
+      "alpha_bbox": [
+        496,
+        132,
+        620,
+        192
+      ],
       "visible_pixels": 4768,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center",
       "source": {
         "method": "deterministic_reviewed_v2_pixel_contract_materialized",
@@ -88,11 +119,22 @@
       "slot": "shoulders",
       "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/shoulders.png",
       "sha256": "fcc80bb6fe2b10d0a6664a0306c6dcdca71545dc26c50fd3fdac4da314d3f82a",
-      "canvas": [1024, 1024],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA",
-      "alpha_bbox": [340, 328, 716, 420],
+      "alpha_bbox": [
+        340,
+        328,
+        716,
+        420
+      ],
       "visible_pixels": 13712,
-      "pivot": [0.5, 0.92],
+      "pivot": [
+        0.5,
+        0.92
+      ],
       "root_anchor": "bottom_center",
       "source": {
         "method": "deterministic_reviewed_v2_pixel_contract_materialized",
@@ -101,6 +143,36 @@
         "redraw": true,
         "resampling": false,
         "materializer": "C68.1 disposable GitHub Actions materializer"
+      }
+    },
+    "back_01_guardian_panel_back_accessory": {
+      "slot": "back_accessory",
+      "path": "assets/modular_fighters/base_04/back_01_guardian_panel/back_accessory.png",
+      "sha256": "e26ba3bd7b15e94fc430fd74905164c58ff13dce682e224a3559168c107ba960",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        304,
+        292,
+        724,
+        680
+      ],
+      "visible_pixels": 86464,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "source": {
+        "method": "exact_c68_3_selected_candidate_promotion",
+        "candidate": "v3_guardian_panel",
+        "redraw": false,
+        "resampling": false,
+        "selection_evidence_workflow": 31390044029,
+        "compatibility_evidence_workflow": 31392050422
       }
     }
   },
@@ -136,7 +208,7 @@
   "promotion": {
     "art_assets_present": true,
     "armor_runtime_activation": true,
-    "back_accessory_runtime_activation": false,
+    "back_accessory_runtime_activation": true,
     "creator_exposure": true,
     "back_accessory_creator_exposure": false,
     "battle_activation": true,
@@ -166,13 +238,22 @@
       "preset_roundtrip": "pass",
       "battle_handoff": "pass",
       "actual_control_overlap": false,
-      "armor_control_position": [590, 38],
-      "uniform_control_position": [820, 38],
-      "hair_control_position": [1040, 38],
+      "armor_control_position": [
+        590,
+        38
+      ],
+      "uniform_control_position": [
+        820,
+        38
+      ],
+      "hair_control_position": [
+        1040,
+        38
+      ],
       "raw_armor_controls": false,
       "back_accessory_control": false
     },
-    "blocker": "back_accessory_art"
+    "blocker": "c68_4_presenter_and_active_fight_validation_required"
   },
-  "next_stage": "C68_3_BASE04_BACK_ACCESSORY_PACK01_ART_REVIEW"
+  "next_stage": "C68.4 — integrate equipment/back runtime in presenter and validate active fight; Creator remains closed"
 }
