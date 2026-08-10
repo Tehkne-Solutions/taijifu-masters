@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "pack_id": "SHARED_MODULAR_EQUIPMENT",
   "version": "1.0.0-c68.4",
-  "status": "foundation_weapon_back_art_pending",
+  "status": "c68_4_sheath_candidate_materialized_compatibility_pending",
   "ownership": {
     "purpose": "shared visual equipment modules that occupy canonical modular-fighter weapon slots without owning combat loadout logic",
     "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
@@ -11,16 +11,62 @@
     "assembly_owner": "ModularFighterEquipmentRuntime",
     "creator_exposure": false
   },
-  "slots": ["weapon_main", "weapon_offhand", "weapon_back"],
-  "modules": {},
+  "slots": [
+    "weapon_main",
+    "weapon_offhand",
+    "weapon_back"
+  ],
+  "modules": {
+    "sheath_lian_wu_blue": {
+      "slot": "weapon_back",
+      "path": "assets/modular_fighters/shared_equipment/weapon_back/sheath_lian_wu_blue/sheath_lian_wu_blue.png",
+      "sha256": "87972fa2393df583da283e1aa2bbd47f76a61a2727359b498ca8367cbaf7951e",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        200,
+        436,
+        480,
+        780
+      ],
+      "visible_pixels": 24160,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "root_anchor": "bottom_center",
+      "layer": 3,
+      "runtime_ready": false,
+      "production_ready": false,
+      "source": {
+        "method": "c68_4_controlled_standalone_redraw",
+        "historical_character_lock_modified": false,
+        "historical_exact_sheath_bitmap_available": false,
+        "identity_reference": "Lian Wu blue/gold martial equipment",
+        "placement": "left_hip_diagonal_weapon_back"
+      }
+    }
+  },
   "required_reference_modules": {
     "sheath_lian_wu_blue": {
       "slot": "weapon_back",
-      "status": "art_pending",
-      "required_by": ["preset_lian_wu", "C68.4_back_accessory_compatibility"],
+      "status": "candidate_materialized",
+      "required_by": [
+        "preset_lian_wu",
+        "C68.4_back_accessory_compatibility"
+      ],
       "canonical_layer": 3,
-      "pivot": [0.5, 0.92],
-      "canvas": [1024, 1024],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "canvas": [
+        1024,
+        1024
+      ],
       "mode": "RGBA"
     }
   },
@@ -28,7 +74,7 @@
     "runtime_activation": false,
     "presenter_integration": false,
     "creator_exposure": false,
-    "blocker": "sheath_lian_wu_blue_art_and_c68_4_compatibility_required"
+    "blocker": "c68_4_z3_z4_z5_compatibility_required"
   },
-  "next_stage": "C68.4 — materialize sheath_lian_wu_blue and validate z3/z4/z5 composition"
+  "next_stage": "C68.4 — validate sheath_lian_wu_blue z3 with selected Painel Guardião z4 and hair_back z5"
 }
