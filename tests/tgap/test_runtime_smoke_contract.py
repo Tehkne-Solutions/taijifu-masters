@@ -16,8 +16,8 @@ def test_smoke_harness_uses_tgap_exclusively():
 def test_main_scene_is_covered():
     project = (ROOT / "project.godot").read_text(encoding="utf-8")
     smoke = (ROOT / "tests/tgap/runtime_smoke_test.gd").read_text(encoding="utf-8")
-    assert 'run/main_scene="res://scenes/main.tscn"' in project
-    assert '"res://scenes/main.tscn"' in smoke
+    assert 'run/main_scene="res://scenes/vertical_slice/first_playable_menu.tscn"' in project
+    assert '"res://scenes/vertical_slice/first_playable_menu.tscn"' in smoke
 
 
 def test_legacy_autoload_remains_absent():
