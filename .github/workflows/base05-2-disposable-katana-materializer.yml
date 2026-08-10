@@ -1,139 +1,16 @@
-name: BASE-05.2b Disposable Katana Redraw
+name: BASE-05.2 Disabled Katana Candidate Materializer
 
 on:
-  push:
-    branches:
-      - agent/base05-2b-katana-redraw
-    paths:
-      - '.github/workflows/base05-2-disposable-katana-materializer.yml'
-      - 'assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidate-brief.json'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  materialize:
+  disabled:
     runs-on: ubuntu-22.04
-    timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/base05-2b-katana-redraw
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install deterministic image dependency
-        run: python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
-
-      - name: Materialize redesigned standalone RGBA katana candidates
-        run: |
-          python - <<'PY'
-          from __future__ import annotations
-          import hashlib, json, math
-          from pathlib import Path
-          from PIL import Image, ImageDraw
-
-          root=Path('assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01')
-          brief=json.loads((root/'candidate-brief.json').read_text(encoding='utf-8'))
-          S=4; W=H=1024
-          OUT=(18,22,28,255); STEEL=(190,204,218,255); LIGHT=(238,244,249,255)
-          BLUE=(70,126,194,225); SPINE=(68,80,94,255); NAVY=(18,36,64,255)
-          BLACK=(10,14,20,255); GOLD=(194,137,45,255); GOLD2=(239,192,86,255)
-
-          def q(p0,p1,p2,t):
-              u=1-t
-              return (u*u*p0[0]+2*u*t*p1[0]+t*t*p2[0],u*u*p0[1]+2*u*t*p1[1]+t*t*p2[1])
-          def curve(p0,p1,p2,n=64): return [q(p0,p1,p2,i/(n-1)) for i in range(n)]
-          def norm(pts,i):
-              a=pts[max(0,i-1)]; b=pts[min(len(pts)-1,i+1)]
-              dx=b[0]-a[0]; dy=b[1]-a[1]; ln=max(math.hypot(dx,dy),1e-6)
-              return (-dy/ln,dx/ln)
-          def poly(pts,max_half):
-              l=[]; r=[]; last=len(pts)-1
-              for i,p in enumerate(pts):
-                  t=i/last; half=max_half*(1-t)**0.55+0.8; nx,ny=norm(pts,i)
-                  l.append((p[0]+nx*half,p[1]+ny*half)); r.append((p[0]-nx*half,p[1]-ny*half))
-              return l+list(reversed(r))
-          def sp(points): return [(round(x*S),round(y*S)) for x,y in points]
-          def xy(p): return (round(p[0]*S),round(p[1]*S))
-
-          def render(cid,spec):
-              guard=tuple(spec['guard']); control=tuple(spec['control']); tip=tuple(spec['tip'])
-              pts=curve(guard,control,tip)
-              width=10.5 if cid!='v3_serene_low_guard' else 11.5
-              img=Image.new('RGBA',(W*S,H*S),(0,0,0,0)); d=ImageDraw.Draw(img)
-              d.polygon(sp(poly(pts,width)),fill=OUT)
-              d.polygon(sp(poly(pts,width-3.1)),fill=STEEL)
-              spine=[]; refl=[]
-              for i,p in enumerate(pts[:-3]):
-                  nx,ny=norm(pts,i); spine.append((p[0]-nx*5.0,p[1]-ny*5.0)); refl.append((p[0]+nx*2.4,p[1]+ny*2.4))
-              d.line(sp(spine),fill=SPINE,width=round(2.4*S),joint='curve')
-              d.line(sp(refl),fill=BLUE,width=round(2.0*S),joint='curve')
-              d.line(sp(pts[10:-7]),fill=LIGHT,width=round(1.1*S),joint='curve')
-
-              tx=pts[3][0]-pts[0][0]; ty=pts[3][1]-pts[0][1]; ln=max(math.hypot(tx,ty),1e-6)
-              ux,uy=tx/ln,ty/ln; hlen=76
-              end=(guard[0]-ux*hlen,guard[1]-uy*hlen)
-              d.line([xy(guard),xy(end)],fill=OUT,width=round(18*S))
-              d.line([xy(guard),xy(end)],fill=NAVY,width=round(12*S))
-              nx,ny=-uy,ux
-              for k in range(1,7):
-                  t=k/7; cx=guard[0]*(1-t)+end[0]*t; cy=guard[1]*(1-t)+end[1]*t
-                  d.line([xy((cx+nx*7,cy+ny*7)),xy((cx-nx*7,cy-ny*7))],fill=BLACK,width=round(2.4*S))
-              r=7
-              d.ellipse([round((end[0]-r)*S),round((end[1]-r)*S),round((end[0]+r)*S),round((end[1]+r)*S)],fill=GOLD,outline=OUT,width=round(2*S))
-              gx,gy=guard
-              if cid=='v1_serene_forward':
-                  rr=14
-                  d.ellipse([round((gx-rr)*S),round((gy-rr)*S),round((gx+rr)*S),round((gy+rr)*S)],fill=GOLD,outline=OUT,width=round(3*S))
-                  d.ellipse([round((gx-6)*S),round((gy-6)*S),round((gx+6)*S),round((gy+6)*S)],fill=BLACK)
-              elif cid=='v2_serene_rising':
-                  ptsg=[(gx+nx*18,gy+ny*18),(gx+ux*9,gy+uy*9),(gx-nx*18,gy-ny*18),(gx-ux*9,gy-uy*9)]
-                  d.polygon(sp(ptsg),fill=GOLD,outline=OUT); d.line(sp([(gx+nx*11,gy+ny*11),(gx-nx*11,gy-ny*11)]),fill=GOLD2,width=round(2*S))
-              else:
-                  ptsg=[(gx+nx*19+ux*5,gy+ny*19+uy*5),(gx-nx*19+ux*5,gy-ny*19+uy*5),(gx-nx*19-ux*5,gy-ny*19-uy*5),(gx+nx*19-ux*5,gy+ny*19-uy*5)]
-                  d.polygon(sp(ptsg),fill=GOLD,outline=OUT); d.line(sp([(gx+nx*14,gy+ny*14),(gx-nx*14,gy-ny*14)]),fill=GOLD2,width=round(2*S))
-
-              img=img.resize((W,H),Image.Resampling.LANCZOS)
-              path=root/f'{cid}.png'; img.save(path,optimize=True)
-              check=Image.open(path).convert('RGBA'); check.load(); assert check.size==(1024,1024)
-              alpha=check.getchannel('A'); bbox=alpha.getbbox(); hist=alpha.histogram(); visible=sum(hist[1:]); transparent=hist[0]
-              assert bbox and visible>3500 and transparent>700000
-              return {
-                  'id':cid,'path':path.as_posix(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
-                  'canvas':[1024,1024],'mode':'RGBA','pivot':[0.5,0.92],'slot':'weapon_main','layer':80,
-                  'alpha_bbox':list(bbox),'visible_pixels':visible,'transparent_pixels':transparent,
-                  'tip':spec['tip'],'control':spec['control'],'guard':spec['guard'],'brief':spec['brief'],
-                  'materialization':'deterministic_controlled_standalone_redraw_v2','runtime_ready':False,'production_ready':False
-              }
-
-          candidates={cid:render(cid,spec) for cid,spec in brief['candidates'].items()}
-          result={
-              'schema':'tehkne/taijifu-base05-katana-candidates/v2','signature':'Tehkné Solutions','stage':'BASE-05.2b',
-              'pack_id':'BASE05_KATANA_LIAN_WU_CANDIDATES','status':'materialized_candidate_review_pending',
-              'source_brief_schema':brief['schema'],'redraw_iteration':2,'selection_unit':'weapon_main','target_production_id':'katana_lian_wu',
-              'combat_reference':'serene_katana','selected_candidate':None,'runtime_promotion':False,'creator_exposure':False,
-              'candidates':candidates,
-              'review':{'authored_facing':'pending','flipped_facing':'pending','gameplay_scale':'pending','body_overlap':'pending','face_occlusion':'pending','weapon_back_compatibility':'pending','back_accessory_compatibility':'pending'}
-          }
-          (root/'candidates.json').write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-          print('BASE05_2B_MATERIALIZE=PASS candidates=3 rgba=true transparent=true runtime=false creator=false')
-          for cid,item in candidates.items(): print(f"{cid} sha={item['sha256']} bbox={item['alpha_bbox']} visible={item['visible_pixels']}")
-          print('SIGNATURE=Tehkné Solutions')
-          PY
-
-      - name: Commit validated redraw candidates and manifest
-        run: |
-          set -euo pipefail
-          git config user.name 'Tehkné Solutions CI'
-          git config user.email 'ci@tehkne.solutions'
-          git add assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/*.png \
-                  assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidates.json
-          git diff --cached --quiet && { echo 'No redraw changes'; exit 0; }
-          git commit -m 'BASE-05.2b: materialize repositioned katana candidates'
-          git push origin HEAD:agent/base05-2b-katana-redraw
-
-      - name: Summary
-        run: echo 'BASE-05.2b disposable katana redraw completed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+      - run: |
+          echo 'BASE05_2_MATERIALIZER=DISABLED'
+          echo 'No repository write permissions remain.'
+          echo 'SIGNATURE=Tehkné Solutions'
