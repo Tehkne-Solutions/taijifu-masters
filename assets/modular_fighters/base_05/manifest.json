@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE05_WEAPONS",
-  "version": "1.0.0",
-  "status": "specified_foundation_fail_closed",
+  "version": "1.1.0",
+  "status": "reference_audit_complete_redraw_required",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -12,6 +12,7 @@
   "ownership": {
     "purpose": "production catalog and validation boundary for modular fighter weapon visuals",
     "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
+    "current_first_playable_combat_owner": "BuildProfile.prototype_preset",
     "visual_profile_owner": "ModularFighterProfile.modules",
     "visual_assembly_owner": "ModularFighterEquipmentRuntime",
     "weapon_back_owner": "SHARED_MODULAR_EQUIPMENT",
@@ -62,12 +63,45 @@
       "slot": "weapon_main",
       "required_by": ["preset_lian_wu"],
       "profile_reference_status": "present",
-      "standalone_visual_status": "not_materialized",
+      "standalone_visual_status": "redraw_required",
       "production_ready": false,
       "combat_catalog_reference": "serene_katana",
       "combat_catalog_reference_status": "existing_kit_verified",
-      "visual_to_combat_binding_status": "pending_battle_loadout_verification",
+      "visual_to_combat_binding_status": "verified_via_current_first_playable_fallback",
+      "binding_chain": [
+        "FirstPlayableController.PLAYER_PRESET=lian_wu_first_playable",
+        "FighterController._ready -> BuildProfile.prototype_preset(build_preset)",
+        "BuildProfile.lian_wu_first_playable.weapon_id=serene_katana",
+        "WeaponKitFighterController._configure_original_loadout -> primary_weapon_id=build.weapon_id",
+        "WeaponKitCatalog.KITS.serene_katana"
+      ],
+      "modular_combat_loadout_id": "combat_lian_wu_first_playable",
+      "modular_combat_loadout_resolution_status": "metadata_only_not_runtime_owner_in_current_first_playable",
       "must_not_extract_without_visual_review": true
+    }
+  },
+  "reference_audit": {
+    "stage": "BASE-05.1",
+    "character_lock_sources": {
+      "neutral": {
+        "path": "assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
+        "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
+      },
+      "combat": {
+        "path": "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png",
+        "sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c"
+      }
+    },
+    "visual_review": {
+      "workflow_run": 31391217075,
+      "artifact_id": 9063727895,
+      "artifact_digest": "sha256:24b7f9e968378bd9e229ac6115fafbc07cc9c8ece47e53ca065bdb6870a23a97",
+      "review_capture": "C68_4_WEAPON_BACK_REFERENCE.review-1920x1080.png",
+      "neutral_result": "partial_hilt_and_guard_only_no_complete_blade",
+      "combat_result": "partial_hilt_and_guard_only_no_complete_blade",
+      "standalone_katana_recoverable": false,
+      "safe_extraction_allowed": false,
+      "required_method": "controlled_standalone_redraw"
     }
   },
   "compatibility": {
@@ -87,12 +121,11 @@
     "creator_exposure": false,
     "art_assets_present": false,
     "runtime_validation": "pending",
-    "owner_visual_review": "pending",
+    "owner_visual_review": "reference_only_pass_redraw_pending",
     "blockers": [
       "katana_lian_wu_standalone_visual_not_materialized",
-      "visual_to_combat_binding_not_verified",
       "weapon_main_runtime_not_validated"
     ]
   },
-  "next_stage": "BASE-05 Weapon Main Reference Audit — verify Lian Wu combat binding and standalone katana source before candidate production"
+  "next_stage": "BASE-05.2 Katana Lian Wu Candidate Pack — controlled standalone redraw, then authored/flipped/gameplay review before runtime promotion"
 }

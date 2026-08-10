@@ -1,0 +1,121 @@
+name: BASE-05.1 Weapon Main Reference Audit
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_05/**'
+      - 'assets/characters/lian_wu/character_lock/**'
+      - 'config/fighter-presets/preset_lian_wu.json'
+      - 'scripts/core/build_profile.gd'
+      - 'scripts/fighter/fighter_controller.gd'
+      - 'scripts/fighter/weapon_kit_fighter_controller.gd'
+      - 'scripts/combat/weapon_kit_catalog.gd'
+      - 'scripts/vertical_slice/first_playable.gd'
+      - 'scripts/ci/base05_weapon_main_reference_audit.gd'
+      - '.github/workflows/base05-weapon-main-reference-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference-audit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate reference audit statically
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          m=json.loads(Path('assets/modular_fighters/base_05/manifest.json').read_text())
+          a=json.loads(Path('assets/modular_fighters/base_05/production/BASE05_WEAPON_MAIN_REFERENCE_AUDIT.json').read_text())
+          p=json.loads(Path('config/fighter-presets/preset_lian_wu.json').read_text())
+          lock=json.loads(Path('assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json').read_text())
+          build=Path('scripts/core/build_profile.gd').read_text()
+          fighter=Path('scripts/fighter/fighter_controller.gd').read_text()
+          weapon_runtime=Path('scripts/fighter/weapon_kit_fighter_controller.gd').read_text()
+          catalog=Path('scripts/combat/weapon_kit_catalog.gd').read_text()
+          first_playable=Path('scripts/vertical_slice/first_playable.gd').read_text()
+          assert m['status']=='reference_audit_complete_redraw_required'
+          assert m['version']=='1.1.0'
+          ref=m['required_references']['katana_lian_wu']
+          assert ref['visual_to_combat_binding_status']=='verified_via_current_first_playable_fallback'
+          assert ref['standalone_visual_status']=='redraw_required'
+          assert ref['combat_catalog_reference']=='serene_katana'
+          assert ref['modular_combat_loadout_id']=='combat_lian_wu_first_playable'
+          assert ref['modular_combat_loadout_resolution_status']=='metadata_only_not_runtime_owner_in_current_first_playable'
+          assert m['modules']=={}
+          assert m['promotion']['weapon_main_runtime_activation'] is False
+          assert m['promotion']['creator_exposure'] is False
+          assert 'visual_to_combat_binding_not_verified' not in m['promotion']['blockers']
+          assert 'katana_lian_wu_standalone_visual_not_materialized' in m['promotion']['blockers']
+          assert a['status']=='reference_audit_complete_redraw_required'
+          assert a['combat_binding']['weapon_kit_id']=='serene_katana'
+          assert a['combat_binding']['modular_preset_combat_loadout_role']=='metadata_only_not_current_first_playable_runtime_owner'
+          assert a['character_lock_source_review']['decision']=='redraw_required'
+          assert a['character_lock_source_review']['whole_character_crop_as_weapon_module_forbidden'] is True
+          assert a['promotion']['binding_verified'] is True
+          assert a['promotion']['standalone_art_ready'] is False
+          assert p['modules']['weapon_main']=='katana_lian_wu'
+          assert p['combat_loadout_id']=='combat_lian_wu_first_playable'
+          assert 'const PLAYER_PRESET: StringName = &"lian_wu_first_playable"' in first_playable
+          assert 'build = BuildProfile.prototype_preset(build_preset)' in fighter
+          assert 'profile.weapon_id = &"serene_katana"' in build
+          assert 'primary_weapon_id = build.weapon_id' in weapon_runtime
+          assert '&"serene_katana"' in catalog and '"label": "KATANA SERENA"' in catalog
+          expected={name:spec['sha256'] for name,spec in lock['assets'].items()}
+          for name in ('lian_wu_neutral.png','lian_wu_combat_stance.png'):
+              path=Path(lock['assets'][name]['path'])
+              assert path.is_file()
+              assert hashlib.sha256(path.read_bytes()).hexdigest()==expected[name]
+          print('BASE05_1_STATIC_BINDING=PASS lian_wu_first_playable->serene_katana')
+          print('BASE05_1_SOURCE_HASHES=PASS neutral=true combat=true')
+          print('BASE05_1_REDRAW_DECISION=PASS extraction=false standalone=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project fail closed
+        run: |
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee base05-1-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed|ERR_FILE_CORRUPT' base05-1-import.log; then exit 1; fi
+
+      - name: Validate current First Playable binding in Godot
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/base05_weapon_main_reference_audit.gd 2>&1 | tee base05-1-reference.log
+          grep -q 'BASE05_1_COMBAT_BINDING=PASS visual=katana_lian_wu kit=serene_katana owner=BuildProfile_fallback' base05-1-reference.log
+          grep -q 'BASE05_1_MODULAR_LOADOUT_METADATA=PASS id=combat_lian_wu_first_playable runtime_owner=false' base05-1-reference.log
+          grep -q 'BASE05_1_SOURCE_REVIEW=PASS neutral=partial_hilt combat=partial_hilt standalone=false redraw_required=true' base05-1-reference.log
+          grep -q 'BASE05_1_RUNTIME=BLOCKED expected=true weapon_main=false creator=false' base05-1-reference.log
+          grep -q 'BASE05_1_REFERENCE_AUDIT=PASS' base05-1-reference.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_1_REFERENCE_AUDIT=BLOCKED' base05-1-reference.log; then exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE05-1-WEAPON-MAIN-REFERENCE-AUDIT-EVIDENCE
+          path: |
+            base05-1-import.log
+            base05-1-reference.log
+            assets/modular_fighters/base_05/manifest.json
+            assets/modular_fighters/base_05/production/BASE05_WEAPON_MAIN_REFERENCE_AUDIT.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'BASE-05.1 Lian Wu weapon-main binding and redraw audit — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

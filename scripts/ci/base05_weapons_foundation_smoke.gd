@@ -20,6 +20,9 @@ func _init() -> void:
 	if bool(manifest.get("promotion", {}).get("creator_exposure", true)):
 		_fail("BASE05_FOUNDATION=BLOCKED creator_premature")
 		return
+	if not manifest.get("modules", {}).is_empty():
+		_fail("BASE05_FOUNDATION=BLOCKED module_premature")
+		return
 
 	if ModularFighterLayerPolicy.z_index_for(&"weapon_back") != 3:
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_back_layer")
@@ -71,11 +74,17 @@ func _init() -> void:
 		_fail("BASE05_FOUNDATION=BLOCKED serene_katana_behavior")
 		return
 
+	var binding_state := String(manifest.get("required_references", {}).get("katana_lian_wu", {}).get("visual_to_combat_binding_status", ""))
+	if not ["pending_battle_loadout_verification", "verified_via_current_first_playable_fallback"].has(binding_state):
+		_fail("BASE05_FOUNDATION=BLOCKED binding_lifecycle:%s" % binding_state)
+		return
+
 	print("BASE05_FOUNDATION=PASS pack=BASE05_WEAPONS")
 	print("BASE05_OWNERSHIP=PASS combat=WeaponKitCatalog_and_BattleLoadoutCatalog visual=ModularFighterEquipmentRuntime")
 	print("BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=false runtime_offhand=false")
-	print("BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=pending")
+	print("BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=%s" % binding_state)
 	print("BASE05_CREATOR=BLOCKED expected=true")
+	print("BASE05_FOUNDATION_LIFECYCLE=PASS status=%s" % String(manifest.get("status", "")))
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
 

@@ -1,0 +1,76 @@
+{
+  "schema": "tehkne/taijifu-base05-weapon-main-reference-audit/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE05_WEAPON_MAIN_REFERENCE_AUDIT",
+  "stage": "BASE-05.1",
+  "status": "reference_audit_complete_redraw_required",
+  "visual_reference": {
+    "profile_module_id": "katana_lian_wu",
+    "slot": "weapon_main",
+    "preset_path": "config/fighter-presets/preset_lian_wu.json",
+    "preset_value": "katana_lian_wu",
+    "standalone_asset_present": false,
+    "safe_extraction_allowed": false,
+    "required_method": "controlled_standalone_redraw"
+  },
+  "combat_binding": {
+    "status": "verified_current_first_playable_fallback",
+    "weapon_kit_id": "serene_katana",
+    "weapon_kit_label": "KATANA SERENA",
+    "runtime_chain": [
+      {
+        "path": "scripts/vertical_slice/first_playable.gd",
+        "contract": "FirstPlayableController.PLAYER_PRESET == lian_wu_first_playable"
+      },
+      {
+        "path": "scripts/fighter/fighter_controller.gd",
+        "contract": "FighterController._ready calls BuildProfile.prototype_preset(build_preset)"
+      },
+      {
+        "path": "scripts/core/build_profile.gd",
+        "contract": "lian_wu_first_playable sets weapon_id = serene_katana"
+      },
+      {
+        "path": "scripts/fighter/weapon_kit_fighter_controller.gd",
+        "contract": "primary_weapon_id = build.weapon_id and equipped weapon uses the primary slot"
+      },
+      {
+        "path": "scripts/combat/weapon_kit_catalog.gd",
+        "contract": "WeaponKitCatalog contains serene_katana"
+      }
+    ],
+    "modular_preset_combat_loadout_id": "combat_lian_wu_first_playable",
+    "modular_preset_combat_loadout_role": "metadata_only_not_current_first_playable_runtime_owner",
+    "base05_must_not_duplicate_combat_behavior": true
+  },
+  "character_lock_source_review": {
+    "recovery_contract": "assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json",
+    "neutral": {
+      "path": "assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
+      "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+      "result": "partial_hilt_and_guard_only_no_complete_blade"
+    },
+    "combat": {
+      "path": "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png",
+      "sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c",
+      "result": "partial_hilt_and_guard_only_no_complete_blade"
+    },
+    "visual_evidence": {
+      "workflow_run": 31391217075,
+      "artifact_id": 9063727895,
+      "artifact_digest": "sha256:24b7f9e968378bd9e229ac6115fafbc07cc9c8ece47e53ca065bdb6870a23a97",
+      "review_capture": "C68_4_WEAPON_BACK_REFERENCE.review-1920x1080.png"
+    },
+    "decision": "redraw_required",
+    "whole_character_crop_as_weapon_module_forbidden": true
+  },
+  "promotion": {
+    "binding_verified": true,
+    "reference_review_complete": true,
+    "standalone_art_ready": false,
+    "weapon_main_runtime": false,
+    "presenter_integration": false,
+    "creator_exposure": false
+  },
+  "next_stage": "BASE-05.2 Katana Lian Wu Candidate Pack — create standalone RGBA candidates, review authored/flipped/gameplay, then select one before runtime"
+}
