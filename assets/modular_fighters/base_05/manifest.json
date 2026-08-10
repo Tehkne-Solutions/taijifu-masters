@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE05_WEAPONS",
-  "version": "1.1.0",
-  "status": "reference_audit_complete_redraw_required",
+  "version": "1.2.0",
+  "status": "weapon_main_runtime_validation_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -29,14 +29,21 @@
     "preset_specific_sprite_sheet": false
   },
   "slots": ["weapon_main", "weapon_offhand"],
-  "delegated_slots": {
-    "weapon_back": "SHARED_MODULAR_EQUIPMENT"
-  },
+  "delegated_slots": {"weapon_back": "SHARED_MODULAR_EQUIPMENT"},
   "layer_contract": {
     "weapon_main": 80,
     "weapon_offhand": 81,
     "weapon_back": 3,
     "relation": "weapon_back < body_and_clothing < weapon_main < weapon_offhand"
+  },
+  "state_visibility_contract": {
+    "neutral_states": ["idle", "run", "jump_start", "airborne", "fall", "hit", "ko"],
+    "weapon_main_visible_states": ["attack_light", "guard", "dodge"],
+    "neutral_weapon_main_visible": false,
+    "neutral_weapon_back_visible": true,
+    "weapon_back_remains_visible_when_drawn": true,
+    "visibility_owner": "FirstPlayableModularFighterPresenter_visual_state",
+    "combat_behavior_owner": "WeaponKitCatalog"
   },
   "public_controls": {
     "weapon_set": {
@@ -53,17 +60,47 @@
       "weapon_main": null,
       "weapon_offhand": null,
       "requires_art_assets": false,
-      "runtime_ready": false,
-      "production_ready": false
+      "runtime_ready": true,
+      "production_ready": true
+    },
+    "weapon_01_lian_serene_katana": {
+      "label": "Katana Serena — Lian Wu",
+      "weapon_main": "katana_lian_wu",
+      "weapon_offhand": null,
+      "combat_reference": "serene_katana",
+      "requires_art_assets": true,
+      "runtime_ready": true,
+      "production_ready": false,
+      "creator_ready": false
     }
   },
-  "modules": {},
+  "modules": {
+    "katana_lian_wu": {
+      "slot": "weapon_main",
+      "path": "assets/modular_fighters/base_05/katana_lian_wu/weapon_main.png",
+      "sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+      "canvas": [1024, 1024],
+      "mode": "RGBA",
+      "alpha_bbox": [548, 531, 971, 638],
+      "visible_pixels": 8247,
+      "pivot": [0.5, 0.92],
+      "root_anchor": "bottom_center",
+      "layer": 80,
+      "combat_reference": "serene_katana",
+      "source_candidate": "v1_serene_forward",
+      "source_candidate_sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+      "source_art_review": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
+      "runtime_ready": true,
+      "production_ready": false,
+      "creator_ready": false
+    }
+  },
   "required_references": {
     "katana_lian_wu": {
       "slot": "weapon_main",
       "required_by": ["preset_lian_wu"],
       "profile_reference_status": "present",
-      "standalone_visual_status": "redraw_required",
+      "standalone_visual_status": "materialized_exact_selected_art",
       "production_ready": false,
       "combat_catalog_reference": "serene_katana",
       "combat_catalog_reference_status": "existing_kit_verified",
@@ -83,14 +120,8 @@
   "reference_audit": {
     "stage": "BASE-05.1",
     "character_lock_sources": {
-      "neutral": {
-        "path": "assets/characters/lian_wu/character_lock/lian_wu_neutral.png",
-        "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"
-      },
-      "combat": {
-        "path": "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png",
-        "sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c"
-      }
+      "neutral": {"path": "assets/characters/lian_wu/character_lock/lian_wu_neutral.png", "sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5"},
+      "combat": {"path": "assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png", "sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c"}
     },
     "visual_review": {
       "workflow_run": 31391217075,
@@ -104,6 +135,15 @@
       "required_method": "controlled_standalone_redraw"
     }
   },
+  "art_review": {
+    "stage": "BASE-05.2b",
+    "selected_candidate": "v1_serene_forward",
+    "selected_sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+    "workflow_run": 31416191696,
+    "artifact_id": 9073498188,
+    "artifact_digest": "sha256:d4f3753905242061d26831117d39d0b29491f18046ac9811a8fac2c54aaaa6b2",
+    "owner_visual_review": "pass"
+  },
   "compatibility": {
     "existing_weapon_back_reference": "sheath_lian_wu_blue",
     "weapon_back_must_survive_weapon_main_changes": true,
@@ -115,17 +155,17 @@
     "active_fight_review_required": true
   },
   "promotion": {
-    "weapon_main_runtime_activation": false,
+    "weapon_main_runtime_activation": true,
     "weapon_offhand_runtime_activation": false,
     "presenter_integration": false,
     "creator_exposure": false,
-    "art_assets_present": false,
+    "art_assets_present": true,
     "runtime_validation": "pending",
-    "owner_visual_review": "reference_only_pass_redraw_pending",
+    "owner_visual_review": "pass_selected_v1",
     "blockers": [
-      "katana_lian_wu_standalone_visual_not_materialized",
-      "weapon_main_runtime_not_validated"
+      "weapon_main_state_aware_runtime_not_validated",
+      "active_fight_visual_handoff_not_validated"
     ]
   },
-  "next_stage": "BASE-05.2 Katana Lian Wu Candidate Pack — controlled standalone redraw, then authored/flipped/gameplay review before runtime promotion"
+  "next_stage": "BASE-05.3 — validate exact katana_lian_wu as state-aware weapon_main in active First Playable before any Creator exposure"
 }
