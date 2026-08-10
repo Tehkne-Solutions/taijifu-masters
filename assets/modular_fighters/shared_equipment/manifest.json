@@ -1,0 +1,34 @@
+{
+  "schema": "tehkne/taijifu-shared-modular-equipment/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "SHARED_MODULAR_EQUIPMENT",
+  "version": "1.0.0-c68.4",
+  "status": "foundation_weapon_back_art_pending",
+  "ownership": {
+    "purpose": "shared visual equipment modules that occupy canonical modular-fighter weapon slots without owning combat loadout logic",
+    "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
+    "visual_profile_owner": "ModularFighterProfile.modules",
+    "assembly_owner": "ModularFighterEquipmentRuntime",
+    "creator_exposure": false
+  },
+  "slots": ["weapon_main", "weapon_offhand", "weapon_back"],
+  "modules": {},
+  "required_reference_modules": {
+    "sheath_lian_wu_blue": {
+      "slot": "weapon_back",
+      "status": "art_pending",
+      "required_by": ["preset_lian_wu", "C68.4_back_accessory_compatibility"],
+      "canonical_layer": 3,
+      "pivot": [0.5, 0.92],
+      "canvas": [1024, 1024],
+      "mode": "RGBA"
+    }
+  },
+  "promotion": {
+    "runtime_activation": false,
+    "presenter_integration": false,
+    "creator_exposure": false,
+    "blocker": "sheath_lian_wu_blue_art_and_c68_4_compatibility_required"
+  },
+  "next_stage": "C68.4 — materialize sheath_lian_wu_blue and validate z3/z4/z5 composition"
+}
