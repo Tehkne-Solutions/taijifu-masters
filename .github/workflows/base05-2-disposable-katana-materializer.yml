@@ -1,0 +1,211 @@
+name: BASE-05.2 Disposable Katana Candidate Materializer
+
+on:
+  push:
+    branches:
+      - agent/base05-2-katana-candidates
+    paths:
+      - '.github/workflows/base05-2-disposable-katana-materializer.yml'
+      - 'assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidate-brief.json'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/base05-2-katana-candidates
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic image dependency
+        run: python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Materialize three standalone RGBA katana candidates
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, math
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+
+          root=Path('assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01')
+          brief=json.loads((root/'candidate-brief.json').read_text())
+          scale=4
+          W=H=1024
+          OUTLINE=(18,22,28,255)
+          STEEL=(188,202,216,255)
+          STEEL_LIGHT=(235,242,248,255)
+          BLUE=(72,128,194,220)
+          SPINE=(72,83,96,255)
+          NAVY=(18,36,64,255)
+          BLACK=(11,15,20,255)
+          GOLD=(194,137,45,255)
+          GOLD_LIGHT=(239,192,86,255)
+
+          def qbez(p0,p1,p2,t):
+              u=1.0-t
+              return (u*u*p0[0]+2*u*t*p1[0]+t*t*p2[0], u*u*p0[1]+2*u*t*p1[1]+t*t*p2[1])
+
+          def sample_curve(p0,p1,p2,n=48):
+              return [qbez(p0,p1,p2,i/(n-1)) for i in range(n)]
+
+          def normal(points,i):
+              a=points[max(0,i-1)]; b=points[min(len(points)-1,i+1)]
+              dx=b[0]-a[0]; dy=b[1]-a[1]
+              length=max(math.hypot(dx,dy),1e-6)
+              return (-dy/length, dx/length)
+
+          def blade_polygon(points, max_half):
+              left=[]; right=[]
+              last=len(points)-1
+              for i,p in enumerate(points):
+                  t=i/last
+                  half=max_half*(1.0-t)**0.55 + 0.8
+                  nx,ny=normal(points,i)
+                  left.append((p[0]+nx*half,p[1]+ny*half))
+                  right.append((p[0]-nx*half,p[1]-ny*half))
+              return left + list(reversed(right))
+
+          def scale_pts(points): return [(round(x*scale),round(y*scale)) for x,y in points]
+          def sxy(p): return (round(p[0]*scale),round(p[1]*scale))
+
+          def render(cid,spec):
+              guard=tuple(spec['guard']); control=tuple(spec['control']); tip=tuple(spec['tip'])
+              points=sample_curve(guard,control,tip)
+              blade=blade_polygon(points,10.5 if cid!='v3_serene_low_guard' else 11.5)
+              inner=blade_polygon(points,7.2 if cid!='v3_serene_low_guard' else 8.0)
+              img=Image.new('RGBA',(W*scale,H*scale),(0,0,0,0))
+              d=ImageDraw.Draw(img)
+              d.polygon(scale_pts(blade),fill=OUTLINE)
+              d.polygon(scale_pts(inner),fill=STEEL)
+              # dark spine follows one side, blue reflection follows blade center.
+              spine=[]
+              highlight=[]
+              for i,p in enumerate(points[:-2]):
+                  nx,ny=normal(points,i)
+                  spine.append((p[0]-nx*5.2,p[1]-ny*5.2))
+                  highlight.append((p[0]+nx*2.5,p[1]+ny*2.5))
+              d.line(scale_pts(spine),fill=SPINE,width=round(2.5*scale),joint='curve')
+              d.line(scale_pts(highlight),fill=BLUE,width=round(2.0*scale),joint='curve')
+              d.line(scale_pts(points[8:-5]),fill=STEEL_LIGHT,width=round(1.2*scale),joint='curve')
+
+              # Derive hilt direction opposite blade tangent at guard.
+              tangent=(points[2][0]-points[0][0],points[2][1]-points[0][1])
+              ln=max(math.hypot(*tangent),1e-6)
+              ux,uy=tangent[0]/ln,tangent[1]/ln
+              hilt_len=78 if cid!='v2_serene_rising' else 74
+              end=(guard[0]-ux*hilt_len,guard[1]-uy*hilt_len)
+              # Hilt dark outline + navy core.
+              d.line([sxy(guard),sxy(end)],fill=OUTLINE,width=round(18*scale))
+              d.line([sxy(guard),sxy(end)],fill=NAVY,width=round(12*scale))
+              # wrapped black diamonds/stripes.
+              for k in range(1,7):
+                  t=k/7
+                  cx=guard[0]*(1-t)+end[0]*t; cy=guard[1]*(1-t)+end[1]*t
+                  nx,ny=-uy,ux
+                  a=(cx+nx*7,cy+ny*7); b=(cx-nx*7,cy-ny*7)
+                  d.line([sxy(a),sxy(b)],fill=BLACK,width=round(2.5*scale))
+              # pommel.
+              r=7
+              d.ellipse([round((end[0]-r)*scale),round((end[1]-r)*scale),round((end[0]+r)*scale),round((end[1]+r)*scale)],fill=GOLD,outline=OUTLINE,width=round(2*scale))
+              # candidate-specific compact guard.
+              gx,gy=guard
+              nx,ny=-uy,ux
+              if cid=='v1_serene_forward':
+                  rr=14
+                  d.ellipse([round((gx-rr)*scale),round((gy-rr)*scale),round((gx+rr)*scale),round((gy+rr)*scale)],fill=GOLD,outline=OUTLINE,width=round(3*scale))
+                  d.ellipse([round((gx-6)*scale),round((gy-6)*scale),round((gx+6)*scale),round((gy+6)*scale)],fill=BLACK)
+              elif cid=='v2_serene_rising':
+                  diamond=[(gx+nx*18,gy+ny*18),(gx+ux*9,gy+uy*9),(gx-nx*18,gy-ny*18),(gx-ux*9,gy-uy*9)]
+                  d.polygon(scale_pts(diamond),fill=GOLD,outline=OUTLINE)
+                  d.line(scale_pts([(gx+nx*11,gy+ny*11),(gx-nx*11,gy-ny*11)]),fill=GOLD_LIGHT,width=round(2*scale))
+              else:
+                  bar=[(gx+nx*19+ux*5,gy+ny*19+uy*5),(gx-nx*19+ux*5,gy-ny*19+uy*5),(gx-nx*19-ux*5,gy-ny*19-uy*5),(gx+nx*19-ux*5,gy+ny*19-uy*5)]
+                  d.polygon(scale_pts(bar),fill=GOLD,outline=OUTLINE)
+                  d.line(scale_pts([(gx+nx*14,gy+ny*14),(gx-nx*14,gy-ny*14)]),fill=GOLD_LIGHT,width=round(2*scale))
+
+              img=img.resize((W,H),Image.Resampling.LANCZOS)
+              path=root/f'{cid}.png'
+              img.save(path,optimize=True)
+              # decode after save; fail closed on any binary corruption.
+              check=Image.open(path); check.load(); check=check.convert('RGBA')
+              assert check.size==(1024,1024)
+              assert check.mode=='RGBA'
+              alpha=check.getchannel('A')
+              bbox=alpha.getbbox(); assert bbox is not None
+              hist=alpha.histogram(); visible=sum(hist[1:])
+              transparent=hist[0]
+              assert visible>3500
+              assert transparent>700000
+              return {
+                  'id':cid,
+                  'path':path.as_posix(),
+                  'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'canvas':[1024,1024],
+                  'mode':'RGBA',
+                  'pivot':[0.5,0.92],
+                  'slot':'weapon_main',
+                  'layer':80,
+                  'alpha_bbox':list(bbox),
+                  'visible_pixels':visible,
+                  'transparent_pixels':transparent,
+                  'tip':spec['tip'],
+                  'control':spec['control'],
+                  'guard':spec['guard'],
+                  'brief':spec['brief'],
+                  'materialization':'deterministic_controlled_standalone_redraw',
+                  'runtime_ready':False,
+                  'production_ready':False,
+              }
+
+          candidates={cid:render(cid,spec) for cid,spec in brief['candidates'].items()}
+          result={
+              'schema':'tehkne/taijifu-base05-katana-candidates/v1',
+              'signature':'Tehkné Solutions',
+              'stage':'BASE-05.2',
+              'pack_id':'BASE05_KATANA_LIAN_WU_CANDIDATES',
+              'status':'materialized_candidate_review_pending',
+              'selection_unit':'weapon_main',
+              'target_production_id':'katana_lian_wu',
+              'combat_reference':'serene_katana',
+              'selected_candidate':None,
+              'runtime_promotion':False,
+              'creator_exposure':False,
+              'candidates':candidates,
+              'review':{
+                  'authored_facing':'pending',
+                  'flipped_facing':'pending',
+                  'gameplay_scale':'pending',
+                  'body_overlap':'pending',
+                  'face_occlusion':'pending',
+                  'weapon_back_compatibility':'pending',
+                  'back_accessory_compatibility':'pending'
+              }
+          }
+          (root/'candidates.json').write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          print('BASE05_2_MATERIALIZE=PASS candidates=3 rgba=true transparent=true runtime=false creator=false')
+          for cid,item in candidates.items():
+              print(f"{cid} sha={item['sha256']} bbox={item['alpha_bbox']} visible={item['visible_pixels']}")
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Commit only validated binary candidates and manifest
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'ci@tehkne.solutions'
+          git add assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/*.png \
+                  assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidates.json
+          git diff --cached --quiet && { echo 'No materialization changes'; exit 0; }
+          git commit -m 'BASE-05.2: materialize Lian Wu katana candidates'
+          git push origin HEAD:agent/base05-2-katana-candidates
+
+      - name: Summary
+        run: echo 'BASE-05.2 disposable katana materializer completed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

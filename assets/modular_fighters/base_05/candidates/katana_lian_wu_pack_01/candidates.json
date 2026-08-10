@@ -1,0 +1,144 @@
+{
+  "schema": "tehkne/taijifu-base05-katana-candidates/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.2",
+  "pack_id": "BASE05_KATANA_LIAN_WU_CANDIDATES",
+  "status": "materialized_candidate_review_pending",
+  "selection_unit": "weapon_main",
+  "target_production_id": "katana_lian_wu",
+  "combat_reference": "serene_katana",
+  "selected_candidate": null,
+  "runtime_promotion": false,
+  "creator_exposure": false,
+  "candidates": {
+    "v1_serene_forward": {
+      "id": "v1_serene_forward",
+      "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v1_serene_forward.png",
+      "sha256": "d038ff5c115a829b0a95f0b61758ff5bb529388baee186da0895fdefc33d2643",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "slot": "weapon_main",
+      "layer": 80,
+      "alpha_bbox": [
+        271,
+        542,
+        833,
+        712
+      ],
+      "visible_pixels": 11198,
+      "transparent_pixels": 1037378,
+      "tip": [
+        830,
+        545
+      ],
+      "control": [
+        600,
+        620
+      ],
+      "guard": [
+        356,
+        682
+      ],
+      "brief": "forward low-rise blade, restrained curve, round gold tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw",
+      "runtime_ready": false,
+      "production_ready": false
+    },
+    "v2_serene_rising": {
+      "id": "v2_serene_rising",
+      "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v2_serene_rising.png",
+      "sha256": "54c220b95f51cf4d3aa3e2e26c651e377ccda99016e82b307c1a9cee9725cac3",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "slot": "weapon_main",
+      "layer": 80,
+      "alpha_bbox": [
+        287,
+        402,
+        723,
+        736
+      ],
+      "visible_pixels": 10398,
+      "transparent_pixels": 1038178,
+      "tip": [
+        720,
+        405
+      ],
+      "control": [
+        565,
+        525
+      ],
+      "guard": [
+        356,
+        682
+      ],
+      "brief": "higher diagonal blade, elegant upward read, diamond compact tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw",
+      "runtime_ready": false,
+      "production_ready": false
+    },
+    "v3_serene_low_guard": {
+      "id": "v3_serene_low_guard",
+      "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v3_serene_low_guard.png",
+      "sha256": "bc9b3e2f4e10fd632ec32b59dd8465dc6e941ed827bd7981a37c61817c5f0d57",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "mode": "RGBA",
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "slot": "weapon_main",
+      "layer": 80,
+      "alpha_bbox": [
+        269,
+        641,
+        853,
+        704
+      ],
+      "visible_pixels": 12085,
+      "transparent_pixels": 1036491,
+      "tip": [
+        850,
+        650
+      ],
+      "control": [
+        625,
+        645
+      ],
+      "guard": [
+        356,
+        682
+      ],
+      "brief": "longer low forward line, shallow curve, compact rectangular tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw",
+      "runtime_ready": false,
+      "production_ready": false
+    }
+  },
+  "review": {
+    "authored_facing": "pending",
+    "flipped_facing": "pending",
+    "gameplay_scale": "pending",
+    "body_overlap": "pending",
+    "face_occlusion": "pending",
+    "weapon_back_compatibility": "pending",
+    "back_accessory_compatibility": "pending"
+  }
+}
