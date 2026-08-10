@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate immutable C68.3 art decision across later runtime promotion
+      - name: Validate immutable C68.3 art decision across later runtime and Creator promotion
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -48,7 +48,6 @@ jobs:
           assert c['rejected_history']['c68_1_candidate_v1_back']['must_not_reintroduce'] is True
           assert c['rejected_history']['c68_3_v2_martial_knot']['must_not_promote'] is True
           selected=x['candidates']['v3_guardian_panel']
-          assert m['promotion']['back_accessory_creator_exposure'] is False
           if m['promotion']['back_accessory_runtime_activation']:
               entry=m['back_accessories']['back_01_guardian_panel']
               assert entry['runtime_ready'] is True and entry['production_ready'] is True
@@ -59,11 +58,15 @@ jobs:
           else:
               assert list(m['back_accessories'])==['back_none']
               state='art_selected'
+          creator=bool(m['promotion'].get('back_accessory_creator_exposure',False))
+          if creator:
+              assert m['public_controls']['back_accessory']['creator_exposed'] is True
+              assert m['back_accessories']['back_01_guardian_panel']['production_ready'] is True
           print('C68_3_ART_SELECTION=PASS selected=v3_guardian_panel v2=rejected')
           print('C68_3_ART_IMMUTABILITY=PASS state='+state)
-          print('C68_3_CREATOR_GUARD=PASS back_accessory_creator=false')
+          print('C68_3_CREATOR_LIFECYCLE=PASS current_exposure='+str(creator).lower())
           print('SIGNATURE=Tehkné Solutions')
           PY
 
       - name: Summary
-        run: echo 'C68.3 immutable Back Accessory art decision — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.3 immutable Back Accessory art decision, lifecycle-aware — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
