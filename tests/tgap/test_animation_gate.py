@@ -21,8 +21,26 @@ def make_pack(tmp_path: Path, *, missing_frame: bool = False, bad_metadata: bool
     (pack / "frames" / "idle").mkdir(parents=True)
     (pack / "metadata").mkdir()
     (pack / "validation").mkdir()
+    (pack / "manifest.json").write_text(
+        json.dumps({
+            "schema": "tgap/v1",
+            "pack_id": "pack_fixture",
+            "asset_class": "character",
+            "version": "1.0.0",
+            "state": "validation",
+            "runtime": {
+                "entity_id": "fixture",
+                "frame_prefix": "char_fixture",
+                "atlas_png": "atlases/fixture.png",
+                "atlas_json": "atlases/fixture.json",
+                "spriteframes": "runtime/fixture.tres",
+                "manifest": "runtime/fixture.json",
+            },
+        }),
+        encoding="utf-8",
+    )
     (pack / "expected-assets.json").write_text(
-        json.dumps({"schema": "tgap/expected-assets/v1", "animations": {"idle": 2}}),
+        json.dumps({"schema": "tgap/expected-assets/v1", "pack_id": "pack_fixture", "animations": {"idle": 2}}),
         encoding="utf-8",
     )
     (pack / "frames" / "idle" / "char_fixture__idle__f00.png").write_bytes(b"fixture")
