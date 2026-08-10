@@ -27,44 +27,44 @@
     "v1_guardian_yoke": {
       "label": "Manto Curto da Guarda",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v1_guardian_yoke/back_accessory.png",
-      "sha256": "a9a326a92ed293d5ffc33708055ab43af0820ccc33356822caa94b9a133d3e64",
+      "sha256": "1f03951c9ee5dbacf128f282f6bfbc9cbde848f89c54ae7b60567c61dc770645",
       "alpha_bbox": [
-        364,
-        276,
-        664,
-        560
+        280,
+        260,
+        748,
+        612
       ],
-      "visible_pixels": 44368,
+      "visible_pixels": 81712,
       "connected_components": 1,
-      "art_read": "compact shoulder-blade yoke with short central panel"
+      "art_read": "wide connected guardian yoke with compact central panel and silhouette tabs"
     },
     "v2_martial_knot": {
       "label": "Laço Marcial Taijifu",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v2_martial_knot/back_accessory.png",
-      "sha256": "0c3c2afd0d74daae786f1367fd4fea3345d2f93010583027e8655b5faae0b812",
+      "sha256": "39d40b006bec5547d56df92d0eaf474df16f6cefcffad52e373ebb5f0729ac83",
       "alpha_bbox": [
-        424,
-        416,
-        604,
-        580
+        264,
+        408,
+        764,
+        600
       ],
-      "visible_pixels": 12720,
+      "visible_pixels": 30032,
       "connected_components": 1,
-      "art_read": "small central martial knot with two short connected tapered tails"
+      "art_read": "central martial knot with two very short connected lateral tapered tails"
     },
     "v3_guardian_panel": {
       "label": "Painel Guardião",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v3_guardian_panel/back_accessory.png",
-      "sha256": "f16b132c2f68fcf0a85c62e52a0e3e941d61905342b37bd3546c44eea4a39f93",
+      "sha256": "e26ba3bd7b15e94fc430fd74905164c58ff13dce682e224a3559168c107ba960",
       "alpha_bbox": [
-        412,
-        328,
-        616,
-        652
+        304,
+        292,
+        724,
+        680
       ],
-      "visible_pixels": 38576,
+      "visible_pixels": 86464,
       "connected_components": 1,
-      "art_read": "compact upper-back guard with one attached short flexible panel"
+      "art_read": "structured compact upper-back guard with one connected offset short flexible panel"
     }
   },
   "selection": {
