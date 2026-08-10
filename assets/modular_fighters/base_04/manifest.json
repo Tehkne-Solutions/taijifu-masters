@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "1.1.0-candidate.1",
-  "status": "production_approved_armor_pack_01_creator_control_candidate",
+  "version": "1.1.0",
+  "status": "production_approved_armor_pack_01_creator_control",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -142,7 +142,7 @@
     "battle_activation": true,
     "runtime_validation": "pass",
     "owner_visual_review": "pass",
-    "creator_validation": "pending",
+    "creator_validation": "pass",
     "visual_evidence": {
       "workflow_run": 31343546528,
       "artifact_id": 9046558404,
@@ -156,7 +156,23 @@
       "uniform_interaction": "pass",
       "back_accessory": "back_none"
     },
-    "blocker": "c68_2_creator_validation"
+    "creator_evidence": {
+      "workflow_run": 31344447787,
+      "artifact_id": 9046841173,
+      "artifact_sha256": "df2290140d9cfdad40b2625ebec834a06a413b916f4c6c300780808dd3fef225",
+      "capture": "artifacts/c68_2/C68_2_ARMOR_CREATOR_CONTROL.review-1280x720.png",
+      "creator_runtime": "pass",
+      "live_preview": "pass",
+      "preset_roundtrip": "pass",
+      "battle_handoff": "pass",
+      "actual_control_overlap": false,
+      "armor_control_position": [590, 38],
+      "uniform_control_position": [820, 38],
+      "hair_control_position": [1040, 38],
+      "raw_armor_controls": false,
+      "back_accessory_control": false
+    },
+    "blocker": "back_accessory_art"
   },
-  "next_stage": "C68_2_BASE04_ARMOR_CREATOR_CONTROL_VALIDATION"
+  "next_stage": "C68_3_BASE04_BACK_ACCESSORY_PACK01_ART_REVIEW"
 }
