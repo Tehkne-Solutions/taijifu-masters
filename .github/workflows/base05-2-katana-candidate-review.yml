@@ -1,0 +1,78 @@
+name: BASE-05.2 Katana Candidate Review
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/**'
+      - 'assets/modular_fighters/base_00/**'
+      - 'assets/modular_fighters/base_01/**'
+      - 'assets/modular_fighters/base_02/**'
+      - 'assets/modular_fighters/base_03/**'
+      - 'assets/modular_fighters/base_04/**'
+      - 'assets/modular_fighters/shared_equipment/**'
+      - 'scripts/ci/base05_2_katana_candidate_review.py'
+      - '.github/workflows/base05-2-katana-candidate-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install review dependency
+        run: python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Verify materializer is disabled and candidates remain fail closed
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          c=json.loads(Path('assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidates.json').read_text())
+          w=Path('.github/workflows/base05-2-disposable-katana-materializer.yml').read_text()
+          assert c['status']=='materialized_candidate_review_pending'
+          assert c['selected_candidate'] is None
+          assert c['runtime_promotion'] is False
+          assert c['creator_exposure'] is False
+          assert len(c['candidates'])==3
+          assert all(v['runtime_ready'] is False and v['production_ready'] is False for v in c['candidates'].values())
+          assert 'contents: write' not in w
+          assert 'push:' not in w
+          assert 'contents: read' in w
+          print('BASE05_2_WRITER=DISABLED contents_write=false push=false')
+          print('BASE05_2_FAIL_CLOSED=PASS selected=null runtime=false creator=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Measure canonical authored flipped and gameplay review
+        run: |
+          python scripts/ci/base05_2_katana_candidate_review.py | tee base05-2-review.log
+          grep -q 'BASE05_2_CANDIDATE_REVIEW=PASS candidates=3 selection=pending runtime=false creator=false' base05-2-review.log
+          test -s artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.review-1920x1080.png
+          test -s artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BASE05-2-KATANA-LIAN-WU-CANDIDATE-REVIEW
+          path: |
+            base05-2-review.log
+            artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.review-1920x1080.png
+            artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.json
+            assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidate-brief.json
+            assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/candidates.json
+            assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/*.png
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'BASE-05.2 Katana Lian Wu candidate review read-only — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
