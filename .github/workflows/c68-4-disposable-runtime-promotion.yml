@@ -1,0 +1,112 @@
+name: C68.4 Disposable Runtime Promotion
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/c68-4-disposable-runtime-promotion.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install Pillow
+        run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Promote exact selected bytes and runtime-ready manifests
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, shutil
+          from pathlib import Path
+
+          root=Path('.')
+          candidates_path=root/'assets/modular_fighters/base_04/candidates/back_accessory_pack_01/candidates.json'
+          candidates=json.loads(candidates_path.read_text(encoding='utf-8'))
+          assert candidates['selection']['selected_candidate']=='v3_guardian_panel'
+          selected=candidates['candidates']['v3_guardian_panel']
+          source=root/selected['path']
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==selected['sha256']
+
+          target=root/'assets/modular_fighters/base_04/back_01_guardian_panel/back_accessory.png'
+          target.parent.mkdir(parents=True,exist_ok=True)
+          shutil.copyfile(source,target)
+          assert hashlib.sha256(target.read_bytes()).hexdigest()==selected['sha256']
+
+          base04_path=root/'assets/modular_fighters/base_04/manifest.json'
+          base04=json.loads(base04_path.read_text(encoding='utf-8'))
+          module_id='back_01_guardian_panel_back_accessory'
+          base04['version']='1.2.0'
+          base04['status']='production_approved_armor_pack_01_back_accessory_pack_01_runtime'
+          base04['back_accessories']['back_01_guardian_panel']={
+            'label':'Painel Guardião',
+            'back_accessory':module_id,
+            'requires_art_assets':True,
+            'runtime_ready':True,
+            'production_ready':True
+          }
+          base04['modules'][module_id]={
+            'slot':'back_accessory',
+            'path':target.as_posix(),
+            'sha256':selected['sha256'],
+            'canvas':[1024,1024],
+            'mode':'RGBA',
+            'alpha_bbox':selected['alpha_bbox'],
+            'visible_pixels':selected['visible_pixels'],
+            'pivot':[0.5,0.92],
+            'root_anchor':'bottom_center',
+            'source':{
+              'method':'exact_c68_3_selected_candidate_promotion',
+              'candidate':'v3_guardian_panel',
+              'redraw':False,
+              'resampling':False,
+              'selection_evidence_workflow':31390044029,
+              'compatibility_evidence_workflow':31392050422
+            }
+          }
+          base04['promotion']['back_accessory_runtime_activation']=True
+          base04['promotion']['back_accessory_creator_exposure']=False
+          base04['promotion']['blocker']='c68_4_presenter_and_active_fight_validation_required'
+          base04['next_stage']='C68.4 — integrate equipment/back runtime in presenter and validate active fight; Creator remains closed'
+          base04_path.write_text(json.dumps(base04,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          equipment_path=root/'assets/modular_fighters/shared_equipment/manifest.json'
+          equipment=json.loads(equipment_path.read_text(encoding='utf-8'))
+          sheath=equipment['modules']['sheath_lian_wu_blue']
+          assert hashlib.sha256((root/sheath['path']).read_bytes()).hexdigest()==sheath['sha256']
+          sheath['runtime_ready']=True
+          sheath['production_ready']=True
+          equipment['status']='production_ready_weapon_back_pack_01_presenter_pending'
+          equipment['required_reference_modules']['sheath_lian_wu_blue']['status']='production_ready'
+          equipment['promotion']['runtime_activation']=True
+          equipment['promotion']['presenter_integration']=False
+          equipment['promotion']['creator_exposure']=False
+          equipment['promotion']['blocker']='presenter_integration_and_active_fight_validation_required'
+          equipment['next_stage']='C68.4 — presenter integration and active-fight validation with Painel Guardião'
+          equipment_path.write_text(json.dumps(equipment,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          print('C68_4_EXACT_BACK_PROMOTION=PASS sha='+selected['sha256'])
+          print('C68_4_SHEATH_RUNTIME_READY=PASS sha='+sheath['sha256'])
+          print('C68_4_CREATOR=FAIL_CLOSED')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Refuse push unless promoted composition still passes
+        run: python3 scripts/ci/c68_4_weapon_back_compatibility_review.py
+
+      - name: Commit promoted runtime-ready assets
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions'
+          git config user.email 'actions@users.noreply.github.com'
+          git add assets/modular_fighters/base_04 assets/modular_fighters/shared_equipment
+          git diff --cached --quiet && exit 0
+          git commit -m 'C68.4 — promote sheath and Painel Guardião to runtime-ready'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
