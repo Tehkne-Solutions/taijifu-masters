@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate reference audit statically
+      - name: Validate immutable reference audit across later runtime stages
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -40,19 +40,23 @@ jobs:
           weapon_runtime=Path('scripts/fighter/weapon_kit_fighter_controller.gd').read_text()
           catalog=Path('scripts/combat/weapon_kit_catalog.gd').read_text()
           first_playable=Path('scripts/vertical_slice/first_playable.gd').read_text()
-          assert m['status']=='reference_audit_complete_redraw_required'
-          assert m['version']=='1.1.0'
+          assert m['status'] in ('reference_audit_complete_redraw_required','weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime')
           ref=m['required_references']['katana_lian_wu']
           assert ref['visual_to_combat_binding_status']=='verified_via_current_first_playable_fallback'
-          assert ref['standalone_visual_status']=='redraw_required'
+          assert ref['standalone_visual_status'] in ('redraw_required','materialized_exact_selected_art')
           assert ref['combat_catalog_reference']=='serene_katana'
           assert ref['modular_combat_loadout_id']=='combat_lian_wu_first_playable'
           assert ref['modular_combat_loadout_resolution_status']=='metadata_only_not_runtime_owner_in_current_first_playable'
-          assert m['modules']=={}
-          assert m['promotion']['weapon_main_runtime_activation'] is False
           assert m['promotion']['creator_exposure'] is False
-          assert 'visual_to_combat_binding_not_verified' not in m['promotion']['blockers']
-          assert 'katana_lian_wu_standalone_visual_not_materialized' in m['promotion']['blockers']
+          runtime_main=bool(m['promotion']['weapon_main_runtime_activation'])
+          if runtime_main:
+              assert 'katana_lian_wu' in m['modules']
+              assert m['modules']['katana_lian_wu']['combat_reference']=='serene_katana'
+          else:
+              assert m['modules']=={}
+
+          # Immutable BASE-05.1 record must never be rewritten to pretend the
+          # complete blade existed before the controlled redraw stage.
           assert a['status']=='reference_audit_complete_redraw_required'
           assert a['combat_binding']['weapon_kit_id']=='serene_katana'
           assert a['combat_binding']['modular_preset_combat_loadout_role']=='metadata_only_not_current_first_playable_runtime_owner'
@@ -60,6 +64,7 @@ jobs:
           assert a['character_lock_source_review']['whole_character_crop_as_weapon_module_forbidden'] is True
           assert a['promotion']['binding_verified'] is True
           assert a['promotion']['standalone_art_ready'] is False
+
           assert p['modules']['weapon_main']=='katana_lian_wu'
           assert p['combat_loadout_id']=='combat_lian_wu_first_playable'
           assert 'const PLAYER_PRESET: StringName = &"lian_wu_first_playable"' in first_playable
@@ -74,7 +79,8 @@ jobs:
               assert hashlib.sha256(path.read_bytes()).hexdigest()==expected[name]
           print('BASE05_1_STATIC_BINDING=PASS lian_wu_first_playable->serene_katana')
           print('BASE05_1_SOURCE_HASHES=PASS neutral=true combat=true')
-          print('BASE05_1_REDRAW_DECISION=PASS extraction=false standalone=false')
+          print('BASE05_1_REDRAW_DECISION=PASS historical_extraction=false historical_standalone=false')
+          print(f"BASE05_1_LIFECYCLE=PASS runtime_main={str(runtime_main).lower()} live_art={ref['standalone_visual_status']}")
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -101,7 +107,8 @@ jobs:
           grep -q 'BASE05_1_COMBAT_BINDING=PASS visual=katana_lian_wu kit=serene_katana owner=BuildProfile_fallback' base05-1-reference.log
           grep -q 'BASE05_1_MODULAR_LOADOUT_METADATA=PASS id=combat_lian_wu_first_playable runtime_owner=false' base05-1-reference.log
           grep -q 'BASE05_1_SOURCE_REVIEW=PASS neutral=partial_hilt combat=partial_hilt standalone=false redraw_required=true' base05-1-reference.log
-          grep -q 'BASE05_1_RUNTIME=BLOCKED expected=true weapon_main=false creator=false' base05-1-reference.log
+          grep -q 'BASE05_1_RUNTIME_LIFECYCLE=PASS weapon_main=' base05-1-reference.log
+          grep -q 'creator=false' base05-1-reference.log
           grep -q 'BASE05_1_REFERENCE_AUDIT=PASS' base05-1-reference.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_1_REFERENCE_AUDIT=BLOCKED' base05-1-reference.log; then exit 1; fi
 
@@ -118,4 +125,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'BASE-05.1 Lian Wu weapon-main binding and redraw audit — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'BASE-05.1 immutable Lian Wu binding + historical redraw audit, lifecycle-aware — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

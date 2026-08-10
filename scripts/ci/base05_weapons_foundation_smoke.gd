@@ -11,17 +11,12 @@ func _init() -> void:
 	if String(manifest.get("pack_id", "")) != "BASE05_WEAPONS":
 		_fail("BASE05_FOUNDATION=BLOCKED pack_id")
 		return
-	if bool(manifest.get("promotion", {}).get("weapon_main_runtime_activation", true)):
-		_fail("BASE05_FOUNDATION=BLOCKED weapon_main_premature")
-		return
+	var runtime_main := bool(manifest.get("promotion", {}).get("weapon_main_runtime_activation", false))
 	if bool(manifest.get("promotion", {}).get("weapon_offhand_runtime_activation", true)):
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_offhand_premature")
 		return
 	if bool(manifest.get("promotion", {}).get("creator_exposure", true)):
 		_fail("BASE05_FOUNDATION=BLOCKED creator_premature")
-		return
-	if not manifest.get("modules", {}).is_empty():
-		_fail("BASE05_FOUNDATION=BLOCKED module_premature")
 		return
 
 	if ModularFighterLayerPolicy.z_index_for(&"weapon_back") != 3:
@@ -34,12 +29,15 @@ func _init() -> void:
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_offhand_layer")
 		return
 
+	# The shared runtime scope is immutable: weapon_back stays delegated to
+	# SHARED_MODULAR_EQUIPMENT. BASE-05 weapon_main evolves through dedicated
+	# methods on the same visual runtime and must never be injected here.
 	var runtime_slots := ModularFighterEquipmentRuntime.runtime_slots()
 	if runtime_slots != [&"weapon_back"]:
 		_fail("BASE05_FOUNDATION=BLOCKED shared_runtime_scope:%s" % str(runtime_slots))
 		return
 	if not ModularFighterEquipmentRuntime.module_ids(&"weapon_main").is_empty():
-		_fail("BASE05_FOUNDATION=BLOCKED weapon_main_module_premature")
+		_fail("BASE05_FOUNDATION=BLOCKED shared_weapon_main_scope")
 		return
 	if not ModularFighterEquipmentRuntime.module_ids(&"weapon_offhand").is_empty():
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_offhand_module_premature")
@@ -47,6 +45,23 @@ func _init() -> void:
 	if not ModularFighterEquipmentRuntime.module_ids(&"weapon_back").has("sheath_lian_wu_blue"):
 		_fail("BASE05_FOUNDATION=BLOCKED sheath_reference")
 		return
+	if ModularFighterEquipmentRuntime.weapon_main_runtime_activation_enabled() != runtime_main:
+		_fail("BASE05_FOUNDATION=BLOCKED weapon_main_activation_mismatch")
+		return
+
+	var modules = manifest.get("modules", {})
+	if runtime_main:
+		if not (modules is Dictionary) or not modules.has("katana_lian_wu"):
+			_fail("BASE05_FOUNDATION=BLOCKED promoted_weapon_main_missing")
+			return
+		var katana = modules["katana_lian_wu"]
+		if not (katana is Dictionary) or String(katana.get("slot", "")) != "weapon_main":
+			_fail("BASE05_FOUNDATION=BLOCKED promoted_weapon_main_slot")
+			return
+	else:
+		if not modules.is_empty():
+			_fail("BASE05_FOUNDATION=BLOCKED pre_runtime_modules_present")
+			return
 
 	var preset := _json(LIAN_PRESET)
 	if String(preset.get("modules", {}).get("weapon_main", "")) != "katana_lian_wu":
@@ -81,7 +96,7 @@ func _init() -> void:
 
 	print("BASE05_FOUNDATION=PASS pack=BASE05_WEAPONS")
 	print("BASE05_OWNERSHIP=PASS combat=WeaponKitCatalog_and_BattleLoadoutCatalog visual=ModularFighterEquipmentRuntime")
-	print("BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=false runtime_offhand=false")
+	print("BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=%s runtime_offhand=false" % str(runtime_main).to_lower())
 	print("BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=%s" % binding_state)
 	print("BASE05_CREATOR=BLOCKED expected=true")
 	print("BASE05_FOUNDATION_LIFECYCLE=PASS status=%s" % String(manifest.get("status", "")))

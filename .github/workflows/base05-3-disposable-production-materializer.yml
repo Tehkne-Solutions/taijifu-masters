@@ -1,0 +1,16 @@
+name: BASE-05.3 Disabled Exact Katana Production Materializer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disabled:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          echo 'BASE05_3_MATERIALIZER=DISABLED'
+          echo 'No repository write permissions remain.'
+          echo 'SIGNATURE=Tehkné Solutions'
