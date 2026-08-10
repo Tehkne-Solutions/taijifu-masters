@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate promoted manifests and no writers
+      - name: Validate final C68.4 production contracts and no writers
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -31,13 +31,17 @@ jobs:
           from pathlib import Path
           e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
           b=json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
-          assert e['pack_id']=='SHARED_MODULAR_EQUIPMENT'
+          c=json.loads(Path('assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_PACK_01_RUNTIME.json').read_text())
+          assert e['pack_id']=='SHARED_MODULAR_EQUIPMENT' and e['status']=='production_approved_weapon_back_pack_01_active_fight'
           assert e['runtime_slots']==['weapon_back']
           assert e['promotion']['runtime_activation'] is True
+          assert e['promotion']['presenter_integration'] is True
           assert e['promotion']['creator_exposure'] is False
+          assert e['promotion']['active_fight_validation']=='pass'
           s=e['modules']['sheath_lian_wu_blue']
           assert s['runtime_ready'] is True and s['production_ready'] is True and s['layer']==3
           assert hashlib.sha256(Path(s['path']).read_bytes()).hexdigest()==s['sha256']
+          assert b['status']=='production_approved_armor_pack_01_back_accessory_pack_01_active_fight'
           assert b['promotion']['back_accessory_runtime_activation'] is True
           assert b['promotion']['back_accessory_creator_exposure'] is False
           back=b['back_accessories']['back_01_guardian_panel']
@@ -45,8 +49,20 @@ jobs:
           mod=b['modules'][back['back_accessory']]
           assert mod['slot']=='back_accessory'
           assert hashlib.sha256(Path(mod['path']).read_bytes()).hexdigest()==mod['sha256']
+          assert c['stage']=='C68.4' and c['status']=='production_approved_active_fight'
+          assert c['back_accessory']['id']=='back_01_guardian_panel'
+          assert c['back_accessory']['sha256']==mod['sha256']
+          assert c['weapon_back_dependency']['id']=='sheath_lian_wu_blue'
+          assert c['weapon_back_dependency']['sha256']==s['sha256']
+          assert c['layer_contract']['relation']=='weapon_back < back_accessory < hair_back'
+          assert c['active_fight']['workflow_run']==31393333269
+          assert c['active_fight']['artifact_id']==9064573876
+          assert c['active_fight']['auto_activation'] is True and c['active_fight']['battle_handoff'] is True
+          assert c['promotion']['battle_runtime'] is True and c['promotion']['presenter_integration'] is True
+          assert c['promotion']['creator_exposure'] is False
           assert not list(Path('.github/workflows').glob('c68-4-disposable-*.yml'))
-          print('C68_4_PROMOTED_MANIFESTS=PASS sheath=runtime_ready back=runtime_ready creator=false')
+          print('C68_4_FINAL_CONTRACT=PASS sheath=sheath_lian_wu_blue back=back_01_guardian_panel')
+          print('C68_4_PROMOTED_MANIFESTS=PASS runtime=true presenter=true creator=false')
           print('C68_4_WRITERS=ABSENT')
           print('SIGNATURE=Tehkné Solutions')
           PY
@@ -84,21 +100,13 @@ jobs:
           grep -q 'C68_4_RUNTIME_SCOPE=PASS slots=weapon_back future=weapon_main,weapon_offhand' c68-4-runtime.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|C68_4_.*BLOCKED' c68-4-runtime.log; then exit 1; fi
 
-      - name: Active-fight review when presenter integration is enabled
+      - name: Validate definitive active-fight presenter integration
         run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
-          print('true' if e['promotion']['presenter_integration'] else 'false')
-          PY
-          if grep -q '"presenter_integration": true' assets/modular_fighters/shared_equipment/manifest.json; then
-            xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/c68_4_active_fight_visual_review.gd 2>&1 | tee c68-4-active-fight.log
-            grep -q 'C68_4_ACTIVE_FIGHT=PASS' c68-4-active-fight.log
-            grep -q 'C68_4_ACTIVE_LAYERING=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-active-fight.log
-          else
-            echo 'C68_4_ACTIVE_FIGHT=SKIPPED presenter_integration=false' | tee c68-4-active-fight.log
-          fi
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/c68_4_active_fight_visual_review.gd 2>&1 | tee c68-4-active-fight.log
+          grep -q 'C68_4_ACTIVE_FIGHT=PASS weapon_back=sheath_lian_wu_blue back=back_01_guardian_panel auto_activation=true handoff=true' c68-4-active-fight.log
+          grep -q 'C68_4_ACTIVE_LAYERING=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-active-fight.log
+          grep -q 'C68_4_ACTIVE_COMPOSITION=PASS hair=hair_01_lian_topknot uniform=uniform_01_lian_martial armor=armor_01_taijifu_guard' c68-4-active-fight.log
+          test -s artifacts/c68_4/C68_4_ACTIVE_FIGHT.review-1920x1080.png
 
       - name: Upload C68.4 evidence
         uses: actions/upload-artifact@v4
@@ -113,8 +121,9 @@ jobs:
             artifacts/c68_4/*.png
             assets/modular_fighters/shared_equipment/manifest.json
             assets/modular_fighters/base_04/manifest.json
+            assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_PACK_01_RUNTIME.json
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Summary
-        run: echo 'C68.4 promoted weapon_back + Back Accessory runtime validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.4 final weapon_back + Back Accessory production and active-fight validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
