@@ -1,5 +1,6 @@
 extends Node2D
 
+const LEGACY_REGISTRY_SCRIPT := preload("res://scripts/runtime/asset_pack_registry.gd")
 const REQUIRED_PACKS := ["PACK_07", "PACK_08", "PACK_09", "PACK_10", "PACK_99"]
 const SAMPLE_ASSETS := {
     "PACK_07": "res://assets/packs/pack_07_heroes_masters/runtime/hd/TM_HERO_WARDEN_SE_BASE_003.png",
@@ -28,17 +29,19 @@ func validate_integration() -> Dictionary:
         "dependencies_valid": true,
         "binary_assets_available": true
     }
+    var registry := _legacy_registry()
     for pack_id in REQUIRED_PACKS:
-        var registered := AssetPackRegistry.has_pack(pack_id)
+        var registered: bool = registry.has_pack(pack_id)
         report["packs"][pack_id] = {"registered": registered}
         if not registered:
             report["all_registered"] = false
             continue
-        var manifest: Dictionary = AssetPackRegistry.get_pack(pack_id)
+        var manifest: Dictionary = registry.get_pack(pack_id)
         for dependency in manifest.get("depends_on", []):
-            if not AssetPackRegistry.has_pack(String(dependency)):
+            if not registry.has_pack(String(dependency)):
                 report["dependencies_valid"] = false
                 report["packs"][pack_id]["missing_dependency"] = dependency
+    registry.free()
     for pack_id in SAMPLE_ASSETS:
         var asset_path: String = SAMPLE_ASSETS[pack_id]
         var available := ResourceLoader.exists(asset_path)
@@ -46,6 +49,13 @@ func validate_integration() -> Dictionary:
         if not available:
             report["binary_assets_available"] = false
     return report
+
+func _legacy_registry() -> Node:
+    var registry := LEGACY_REGISTRY_SCRIPT.new()
+    registry.legacy_adapter_enabled = true
+    registry.scan_legacy_packs = true
+    registry.reload_packs()
+    return registry
 
 func _build_preview() -> void:
     var index := 0
