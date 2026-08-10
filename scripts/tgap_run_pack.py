@@ -126,6 +126,7 @@ def main() -> int:
         pipeline_contract = run_step("pipeline_contract_gate", contract_command + ["--include-pipeline-report"], repo)
         steps.append(pipeline_contract)
         reports["contract"] = read_json(validation / "contract-gate-report.json")
+        write_pipeline_report(pack, steps, reports)
         if pipeline_contract["passed"]:
             pipeline_semantic = run_step("pipeline_semantic_gate", semantic_command + ["--include-pipeline-report"], repo)
         else:
