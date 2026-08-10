@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE04_BACK_ACCESSORY_PACK_01_ART_REVIEW",
   "stage": "C68.3",
-  "status": "art_direction_locked_candidate_generation_pending",
+  "status": "candidate_selected_art_only_promotion_blocked_weapon_back",
   "selection_unit": "back_accessory",
   "slot": "back_accessory",
   "layer": 4,
@@ -62,20 +62,47 @@
     "reference_hair": "hair_01_lian_topknot",
     "reference_uniform": "uniform_01_lian_martial",
     "reference_armor": "armor_01_taijifu_guard",
+    "reference_weapon_back": "sheath_lian_wu_blue",
     "weapon_back_layer": 3,
     "back_accessory_layer": 4,
     "hair_back_layer": 5,
     "must_review_without_weapon": true,
     "must_review_with_weapon_back": true,
+    "weapon_back_standalone_module_status": "not_materialized_in_current_closed_inventory",
     "must_review_authored_facing": true,
     "must_review_flipped_facing": true,
     "must_review_gameplay_scale": true
   },
+  "selection_review": {
+    "selected_candidate": "v3_guardian_panel",
+    "selected_label": "Painel Guardião",
+    "decision": "selected_art_direction_only",
+    "reason": "best_compact_integrated_read_with_clear_gameplay_silhouette_without_mmo_cape_mass",
+    "v1_guardian_yoke": "readable_but_not_selected_due_to_higher_lateral_visual_mass",
+    "v2_martial_knot": "rejected_visible_composition_reads_as_two_detached_lateral_strips",
+    "readability_thresholds": {
+      "min_retained_pixels": 3500,
+      "min_retained_ratio": 0.08,
+      "min_pairwise_difference": 3000
+    },
+    "readability_results": {
+      "v1_guardian_yoke": {"retained_pixels": 14065, "retained_ratio": 0.1721},
+      "v2_martial_knot": {"retained_pixels": 7235, "retained_ratio": 0.2409},
+      "v3_guardian_panel": {"retained_pixels": 11151, "retained_ratio": 0.1290}
+    },
+    "evidence": {
+      "workflow_run": 31390044029,
+      "artifact_id": 9063268074,
+      "artifact_digest": "sha256:a112e5ce18c4cd1f928485b63129f3819aa7e5c1f8bfcff8f2e276ecab953af2",
+      "capture": "artifacts/c68_3/C68_3_BACK_ACCESSORY_CANDIDATES.review-1920x1080.png"
+    }
+  },
   "promotion_gate": {
-    "candidate_visual_review": "pending",
-    "selected_candidate": null,
-    "exact_binary_materialization": "blocked_until_selection",
-    "runtime_validation": "blocked_until_selection",
+    "candidate_visual_review": "pass_selected_v3",
+    "selected_candidate": "v3_guardian_panel",
+    "exact_binary_materialization": "pass_candidate_binary",
+    "weapon_back_compatibility": "blocked_standalone_module_required",
+    "runtime_validation": "blocked_weapon_back_compatibility",
     "active_fight_visual_review": "blocked_until_runtime",
     "creator_control": "blocked_until_back_accessory_production_ready"
   },
@@ -84,7 +111,12 @@
       "status": "rejected",
       "reason": "read_as_two_disconnected_strips_instead_of_complete_reusable_back_accessory",
       "must_not_reintroduce": true
+    },
+    "c68_3_v2_martial_knot": {
+      "status": "rejected",
+      "reason": "visible_canonical_composition_reads_as_two_detached_lateral_strips_even_though_source_bitmap_is_connected",
+      "must_not_promote": true
     }
   },
-  "next_stage": "C68.3 — generate and compare three Back Accessory candidates"
+  "next_stage": "C68.4 — materialize sheath_lian_wu_blue as standalone weapon_back, validate with selected v3, then promote Back Accessory"
 }
