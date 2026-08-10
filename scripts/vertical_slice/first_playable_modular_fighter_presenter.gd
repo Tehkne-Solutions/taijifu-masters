@@ -15,6 +15,7 @@ const ANIMATION_STATES := [
 	"idle", "run", "jump_start", "airborne", "fall",
 	"attack_light", "guard", "dodge", "hit", "ko",
 ]
+const WEAPON_MAIN_VISIBLE_STATES := ["attack_light", "guard", "dodge"]
 
 var _fighter: FighterController
 var _assembler: ModularFighterAssembler
@@ -30,6 +31,7 @@ var _uniform_set_id: StringName = &"uniform_none"
 var _armor_set_id: StringName = &"armor_none"
 var _back_accessory_id: StringName = &"back_none"
 var _weapon_back_id: StringName = &""
+var _weapon_main_id: StringName = &""
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -50,6 +52,7 @@ func _process(delta: float) -> void:
 		_state_time = 0.0
 	else:
 		_state_time += delta
+	_apply_weapon_main_visibility()
 	_apply_state_transform()
 
 func using_modular_assets() -> bool:
@@ -73,6 +76,9 @@ func active_back_accessory_id() -> StringName:
 func active_weapon_back_id() -> StringName:
 	return _weapon_back_id
 
+func active_weapon_main_id() -> StringName:
+	return _weapon_main_id
+
 func visual_state() -> StringName:
 	return _visual_state
 
@@ -80,6 +86,7 @@ func assembler() -> ModularFighterAssembler:
 	return _assembler
 
 func runtime_signature() -> Dictionary:
+	var weapon_main := ModularFighterEquipmentRuntime.weapon_main_signature(null, _assembler) if _assembler != null else {}
 	return {
 		"runtime": RUNTIME_ID,
 		"active": _active,
@@ -89,6 +96,9 @@ func runtime_signature() -> Dictionary:
 		"armor_set_id": String(_armor_set_id),
 		"back_accessory_id": String(_back_accessory_id),
 		"weapon_back_id": String(_weapon_back_id),
+		"weapon_main_id": String(_weapon_main_id),
+		"weapon_main_visible": bool(weapon_main.get("visible", false)),
+		"weapon_main_visible_states": WEAPON_MAIN_VISIBLE_STATES.duplicate(),
 		"states": ANIMATION_STATES.duplicate(),
 		"state_count": ANIMATION_STATES.size(),
 		"world_translation_owner": "fighter_physics",
@@ -174,6 +184,15 @@ func _try_activate() -> void:
 		return
 	_weapon_back_id = (profile as ModularFighterProfile).module_id(&"weapon_back")
 
+	# BASE-05.3 composes weapon_main through the same visual equipment boundary.
+	# It is attached once and starts hidden; visual state controls visibility only.
+	failures = ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile as ModularFighterProfile, candidate)
+	if not failures.is_empty():
+		candidate.queue_free()
+		print("BASE05_3_MODULAR_PRESENTER=BLOCKED reason=weapon_main_assembly failures=%s" % ",".join(failures))
+		return
+	_weapon_main_id = (profile as ModularFighterProfile).module_id(&"weapon_main")
+
 	# C67 composes the atomic BASE-03 uniform set after Hair.
 	failures = ModularFighterUniformRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
 	if not failures.is_empty():
@@ -201,6 +220,12 @@ func _try_activate() -> void:
 	_preset_id = FirstPlayableSession.creator_preset_id()
 	_last_health = _fighter.health
 	_active = true
+	if not _apply_weapon_main_visibility():
+		candidate.queue_free()
+		_assembler = null
+		_active = false
+		print("BASE05_3_MODULAR_PRESENTER=BLOCKED reason=weapon_main_initial_visibility")
+		return
 	_hide_lian_fallback()
 	_promote_battle_handoff()
 	print("C65_MODULAR_PRESENTER=PASS preset=%s state_count=%d" % [String(_preset_id), ANIMATION_STATES.size()])
@@ -234,6 +259,14 @@ func _try_activate() -> void:
 		var equipment_signature := ModularFighterEquipmentRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
 		var weapon_back = equipment_signature.get("nodes", {}).get("weapon_back", {})
 		print("C68_4_EQUIPMENT_RUNTIME=PASS weapon_back=%s z=%d" % [String(_weapon_back_id), int(weapon_back.get("z", -1))])
+	if not String(_weapon_main_id).is_empty():
+		var weapon_main_signature := ModularFighterEquipmentRuntime.weapon_main_signature(profile as ModularFighterProfile, _assembler)
+		print("BASE05_3_WEAPON_MAIN_RUNTIME=PASS weapon_main=%s z=%d visible=%s combat_reference=%s" % [
+			String(_weapon_main_id),
+			int(weapon_main_signature.get("z", -1)),
+			str(weapon_main_signature.get("visible", true)),
+			String(weapon_main_signature.get("combat_reference", "")),
+		])
 	if _armor_set_id != &"armor_none" or _back_accessory_id != &"back_none":
 		var armor_signature := ModularFighterArmorRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
 		print("C68_1_ARMOR_RUNTIME=PASS armor=%s back=%s head_z=%d shoulders_z=%d back_z=%d" % [
@@ -264,6 +297,12 @@ func _promote_battle_handoff() -> void:
 	handoff["armor_set_id"] = String(_armor_set_id)
 	handoff["back_accessory_id"] = String(_back_accessory_id)
 	handoff["weapon_back_id"] = String(_weapon_back_id)
+	handoff["weapon_main_id"] = String(_weapon_main_id)
+	handoff["weapon_main_visibility_owner"] = "visual_state"
+	handoff["weapon_main_visible_states"] = WEAPON_MAIN_VISIBLE_STATES.duplicate()
+	handoff["weapon_main_neutral_visible"] = false
+	handoff["weapon_back_neutral_visible"] = true
+	handoff["weapon_combat_behavior_owner"] = "WeaponKitCatalog"
 	handoff["static_sprite_regression_allowed"] = false
 	handoff["lian_fallback_preserved"] = true
 	handoff["preset_specific_sprite_sheet"] = false
@@ -287,6 +326,14 @@ func _resolve_visual_state() -> StringName:
 	if absf(_fighter.velocity.x) > 20.0:
 		return &"run"
 	return &"idle"
+
+func _apply_weapon_main_visibility() -> bool:
+	if _assembler == null:
+		return String(_weapon_main_id).is_empty()
+	var should_show := WEAPON_MAIN_VISIBLE_STATES.has(String(_visual_state))
+	if String(_weapon_main_id).is_empty():
+		should_show = false
+	return ModularFighterEquipmentRuntime.set_weapon_main_visible(_assembler, should_show)
 
 func _apply_state_transform() -> void:
 	var facing_sign := -1.0 if _fighter.facing < 0.0 else 1.0
