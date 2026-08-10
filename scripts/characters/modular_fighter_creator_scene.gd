@@ -8,11 +8,11 @@ extends ModularFighterCreatorShell
 
 const REVIEWED_PREVIEW_SCALE := 0.20
 const REVIEWED_PREVIEW_POSITION := Vector2(235.0, 650.0)
-const ARMOR_CONTROL_POSITION := Vector2(600.0, 38.0)
+const ARMOR_CONTROL_POSITION := Vector2(590.0, 38.0)
 const ARMOR_CONTROL_SIZE := Vector2(200.0, 42.0)
-const UNIFORM_CONTROL_POSITION := Vector2(810.0, 38.0)
+const UNIFORM_CONTROL_POSITION := Vector2(820.0, 38.0)
 const UNIFORM_CONTROL_SIZE := Vector2(200.0, 42.0)
-const HAIR_CONTROL_POSITION := Vector2(1020.0, 38.0)
+const HAIR_CONTROL_POSITION := Vector2(1040.0, 38.0)
 const HAIR_CONTROL_SIZE := Vector2(220.0, 42.0)
 
 var _hair_style_option: OptionButton
@@ -252,7 +252,7 @@ func _build_hair_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "HairStyleLabel"
-	label.position = Vector2(1020, 18)
+	label.position = Vector2(1040, 18)
 	label.size = Vector2(220, 20)
 	label.text = "CABELO • BASE-02"
 	label.add_theme_font_size_override("font_size", 10)
@@ -273,7 +273,7 @@ func _build_uniform_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "UniformSetLabel"
-	label.position = Vector2(810, 18)
+	label.position = Vector2(820, 18)
 	label.size = Vector2(200, 20)
 	label.text = "UNIFORME • BASE-03"
 	label.add_theme_font_size_override("font_size", 10)
@@ -294,7 +294,7 @@ func _build_armor_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "ArmorSetLabel"
-	label.position = Vector2(600, 18)
+	label.position = Vector2(590, 18)
 	label.size = Vector2(200, 20)
 	label.text = "ARMADURA • BASE-04"
 	label.add_theme_font_size_override("font_size", 10)
@@ -506,10 +506,16 @@ func _on_preset_selected_for_battle(preset_id: StringName) -> void:
 		_set_status("Preset salvo, mas o handoff de batalha foi bloqueado", true)
 
 func reviewed_layout_signature() -> Dictionary:
+	var controls_overlap := false
+	if _armor_set_option != null and _uniform_set_option != null and _hair_style_option != null:
+		var armor_rect := Rect2(_armor_set_option.position, _armor_set_option.size)
+		var uniform_rect := Rect2(_uniform_set_option.position, _uniform_set_option.size)
+		var hair_rect := Rect2(_hair_style_option.position, _hair_style_option.size)
+		controls_overlap = armor_rect.intersects(uniform_rect) or armor_rect.intersects(hair_rect) or uniform_rect.intersects(hair_rect)
 	return {
 		"preview_scale": REVIEWED_PREVIEW_SCALE,
 		"preview_position": [REVIEWED_PREVIEW_POSITION.x, REVIEWED_PREVIEW_POSITION.y],
-		"controls_overlap": false,
+		"controls_overlap": controls_overlap,
 		"armor_control_position": [ARMOR_CONTROL_POSITION.x, ARMOR_CONTROL_POSITION.y],
 		"armor_control_size": [ARMOR_CONTROL_SIZE.x, ARMOR_CONTROL_SIZE.y],
 		"uniform_control_position": [UNIFORM_CONTROL_POSITION.x, UNIFORM_CONTROL_POSITION.y],
