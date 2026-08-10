@@ -261,8 +261,8 @@ static func profile_weapon_set_id(profile: ModularFighterProfile) -> StringName:
 		var contract = sets[set_id]
 		if not (contract is Dictionary):
 			continue
-		var expected_main := String(contract.get("weapon_main", ""))
-		var expected_offhand := String(contract.get("weapon_offhand", ""))
+		var expected_main := _optional_module_string(contract.get("weapon_main", null))
+		var expected_offhand := _optional_module_string(contract.get("weapon_offhand", null))
 		if main_id == expected_main and offhand_id == expected_offhand:
 			return StringName(set_id)
 	return &""
@@ -343,8 +343,11 @@ static func _weapon_set_contract(set_id: StringName) -> Dictionary:
 	var contract = sets.get(String(set_id), {})
 	return contract as Dictionary if contract is Dictionary else {}
 
+static func _optional_module_string(value: Variant) -> String:
+	return "" if value == null else String(value)
+
 static func _apply_optional_module(profile: ModularFighterProfile, slot: StringName, value: Variant) -> void:
-	var module_id := String(value) if value != null else ""
+	var module_id := _optional_module_string(value)
 	if module_id.is_empty():
 		profile.clear_module(slot)
 	else:
