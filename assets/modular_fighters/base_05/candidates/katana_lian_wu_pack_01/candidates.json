@@ -1,9 +1,11 @@
 {
-  "schema": "tehkne/taijifu-base05-katana-candidates/v1",
+  "schema": "tehkne/taijifu-base05-katana-candidates/v2",
   "signature": "Tehkné Solutions",
-  "stage": "BASE-05.2",
+  "stage": "BASE-05.2b",
   "pack_id": "BASE05_KATANA_LIAN_WU_CANDIDATES",
   "status": "materialized_candidate_review_pending",
+  "source_brief_schema": "tehkne/taijifu-base05-katana-candidate-brief/v2",
+  "redraw_iteration": 2,
   "selection_unit": "weapon_main",
   "target_production_id": "katana_lian_wu",
   "combat_reference": "serene_katana",
@@ -14,7 +16,7 @@
     "v1_serene_forward": {
       "id": "v1_serene_forward",
       "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v1_serene_forward.png",
-      "sha256": "d038ff5c115a829b0a95f0b61758ff5bb529388baee186da0895fdefc33d2643",
+      "sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
       "canvas": [
         1024,
         1024
@@ -27,34 +29,34 @@
       "slot": "weapon_main",
       "layer": 80,
       "alpha_bbox": [
-        271,
-        542,
-        833,
-        712
+        548,
+        531,
+        971,
+        638
       ],
-      "visible_pixels": 11198,
-      "transparent_pixels": 1037378,
+      "visible_pixels": 8247,
+      "transparent_pixels": 1040329,
       "tip": [
-        830,
-        545
+        968,
+        535
       ],
       "control": [
-        600,
-        620
+        790,
+        575
       ],
       "guard": [
-        356,
-        682
+        632,
+        610
       ],
-      "brief": "forward low-rise blade, restrained curve, round gold tsuba",
-      "materialization": "deterministic_controlled_standalone_redraw",
+      "brief": "forward low-rise blade from front hand, restrained curve, round gold tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw_v2",
       "runtime_ready": false,
       "production_ready": false
     },
     "v2_serene_rising": {
       "id": "v2_serene_rising",
       "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v2_serene_rising.png",
-      "sha256": "54c220b95f51cf4d3aa3e2e26c651e377ccda99016e82b307c1a9cee9725cac3",
+      "sha256": "0bbd8a184a88c6ebba4b9243dd946a38a902c1e4fa8ee5f6d12f300c823566e4",
       "canvas": [
         1024,
         1024
@@ -67,34 +69,34 @@
       "slot": "weapon_main",
       "layer": 80,
       "alpha_bbox": [
-        287,
-        402,
-        723,
-        736
+        574,
+        357,
+        917,
+        665
       ],
-      "visible_pixels": 10398,
-      "transparent_pixels": 1038178,
+      "visible_pixels": 8575,
+      "transparent_pixels": 1040001,
       "tip": [
-        720,
-        405
+        914,
+        360
       ],
       "control": [
-        565,
-        525
+        770,
+        470
       ],
       "guard": [
-        356,
-        682
+        638,
+        602
       ],
-      "brief": "higher diagonal blade, elegant upward read, diamond compact tsuba",
-      "materialization": "deterministic_controlled_standalone_redraw",
+      "brief": "higher diagonal blade from front hand, elegant upward read, diamond compact tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw_v2",
       "runtime_ready": false,
       "production_ready": false
     },
     "v3_serene_low_guard": {
       "id": "v3_serene_low_guard",
       "path": "assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v3_serene_low_guard.png",
-      "sha256": "bc9b3e2f4e10fd632ec32b59dd8465dc6e941ed827bd7981a37c61817c5f0d57",
+      "sha256": "9d6f206be2fa033fc0a96676b246bc469f253e95f4e7847f7d210555839fdb92",
       "canvas": [
         1024,
         1024
@@ -107,27 +109,27 @@
       "slot": "weapon_main",
       "layer": 80,
       "alpha_bbox": [
-        269,
-        641,
-        853,
-        704
+        535,
+        608,
+        985,
+        652
       ],
-      "visible_pixels": 12085,
-      "transparent_pixels": 1036491,
+      "visible_pixels": 9249,
+      "transparent_pixels": 1039327,
       "tip": [
-        850,
-        650
+        982,
+        638
       ],
       "control": [
-        625,
-        645
+        810,
+        646
       ],
       "guard": [
-        356,
-        682
+        620,
+        630
       ],
-      "brief": "longer low forward line, shallow curve, compact rectangular tsuba",
-      "materialization": "deterministic_controlled_standalone_redraw",
+      "brief": "long low-forward line from front hand, shallow curve, compact rectangular tsuba",
+      "materialization": "deterministic_controlled_standalone_redraw_v2",
       "runtime_ready": false,
       "production_ready": false
     }

@@ -1,9 +1,9 @@
 {
-  "schema": "tehkne/taijifu-base05-katana-candidate-brief/v1",
+  "schema": "tehkne/taijifu-base05-katana-candidate-brief/v2",
   "signature": "Tehkné Solutions",
-  "stage": "BASE-05.2",
+  "stage": "BASE-05.2b",
   "pack_id": "BASE05_KATANA_LIAN_WU_CANDIDATES",
-  "status": "specified_pre_materialization",
+  "status": "specified_redraw_v2_pre_materialization",
   "selection_unit": "weapon_main",
   "slot": "weapon_main",
   "layer": 80,
@@ -44,28 +44,43 @@
     "guard_must_remain_compact": true,
     "readable_at_gameplay_scale": true
   },
+  "redraw_provenance": {
+    "source_review_run": 31415687266,
+    "source_artifact_id": 9073311908,
+    "source_artifact_digest": "sha256:f645b86857c4f86dde09b8e8eec091392ce424de287f280e0f36a9cabe48948a",
+    "reason": "all_v1_candidates_crossed_body_mass_above_overlap_contract",
+    "v1_exterior_ratio": 0.1684,
+    "v2_exterior_ratio": 0.1580,
+    "v3_exterior_ratio": 0.2301,
+    "max_body_overlap_ratio": 0.72,
+    "design_correction": "move_guard_to_front_right_hand_region_and_project_blade_outside_body_silhouette"
+  },
   "reference_anchor": {
-    "review_hand_anchor": [356, 682],
-    "note": "Review-only anchor inferred from exact C63 canonical stance; runtime animation anchoring remains a later state-aware contract."
+    "historical_review_hand_anchor": [356, 682],
+    "redraw_review_hand_anchor_region": {
+      "x": [610, 650],
+      "y": [595, 640]
+    },
+    "note": "The historical C63 anchor caused all three standalone weapon_main candidates to cross the current modular body mass. BASE-05.2b uses the current assembled front-hand region strictly for visual review; runtime animation anchoring remains state-aware and separate."
   },
   "candidates": {
     "v1_serene_forward": {
-      "brief": "forward low-rise blade, restrained curve, round gold tsuba",
-      "tip": [830, 545],
-      "control": [600, 620],
-      "guard": [356, 682]
+      "brief": "forward low-rise blade from front hand, restrained curve, round gold tsuba",
+      "tip": [968, 535],
+      "control": [790, 575],
+      "guard": [632, 610]
     },
     "v2_serene_rising": {
-      "brief": "higher diagonal blade, elegant upward read, diamond compact tsuba",
-      "tip": [720, 405],
-      "control": [565, 525],
-      "guard": [356, 682]
+      "brief": "higher diagonal blade from front hand, elegant upward read, diamond compact tsuba",
+      "tip": [914, 360],
+      "control": [770, 470],
+      "guard": [638, 602]
     },
     "v3_serene_low_guard": {
-      "brief": "longer low forward line, shallow curve, compact rectangular tsuba",
-      "tip": [850, 650],
-      "control": [625, 645],
-      "guard": [356, 682]
+      "brief": "long low-forward line from front hand, shallow curve, compact rectangular tsuba",
+      "tip": [982, 638],
+      "control": [810, 646],
+      "guard": [620, 630]
     }
   },
   "review_contract": {
