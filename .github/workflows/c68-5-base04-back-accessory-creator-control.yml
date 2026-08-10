@@ -5,8 +5,10 @@ on:
     paths:
       - 'assets/modular_fighters/base_04/**'
       - 'assets/modular_fighters/shared_equipment/**'
+      - 'scenes/characters/modular_fighter_creator_shell.tscn'
       - 'scripts/characters/modular_fighter_armor_runtime.gd'
       - 'scripts/characters/modular_fighter_creator_scene.gd'
+      - 'scripts/characters/modular_fighter_creator_bounded_scene.gd'
       - 'scripts/characters/modular_fighter_equipment_runtime.gd'
       - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
