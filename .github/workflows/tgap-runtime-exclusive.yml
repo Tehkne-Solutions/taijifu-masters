@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install TGAP test dependency
+        run: python -m pip install pytest
       - name: Run exclusive runtime tests
         run: python -m pytest tests/tgap/test_legacy_autoload_removed.py tests/tgap/test_legacy_adapter_sunset.py
       - name: Enforce zero legacy production findings
