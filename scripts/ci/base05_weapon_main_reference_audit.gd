@@ -64,9 +64,15 @@ func _init() -> void:
 		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED promotion_contract")
 		return
 	var promotion: Dictionary = promotion_value as Dictionary
-	if bool(promotion.get("creator_exposure", true)):
-		_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED creator_premature")
-		return
+	var creator_live := bool(promotion.get("creator_exposure", false))
+	if creator_live:
+		var control = manifest.get("public_controls", {}).get("weapon_set", {})
+		if not (control is Dictionary) or not bool(control.get("selection_atomic", false)):
+			_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED creator_atomicity")
+			return
+		if bool(control.get("direct_slot_controls", true)) or bool(control.get("combat_loadout_mutation", true)):
+			_fail("BASE05_1_REFERENCE_AUDIT=BLOCKED creator_ownership")
+			return
 	var runtime_main := bool(promotion.get("weapon_main_runtime_activation", false))
 	var manifest_modules_value: Variant = manifest.get("modules", {})
 	if not (manifest_modules_value is Dictionary):
@@ -110,7 +116,7 @@ func _init() -> void:
 	print("BASE05_1_COMBAT_BINDING=PASS visual=katana_lian_wu kit=serene_katana owner=BuildProfile_fallback")
 	print("BASE05_1_MODULAR_LOADOUT_METADATA=PASS id=combat_lian_wu_first_playable runtime_owner=false")
 	print("BASE05_1_SOURCE_REVIEW=PASS neutral=partial_hilt combat=partial_hilt standalone=false redraw_required=true")
-	print("BASE05_1_RUNTIME_LIFECYCLE=PASS weapon_main=%s creator=false live_art=%s" % [str(runtime_main).to_lower(), live_art_state])
+	print("BASE05_1_RUNTIME_LIFECYCLE=PASS weapon_main=%s creator=%s live_art=%s" % [str(runtime_main).to_lower(), str(creator_live).to_lower(), live_art_state])
 	print("BASE05_1_REFERENCE_AUDIT=PASS")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)

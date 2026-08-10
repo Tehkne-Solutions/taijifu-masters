@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE05_WEAPONS",
-  "version": "1.3.0",
-  "status": "production_approved_weapon_main_runtime",
+  "version": "1.4.0",
+  "status": "weapon_set_creator_validation_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -47,9 +47,11 @@
   },
   "public_controls": {
     "weapon_set": {
-      "creator_exposed": false,
+      "creator_exposed": true,
       "selection_atomic": true,
+      "atomic_slots": ["weapon_main", "weapon_offhand"],
       "direct_slot_controls": false,
+      "weapon_back_control": false,
       "combat_loadout_mutation": false,
       "default_id": "weapon_none"
     }
@@ -61,7 +63,8 @@
       "weapon_offhand": null,
       "requires_art_assets": false,
       "runtime_ready": true,
-      "production_ready": true
+      "production_ready": true,
+      "creator_ready": true
     },
     "weapon_01_lian_serene_katana": {
       "label": "Katana Serena — Lian Wu",
@@ -71,7 +74,7 @@
       "requires_art_assets": true,
       "runtime_ready": true,
       "production_ready": true,
-      "creator_ready": false
+      "creator_ready": true
     }
   },
   "modules": {
@@ -92,7 +95,7 @@
       "source_art_review": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
       "runtime_ready": true,
       "production_ready": true,
-      "creator_ready": false
+      "creator_ready": true
     }
   },
   "required_references": {
@@ -174,11 +177,16 @@
     "weapon_main_runtime_activation": true,
     "weapon_offhand_runtime_activation": false,
     "presenter_integration": true,
-    "creator_exposure": false,
+    "creator_exposure": true,
+    "creator_validation": "pending",
+    "creator_visual_review": "pending",
     "art_assets_present": true,
     "runtime_validation": "pass",
     "owner_visual_review": "pass_selected_v1",
-    "blockers": []
+    "blockers": [
+      "weapon_set_creator_control_not_validated",
+      "creator_visual_review_not_validated"
+    ]
   },
-  "next_stage": "BASE-05.4 — Weapon Set Creator Control, preserving atomic selection, no direct slot controls and no combat-loadout mutation"
+  "next_stage": "BASE-05.4 closeout after atomic weapon_set Creator control, preset roundtrip, battle handoff and 1280x720 visual review"
 }
