@@ -26,9 +26,16 @@ DEFAULT_POLICY = {
     "allowed_globs": [
         "scripts/runtime/asset_pack_registry.gd",
         "scripts/tgap_audit_legacy_usage.py",
+        "scripts/ci/**",
         "tests/**",
         "docs/**",
         ".github/**",
+    ],
+    "retired_globs": [
+        "scripts/runtime/pack_*_preview.gd",
+        "scripts/runtime/pack_08_arena_unit_runtime.gd",
+        "scripts/runtime/pack_99_battle_visual_runtime.gd",
+        "scripts/runtime/pack_99_combat_event_runtime.gd",
     ],
 }
 
@@ -40,6 +47,7 @@ def load_policy(path: Path | None) -> dict:
     return {
         "production_globs": parsed.get("production_globs", DEFAULT_POLICY["production_globs"]),
         "allowed_globs": parsed.get("allowed_globs", DEFAULT_POLICY["allowed_globs"]),
+        "retired_globs": parsed.get("retired_globs", DEFAULT_POLICY["retired_globs"]),
     }
 
 
@@ -47,7 +55,7 @@ def _glob_variants(pattern: str) -> tuple[str, ...]:
     """Approximate pathspec-style **/ semantics with Python fnmatch.
 
     fnmatch treats ``**`` as ordinary ``*``, so ``scripts/**/*.gd`` does not
-    match ``scripts/foo.gd``.  TGAP policy globs are pathspec-style and are
+    match ``scripts/foo.gd``. TGAP policy globs are pathspec-style and are
     intended to include both direct children and deeper descendants.
     """
     variants = [pattern]
@@ -76,9 +84,11 @@ def iter_files(root: Path):
 
 
 def classify(path: str, policy: dict) -> str:
-    if matches_any(path, policy["allowed_globs"]):
+    if matches_any(path, policy.get("allowed_globs", [])):
         return "allowed_infrastructure"
-    if matches_any(path, policy["production_globs"]):
+    if matches_any(path, policy.get("retired_globs", [])):
+        return "retired_legacy"
+    if matches_any(path, policy.get("production_globs", [])):
         return "production"
     return "non_production"
 
@@ -104,6 +114,8 @@ def audit(root: Path, policy: dict | None = None) -> dict:
                 severity = "info"
                 if scope == "production":
                     severity = "error" if kind in {"legacy_pack_root", "direct_tgap_path"} else "warning"
+                elif scope == "retired_legacy":
+                    severity = "retired"
                 findings.append({
                     "kind": kind,
                     "path": relative,
@@ -113,15 +125,18 @@ def audit(root: Path, policy: dict | None = None) -> dict:
                     "severity": severity,
                 })
     production = [item for item in findings if item["scope"] == "production"]
+    retired = [item for item in findings if item["scope"] == "retired_legacy"]
     return {
-        "schema": "tgap/legacy-audit/v2",
+        "schema": "tgap/legacy-audit/v3",
         "root": root.as_posix(),
         "policy": effective_policy,
         "summary": {
             "total_findings": len(findings),
             "production_findings": len(production),
+            "retired_findings": len(retired),
             "files_affected": len({item["path"] for item in findings}),
             "production_files_affected": len({item["path"] for item in production}),
+            "retired_files_affected": len({item["path"] for item in retired}),
             "by_kind": dict(sorted(counts.items())),
             "by_scope": dict(sorted(scope_counts.items())),
         },
