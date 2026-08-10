@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "1.0.0-candidate.1",
-  "status": "production_candidate_armor_pack_01_visual_review_pending",
+  "version": "1.0.0",
+  "status": "production_approved_armor_pack_01_creator_control_pending",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -12,32 +12,19 @@
     "shared_animation_runtime": "shared_modular_animation_runtime_v1"
   },
   "authoring": {
-    "canvas": [
-      1024,
-      1024
-    ],
+    "canvas": [1024, 1024],
     "mode": "RGBA",
-    "pivot": [
-      0.5,
-      0.92
-    ],
+    "pivot": [0.5, 0.92],
     "root_anchor": "bottom_center",
     "native_transparency_required": true,
     "background_allowed": false,
     "text_allowed": false,
     "preset_specific_sprite_sheet": false
   },
-  "slots": [
-    "head_accessory",
-    "shoulders",
-    "back_accessory"
-  ],
+  "slots": ["head_accessory", "shoulders", "back_accessory"],
   "public_controls": {
     "armor_set": {
-      "atomic_slots": [
-        "head_accessory",
-        "shoulders"
-      ],
+      "atomic_slots": ["head_accessory", "shoulders"],
       "direct_slot_controls": false,
       "default_id": "armor_none",
       "selection_atomic": true
@@ -63,7 +50,7 @@
       "shoulders": "armor_01_taijifu_guard_shoulders",
       "requires_art_assets": true,
       "runtime_ready": true,
-      "production_ready": false
+      "production_ready": true
     }
   },
   "back_accessories": {
@@ -80,22 +67,11 @@
       "slot": "head_accessory",
       "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/head_accessory.png",
       "sha256": "ce47889483c41003cdb696640d08787fdeeb9ab13e0012d9c73f650bbbe1f58b",
-      "canvas": [
-        1024,
-        1024
-      ],
+      "canvas": [1024, 1024],
       "mode": "RGBA",
-      "alpha_bbox": [
-        496,
-        132,
-        620,
-        192
-      ],
+      "alpha_bbox": [496, 132, 620, 192],
       "visible_pixels": 4768,
-      "pivot": [
-        0.5,
-        0.92
-      ],
+      "pivot": [0.5, 0.92],
       "root_anchor": "bottom_center",
       "source": {
         "method": "deterministic_reviewed_v2_pixel_contract_materialized",
@@ -110,22 +86,11 @@
       "slot": "shoulders",
       "path": "assets/modular_fighters/base_04/armor_01_taijifu_guard/shoulders.png",
       "sha256": "fcc80bb6fe2b10d0a6664a0306c6dcdca71545dc26c50fd3fdac4da314d3f82a",
-      "canvas": [
-        1024,
-        1024
-      ],
+      "canvas": [1024, 1024],
       "mode": "RGBA",
-      "alpha_bbox": [
-        340,
-        328,
-        716,
-        420
-      ],
+      "alpha_bbox": [340, 328, 716, 420],
       "visible_pixels": 13712,
-      "pivot": [
-        0.5,
-        0.92
-      ],
+      "pivot": [0.5, 0.92],
       "root_anchor": "bottom_center",
       "source": {
         "method": "deterministic_reviewed_v2_pixel_contract_materialized",
@@ -171,10 +136,21 @@
     "armor_runtime_activation": true,
     "back_accessory_runtime_activation": false,
     "creator_exposure": false,
-    "battle_activation": false,
-    "runtime_validation": "pending",
-    "owner_visual_review": "active_fight_capture_pending",
-    "blocker": "c68_1_active_fight_visual_review"
+    "battle_activation": true,
+    "runtime_validation": "pass",
+    "owner_visual_review": "pass",
+    "visual_evidence": {
+      "workflow_run": 31343167852,
+      "artifact_id": 9046452849,
+      "artifact_sha256": "037ee5e6ed577fbb8ec88ee6a1a159a2a47b645464a7d7adebcd09d6ee610e68",
+      "capture": "artifacts/c68_1/C68_1_BASE04_TAIJIFU_GUARD.review-1920x1080.png",
+      "active_fight": true,
+      "armor_candidate": "v2",
+      "hair_interaction": "pass",
+      "uniform_interaction": "pass",
+      "back_accessory": "back_none"
+    },
+    "blocker": "creator_armor_control"
   },
-  "next_stage": "C68_1_BASE04_ARMOR_PACK01_RUNTIME_VISUAL_REVIEW"
+  "next_stage": "C68_2_BASE04_ARMOR_CREATOR_CONTROL"
 }

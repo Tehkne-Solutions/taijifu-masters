@@ -27,6 +27,8 @@ var _state_time := 0.0
 var _preset_id: StringName = &""
 var _hair_style_id: StringName = &"hair_none"
 var _uniform_set_id: StringName = &"uniform_none"
+var _armor_set_id: StringName = &"armor_none"
+var _back_accessory_id: StringName = &"back_none"
 
 func _ready() -> void:
 	_fighter = get_parent() as FighterController
@@ -61,6 +63,12 @@ func active_hair_style_id() -> StringName:
 func active_uniform_set_id() -> StringName:
 	return _uniform_set_id
 
+func active_armor_set_id() -> StringName:
+	return _armor_set_id
+
+func active_back_accessory_id() -> StringName:
+	return _back_accessory_id
+
 func visual_state() -> StringName:
 	return _visual_state
 
@@ -74,6 +82,8 @@ func runtime_signature() -> Dictionary:
 		"preset_id": String(_preset_id),
 		"hair_style_id": String(_hair_style_id),
 		"uniform_set_id": String(_uniform_set_id),
+		"armor_set_id": String(_armor_set_id),
+		"back_accessory_id": String(_back_accessory_id),
 		"states": ANIMATION_STATES.duplicate(),
 		"state_count": ANIMATION_STATES.size(),
 		"world_translation_owner": "fighter_physics",
@@ -143,8 +153,7 @@ func _try_activate() -> void:
 		print("C65_MODULAR_PRESENTER=BLOCKED reason=identity_assembly failures=%s" % ",".join(failures))
 		return
 
-	# C66 composes optional Hair after BASE-01 identity is valid. hair_none is a
-	# no-op, so all existing presets preserve the exact C65 visual behavior.
+	# C66 composes optional Hair after BASE-01 identity is valid.
 	failures = ModularFighterHairRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
 	if not failures.is_empty():
 		candidate.queue_free()
@@ -152,14 +161,23 @@ func _try_activate() -> void:
 		return
 	_hair_style_id = ModularFighterHairRuntime.profile_style_id(profile as ModularFighterProfile)
 
-	# C67 composes the atomic BASE-03 uniform set after Hair. Individual garment
-	# nodes keep canonical z-order, while selection/persistence remains one set.
+	# C67 composes the atomic BASE-03 uniform set after Hair.
 	failures = ModularFighterUniformRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
 	if not failures.is_empty():
 		candidate.queue_free()
 		print("C65_MODULAR_PRESENTER=BLOCKED reason=uniform_assembly failures=%s" % ",".join(failures))
 		return
 	_uniform_set_id = ModularFighterUniformRuntime.profile_set_id(profile as ModularFighterProfile)
+
+	# C68 composes the atomic BASE-04 armor_set plus the independent back accessory.
+	# armor_none/back_none are no-ops, preserving every pre-C68 preset exactly.
+	failures = ModularFighterArmorRuntime.assemble_profile(profile as ModularFighterProfile, candidate)
+	if not failures.is_empty():
+		candidate.queue_free()
+		print("C65_MODULAR_PRESENTER=BLOCKED reason=armor_assembly failures=%s" % ",".join(failures))
+		return
+	_armor_set_id = ModularFighterArmorRuntime.profile_armor_set_id(profile as ModularFighterProfile)
+	_back_accessory_id = ModularFighterArmorRuntime.profile_back_accessory_id(profile as ModularFighterProfile)
 
 	_base_scale = TARGET_VISUAL_HEIGHT / float(used.size.y)
 	candidate.scale = Vector2.ONE * _base_scale
@@ -199,6 +217,15 @@ func _try_activate() -> void:
 			String(_uniform_set_id),
 			str(uniform_signature.get("nodes", {})),
 		])
+	if _armor_set_id != &"armor_none" or _back_accessory_id != &"back_none":
+		var armor_signature := ModularFighterArmorRuntime.runtime_signature(profile as ModularFighterProfile, _assembler)
+		print("C68_1_ARMOR_RUNTIME=PASS armor=%s back=%s head_z=%d shoulders_z=%d back_z=%d" % [
+			String(_armor_set_id),
+			String(_back_accessory_id),
+			int(armor_signature.get("head_accessory_z", -1)),
+			int(armor_signature.get("shoulders_z", -1)),
+			int(armor_signature.get("back_accessory_z", -1)),
+		])
 	print("C65_LIAN_FALLBACK=HIDDEN_PRESERVED")
 	print("SIGNATURE=Tehkné Solutions")
 
@@ -217,6 +244,8 @@ func _promote_battle_handoff() -> void:
 	handoff["animation_states"] = ANIMATION_STATES.duplicate()
 	handoff["hair_style_id"] = String(_hair_style_id)
 	handoff["uniform_set_id"] = String(_uniform_set_id)
+	handoff["armor_set_id"] = String(_armor_set_id)
+	handoff["back_accessory_id"] = String(_back_accessory_id)
 	handoff["static_sprite_regression_allowed"] = false
 	handoff["lian_fallback_preserved"] = true
 	handoff["preset_specific_sprite_sheet"] = false
