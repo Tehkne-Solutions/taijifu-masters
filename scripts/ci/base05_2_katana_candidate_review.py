@@ -38,6 +38,8 @@ MIN_EXTERIOR_RATIO = 0.22
 MAX_FACE_OVERLAP_PIXELS = 900
 MAX_BODY_OVERLAP_RATIO = 0.72
 MIN_PAIRWISE_DIFF = 5000
+GAMEPLAY_SIZE = (256, 256)
+MIN_GAMEPLAY_VISIBLE_PIXELS = 180
 
 
 def rgba(path: Path) -> Image.Image:
@@ -47,11 +49,6 @@ def rgba(path: Path) -> Image.Image:
     return image
 
 
-def visible_pixels(image: Image.Image) -> int:
-    hist = image.getchannel("A").histogram()
-    return sum(hist[1:])
-
-
 def binary_alpha(image: Image.Image) -> Image.Image:
     return image.getchannel("A").point(lambda a: 255 if a > 0 else 0)
 
@@ -59,6 +56,10 @@ def binary_alpha(image: Image.Image) -> Image.Image:
 def count_mask(mask: Image.Image) -> int:
     hist = mask.histogram()
     return sum(hist[1:])
+
+
+def visible_pixels(image: Image.Image) -> int:
+    return count_mask(binary_alpha(image))
 
 
 def mask_and(a: Image.Image, b: Image.Image) -> Image.Image:
@@ -84,7 +85,6 @@ def compose_base() -> Image.Image:
 
 
 def compose_with_weapon(base: Image.Image, weapon: Image.Image) -> Image.Image:
-    # weapon_main is z80, above current clothing/armor layers.
     result = base.copy()
     result.alpha_composite(weapon)
     return result
@@ -100,6 +100,8 @@ def candidate_metrics(base: Image.Image, face_mask: Image.Image, weapon: Image.I
     face_overlap = count_mask(mask_and(weapon_mask, face))
     exterior_ratio = exterior / float(max(visible, 1))
     overlap_ratio = overlap / float(max(visible, 1))
+    gameplay_weapon = weapon.resize(GAMEPLAY_SIZE, Image.Resampling.LANCZOS)
+    gameplay_visible = visible_pixels(gameplay_weapon)
     return {
         "visible_pixels": visible,
         "exterior_pixels": exterior,
@@ -107,9 +109,28 @@ def candidate_metrics(base: Image.Image, face_mask: Image.Image, weapon: Image.I
         "body_overlap_pixels": overlap,
         "body_overlap_ratio": round(overlap_ratio, 6),
         "face_overlap_pixels": face_overlap,
+        "gameplay_visible_pixels": gameplay_visible,
         "readability_pass": visible >= MIN_VISIBLE_PIXELS and exterior >= MIN_EXTERIOR_PIXELS and exterior_ratio >= MIN_EXTERIOR_RATIO,
         "occlusion_pass": overlap_ratio <= MAX_BODY_OVERLAP_RATIO and face_overlap <= MAX_FACE_OVERLAP_PIXELS,
+        "gameplay_scale_pass": gameplay_visible >= MIN_GAMEPLAY_VISIBLE_PIXELS,
     }
+
+
+def mirrored_metrics(base: Image.Image, face: Image.Image, weapon: Image.Image) -> dict:
+    return candidate_metrics(
+        base.transpose(Image.Transpose.FLIP_LEFT_RIGHT),
+        face.transpose(Image.Transpose.FLIP_LEFT_RIGHT),
+        weapon.transpose(Image.Transpose.FLIP_LEFT_RIGHT),
+    )
+
+
+def flip_equivalent(authored: dict, flipped: dict) -> bool:
+    keys = (
+        "visible_pixels", "exterior_pixels", "body_overlap_pixels",
+        "face_overlap_pixels", "gameplay_visible_pixels",
+        "exterior_ratio", "body_overlap_ratio",
+    )
+    return all(authored[key] == flipped[key] for key in keys)
 
 
 def fit_panel(image: Image.Image, size: tuple[int, int]) -> Image.Image:
@@ -118,6 +139,16 @@ def fit_panel(image: Image.Image, size: tuple[int, int]) -> Image.Image:
     panel = Image.new("RGBA", size, (0, 0, 0, 0))
     panel.alpha_composite(copy, ((size[0] - copy.width) // 2, (size[1] - copy.height) // 2))
     return panel
+
+
+def score(metrics: dict) -> float:
+    return round(
+        metrics["exterior_ratio"] * 100.0
+        - metrics["body_overlap_ratio"] * 45.0
+        - metrics["face_overlap_pixels"] * 0.02
+        + min(metrics["gameplay_visible_pixels"], 1200) * 0.01,
+        4,
+    )
 
 
 def main() -> None:
@@ -131,12 +162,14 @@ def main() -> None:
     base = compose_base()
     face_mask = rgba(FACE_MASK_PATH)
     report = {
-        "schema": "tehkne/taijifu-base05-katana-candidate-review/v1",
+        "schema": "tehkne/taijifu-base05-katana-candidate-review/v2",
         "signature": "Tehkné Solutions",
         "stage": "BASE-05.2",
         "status": "candidate_review_measured_selection_pending",
         "runtime_promotion": False,
         "creator_exposure": False,
+        "neutral_visibility_contract": {"weapon_main": False, "weapon_back": True},
+        "combat_visibility_contract": {"weapon_main": "state_aware", "combat_behavior_owner": "WeaponKitCatalog"},
         "thresholds": {
             "min_visible_pixels": MIN_VISIBLE_PIXELS,
             "min_exterior_pixels": MIN_EXTERIOR_PIXELS,
@@ -144,10 +177,10 @@ def main() -> None:
             "max_face_overlap_pixels": MAX_FACE_OVERLAP_PIXELS,
             "max_body_overlap_ratio": MAX_BODY_OVERLAP_RATIO,
             "min_pairwise_diff": MIN_PAIRWISE_DIFF,
+            "gameplay_size": list(GAMEPLAY_SIZE),
+            "min_gameplay_visible_pixels": MIN_GAMEPLAY_VISIBLE_PIXELS,
         },
-        "candidates": {},
-        "pairwise_diff": {},
-        "selection": None,
+        "candidates": {}, "pairwise_diff": {}, "ranking": [], "selection": None,
     }
 
     images: dict[str, Image.Image] = {}
@@ -159,25 +192,30 @@ def main() -> None:
         image = rgba(path)
         assert list(image.getchannel("A").getbbox()) == spec["alpha_bbox"]
         assert visible_pixels(image) == spec["visible_pixels"]
-        metrics = candidate_metrics(base, face_mask, image)
-        metrics.update({
-            "sha256": spec["sha256"],
-            "alpha_bbox": spec["alpha_bbox"],
-            "brief": spec["brief"],
-            "authored_facing": "measured",
-            "flipped_facing": "measured",
-            "gameplay_scale": "measured",
+
+        authored = candidate_metrics(base, face_mask, image)
+        flipped = mirrored_metrics(base, face_mask, image)
+        mirror_pass = flip_equivalent(authored, flipped)
+        authored.update({
+            "sha256": spec["sha256"], "alpha_bbox": spec["alpha_bbox"], "brief": spec["brief"],
+            "authored_facing_pass": authored["readability_pass"] and authored["occlusion_pass"],
+            "flipped_facing_pass": flipped["readability_pass"] and flipped["occlusion_pass"] and mirror_pass,
+            "flip_metric_equivalence_pass": mirror_pass,
+            "review_score": score(authored),
         })
-        report["candidates"][cid] = metrics
+        report["candidates"][cid] = {"authored": authored, "flipped": flipped}
         images[cid] = image
         composites[cid] = compose_with_weapon(base, image)
+
         print(
-            f"BASE05_2_METRIC id={cid} visible={metrics['visible_pixels']} exterior={metrics['exterior_pixels']} "
-            f"exterior_ratio={metrics['exterior_ratio']:.4f} body_overlap_ratio={metrics['body_overlap_ratio']:.4f} "
-            f"face_overlap={metrics['face_overlap_pixels']} readability={str(metrics['readability_pass']).lower()} occlusion={str(metrics['occlusion_pass']).lower()}"
+            f"BASE05_2_METRIC id={cid} exterior_ratio={authored['exterior_ratio']:.4f} "
+            f"body_overlap_ratio={authored['body_overlap_ratio']:.4f} face_overlap={authored['face_overlap_pixels']} "
+            f"gameplay_visible={authored['gameplay_visible_pixels']} authored={str(authored['authored_facing_pass']).lower()} "
+            f"flipped={str(authored['flipped_facing_pass']).lower()} gameplay={str(authored['gameplay_scale_pass']).lower()} score={authored['review_score']:.4f}"
         )
-        assert metrics["readability_pass"], f"{cid}:readability"
-        assert metrics["occlusion_pass"], f"{cid}:occlusion"
+        assert authored["authored_facing_pass"], f"{cid}:authored"
+        assert authored["flipped_facing_pass"], f"{cid}:flipped"
+        assert authored["gameplay_scale_pass"], f"{cid}:gameplay"
 
     ids = list(images)
     for i, left in enumerate(ids):
@@ -187,6 +225,11 @@ def main() -> None:
             print(f"BASE05_2_PAIRWISE left={left} right={right} diff={delta}")
             assert delta >= MIN_PAIRWISE_DIFF, (left, right, delta)
 
+    report["ranking"] = sorted(
+        ({"candidate": cid, "score": report["candidates"][cid]["authored"]["review_score"]} for cid in ids),
+        key=lambda item: item["score"], reverse=True,
+    )
+
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     sheet = Image.new("RGB", (1920, 1080), (25, 29, 35))
     draw = ImageDraw.Draw(sheet)
@@ -195,21 +238,22 @@ def main() -> None:
     for index, cid in enumerate(ids):
         x = 20 + index * 635
         comp = composites[cid]
-        authored = fit_panel(comp, (560, 560)).convert("RGB")
-        flipped = fit_panel(comp.transpose(Image.Transpose.FLIP_LEFT_RIGHT), (310, 310)).convert("RGB")
-        gameplay = fit_panel(comp, (190, 190)).convert("RGB")
-        sheet.paste(authored, (x + 28, 70))
-        sheet.paste(flipped, (x + 22, 680))
-        sheet.paste(gameplay, (x + 385, 740))
-        metrics = report["candidates"][cid]
+        authored_panel = fit_panel(comp, (560, 560)).convert("RGB")
+        flipped_panel = fit_panel(comp.transpose(Image.Transpose.FLIP_LEFT_RIGHT), (310, 310)).convert("RGB")
+        gameplay_panel = fit_panel(comp, (190, 190)).convert("RGB")
+        sheet.paste(authored_panel, (x + 28, 70))
+        sheet.paste(flipped_panel, (x + 22, 680))
+        sheet.paste(gameplay_panel, (x + 385, 740))
+        m = report["candidates"][cid]["authored"]
         draw.text((x + 22, 650), cid, fill=(238, 212, 143))
-        draw.text((x + 22, 1000), f"ext={metrics['exterior_ratio']:.2f} overlap={metrics['body_overlap_ratio']:.2f} face={metrics['face_overlap_pixels']}", fill=(220, 220, 220))
+        draw.text((x + 22, 1000), f"ext={m['exterior_ratio']:.2f} overlap={m['body_overlap_ratio']:.2f} face={m['face_overlap_pixels']} gp={m['gameplay_visible_pixels']} score={m['review_score']:.2f}", fill=(220, 220, 220))
         if index < 2:
             draw.line((x + panel_w, 55, x + panel_w, 1040), fill=(78, 84, 94), width=2)
-    draw.text((24, 1052), "selection=pending • runtime=false • creator=false • weapon_main z80 • Tehkné Solutions", fill=(210, 210, 210))
+    draw.text((24, 1052), "selection=pending • runtime=false • creator=false • neutral weapon_main=false • Tehkné Solutions", fill=(210, 210, 210))
     sheet.save(OUTPUT)
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("BASE05_2_CANDIDATE_REVIEW=PASS candidates=3 selection=pending runtime=false creator=false")
+    print(f"BASE05_2_RANKING={json.dumps(report['ranking'], separators=(',', ':'))}")
     print(f"BASE05_2_VISUAL_OUTPUT={OUTPUT.relative_to(ROOT)}")
     print(f"BASE05_2_REPORT={REPORT.relative_to(ROOT)}")
     print("SIGNATURE=Tehkné Solutions")
