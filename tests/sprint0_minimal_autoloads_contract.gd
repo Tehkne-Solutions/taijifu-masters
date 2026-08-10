@@ -1,9 +1,8 @@
 extends SceneTree
 
-const MAX_AUTOLOADS := 10
+const MAX_AUTOLOADS := 9
 const REQUIRED := [
 	"TgapAssetLoader",
-	"AssetPackRegistry",
 	"InputBootstrapRuntime",
 	"ProceduralArenaPickupRuntime",
 	"PickupSynergyRuntime",
@@ -14,6 +13,7 @@ const REQUIRED := [
 	"TaijifuWebBridge",
 ]
 const FORBIDDEN := [
+	"AssetPackRegistry",
 	"GameModeRuntime",
 	"Pack99BattleVisualRuntime",
 	"Pack99CombatEventRuntime",

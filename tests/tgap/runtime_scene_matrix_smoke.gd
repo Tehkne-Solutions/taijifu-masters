@@ -13,6 +13,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_loader = root.get_node_or_null("TgapAssetLoader")
 	_check(_loader != null, "autoload TgapAssetLoader ausente")
+	_check(root.get_node_or_null("AssetPackRegistry") == null, "autoload AssetPackRegistry legado ainda ativo")
 	if _loader == null:
 		_finish()
 		return
@@ -80,7 +81,7 @@ func _validate_aliases_and_resources(marker: String) -> void:
 	_check(result != null, "alias result_ui não carregou")
 
 func _validate_scene_matrix() -> void:
-	var scenes: Array[String] = ["res://scenes/main.tscn"]
+	var scenes: Array[String] = ["res://scenes/vertical_slice/first_playable_menu.tscn"]
 	for path in scenes:
 		_check(ResourceLoader.exists(path), "cena ausente: " + path)
 		var packed: Resource = load(path)
