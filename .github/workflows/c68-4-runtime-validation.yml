@@ -1,0 +1,120 @@
+name: C68.4 Runtime Validation
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/shared_equipment/**'
+      - 'assets/modular_fighters/base_04/**'
+      - 'scripts/characters/modular_fighter_equipment_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/ci/c68_4_equipment_runtime_smoke.gd'
+      - 'scripts/ci/c68_4_weapon_back_compatibility_review.py'
+      - 'scripts/ci/c68_4_active_fight_visual_review.gd'
+      - '.github/workflows/c68-4-runtime-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-validation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate promoted manifests and no writers
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
+          b=json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
+          assert e['pack_id']=='SHARED_MODULAR_EQUIPMENT'
+          assert e['runtime_slots']==['weapon_back']
+          assert e['promotion']['runtime_activation'] is True
+          assert e['promotion']['creator_exposure'] is False
+          s=e['modules']['sheath_lian_wu_blue']
+          assert s['runtime_ready'] is True and s['production_ready'] is True and s['layer']==3
+          assert hashlib.sha256(Path(s['path']).read_bytes()).hexdigest()==s['sha256']
+          assert b['promotion']['back_accessory_runtime_activation'] is True
+          assert b['promotion']['back_accessory_creator_exposure'] is False
+          back=b['back_accessories']['back_01_guardian_panel']
+          assert back['runtime_ready'] is True and back['production_ready'] is True
+          mod=b['modules'][back['back_accessory']]
+          assert mod['slot']=='back_accessory'
+          assert hashlib.sha256(Path(mod['path']).read_bytes()).hexdigest()==mod['sha256']
+          assert not list(Path('.github/workflows').glob('c68-4-disposable-*.yml'))
+          print('C68_4_PROMOTED_MANIFESTS=PASS sheath=runtime_ready back=runtime_ready creator=false')
+          print('C68_4_WRITERS=ABSENT')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Validate canonical visual composition
+        run: |
+          python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+          python3 scripts/ci/c68_4_weapon_back_compatibility_review.py | tee c68-4-compatibility.log
+          grep -q 'C68_4_LAYER_ORDER=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-compatibility.log
+          grep -q 'C68_4_COMPATIBILITY=PASS authored=true flipped=true gameplay_scale=true' c68-4-compatibility.log
+          grep -q 'C68_4_PROMOTION_STATE=PASS equipment_runtime=true back_runtime=true creator=false' c68-4-compatibility.log
+
+      - name: Install Godot 4.3 and Xvfb
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project fail closed
+        run: |
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c68-4-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed|ERR_FILE_CORRUPT' c68-4-import.log; then exit 1; fi
+
+      - name: Validate production equipment runtime and z chain
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/c68_4_equipment_runtime_smoke.gd 2>&1 | tee c68-4-runtime.log
+          grep -q 'C68_4_EQUIPMENT_RUNTIME=PASS module=sheath_lian_wu_blue candidate_mode=false production=true' c68-4-runtime.log
+          grep -q 'C68_4_Z_CHAIN=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-runtime.log
+          grep -q 'C68_4_RUNTIME_SCOPE=PASS slots=weapon_back future=weapon_main,weapon_offhand' c68-4-runtime.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_4_.*BLOCKED' c68-4-runtime.log; then exit 1; fi
+
+      - name: Active-fight review when presenter integration is enabled
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
+          print('true' if e['promotion']['presenter_integration'] else 'false')
+          PY
+          if grep -q '"presenter_integration": true' assets/modular_fighters/shared_equipment/manifest.json; then
+            xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/c68_4_active_fight_visual_review.gd 2>&1 | tee c68-4-active-fight.log
+            grep -q 'C68_4_ACTIVE_FIGHT=PASS' c68-4-active-fight.log
+            grep -q 'C68_4_ACTIVE_LAYERING=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-active-fight.log
+          else
+            echo 'C68_4_ACTIVE_FIGHT=SKIPPED presenter_integration=false' | tee c68-4-active-fight.log
+          fi
+
+      - name: Upload C68.4 evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c68-4-runtime-validation
+          path: |
+            c68-4-compatibility.log
+            c68-4-import.log
+            c68-4-runtime.log
+            c68-4-active-fight.log
+            artifacts/c68_4/*.png
+            assets/modular_fighters/shared_equipment/manifest.json
+            assets/modular_fighters/base_04/manifest.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C68.4 promoted weapon_back + Back Accessory runtime validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
