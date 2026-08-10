@@ -17,8 +17,9 @@ def digest(path: Path) -> str:
 
 def write_bundle(root: Path, version: str = "1.0.0") -> Path:
     bundle = root / f"taijifu-masters-tgap-{version}.zip"
+    pack_root = "packs/pack_00_test"
     with zipfile.ZipFile(bundle, "w") as archive:
-        archive.writestr("packs/pack_00_test/data.txt", "conteudo-v1")
+        archive.writestr(f"{pack_root}/data.txt", "conteudo-v1")
     manifest = {
         "schema": "tgap/bundle/v1",
         "project_id": "taijifu-masters",
@@ -32,10 +33,16 @@ def write_bundle(root: Path, version: str = "1.0.0") -> Path:
             "pack_id": "pack_00_test",
             "version": "1.0.0",
             "asset_class": "prop",
+            "root": pack_root,
+            "pipeline_approved": True,
             "file_count": 1,
             "sha256": hashlib.sha256(b"conteudo-v1").hexdigest(),
         }],
-        "archive": {"file_count": 1, "sha256": digest(bundle)},
+        "archive": {
+            "path": bundle.name,
+            "file_count": 1,
+            "sha256": digest(bundle),
+        },
     }
     bundle.with_suffix(".manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     return bundle
