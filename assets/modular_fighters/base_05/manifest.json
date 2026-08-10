@@ -100,7 +100,7 @@
       "slot": "weapon_main",
       "required_by": ["preset_lian_wu"],
       "profile_reference_status": "present",
-      "standalone_visual_status": "production_ready_state_aware_runtime",
+      "standalone_visual_status": "materialized_exact_selected_art",
       "production_ready": true,
       "combat_catalog_reference": "serene_katana",
       "combat_catalog_reference_status": "existing_kit_verified",
