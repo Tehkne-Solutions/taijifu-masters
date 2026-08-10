@@ -44,16 +44,34 @@ jobs:
           assert m['armor_sets']['armor_none']['head_accessory'] is None
           assert m['armor_sets']['armor_none']['shoulders'] is None
           assert m['back_accessories']['back_none']['back_accessory'] is None
+          armor_creator=bool(armor.get('creator_exposed', False))
+          back_creator=bool(back.get('creator_exposed', False))
           if foundation:
               assert m['modules']=={}
               assert not list(Path('assets/modular_fighters/base_04').rglob('*.png'))
               assert m['promotion']['art_assets_present'] is False
+              assert armor_creator is False
+              assert back_creator is False
+              assert m['promotion']['creator_exposure'] is False
+              assert m['promotion']['back_accessory_creator_exposure'] is False
           else:
               assert m['modules'] and m['promotion']['art_assets_present'] is True
               for mid,mod in m['modules'].items():
                   assert mod['slot'] in ('head_accessory','shoulders','back_accessory'), mid
                   assert (Path('.')/mod['path']).is_file(), mod['path']
-          assert m['promotion']['creator_exposure'] is False
+              assert m['promotion']['creator_exposure'] is armor_creator
+              assert m['promotion']['back_accessory_creator_exposure'] is back_creator
+              if armor_creator:
+                  assert m['status'].startswith('production_approved_')
+                  assert any(
+                      aid != 'armor_none' and aset.get('production_ready') is True
+                      for aid,aset in m['armor_sets'].items()
+                  )
+              if back_creator:
+                  assert any(
+                      bid != 'back_none' and bset.get('production_ready') is True
+                      for bid,bset in m['back_accessories'].items()
+                  )
           assert c['component_id']=='BASE04_ARMOR_ACCESSORIES_FOUNDATION'
           assert c['stage']=='C68.0'
           assert c['selection_contract']['armor_set']['atomic_slots']==['head_accessory','shoulders']
@@ -66,7 +84,7 @@ jobs:
           for slot in ('head_accessory','shoulders','back_accessory'):
               assert slot in s['slots']
           assert 'shoulders' not in s['creator_v1_editable_slots']
-          print(f"C68_0_STATIC_CONTRACT=PASS stage={'foundation' if foundation else 'evolved'} armor_atomic=true back_independent=true creator=false")
+          print(f"C68_0_STATIC_CONTRACT=PASS stage={'foundation' if foundation else 'evolved'} armor_atomic=true back_independent=true armor_creator={str(armor_creator).lower()} back_creator={str(back_creator).lower()}")
           print('SIGNATURE=Tehkné Solutions')
           PY
       - name: Summary
