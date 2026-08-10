@@ -2,15 +2,16 @@ extends ModularFighterCreatorScene
 
 ## Bounds the reviewed public Creator selectors after their item catalogs are built.
 ## Godot OptionButton expands its minimum width to the longest item by default;
-## C68.5 keeps complete dropdown labels while clipping only the closed-button text
+## BASE-05.4 keeps complete dropdown labels while clipping only the closed-button text
 ## to the reviewed 1280x720 control band.
 ## Tehkné Solutions
 
 const REVIEWED_CONTROL_BOUNDS := {
-	"armor": {"position": Vector2(470.0, 38.0), "size": Vector2(180.0, 42.0)},
-	"back": {"position": Vector2(665.0, 38.0), "size": Vector2(180.0, 42.0)},
-	"uniform": {"position": Vector2(860.0, 38.0), "size": Vector2(180.0, 42.0)},
-	"hair": {"position": Vector2(1055.0, 38.0), "size": Vector2(200.0, 42.0)},
+	"armor": {"position": Vector2(470.0, 38.0), "size": Vector2(145.0, 42.0)},
+	"back": {"position": Vector2(625.0, 38.0), "size": Vector2(145.0, 42.0)},
+	"uniform": {"position": Vector2(780.0, 38.0), "size": Vector2(145.0, 42.0)},
+	"hair": {"position": Vector2(935.0, 38.0), "size": Vector2(145.0, 42.0)},
+	"weapon": {"position": Vector2(1090.0, 38.0), "size": Vector2(165.0, 42.0)},
 }
 
 func _ready() -> void:
@@ -23,6 +24,7 @@ func _enforce_reviewed_control_bounds() -> void:
 		"back": back_accessory_option(),
 		"uniform": uniform_set_option(),
 		"hair": hair_style_option(),
+		"weapon": weapon_set_option(),
 	}
 	for key in controls:
 		var option := controls[key] as OptionButton

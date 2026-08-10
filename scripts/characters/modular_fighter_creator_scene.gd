@@ -10,13 +10,15 @@ extends ModularFighterCreatorShell
 const REVIEWED_PREVIEW_SCALE := 0.20
 const REVIEWED_PREVIEW_POSITION := Vector2(235.0, 650.0)
 const ARMOR_CONTROL_POSITION := Vector2(470.0, 38.0)
-const ARMOR_CONTROL_SIZE := Vector2(180.0, 42.0)
-const BACK_ACCESSORY_CONTROL_POSITION := Vector2(665.0, 38.0)
-const BACK_ACCESSORY_CONTROL_SIZE := Vector2(180.0, 42.0)
-const UNIFORM_CONTROL_POSITION := Vector2(860.0, 38.0)
-const UNIFORM_CONTROL_SIZE := Vector2(180.0, 42.0)
-const HAIR_CONTROL_POSITION := Vector2(1055.0, 38.0)
-const HAIR_CONTROL_SIZE := Vector2(200.0, 42.0)
+const ARMOR_CONTROL_SIZE := Vector2(145.0, 42.0)
+const BACK_ACCESSORY_CONTROL_POSITION := Vector2(625.0, 38.0)
+const BACK_ACCESSORY_CONTROL_SIZE := Vector2(145.0, 42.0)
+const UNIFORM_CONTROL_POSITION := Vector2(780.0, 38.0)
+const UNIFORM_CONTROL_SIZE := Vector2(145.0, 42.0)
+const HAIR_CONTROL_POSITION := Vector2(935.0, 38.0)
+const HAIR_CONTROL_SIZE := Vector2(145.0, 42.0)
+const WEAPON_SET_CONTROL_POSITION := Vector2(1090.0, 38.0)
+const WEAPON_SET_CONTROL_SIZE := Vector2(165.0, 42.0)
 
 var _hair_style_option: OptionButton
 var _hair_syncing := false
@@ -30,6 +32,9 @@ var _armor_skip_next_state_reassembly := false
 var _back_accessory_option: OptionButton
 var _back_accessory_syncing := false
 var _back_accessory_skip_next_state_reassembly := false
+var _weapon_set_option: OptionButton
+var _weapon_syncing := false
+var _weapon_skip_next_state_reassembly := false
 
 func _ready() -> void:
 	super._ready()
@@ -39,14 +44,17 @@ func _ready() -> void:
 	creator_state_changed.connect(_on_creator_state_changed_uniform)
 	creator_state_changed.connect(_on_creator_state_changed_armor)
 	creator_state_changed.connect(_on_creator_state_changed_back_accessory)
+	creator_state_changed.connect(_on_creator_state_changed_weapon_set)
 	_build_hair_control()
 	_build_uniform_control()
 	_build_armor_control()
 	_build_back_accessory_control()
+	_build_weapon_set_control()
 	_sync_hair_control_and_preview()
 	_sync_uniform_control_and_preview()
 	_sync_armor_control_and_preview()
 	_sync_back_accessory_control_and_preview()
+	_sync_weapon_set_control_and_preview()
 	call_deferred("_apply_reviewed_scene_layout")
 
 func set_hair_style(style_id: StringName) -> PackedStringArray:
@@ -185,11 +193,64 @@ func set_back_accessory(accessory_id: StringName) -> PackedStringArray:
 	creator_state_changed.emit()
 	return failures
 
+
+func set_weapon_set(set_id: StringName) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var profile := current_profile()
+	var assembler := current_assembler()
+	if profile == null:
+		failures.append("creator_weapon_set_profile_missing")
+		return failures
+	if assembler == null or not assembler.is_ready_for_render():
+		failures.append("creator_weapon_set_assembler_missing")
+		return failures
+	if not ModularFighterEquipmentRuntime.weapon_set_creator_exposure_enabled():
+		failures.append("creator_weapon_set_exposure_blocked")
+		return failures
+	if not ModularFighterEquipmentRuntime.creator_weapon_set_ids().has(String(set_id)):
+		failures.append("creator_weapon_set_not_production_ready:%s" % String(set_id))
+		return failures
+
+	var previous_main := profile.module_id(&"weapon_main")
+	var previous_offhand := profile.module_id(&"weapon_offhand")
+	var weapon_back_before := profile.module_id(&"weapon_back")
+	var combat_before := profile.combat_loadout_id
+	failures.append_array(ModularFighterEquipmentRuntime.set_profile_weapon_set(profile, set_id))
+	if failures.is_empty():
+		failures.append_array(ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler))
+	if failures.is_empty() and profile.module_id(&"weapon_main") != &"":
+		if not ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true):
+			failures.append("creator_weapon_set_preview_visibility")
+	if profile.module_id(&"weapon_back") != weapon_back_before:
+		failures.append("creator_weapon_set_weapon_back_mutated")
+	if profile.combat_loadout_id != combat_before:
+		failures.append("creator_weapon_set_combat_loadout_mutated")
+
+	if not failures.is_empty():
+		if previous_main == &"": profile.clear_module(&"weapon_main")
+		else: profile.set_module(&"weapon_main", previous_main)
+		if previous_offhand == &"": profile.clear_module(&"weapon_offhand")
+		else: profile.set_module(&"weapon_offhand", previous_offhand)
+		profile.set_module(&"weapon_back", weapon_back_before)
+		profile.combat_loadout_id = combat_before
+		ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler)
+		if previous_main != &"": ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true)
+		_sync_weapon_set_option_selection()
+		_set_status("Conjunto de arma não aplicado", true)
+		return failures
+
+	_sync_weapon_set_option_selection()
+	_set_status("Arma visual atualizada: %s" % ModularFighterEquipmentRuntime.weapon_set_label(set_id), false)
+	_mark_cross_pack_signal_handled()
+	creator_state_changed.emit()
+	return failures
+
 func _mark_cross_pack_signal_handled() -> void:
 	_hair_skip_next_state_reassembly = true
 	_uniform_skip_next_state_reassembly = true
 	_armor_skip_next_state_reassembly = true
 	_back_accessory_skip_next_state_reassembly = true
+	_weapon_skip_next_state_reassembly = true
 
 func current_hair_style_id() -> StringName:
 	return ModularFighterHairRuntime.profile_style_id(current_profile())
@@ -203,6 +264,9 @@ func current_armor_set_id() -> StringName:
 func current_back_accessory_id() -> StringName:
 	return ModularFighterArmorRuntime.profile_back_accessory_id(current_profile())
 
+func current_weapon_set_id() -> StringName:
+	return ModularFighterEquipmentRuntime.profile_weapon_set_id(current_profile())
+
 func hair_style_option() -> OptionButton:
 	return _hair_style_option
 
@@ -214,6 +278,9 @@ func armor_set_option() -> OptionButton:
 
 func back_accessory_option() -> OptionButton:
 	return _back_accessory_option
+
+func weapon_set_option() -> OptionButton:
+	return _weapon_set_option
 
 func hair_creator_signature() -> Dictionary:
 	return {
@@ -286,6 +353,21 @@ func back_accessory_creator_signature() -> Dictionary:
 		"signature": "Tehkné Solutions",
 	}
 
+
+func weapon_set_creator_signature() -> Dictionary:
+	var profile := current_profile()
+	var signature := ModularFighterEquipmentRuntime.weapon_set_creator_signature(profile)
+	signature["stage"] = "BASE-05.4"
+	signature["control"] = "weapon_set"
+	signature["live_preview"] = true
+	signature["preset_roundtrip"] = true
+	signature["battle_handoff"] = true
+	signature["signal_reassembly_guard"] = true
+	signature["cross_pack_reassembly_guard"] = true
+	signature["weapon_back_id"] = String(profile.module_id(&"weapon_back")) if profile != null else ""
+	signature["combat_loadout_id"] = String(profile.combat_loadout_id) if profile != null else ""
+	return signature
+
 func flow_signature() -> Dictionary:
 	var signature := super.flow_signature()
 	signature["hair_creator_control"] = true
@@ -309,6 +391,12 @@ func flow_signature() -> Dictionary:
 	signature["back_accessory_selection_unit"] = "back_accessory"
 	signature["back_accessory_count"] = ModularFighterArmorRuntime.creator_back_accessory_ids().size()
 	signature["weapon_back_creator_control"] = false
+	signature["weapon_set_creator_control"] = ModularFighterEquipmentRuntime.weapon_set_creator_exposure_enabled()
+	signature["weapon_selection_unit"] = "weapon_set"
+	signature["weapon_atomic_slots"] = ["weapon_main", "weapon_offhand"]
+	signature["weapon_direct_slot_controls"] = false
+	signature["weapon_combat_loadout_mutation"] = false
+	signature["weapon_set_count"] = ModularFighterEquipmentRuntime.creator_weapon_set_ids().size()
 	return signature
 
 func _build_hair_control() -> void:
@@ -316,8 +404,8 @@ func _build_hair_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "HairStyleLabel"
-	label.position = Vector2(1055, 18)
-	label.size = Vector2(200, 20)
+	label.position = Vector2(935, 18)
+	label.size = Vector2(145, 20)
 	label.text = "CABELO • BASE-02"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -337,8 +425,8 @@ func _build_uniform_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "UniformSetLabel"
-	label.position = Vector2(860, 18)
-	label.size = Vector2(180, 20)
+	label.position = Vector2(780, 18)
+	label.size = Vector2(145, 20)
 	label.text = "UNIFORME • BASE-03"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -359,7 +447,7 @@ func _build_armor_control() -> void:
 	var label := Label.new()
 	label.name = "ArmorSetLabel"
 	label.position = Vector2(470, 18)
-	label.size = Vector2(180, 20)
+	label.size = Vector2(145, 20)
 	label.text = "ARMADURA • BASE-04"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -375,7 +463,7 @@ func _build_armor_control() -> void:
 	for child in get_children():
 		if child is Label and String((child as Label).text).begins_with("BASE-01"):
 			var subtitle := child as Label
-			subtitle.text = "BASE-01→04 • modular • presets"
+			subtitle.text = "BASE-01→05 • modular • presets"
 			subtitle.size = Vector2(420, 28)
 			break
 	_refresh_armor_options()
@@ -385,8 +473,8 @@ func _build_back_accessory_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "BackAccessoryLabel"
-	label.position = Vector2(665, 18)
-	label.size = Vector2(180, 20)
+	label.position = Vector2(625, 18)
+	label.size = Vector2(145, 20)
 	label.text = "COSTAS • BASE-04"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -400,6 +488,28 @@ func _build_back_accessory_control() -> void:
 	_style_option_button(_back_accessory_option)
 	add_child(_back_accessory_option)
 	_refresh_back_accessory_options()
+
+
+func _build_weapon_set_control() -> void:
+	if _weapon_set_option != null:
+		return
+	var label := Label.new()
+	label.name = "WeaponSetLabel"
+	label.position = Vector2(1090, 18)
+	label.size = Vector2(165, 20)
+	label.text = "ARMA • BASE-05"
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color("aaa397"))
+	add_child(label)
+	_weapon_set_option = OptionButton.new()
+	_weapon_set_option.name = "WeaponSetOption"
+	_weapon_set_option.position = WEAPON_SET_CONTROL_POSITION
+	_weapon_set_option.size = WEAPON_SET_CONTROL_SIZE
+	_weapon_set_option.focus_mode = Control.FOCUS_ALL
+	_weapon_set_option.item_selected.connect(_on_weapon_set_selected)
+	_style_option_button(_weapon_set_option)
+	add_child(_weapon_set_option)
+	_refresh_weapon_set_options()
 
 func _refresh_hair_options() -> void:
 	if _hair_style_option == null:
@@ -457,6 +567,21 @@ func _refresh_back_accessory_options() -> void:
 	_sync_back_accessory_option_selection()
 	_back_accessory_syncing = false
 
+
+func _refresh_weapon_set_options() -> void:
+	if _weapon_set_option == null:
+		return
+	_weapon_syncing = true
+	_weapon_set_option.clear()
+	var sets := ModularFighterEquipmentRuntime.creator_weapon_set_ids()
+	for set_text in sets:
+		var set_id := StringName(set_text)
+		_weapon_set_option.add_item(ModularFighterEquipmentRuntime.weapon_set_label(set_id))
+		_weapon_set_option.set_item_metadata(_weapon_set_option.item_count - 1, String(set_id))
+	_weapon_set_option.disabled = sets.is_empty()
+	_sync_weapon_set_option_selection()
+	_weapon_syncing = false
+
 func _sync_hair_option_selection() -> void:
 	if _hair_style_option == null:
 		return
@@ -491,6 +616,16 @@ func _sync_back_accessory_option_selection() -> void:
 	for index in range(_back_accessory_option.item_count):
 		if String(_back_accessory_option.get_item_metadata(index)) == accessory_id:
 			_back_accessory_option.select(index)
+			return
+
+
+func _sync_weapon_set_option_selection() -> void:
+	if _weapon_set_option == null:
+		return
+	var set_id := String(current_weapon_set_id())
+	for index in range(_weapon_set_option.item_count):
+		if String(_weapon_set_option.get_item_metadata(index)) == set_id:
+			_weapon_set_option.select(index)
 			return
 
 func _sync_hair_control_and_preview() -> void:
@@ -560,6 +695,27 @@ func _sync_back_accessory_control_and_preview() -> void:
 		return
 	_refresh_back_accessory_options()
 
+
+func _sync_weapon_set_control_and_preview() -> void:
+	if _weapon_syncing:
+		return
+	var profile := current_profile()
+	var assembler := current_assembler()
+	if profile == null or assembler == null or not assembler.is_ready_for_render():
+		return
+	var set_failures := ModularFighterEquipmentRuntime.validate_profile_weapon_set(profile)
+	if not set_failures.is_empty():
+		_set_status("Preset contém conjunto de arma visual inválido", true)
+		return
+	var failures := ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler)
+	if failures.is_empty() and profile.module_id(&"weapon_main") != &"":
+		if not ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true):
+			failures.append("creator_weapon_preview_visibility")
+	if not failures.is_empty():
+		_set_status("Arma visual do preset não pôde ser montada", true)
+		return
+	_refresh_weapon_set_options()
+
 func _on_hair_style_selected(index: int) -> void:
 	if _hair_syncing or _hair_style_option == null:
 		return
@@ -587,6 +743,14 @@ func _on_back_accessory_selected(index: int) -> void:
 	if index < 0 or index >= _back_accessory_option.item_count:
 		return
 	set_back_accessory(StringName(String(_back_accessory_option.get_item_metadata(index))))
+
+
+func _on_weapon_set_selected(index: int) -> void:
+	if _weapon_syncing or _weapon_set_option == null:
+		return
+	if index < 0 or index >= _weapon_set_option.item_count:
+		return
+	set_weapon_set(StringName(String(_weapon_set_option.get_item_metadata(index))))
 
 func _on_creator_state_changed_hair() -> void:
 	if _hair_skip_next_state_reassembly:
@@ -616,6 +780,14 @@ func _on_creator_state_changed_back_accessory() -> void:
 		return
 	_sync_back_accessory_control_and_preview()
 
+
+func _on_creator_state_changed_weapon_set() -> void:
+	if _weapon_skip_next_state_reassembly:
+		_weapon_skip_next_state_reassembly = false
+		_sync_weapon_set_option_selection()
+		return
+	_sync_weapon_set_control_and_preview()
+
 func _apply_reviewed_scene_layout() -> void:
 	var assembler := current_assembler()
 	if assembler != null:
@@ -643,7 +815,7 @@ func _on_preset_selected_for_battle(preset_id: StringName) -> void:
 func reviewed_layout_signature() -> Dictionary:
 	var controls_overlap := false
 	var rects: Array[Rect2] = []
-	for option in [_armor_set_option, _back_accessory_option, _uniform_set_option, _hair_style_option]:
+	for option in [_armor_set_option, _back_accessory_option, _uniform_set_option, _hair_style_option, _weapon_set_option]:
 		if option != null:
 			rects.append(Rect2(option.position, option.size))
 	for left in range(rects.size()):
@@ -662,6 +834,8 @@ func reviewed_layout_signature() -> Dictionary:
 		"uniform_control_size": [UNIFORM_CONTROL_SIZE.x, UNIFORM_CONTROL_SIZE.y],
 		"hair_control_position": [HAIR_CONTROL_POSITION.x, HAIR_CONTROL_POSITION.y],
 		"hair_control_size": [HAIR_CONTROL_SIZE.x, HAIR_CONTROL_SIZE.y],
+		"weapon_set_control_position": [WEAPON_SET_CONTROL_POSITION.x, WEAPON_SET_CONTROL_POSITION.y],
+		"weapon_set_control_size": [WEAPON_SET_CONTROL_SIZE.x, WEAPON_SET_CONTROL_SIZE.y],
 		"signature": "Tehkné Solutions",
 	}
 
@@ -674,6 +848,11 @@ func battle_handoff_signature() -> Dictionary:
 	signature["armor_set_id"] = String(current_armor_set_id())
 	signature["back_accessory_id"] = String(current_back_accessory_id())
 	signature["weapon_back_id"] = String(current_profile().module_id(&"weapon_back")) if current_profile() != null else ""
+	signature["weapon_set_id"] = String(current_weapon_set_id())
+	signature["weapon_main_id"] = String(current_profile().module_id(&"weapon_main")) if current_profile() != null else ""
+	signature["weapon_offhand_id"] = String(current_profile().module_id(&"weapon_offhand")) if current_profile() != null else ""
+	signature["combat_loadout_id"] = String(current_profile().combat_loadout_id) if current_profile() != null else ""
+	signature["weapon_set_combat_loadout_mutation"] = false
 	return signature
 
 # Tehkné Solutions
