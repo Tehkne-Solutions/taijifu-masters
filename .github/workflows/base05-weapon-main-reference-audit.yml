@@ -40,7 +40,6 @@ jobs:
           weapon_runtime=Path('scripts/fighter/weapon_kit_fighter_controller.gd').read_text()
           catalog=Path('scripts/combat/weapon_kit_catalog.gd').read_text()
           first_playable=Path('scripts/vertical_slice/first_playable.gd').read_text()
-
           assert m['status']=='reference_audit_complete_redraw_required'
           assert m['version']=='1.1.0'
           ref=m['required_references']['katana_lian_wu']
@@ -54,7 +53,6 @@ jobs:
           assert m['promotion']['creator_exposure'] is False
           assert 'visual_to_combat_binding_not_verified' not in m['promotion']['blockers']
           assert 'katana_lian_wu_standalone_visual_not_materialized' in m['promotion']['blockers']
-
           assert a['status']=='reference_audit_complete_redraw_required'
           assert a['combat_binding']['weapon_kit_id']=='serene_katana'
           assert a['combat_binding']['modular_preset_combat_loadout_role']=='metadata_only_not_current_first_playable_runtime_owner'
@@ -62,15 +60,13 @@ jobs:
           assert a['character_lock_source_review']['whole_character_crop_as_weapon_module_forbidden'] is True
           assert a['promotion']['binding_verified'] is True
           assert a['promotion']['standalone_art_ready'] is False
-
           assert p['modules']['weapon_main']=='katana_lian_wu'
           assert p['combat_loadout_id']=='combat_lian_wu_first_playable'
-          assert 'const PLAYER_PRESET := &"lian_wu_first_playable"' in first_playable
+          assert 'const PLAYER_PRESET: StringName = &"lian_wu_first_playable"' in first_playable
           assert 'build = BuildProfile.prototype_preset(build_preset)' in fighter
           assert 'profile.weapon_id = &"serene_katana"' in build
           assert 'primary_weapon_id = build.weapon_id' in weapon_runtime
           assert '&"serene_katana"' in catalog and '"label": "KATANA SERENA"' in catalog
-
           expected={name:spec['sha256'] for name,spec in lock['assets'].items()}
           for name in ('lian_wu_neutral.png','lian_wu_combat_stance.png'):
               path=Path(lock['assets'][name]['path'])
