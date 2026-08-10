@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE04_BACK_ACCESSORY_CREATOR_CONTROL",
   "stage": "C68.5",
-  "status": "validation_pending",
+  "status": "production_approved",
   "public_control": {
     "id": "back_accessory",
     "widget": "OptionButton",
@@ -48,7 +48,8 @@
     "reference_armor": "armor_01_taijifu_guard",
     "reference_weapon_back": "sheath_lian_wu_blue",
     "preview_reassembly_transactional": true,
-    "signal_reassembly_guard": true
+    "signal_reassembly_guard": true,
+    "base04_boundary_idempotent": true
   },
   "persistence_contract": {
     "profile_schema_change_required": false,
@@ -60,7 +61,16 @@
     "viewport": [1280, 720],
     "control_band": "top_single_row_expansion",
     "all_public_pack_controls_must_fit_viewport": true,
-    "actual_control_overlap": false
+    "actual_control_overlap": false,
+    "option_button_fit_to_longest_item": false,
+    "closed_button_text_clipped_to_reviewed_bounds": true,
+    "dropdown_labels_preserved": true,
+    "control_positions": {
+      "armor_set": [470, 38],
+      "back_accessory": [665, 38],
+      "uniform_set": [860, 38],
+      "hair_style": [1055, 38]
+    }
   },
   "forbidden_creator_nodes": [
     "HeadAccessoryOption",
@@ -70,14 +80,31 @@
     "WeaponOffhandOption"
   ],
   "validation": {
-    "creator_runtime": "pending",
-    "live_preview": "pending",
-    "preset_roundtrip": "pending",
-    "battle_handoff": "pending",
-    "weapon_back_preservation": "pending",
-    "cross_pack_preservation": "pending",
-    "actual_control_overlap": "pending",
-    "visual_capture": "pending"
+    "workflow_run": 31407991623,
+    "artifact_id": 9070400559,
+    "artifact_digest": "sha256:852a0b4d6f4b005ba136d7c574b7398c2a7471abb5149d001c03efc4f9ec5768",
+    "creator_runtime": "pass",
+    "live_preview": "pass",
+    "preset_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "weapon_back_preservation": "pass",
+    "cross_pack_preservation": "pass",
+    "actual_control_overlap": "pass",
+    "visual_capture": "artifacts/c68_5/C68_5_BACK_ACCESSORY_CREATOR_CONTROL.review-1280x720.png",
+    "runtime_markers": [
+      "C68_5_BACK_CONTROL=PASS",
+      "C68_5_WEAPON_BACK_CONTROL=ABSENT",
+      "C68_5_LIVE_PREVIEW=PASS",
+      "C68_5_NONE_TRANSACTION=PASS",
+      "C68_5_PRESET_ROUNDTRIP=PASS",
+      "C68_5_BATTLE_HANDOFF=PASS",
+      "C68_5_BACK_ACCESSORY_CREATOR_CONTROL=PASS"
+    ],
+    "visual_markers": [
+      "C68_5_CREATOR_VISUAL=PASS",
+      "C68_5_CREATOR_LAYOUT=PASS",
+      "C68_5_CREATOR_PREVIEW=PASS"
+    ]
   },
-  "next_stage": "C68.5 closeout after read-only Creator and active-fight evidence"
+  "next_stage": "C68.5 complete — next BASE-04 increment requires a reviewed production contract"
 }
