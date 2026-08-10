@@ -12,12 +12,21 @@ func _init() -> void:
 		_fail("BASE05_FOUNDATION=BLOCKED pack_id")
 		return
 	var runtime_main := bool(manifest.get("promotion", {}).get("weapon_main_runtime_activation", false))
+	var creator_live := bool(manifest.get("promotion", {}).get("creator_exposure", false))
 	if bool(manifest.get("promotion", {}).get("weapon_offhand_runtime_activation", true)):
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_offhand_premature")
 		return
-	if bool(manifest.get("promotion", {}).get("creator_exposure", true)):
-		_fail("BASE05_FOUNDATION=BLOCKED creator_premature")
-		return
+	if creator_live:
+		var control = manifest.get("public_controls", {}).get("weapon_set", {})
+		if not (control is Dictionary):
+			_fail("BASE05_FOUNDATION=BLOCKED creator_control_contract")
+			return
+		if not bool(control.get("creator_exposed", false)) or not bool(control.get("selection_atomic", false)):
+			_fail("BASE05_FOUNDATION=BLOCKED creator_atomicity")
+			return
+		if bool(control.get("direct_slot_controls", true)) or bool(control.get("weapon_back_control", true)) or bool(control.get("combat_loadout_mutation", true)):
+			_fail("BASE05_FOUNDATION=BLOCKED creator_ownership")
+			return
 
 	if ModularFighterLayerPolicy.z_index_for(&"weapon_back") != 3:
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_back_layer")
@@ -47,6 +56,9 @@ func _init() -> void:
 		return
 	if ModularFighterEquipmentRuntime.weapon_main_runtime_activation_enabled() != runtime_main:
 		_fail("BASE05_FOUNDATION=BLOCKED weapon_main_activation_mismatch")
+		return
+	if ModularFighterEquipmentRuntime.weapon_set_creator_exposure_enabled() != creator_live:
+		_fail("BASE05_FOUNDATION=BLOCKED creator_activation_mismatch")
 		return
 
 	var modules = manifest.get("modules", {})
@@ -98,7 +110,7 @@ func _init() -> void:
 	print("BASE05_OWNERSHIP=PASS combat=WeaponKitCatalog_and_BattleLoadoutCatalog visual=ModularFighterEquipmentRuntime")
 	print("BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=%s runtime_offhand=false" % str(runtime_main).to_lower())
 	print("BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=%s" % binding_state)
-	print("BASE05_CREATOR=BLOCKED expected=true")
+	print("BASE05_CREATOR_LIFECYCLE=PASS exposed=%s unit=weapon_set direct_slots=false weapon_back=false combat_mutation=false" % str(creator_live).to_lower())
 	print("BASE05_FOUNDATION_LIFECYCLE=PASS status=%s" % String(manifest.get("status", "")))
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)

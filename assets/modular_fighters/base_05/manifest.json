@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE05_WEAPONS",
-  "version": "1.3.0",
-  "status": "production_approved_weapon_main_runtime",
+  "version": "1.4.0",
+  "status": "production_approved_weapon_set_creator_control",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -47,9 +47,11 @@
   },
   "public_controls": {
     "weapon_set": {
-      "creator_exposed": false,
+      "creator_exposed": true,
       "selection_atomic": true,
+      "atomic_slots": ["weapon_main", "weapon_offhand"],
       "direct_slot_controls": false,
+      "weapon_back_control": false,
       "combat_loadout_mutation": false,
       "default_id": "weapon_none"
     }
@@ -61,7 +63,8 @@
       "weapon_offhand": null,
       "requires_art_assets": false,
       "runtime_ready": true,
-      "production_ready": true
+      "production_ready": true,
+      "creator_ready": true
     },
     "weapon_01_lian_serene_katana": {
       "label": "Katana Serena — Lian Wu",
@@ -71,7 +74,7 @@
       "requires_art_assets": true,
       "runtime_ready": true,
       "production_ready": true,
-      "creator_ready": false
+      "creator_ready": true
     }
   },
   "modules": {
@@ -92,7 +95,7 @@
       "source_art_review": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
       "runtime_ready": true,
       "production_ready": true,
-      "creator_ready": false
+      "creator_ready": true
     }
   },
   "required_references": {
@@ -160,6 +163,23 @@
     "combat_binding": "serene_katana",
     "owner_visual_review": "pass"
   },
+  "creator_evidence": {
+    "stage": "BASE-05.4",
+    "workflow_run": 31420765025,
+    "head_sha": "ff155b0a5ef1819bfcf315c1d998f8309e5957f8",
+    "artifact_id": 9075245773,
+    "artifact_digest": "sha256:9baf9c36c4e9bff7bee079baa97c0902ef11ca56b9cdcc0fd31cc3656dee1481",
+    "capture": "artifacts/base05_4/BASE05_4_WEAPON_SET_CREATOR_CONTROL.review-1280x720.png",
+    "real_option_button_selection": "pass",
+    "weapon_none_transaction": "pass",
+    "preset_v2_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "state_aware_battle": "pass",
+    "combat_loadout_preservation": "pass",
+    "cross_pack_preservation": "pass",
+    "layout_1280x720": "pass",
+    "owner_visual_review": "pass"
+  },
   "compatibility": {
     "existing_weapon_back_reference": "sheath_lian_wu_blue",
     "weapon_back_must_survive_weapon_main_changes": true,
@@ -174,11 +194,13 @@
     "weapon_main_runtime_activation": true,
     "weapon_offhand_runtime_activation": false,
     "presenter_integration": true,
-    "creator_exposure": false,
+    "creator_exposure": true,
+    "creator_validation": "pass",
+    "creator_visual_review": "pass",
     "art_assets_present": true,
     "runtime_validation": "pass",
     "owner_visual_review": "pass_selected_v1",
     "blockers": []
   },
-  "next_stage": "BASE-05.4 — Weapon Set Creator Control, preserving atomic selection, no direct slot controls and no combat-loadout mutation"
+  "next_stage": "BASE-05 Weapons complete for weapon_main + atomic weapon_set Creator scope; audit the next modular pack before opening new runtime ownership"
 }

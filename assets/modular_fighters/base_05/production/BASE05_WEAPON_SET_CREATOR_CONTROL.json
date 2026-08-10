@@ -1,0 +1,94 @@
+{
+  "schema": "tehkne/taijifu-base05-weapon-set-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.4",
+  "pack_id": "BASE05_WEAPON_SET_CREATOR_CONTROL",
+  "status": "production_approved",
+  "control": {
+    "name": "WeaponSetOption",
+    "selection_unit": "weapon_set",
+    "atomic_slots": ["weapon_main", "weapon_offhand"],
+    "direct_slot_controls": false,
+    "weapon_back_creator_control": false,
+    "combat_loadout_mutation": false,
+    "production_options": ["weapon_none", "weapon_01_lian_serene_katana"],
+    "default_id": "weapon_none"
+  },
+  "preview_contract": {
+    "selected_weapon_main_visible": true,
+    "weapon_none_clears_only_weapon_main_and_weapon_offhand": true,
+    "weapon_back_must_survive": "sheath_lian_wu_blue",
+    "back_accessory_must_survive": "back_01_guardian_panel",
+    "hair_must_survive": "hair_01_lian_topknot",
+    "uniform_must_survive": "uniform_01_lian_martial",
+    "armor_must_survive": "armor_01_taijifu_guard"
+  },
+  "battle_contract": {
+    "weapon_main": "katana_lian_wu",
+    "weapon_back": "sheath_lian_wu_blue",
+    "combat_weapon_id": "serene_katana",
+    "neutral_weapon_main_visible": false,
+    "attack_light_weapon_main_visible": true,
+    "combat_behavior_owner": "WeaponKitCatalog",
+    "combat_loadout_mutation": false
+  },
+  "layout_contract": {
+    "viewport": [1280, 720],
+    "top_band_bottom": 108,
+    "identity_selector_top": 116,
+    "controls": {
+      "armor": {"position": [470, 38], "size": [145, 42]},
+      "back": {"position": [625, 38], "size": [145, 42]},
+      "uniform": {"position": [780, 38], "size": [145, 42]},
+      "hair": {"position": [935, 38], "size": [145, 42]},
+      "weapon": {"position": [1090, 38], "size": [165, 42]}
+    },
+    "controls_overlap": false,
+    "identity_overlap": false,
+    "fit_to_longest_item": false,
+    "closed_text_clipping": true
+  },
+  "validation": {
+    "static_contract": "pass",
+    "godot_import": "pass",
+    "real_option_button_selection": "pass",
+    "weapon_none_transaction": "pass",
+    "cross_pack_preservation": "pass",
+    "weapon_back_preservation": "pass",
+    "combat_loadout_preservation": "pass",
+    "preset_roundtrip": "pass",
+    "battle_handoff": "pass",
+    "state_aware_battle": "pass",
+    "layout_1280x720": "pass",
+    "visual_capture": "pass",
+    "owner_visual_review": "pass"
+  },
+  "evidence": {
+    "workflow_run": 31420765025,
+    "head_sha": "ff155b0a5ef1819bfcf315c1d998f8309e5957f8",
+    "artifact_id": 9075245773,
+    "artifact_digest": "sha256:9baf9c36c4e9bff7bee079baa97c0902ef11ca56b9cdcc0fd31cc3656dee1481",
+    "capture": "artifacts/base05_4/BASE05_4_WEAPON_SET_CREATOR_CONTROL.review-1280x720.png",
+    "real_option_button": true,
+    "weapon_none_roundtrip": true,
+    "preset_v2_roundtrip": true,
+    "battle_handoff": true,
+    "combat_weapon_id": "serene_katana",
+    "neutral_weapon_main_visible": false,
+    "attack_light_weapon_main_visible": true,
+    "layer_chain": [3, 4, 5, 80],
+    "controls_overlap": false,
+    "identity_overlap": false,
+    "prior_pack_modules_preserved": true,
+    "combat_loadout_preserved": true,
+    "direct_slot_controls_absent": true
+  },
+  "promotion": {
+    "creator_exposure": true,
+    "production_ready": true,
+    "creator_validation": "pass",
+    "creator_visual_review": "pass"
+  },
+  "blockers": [],
+  "next_stage": "BASE-05 Weapons complete for weapon_main + atomic weapon_set Creator scope; audit the next modular pack before opening new runtime ownership"
+}

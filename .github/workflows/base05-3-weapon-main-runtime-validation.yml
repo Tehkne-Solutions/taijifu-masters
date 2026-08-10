@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate BASE-05.3 candidate runtime contract statically
+      - name: Validate immutable BASE-05.3 runtime across later Creator stages
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -36,26 +36,38 @@ jobs:
           writer=Path('.github/workflows/base05-3-disposable-production-materializer.yml').read_text()
 
           assert m['pack_id']=='BASE05_WEAPONS'
-          assert m['status'] in ('weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime')
+          assert m['status'] in ('weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime','weapon_set_creator_validation_pending','production_approved_weapon_set_creator_control')
           assert m['promotion']['weapon_main_runtime_activation'] is True
           assert m['promotion']['weapon_offhand_runtime_activation'] is False
-          assert m['promotion']['creator_exposure'] is False
+          creator_live=bool(m['promotion']['creator_exposure'])
+          if creator_live:
+              assert m['status'] in ('weapon_set_creator_validation_pending','production_approved_weapon_set_creator_control')
+              control=m['public_controls']['weapon_set']
+              assert control['creator_exposed'] is True
+              assert control['selection_atomic'] is True
+              assert control['direct_slot_controls'] is False
+              assert control['combat_loadout_mutation'] is False
+          else:
+              assert m['status'] in ('weapon_main_runtime_validation_pending','production_approved_weapon_main_runtime')
           assert m['ownership']['combat_logic_owner']=='WeaponKitCatalog_and_BattleLoadoutCatalog'
           katana=m['modules']['katana_lian_wu']
           assert katana['slot']=='weapon_main' and katana['layer']==80
           assert katana['combat_reference']=='serene_katana'
           assert katana['source_candidate']=='v1_serene_forward'
-          assert katana['runtime_ready'] is True
+          assert katana['runtime_ready'] is True and katana['production_ready'] is True
           path=Path(katana['path'])
           assert path.is_file()
           digest=hashlib.sha256(path.read_bytes()).hexdigest()
           assert digest==katana['sha256']=='9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7'
 
+          # Historical art and runtime evidence remain immutable even after the
+          # later atomic weapon_set Creator control is exposed.
           assert a['selected_candidate']=='v1_serene_forward'
           assert a['selected_candidate_sha256']==digest
           assert a['runtime_promotion'] is False and a['creator_exposure'] is False
           assert c['selected_candidate'] is None
           assert c['runtime_promotion'] is False and c['creator_exposure'] is False
+          assert r['status']=='production_approved_state_aware_runtime'
           assert r['weapon_main']['sha256']==digest
           assert r['weapon_main']['combat_reference']=='serene_katana'
           assert r['state_visibility_contract']['neutral_weapon_main_visible'] is False
@@ -65,11 +77,12 @@ jobs:
           assert r['ownership']['combat_behavior_owner']=='WeaponKitCatalog'
           assert r['promotion']['creator_exposure'] is False
           assert r['promotion']['weapon_main_runtime_activation'] is True
+          assert r['promotion']['runtime_validation']=='pass'
           assert 'contents: write' not in writer
           assert 'push:' not in writer
           assert 'contents: read' in writer
           print('BASE05_3_STATIC=PASS bitmap=exact_v1 sha256='+digest)
-          print('BASE05_3_FAIL_CLOSED=PASS creator=false offhand=false writer=false')
+          print(f"BASE05_3_LIFECYCLE=PASS creator_live={str(creator_live).lower()} offhand=false historical_creator=false writer=false")
           print('BASE05_3_OWNERSHIP=PASS visual=ModularFighterEquipmentRuntime combat=WeaponKitCatalog')
           print('SIGNATURE=Tehkné Solutions')
           PY
@@ -98,7 +111,6 @@ jobs:
           grep -q 'BASE05_3_LAYER_CHAIN=PASS weapon_back=3 back_accessory=4 hair_back=5 weapon_main=80' base05-3-runtime.log
           grep -q 'BASE05_3_IDEMPOTENCE=PASS weapon_back=true back_accessory=true hair=true uniform=true armor=true' base05-3-runtime.log
           grep -q 'BASE05_3_OWNERSHIP=PASS visual=ModularFighterEquipmentRuntime combat=WeaponKitCatalog_and_BattleLoadoutCatalog' base05-3-runtime.log
-          grep -q 'BASE05_3_CREATOR=BLOCKED expected=true' base05-3-runtime.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_3_RUNTIME=BLOCKED' base05-3-runtime.log; then exit 1; fi
 
       - name: Validate state-aware active-fight presenter integration
@@ -129,4 +141,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'BASE-05.3 state-aware weapon_main runtime validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'BASE-05.3 immutable state-aware weapon_main runtime, lifecycle-aware Creator evolution — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
