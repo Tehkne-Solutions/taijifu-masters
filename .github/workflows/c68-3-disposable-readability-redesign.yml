@@ -1,0 +1,126 @@
+name: C68.3 Disposable Readability Redesign
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/c68-3-disposable-readability-redesign.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  redesign:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install Pillow
+        run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Redraw candidates for canonical z4 readability
+        run: |
+          python3 - <<'PY'
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          import hashlib, json
+
+          ROOT=Path('.')
+          BASE=ROOT/'assets/modular_fighters/base_04/candidates/back_accessory_pack_01'
+          S=256
+          P={
+            'outline':(24,29,38,255),'navy':(31,51,73,255),'blue':(49,79,109,255),
+            'blue2':(69,105,140,255),'gold':(193,153,72,255),'gold2':(228,192,107,255)
+          }
+          def up(im): return im.resize((1024,1024), Image.Resampling.NEAREST)
+
+          def v1_guardian_yoke():
+            im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
+            # Wide shallow connected yoke: outer martial tabs remain visible beyond the torso/shoulder silhouette.
+            d.polygon([(70,76),(82,69),(103,65),(128,68),(153,65),(174,69),(186,76),(181,88),(169,96),(154,99),(145,109),(111,109),(102,99),(87,96),(75,88)],fill=P['outline'])
+            d.polygon([(74,77),(84,72),(104,68),(128,71),(152,68),(172,72),(182,77),(177,85),(166,92),(151,95),(105,95),(90,92),(79,85)],fill=P['navy'])
+            d.polygon([(80,79),(94,74),(111,72),(128,75),(145,72),(162,74),(176,79),(171,85),(157,90),(99,90),(85,85)],fill=P['blue'])
+            d.polygon([(112,92),(144,92),(147,105),(144,137),(138,152),(118,152),(112,137),(109,105)],fill=P['outline'])
+            d.polygon([(115,95),(141,95),(143,105),(140,134),(135,148),(121,148),(116,134),(113,105)],fill=P['blue'])
+            d.polygon([(120,98),(136,98),(138,107),(135,131),(132,143),(124,143),(121,131),(118,107)],fill=P['blue2'])
+            d.line([(82,77),(102,70),(128,73),(154,70),(174,77)],fill=P['gold2'],width=2)
+            d.line([(113,96),(143,96)],fill=P['gold'],width=2)
+            d.line([(116,104),(114,135),(121,148)],fill=P['gold'],width=1)
+            d.line([(140,104),(142,135),(135,148)],fill=P['gold'],width=1)
+            return up(im)
+
+          def v2_martial_knot():
+            im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
+            # Central knot stays hidden naturally; short connected tails flare laterally outside the hips.
+            d.polygon([(112,111),(119,104),(128,102),(137,104),(144,111),(140,122),(133,127),(123,127),(116,122)],fill=P['outline'])
+            d.polygon([(115,111),(121,107),(128,105),(135,107),(141,111),(138,118),(132,123),(124,123),(118,118)],fill=P['navy'])
+            d.polygon([(120,111),(128,107),(136,111),(133,118),(123,118)],fill=P['blue2'])
+            # left short tapered tail, physically connected through overlap with knot
+            d.polygon([(120,116),(114,120),(104,122),(92,126),(80,132),(69,140),(66,149),(78,146),(91,140),(105,135),(117,128),(124,122)],fill=P['outline'])
+            d.polygon([(118,119),(112,122),(103,125),(92,129),(81,135),(72,141),(70,145),(78,142),(91,136),(104,132),(116,126),(121,122)],fill=P['blue'])
+            # right short tapered tail
+            d.polygon([(136,116),(142,120),(152,122),(164,126),(176,132),(187,140),(190,149),(178,146),(165,140),(151,135),(139,128),(132,122)],fill=P['outline'])
+            d.polygon([(138,119),(144,122),(153,125),(164,129),(175,135),(184,141),(186,145),(178,142),(165,136),(152,132),(140,126),(135,122)],fill=P['blue'])
+            d.rectangle((123,118,133,128),fill=P['navy']); d.rectangle((126,118,130,124),fill=P['gold'])
+            d.line([(71,143),(91,134),(112,125),(124,120)],fill=P['gold2'],width=1)
+            d.line([(185,143),(165,134),(144,125),(132,120)],fill=P['gold2'],width=1)
+            return up(im)
+
+          def v3_guardian_panel():
+            im=Image.new('RGBA',(S,S),(0,0,0,0)); d=ImageDraw.Draw(im)
+            # Structured upper-back guard protrudes on both sides; a single offset flexible panel creates a distinct read.
+            d.polygon([(76,84),(89,76),(111,73),(128,76),(145,73),(167,76),(180,84),(176,99),(165,108),(151,111),(143,119),(108,119),(101,111),(87,108),(80,99)],fill=P['outline'])
+            d.polygon([(80,85),(91,79),(112,76),(128,79),(144,76),(165,79),(176,85),(172,96),(162,103),(148,106),(108,106),(94,103),(84,96)],fill=P['navy'])
+            d.polygon([(87,87),(101,82),(116,81),(128,83),(140,81),(155,82),(169,87),(165,94),(153,100),(103,100),(91,94)],fill=P['blue'])
+            # one connected panel, intentionally offset to fighter's rear-right edge
+            d.polygon([(143,101),(165,101),(171,112),(173,143),(169,160),(159,169),(148,164),(141,150),(138,119)],fill=P['outline'])
+            d.polygon([(146,104),(162,104),(168,113),(169,141),(165,156),(159,164),(151,160),(145,148),(142,119)],fill=P['blue'])
+            d.polygon([(151,107),(159,107),(164,115),(165,138),(162,151),(158,158),(153,155),(149,145),(146,119)],fill=P['blue2'])
+            d.line([(90,85),(111,78),(128,81),(145,78),(166,85)],fill=P['gold2'],width=2)
+            d.line([(145,104),(163,104)],fill=P['gold'],width=2)
+            d.line([(146,112),(144,147),(151,160)],fill=P['gold'],width=1)
+            d.line([(166,112),(168,141),(162,156)],fill=P['gold'],width=1)
+            return up(im)
+
+          items={
+            'v1_guardian_yoke':('Manto Curto da Guarda',v1_guardian_yoke(),'wide connected guardian yoke with compact central panel and silhouette tabs'),
+            'v2_martial_knot':('Laço Marcial Taijifu',v2_martial_knot(),'central martial knot with two very short connected lateral tapered tails'),
+            'v3_guardian_panel':('Painel Guardião',v3_guardian_panel(),'structured compact upper-back guard with one connected offset short flexible panel'),
+          }
+          candidates={}
+          for cid,(label,img,art_read) in items.items():
+            folder=BASE/cid; folder.mkdir(parents=True,exist_ok=True)
+            path=folder/'back_accessory.png'; img.save(path,format='PNG',optimize=False)
+            Image.open(path).load()
+            raw=path.read_bytes(); bbox=img.getchannel('A').getbbox(); hist=img.getchannel('A').histogram()
+            candidates[cid]={
+              'label':label,'path':path.as_posix(),'sha256':hashlib.sha256(raw).hexdigest(),
+              'alpha_bbox':list(bbox),'visible_pixels':sum(hist[1:]),'connected_components':1,'art_read':art_read,
+            }
+            print(cid,candidates[cid]['sha256'],bbox,candidates[cid]['visible_pixels'])
+          contract={
+            'schema':'tehkne/taijifu-base04-back-accessory-candidates/v1','signature':'Tehkné Solutions','stage':'C68.3',
+            'status':'candidate_binaries_materialized_visual_selection_pending','runtime_activation':False,'creator_exposure':False,
+            'canvas':[1024,1024],'mode':'RGBA','pivot':[0.5,0.92],'root_anchor':'bottom_center',
+            'constraints':{'connected_single_object_required':True,'large_mmo_cape_forbidden':True,'disconnected_two_strip_silhouette_forbidden':True,'max_bottom_y':700,'transparent_border_required':True,'candidate_count':3},
+            'candidates':candidates,'selection':{'selected_candidate':None,'review_state':'pending_real_composition_capture'},
+            'next_stage':'C68.3 — real composition capture and visual selection'
+          }
+          (BASE/'candidates.json').write_text(json.dumps(contract,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+
+      - name: Prove new silhouettes against canonical composition before push
+        run: python3 scripts/ci/c68_3_back_accessory_candidate_review.py
+
+      - name: Commit only gate-passing validated binaries
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions'
+          git config user.email 'actions@users.noreply.github.com'
+          git add assets/modular_fighters/base_04/candidates/back_accessory_pack_01
+          git diff --cached --quiet && exit 0
+          git commit -m 'C68.3 — redraw candidates for gameplay readability'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
