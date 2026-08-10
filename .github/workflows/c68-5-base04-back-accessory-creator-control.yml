@@ -1,0 +1,133 @@
+name: C68.5 BASE-04 Back Accessory Creator Control
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_04/**'
+      - 'assets/modular_fighters/shared_equipment/**'
+      - 'scripts/characters/modular_fighter_armor_runtime.gd'
+      - 'scripts/characters/modular_fighter_creator_scene.gd'
+      - 'scripts/characters/modular_fighter_equipment_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/ci/base04_back_accessory_creator_control_smoke.gd'
+      - 'scripts/ci/base04_back_accessory_creator_visual_review.gd'
+      - '.github/workflows/c68-5-base04-back-accessory-creator-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  back-accessory-creator-control:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate C68.5 static fail-closed contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
+          c=json.loads(Path('assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_CREATOR_CONTROL.json').read_text())
+          e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
+          assert m['pack_id']=='BASE04_ARMOR_ACCESSORIES'
+          assert m['version']=='1.3.0'
+          assert m['promotion']['back_accessory_runtime_activation'] is True
+          assert m['promotion']['back_accessory_creator_exposure'] is True
+          assert m['public_controls']['back_accessory']['creator_exposed'] is True
+          assert m['public_controls']['back_accessory']['production_only'] is True
+          assert m['public_controls']['back_accessory']['weapon_back_control'] is False
+          assert [k for k in m['back_accessories']]==['back_none','back_01_guardian_panel']
+          assert all(v['production_ready'] is True for v in m['back_accessories'].values())
+          assert c['stage']=='C68.5'
+          assert c['public_control']['node_name']=='BackAccessoryOption'
+          assert c['public_control']['selection_unit']=='back_accessory'
+          assert c['public_control']['direct_weapon_back_control'] is False
+          assert [x['id'] for x in c['production_options']]==['back_none','back_01_guardian_panel']
+          assert c['weapon_back']['creator_control_exposed'] is False
+          assert c['weapon_back']['required_internal_reference']=='sheath_lian_wu_blue'
+          assert c['layer_contract']['relation']=='weapon_back < back_accessory < hair_back'
+          assert 'WeaponBackOption' in c['forbidden_creator_nodes']
+          assert e['promotion']['creator_exposure'] is False
+          assert e['modules']['sheath_lian_wu_blue']['production_ready'] is True
+          # This is a validation branch; final evidence is promoted only after the
+          # read-only runtime and visual gates below succeed.
+          assert c['status'] in ('validation_pending','production_approved')
+          assert m['promotion']['creator_validation'] in ('c68_5_pending','pass')
+          print('C68_5_STATIC_CONTRACT=PASS options=2 back_control=true weapon_control=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3 and Xvfb
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --output godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project fail closed
+        run: |
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c68-5-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|SHADER ERROR|Shader compilation failed|ERR_FILE_CORRUPT' c68-5-import.log; then exit 1; fi
+
+      - name: Preserve C68.2 atomic Armor Creator behavior
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/base04_armor_creator_control_smoke.gd 2>&1 | tee c68-5-c68-2.log
+          grep -q 'C68_2_ARMOR_CREATOR_CONTROL=PASS lifecycle_aware=true' c68-5-c68-2.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_2_CREATOR=BLOCKED' c68-5-c68-2.log; then exit 1; fi
+
+      - name: Preserve C68.4 equipment and z-chain runtime
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/c68_4_equipment_runtime_smoke.gd 2>&1 | tee c68-5-c68-4.log
+          grep -q 'C68_4_EQUIPMENT_RUNTIME=PASS module=sheath_lian_wu_blue candidate_mode=false production=true' c68-5-c68-4.log
+          grep -q 'C68_4_Z_CHAIN=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-5-c68-4.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_4_.*BLOCKED' c68-5-c68-4.log; then exit 1; fi
+
+      - name: Validate C68.5 Back Accessory Creator end to end
+        run: |
+          ./godot --headless --path . --script res://scripts/ci/base04_back_accessory_creator_control_smoke.gd 2>&1 | tee c68-5-runtime.log
+          grep -q 'C68_5_BACK_CONTROL=PASS options=2 unit=back_accessory' c68-5-runtime.log
+          grep -q 'C68_5_WEAPON_BACK_CONTROL=ABSENT preserved=sheath_lian_wu_blue' c68-5-runtime.log
+          grep -q 'C68_5_LIVE_PREVIEW=PASS weapon_back=3 back=4 hair_back=5 armor_preserved=true uniform_preserved=true' c68-5-runtime.log
+          grep -q 'C68_5_NONE_TRANSACTION=PASS back_cleared=true weapon_back_preserved=true' c68-5-runtime.log
+          grep -q 'C68_5_PRESET_ROUNDTRIP=PASS schema=v2 back=back_01_guardian_panel weapon_back=sheath_lian_wu_blue' c68-5-runtime.log
+          grep -q 'C68_5_BATTLE_HANDOFF=PASS back=back_01_guardian_panel weapon_back=sheath_lian_wu_blue' c68-5-runtime.log
+          grep -q 'C68_5_BACK_ACCESSORY_CREATOR_CONTROL=PASS' c68-5-runtime.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_5_CREATOR=BLOCKED' c68-5-runtime.log; then exit 1; fi
+
+      - name: Capture C68.5 Creator visual evidence
+        run: |
+          xvfb-run -a -s '-screen 0 1280x720x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/base04_back_accessory_creator_visual_review.gd 2>&1 | tee c68-5-visual.log
+          grep -q 'C68_5_CREATOR_VISUAL=PASS back=back_01_guardian_panel weapon_back=sheath_lian_wu_blue armor=armor_01_taijifu_guard hair=hair_01_lian_topknot uniform=uniform_01_lian_martial' c68-5-visual.log
+          grep -q 'C68_5_CREATOR_LAYOUT=PASS controls=armor_set,back_accessory,uniform_set,hair_style overlap=false weapon_back_control=false' c68-5-visual.log
+          grep -q 'C68_5_CREATOR_PREVIEW=PASS weapon_back=3 back=4 hair_back=5 head=60 shoulders=70' c68-5-visual.log
+          test -s artifacts/c68_5/C68_5_BACK_ACCESSORY_CREATOR_CONTROL.review-1280x720.png
+          if grep -Eq 'SCRIPT ERROR|Parse Error|C68_5_VISUAL=BLOCKED' c68-5-visual.log; then exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C68-5-BASE04-BACK-ACCESSORY-CREATOR-CONTROL-EVIDENCE
+          path: |
+            c68-5-import.log
+            c68-5-c68-2.log
+            c68-5-c68-4.log
+            c68-5-runtime.log
+            c68-5-visual.log
+            artifacts/c68_5/C68_5_BACK_ACCESSORY_CREATOR_CONTROL.review-1280x720.png
+            assets/modular_fighters/base_04/manifest.json
+            assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_CREATOR_CONTROL.json
+            assets/modular_fighters/shared_equipment/manifest.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C68.5 Back Accessory Creator Control validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

@@ -2,8 +2,8 @@
   "schema": "tehkne/taijifu-base04-armor-accessories-manifest/v1",
   "signature": "Tehkné Solutions",
   "pack_id": "BASE04_ARMOR_ACCESSORIES",
-  "version": "1.2.0",
-  "status": "production_approved_armor_pack_01_back_accessory_pack_01_active_fight",
+  "version": "1.3.0",
+  "status": "c68_5_back_accessory_creator_control_validation",
   "depends_on": {
     "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
     "base_body": "base_fighter_v1",
@@ -34,7 +34,9 @@
       "slot": "back_accessory",
       "default_id": "back_none",
       "selection_atomic": true,
-      "creator_exposed": false
+      "creator_exposed": true,
+      "production_only": true,
+      "weapon_back_control": false
     }
   },
   "armor_sets": {
@@ -174,11 +176,11 @@
     "armor_runtime_activation": true,
     "back_accessory_runtime_activation": true,
     "creator_exposure": true,
-    "back_accessory_creator_exposure": false,
+    "back_accessory_creator_exposure": true,
     "battle_activation": true,
     "runtime_validation": "pass",
     "owner_visual_review": "pass",
-    "creator_validation": "pass",
+    "creator_validation": "c68_5_pending",
     "visual_evidence": {
       "workflow_run": 31343546528,
       "artifact_id": 9046558404,
@@ -225,7 +227,17 @@
       "back_retained_pixels": 11151,
       "combined_distinct_pixels": 24930
     },
-    "blocker": "back_accessory_creator_control_pending"
+    "back_accessory_creator_evidence": {
+      "stage": "C68.5",
+      "status": "pending",
+      "creator_runtime": "pending",
+      "live_preview": "pending",
+      "preset_roundtrip": "pending",
+      "battle_handoff": "pending",
+      "weapon_back_preservation": "pending",
+      "actual_control_overlap": null
+    },
+    "blocker": "c68_5_creator_validation_pending"
   },
-  "next_stage": "C68.5 — Back Accessory Creator Control; weapon_back remains internal visual equipment"
+  "next_stage": "C68.5 — validate Back Accessory Creator Control; weapon_back remains internal visual equipment"
 }

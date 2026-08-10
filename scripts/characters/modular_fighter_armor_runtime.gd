@@ -66,6 +66,18 @@ static func back_accessory_ids(production_only := false) -> PackedStringArray:
 	result.sort()
 	return result
 
+static func creator_back_accessory_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	if not back_accessory_creator_exposure_enabled():
+		return result
+	result = back_accessory_ids(true)
+	var default_text := String(DEFAULT_BACK_ACCESSORY)
+	var default_index := result.find(default_text)
+	if default_index > 0:
+		result.remove_at(default_index)
+		result.insert(0, default_text)
+	return result
+
 static func back_accessory_label(accessory_id: StringName) -> String:
 	var items = _manifest().get("back_accessories", {})
 	var key := String(accessory_id)

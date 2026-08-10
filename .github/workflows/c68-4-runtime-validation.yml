@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate final C68.4 production contracts and no writers
+      - name: Validate immutable C68.4 runtime contracts across later Creator exposure
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -32,7 +32,7 @@ jobs:
           e=json.loads(Path('assets/modular_fighters/shared_equipment/manifest.json').read_text())
           b=json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
           c=json.loads(Path('assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_PACK_01_RUNTIME.json').read_text())
-          assert e['pack_id']=='SHARED_MODULAR_EQUIPMENT' and e['status']=='production_approved_weapon_back_pack_01_active_fight'
+          assert e['pack_id']=='SHARED_MODULAR_EQUIPMENT'
           assert e['runtime_slots']==['weapon_back']
           assert e['promotion']['runtime_activation'] is True
           assert e['promotion']['presenter_integration'] is True
@@ -41,9 +41,7 @@ jobs:
           s=e['modules']['sheath_lian_wu_blue']
           assert s['runtime_ready'] is True and s['production_ready'] is True and s['layer']==3
           assert hashlib.sha256(Path(s['path']).read_bytes()).hexdigest()==s['sha256']
-          assert b['status']=='production_approved_armor_pack_01_back_accessory_pack_01_active_fight'
           assert b['promotion']['back_accessory_runtime_activation'] is True
-          assert b['promotion']['back_accessory_creator_exposure'] is False
           back=b['back_accessories']['back_01_guardian_panel']
           assert back['runtime_ready'] is True and back['production_ready'] is True
           mod=b['modules'][back['back_accessory']]
@@ -59,10 +57,16 @@ jobs:
           assert c['active_fight']['artifact_id']==9064573876
           assert c['active_fight']['auto_activation'] is True and c['active_fight']['battle_handoff'] is True
           assert c['promotion']['battle_runtime'] is True and c['promotion']['presenter_integration'] is True
+          # Immutable C68.4 record says Creator was closed then. Current BASE-04 may
+          # evolve in C68.5, but shared weapon_back remains non-public permanently.
           assert c['promotion']['creator_exposure'] is False
+          back_creator=bool(b['promotion'].get('back_accessory_creator_exposure',False))
+          if back_creator:
+              assert b['public_controls']['back_accessory']['creator_exposed'] is True
+              assert b['public_controls']['back_accessory'].get('weapon_back_control') is False
           assert not list(Path('.github/workflows').glob('c68-4-disposable-*.yml'))
           print('C68_4_FINAL_CONTRACT=PASS sheath=sheath_lian_wu_blue back=back_01_guardian_panel')
-          print('C68_4_PROMOTED_MANIFESTS=PASS runtime=true presenter=true creator=false')
+          print(f"C68_4_PROMOTED_MANIFESTS=PASS runtime=true presenter=true back_creator={str(back_creator).lower()} weapon_creator=false")
           print('C68_4_WRITERS=ABSENT')
           print('SIGNATURE=Tehkné Solutions')
           PY
@@ -73,7 +77,8 @@ jobs:
           python3 scripts/ci/c68_4_weapon_back_compatibility_review.py | tee c68-4-compatibility.log
           grep -q 'C68_4_LAYER_ORDER=PASS weapon_back=3 back_accessory=4 hair_back=5' c68-4-compatibility.log
           grep -q 'C68_4_COMPATIBILITY=PASS authored=true flipped=true gameplay_scale=true' c68-4-compatibility.log
-          grep -q 'C68_4_PROMOTION_STATE=PASS equipment_runtime=true back_runtime=true creator=false' c68-4-compatibility.log
+          grep -q 'C68_4_PROMOTION_STATE=PASS equipment_runtime=true back_runtime=true' c68-4-compatibility.log
+          grep -q 'weapon_creator=false' c68-4-compatibility.log
 
       - name: Install Godot 4.3 and Xvfb
         run: |
@@ -100,7 +105,7 @@ jobs:
           grep -q 'C68_4_RUNTIME_SCOPE=PASS slots=weapon_back future=weapon_main,weapon_offhand' c68-4-runtime.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|C68_4_.*BLOCKED' c68-4-runtime.log; then exit 1; fi
 
-      - name: Validate definitive active-fight presenter integration
+      - name: Validate definitive C68.4 active-fight presenter integration
         run: |
           xvfb-run -a -s '-screen 0 1920x1080x24' ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy --script res://scripts/ci/c68_4_active_fight_visual_review.gd 2>&1 | tee c68-4-active-fight.log
           grep -q 'C68_4_ACTIVE_FIGHT=PASS weapon_back=sheath_lian_wu_blue back=back_01_guardian_panel auto_activation=true handoff=true' c68-4-active-fight.log
@@ -126,4 +131,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C68.4 final weapon_back + Back Accessory production and active-fight validation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.4 immutable weapon_back + Back Accessory runtime, lifecycle-aware after C68.5 — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
