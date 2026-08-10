@@ -26,6 +26,9 @@ jobs:
       - name: Install image review dependency
         run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
 
+      - name: Report candidate hashes
+        run: sha256sum assets/modular_fighters/base_04/candidates/back_accessory_pack_01/*/back_accessory.png
+
       - name: Validate and render C68.3 candidate matrix
         run: python3 scripts/ci/c68_3_back_accessory_candidate_review.py
 
