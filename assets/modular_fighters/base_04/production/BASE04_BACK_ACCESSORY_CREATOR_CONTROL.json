@@ -1,0 +1,83 @@
+{
+  "schema": "tehkne/taijifu-base04-back-accessory-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_BACK_ACCESSORY_CREATOR_CONTROL",
+  "stage": "C68.5",
+  "status": "validation_pending",
+  "public_control": {
+    "id": "back_accessory",
+    "widget": "OptionButton",
+    "node_name": "BackAccessoryOption",
+    "selection_unit": "back_accessory",
+    "slot": "back_accessory",
+    "direct_weapon_back_control": false,
+    "production_only": true,
+    "default_id": "back_none"
+  },
+  "production_options": [
+    {
+      "id": "back_none",
+      "label": "Sem acessório de costas"
+    },
+    {
+      "id": "back_01_guardian_panel",
+      "label": "Painel Guardião"
+    }
+  ],
+  "weapon_back": {
+    "creator_control_exposed": false,
+    "required_internal_reference": "sheath_lian_wu_blue",
+    "slot": "weapon_back",
+    "layer": 3,
+    "must_survive_back_accessory_changes": true,
+    "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog"
+  },
+  "layer_contract": {
+    "weapon_back": 3,
+    "back_accessory": 4,
+    "hair_back": 5,
+    "relation": "weapon_back < back_accessory < hair_back"
+  },
+  "cross_pack_contract": {
+    "hair_preserved": true,
+    "uniform_preserved": true,
+    "armor_preserved": true,
+    "weapon_back_preserved": true,
+    "reference_hair": "hair_01_lian_topknot",
+    "reference_uniform": "uniform_01_lian_martial",
+    "reference_armor": "armor_01_taijifu_guard",
+    "reference_weapon_back": "sheath_lian_wu_blue",
+    "preview_reassembly_transactional": true,
+    "signal_reassembly_guard": true
+  },
+  "persistence_contract": {
+    "profile_schema_change_required": false,
+    "preset_schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "save_load_roundtrip": true,
+    "battle_handoff": true
+  },
+  "ui_contract": {
+    "viewport": [1280, 720],
+    "control_band": "top_single_row_expansion",
+    "all_public_pack_controls_must_fit_viewport": true,
+    "actual_control_overlap": false
+  },
+  "forbidden_creator_nodes": [
+    "HeadAccessoryOption",
+    "ShouldersOption",
+    "WeaponBackOption",
+    "WeaponMainOption",
+    "WeaponOffhandOption"
+  ],
+  "validation": {
+    "creator_runtime": "pending",
+    "live_preview": "pending",
+    "preset_roundtrip": "pending",
+    "battle_handoff": "pending",
+    "weapon_back_preservation": "pending",
+    "cross_pack_preservation": "pending",
+    "actual_control_overlap": "pending",
+    "visual_capture": "pending"
+  },
+  "next_stage": "C68.5 closeout after read-only Creator and active-fight evidence"
+}
