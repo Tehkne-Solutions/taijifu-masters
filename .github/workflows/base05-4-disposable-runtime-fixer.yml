@@ -1,0 +1,46 @@
+name: BASE-05.4 Disposable Optional Module Normalization Fixer
+
+on:
+  push:
+    branches:
+      - agent/base05-4-weapon-set-creator-control
+    paths:
+      - '.github/workflows/base05-4-disposable-runtime-fixer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/base05-4-weapon-set-creator-control
+      - name: Normalize nullable weapon-set module IDs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/characters/modular_fighter_equipment_runtime.gd')
+          s=p.read_text(encoding='utf-8')
+          old='''\t\tvar expected_main := String(contract.get("weapon_main", ""))\n\t\tvar expected_offhand := String(contract.get("weapon_offhand", ""))'''
+          new='''\t\tvar expected_main := _optional_module_string(contract.get("weapon_main", null))\n\t\tvar expected_offhand := _optional_module_string(contract.get("weapon_offhand", null))'''
+          assert old in s, 'nullable comparison anchor missing'
+          s=s.replace(old,new,1)
+          anchor='''static func _apply_optional_module(profile: ModularFighterProfile, slot: StringName, value: Variant) -> void:\n\tvar module_id := String(value) if value != null else ""'''
+          replacement='''static func _optional_module_string(value: Variant) -> String:\n\treturn "" if value == null else String(value)\n\nstatic func _apply_optional_module(profile: ModularFighterProfile, slot: StringName, value: Variant) -> void:\n\tvar module_id := _optional_module_string(value)'''
+          assert anchor in s, 'optional module helper anchor missing'
+          s=s.replace(anchor,replacement,1)
+          p.write_text(s,encoding='utf-8')
+          print('BASE05_4_NULLABLE_MODULE_FIX=PASS null_to_empty=true')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Commit fix
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'ci@tehkne.solutions'
+          git add scripts/characters/modular_fighter_equipment_runtime.gd
+          git diff --cached --quiet && { echo 'No fix change'; exit 0; }
+          git commit -m 'BASE-05.4: normalize nullable weapon-set module IDs'
+          git push origin HEAD:agent/base05-4-weapon-set-creator-control
