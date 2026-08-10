@@ -1,0 +1,71 @@
+{
+  "schema": "tehkne/taijifu-base05-katana-lian-wu-runtime/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.3",
+  "pack_id": "BASE05_KATANA_LIAN_WU_PACK_01_RUNTIME",
+  "status": "runtime_validation_pending",
+  "weapon_main": {
+    "id": "katana_lian_wu",
+    "slot": "weapon_main",
+    "layer": 80,
+    "path": "assets/modular_fighters/base_05/katana_lian_wu/weapon_main.png",
+    "sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+    "source_candidate": "v1_serene_forward",
+    "combat_reference": "serene_katana"
+  },
+  "art_review": {
+    "contract": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
+    "workflow_run": 31416191696,
+    "artifact_id": 9073498188,
+    "artifact_digest": "sha256:d4f3753905242061d26831117d39d0b29491f18046ac9811a8fac2c54aaaa6b2",
+    "owner_visual_review": "pass"
+  },
+  "state_visibility_contract": {
+    "neutral_weapon_main_visible": false,
+    "neutral_weapon_back_visible": true,
+    "weapon_main_visible_states": ["attack_light", "guard", "dodge"],
+    "same_node_visibility_toggle_required": true,
+    "weapon_back_remains_visible_when_drawn": true
+  },
+  "ownership": {
+    "visual_owner": "ModularFighterEquipmentRuntime",
+    "visibility_owner": "FirstPlayableModularFighterPresenter_visual_state",
+    "combat_behavior_owner": "WeaponKitCatalog",
+    "damage_or_technique_data_in_visual_module": false
+  },
+  "compatibility": {
+    "weapon_back": "sheath_lian_wu_blue",
+    "back_accessory": "back_01_guardian_panel",
+    "hair": "hair_01_lian_topknot",
+    "uniform": "uniform_01_lian_martial",
+    "armor": "armor_01_taijifu_guard",
+    "required_layer_chain": "weapon_back=3 < back_accessory=4 < hair_back=5 < weapon_main=80"
+  },
+  "validation": {
+    "static_contract": "pending",
+    "godot_import": "pending",
+    "runtime_smoke": "pending",
+    "active_fight": "pending",
+    "idle_hidden": "pending",
+    "attack_visible": "pending",
+    "idle_return_hidden": "pending",
+    "same_node_idempotence": "pending",
+    "battle_handoff": "pending",
+    "combat_binding": "pending",
+    "visual_capture": "pending"
+  },
+  "evidence": null,
+  "promotion": {
+    "weapon_main_runtime_activation": true,
+    "presenter_candidate_integration": true,
+    "presenter_integration": false,
+    "creator_exposure": false,
+    "production_ready": false,
+    "runtime_validation": "pending"
+  },
+  "blockers": [
+    "state_aware_active_fight_not_validated",
+    "runtime_evidence_not_frozen"
+  ],
+  "next_stage": "BASE-05.3 closeout after read-only state-aware active-fight evidence"
+}
