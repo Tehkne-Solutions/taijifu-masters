@@ -116,7 +116,7 @@ jobs:
             --script res://scripts/ci/base03_uniform_creator_visual_review.gd \
             2>&1 | tee c67-2-visual.log
           grep -q 'C67_2_VISUAL_REVIEW=PASS set=uniform_01_lian_martial hair=hair_01_lian_topknot' c67-2-visual.log
-          grep -q 'C67_2_VISUAL_LAYOUT=PASS uniform=600,38,310,42 hair=930,38,310,42 overlap=false' c67-2-visual.log
+          grep -q 'C67_2_VISUAL_LAYOUT=PASS uniform_control=true hair_control=true overlap=false expansion_aware=true' c67-2-visual.log
           grep -q 'C67_2_VISUAL_PREVIEW=PASS uniform_modules=5 hair_nodes=2' c67-2-visual.log
           test -s artifacts/c67_2/C67_2_UNIFORM_CREATOR_CONTROL.review-1280x720.png
           if grep -Eq 'SCRIPT ERROR|Parse Error|C67_2_VISUAL=BLOCKED' c67-2-visual.log; then
