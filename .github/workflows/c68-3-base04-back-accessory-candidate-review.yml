@@ -29,7 +29,7 @@ jobs:
       - name: Report candidate hashes
         run: sha256sum assets/modular_fighters/base_04/candidates/back_accessory_pack_01/*/back_accessory.png
 
-      - name: Validate and render C68.3 candidate matrix
+      - name: Validate binary integrity and canonical gameplay readability
         run: python3 scripts/ci/c68_3_back_accessory_candidate_review.py
 
       - name: Upload C68.3 visual evidence
@@ -41,4 +41,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'C68.3 Back Accessory candidate materialization + real composition review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.3 Back Accessory binary integrity + canonical z4 gameplay readability + authored/flipped review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
