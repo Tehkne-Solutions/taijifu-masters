@@ -1,0 +1,119 @@
+name: BASE-05.4 Disposable Creator Weapon-Set Patcher
+
+on:
+  push:
+    branches:
+      - agent/base05-4-weapon-set-creator-control
+    paths:
+      - '.github/workflows/base05-4-disposable-creator-patcher.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/base05-4-weapon-set-creator-control
+
+      - name: Patch Creator scene and bounded layout deterministically
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path=Path('scripts/characters/modular_fighter_creator_scene.gd')
+          s=path.read_text(encoding='utf-8')
+
+          def rep(old,new,label):
+              global s
+              assert old in s, f'missing anchor: {label}'
+              s=s.replace(old,new,1)
+
+          rep('''const ARMOR_CONTROL_POSITION := Vector2(470.0, 38.0)\nconst ARMOR_CONTROL_SIZE := Vector2(180.0, 42.0)\nconst BACK_ACCESSORY_CONTROL_POSITION := Vector2(665.0, 38.0)\nconst BACK_ACCESSORY_CONTROL_SIZE := Vector2(180.0, 42.0)\nconst UNIFORM_CONTROL_POSITION := Vector2(860.0, 38.0)\nconst UNIFORM_CONTROL_SIZE := Vector2(180.0, 42.0)\nconst HAIR_CONTROL_POSITION := Vector2(1055.0, 38.0)\nconst HAIR_CONTROL_SIZE := Vector2(200.0, 42.0)''','''const ARMOR_CONTROL_POSITION := Vector2(470.0, 38.0)\nconst ARMOR_CONTROL_SIZE := Vector2(145.0, 42.0)\nconst BACK_ACCESSORY_CONTROL_POSITION := Vector2(625.0, 38.0)\nconst BACK_ACCESSORY_CONTROL_SIZE := Vector2(145.0, 42.0)\nconst UNIFORM_CONTROL_POSITION := Vector2(780.0, 38.0)\nconst UNIFORM_CONTROL_SIZE := Vector2(145.0, 42.0)\nconst HAIR_CONTROL_POSITION := Vector2(935.0, 38.0)\nconst HAIR_CONTROL_SIZE := Vector2(145.0, 42.0)\nconst WEAPON_SET_CONTROL_POSITION := Vector2(1090.0, 38.0)\nconst WEAPON_SET_CONTROL_SIZE := Vector2(165.0, 42.0)''','control constants')
+
+          rep('''var _back_accessory_option: OptionButton\nvar _back_accessory_syncing := false\nvar _back_accessory_skip_next_state_reassembly := false''','''var _back_accessory_option: OptionButton\nvar _back_accessory_syncing := false\nvar _back_accessory_skip_next_state_reassembly := false\nvar _weapon_set_option: OptionButton\nvar _weapon_syncing := false\nvar _weapon_skip_next_state_reassembly := false''','weapon vars')
+
+          rep('''\tcreator_state_changed.connect(_on_creator_state_changed_back_accessory)\n\t_build_hair_control()\n\t_build_uniform_control()\n\t_build_armor_control()\n\t_build_back_accessory_control()\n\t_sync_hair_control_and_preview()\n\t_sync_uniform_control_and_preview()\n\t_sync_armor_control_and_preview()\n\t_sync_back_accessory_control_and_preview()''','''\tcreator_state_changed.connect(_on_creator_state_changed_back_accessory)\n\tcreator_state_changed.connect(_on_creator_state_changed_weapon_set)\n\t_build_hair_control()\n\t_build_uniform_control()\n\t_build_armor_control()\n\t_build_back_accessory_control()\n\t_build_weapon_set_control()\n\t_sync_hair_control_and_preview()\n\t_sync_uniform_control_and_preview()\n\t_sync_armor_control_and_preview()\n\t_sync_back_accessory_control_and_preview()\n\t_sync_weapon_set_control_and_preview()''','ready')
+
+          weapon_set_func='''\nfunc set_weapon_set(set_id: StringName) -> PackedStringArray:\n\tvar failures := PackedStringArray()\n\tvar profile := current_profile()\n\tvar assembler := current_assembler()\n\tif profile == null:\n\t\tfailures.append("creator_weapon_set_profile_missing")\n\t\treturn failures\n\tif assembler == null or not assembler.is_ready_for_render():\n\t\tfailures.append("creator_weapon_set_assembler_missing")\n\t\treturn failures\n\tif not ModularFighterEquipmentRuntime.weapon_set_creator_exposure_enabled():\n\t\tfailures.append("creator_weapon_set_exposure_blocked")\n\t\treturn failures\n\tif not ModularFighterEquipmentRuntime.creator_weapon_set_ids().has(String(set_id)):\n\t\tfailures.append("creator_weapon_set_not_production_ready:%s" % String(set_id))\n\t\treturn failures\n\n\tvar previous_main := profile.module_id(&"weapon_main")\n\tvar previous_offhand := profile.module_id(&"weapon_offhand")\n\tvar weapon_back_before := profile.module_id(&"weapon_back")\n\tvar combat_before := profile.combat_loadout_id\n\tfailures.append_array(ModularFighterEquipmentRuntime.set_profile_weapon_set(profile, set_id))\n\tif failures.is_empty():\n\t\tfailures.append_array(ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler))\n\tif failures.is_empty() and profile.module_id(&"weapon_main") != &"":\n\t\tif not ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true):\n\t\t\tfailures.append("creator_weapon_set_preview_visibility")\n\tif profile.module_id(&"weapon_back") != weapon_back_before:\n\t\tfailures.append("creator_weapon_set_weapon_back_mutated")\n\tif profile.combat_loadout_id != combat_before:\n\t\tfailures.append("creator_weapon_set_combat_loadout_mutated")\n\n\tif not failures.is_empty():\n\t\tif previous_main == &"": profile.clear_module(&"weapon_main")\n\t\telse: profile.set_module(&"weapon_main", previous_main)\n\t\tif previous_offhand == &"": profile.clear_module(&"weapon_offhand")\n\t\telse: profile.set_module(&"weapon_offhand", previous_offhand)\n\t\tprofile.set_module(&"weapon_back", weapon_back_before)\n\t\tprofile.combat_loadout_id = combat_before\n\t\tModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler)\n\t\tif previous_main != &"": ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true)\n\t\t_sync_weapon_set_option_selection()\n\t\t_set_status("Conjunto de arma não aplicado", true)\n\t\treturn failures\n\n\t_sync_weapon_set_option_selection()\n\t_set_status("Arma visual atualizada: %s" % ModularFighterEquipmentRuntime.weapon_set_label(set_id), false)\n\t_mark_cross_pack_signal_handled()\n\tcreator_state_changed.emit()\n\treturn failures\n\n'''
+          rep('''func _mark_cross_pack_signal_handled() -> void:''', weapon_set_func+'''func _mark_cross_pack_signal_handled() -> void:''','set_weapon_set')
+
+          rep('''\t_back_accessory_skip_next_state_reassembly = true''','''\t_back_accessory_skip_next_state_reassembly = true\n\t_weapon_skip_next_state_reassembly = true''','cross pack guard')
+
+          rep('''func current_back_accessory_id() -> StringName:\n\treturn ModularFighterArmorRuntime.profile_back_accessory_id(current_profile())''','''func current_back_accessory_id() -> StringName:\n\treturn ModularFighterArmorRuntime.profile_back_accessory_id(current_profile())\n\nfunc current_weapon_set_id() -> StringName:\n\treturn ModularFighterEquipmentRuntime.profile_weapon_set_id(current_profile())''','current weapon set')
+
+          rep('''func back_accessory_option() -> OptionButton:\n\treturn _back_accessory_option''','''func back_accessory_option() -> OptionButton:\n\treturn _back_accessory_option\n\nfunc weapon_set_option() -> OptionButton:\n\treturn _weapon_set_option''','weapon option getter')
+
+          weapon_sig='''\nfunc weapon_set_creator_signature() -> Dictionary:\n\tvar profile := current_profile()\n\tvar signature := ModularFighterEquipmentRuntime.weapon_set_creator_signature(profile)\n\tsignature["stage"] = "BASE-05.4"\n\tsignature["control"] = "weapon_set"\n\tsignature["live_preview"] = true\n\tsignature["preset_roundtrip"] = true\n\tsignature["battle_handoff"] = true\n\tsignature["signal_reassembly_guard"] = true\n\tsignature["cross_pack_reassembly_guard"] = true\n\tsignature["weapon_back_id"] = String(profile.module_id(&"weapon_back")) if profile != null else ""\n\tsignature["combat_loadout_id"] = String(profile.combat_loadout_id) if profile != null else ""\n\treturn signature\n\n'''
+          rep('''func flow_signature() -> Dictionary:''', weapon_sig+'''func flow_signature() -> Dictionary:''','weapon signature')
+
+          rep('''\tsignature["weapon_back_creator_control"] = false\n\treturn signature''','''\tsignature["weapon_back_creator_control"] = false\n\tsignature["weapon_set_creator_control"] = ModularFighterEquipmentRuntime.weapon_set_creator_exposure_enabled()\n\tsignature["weapon_selection_unit"] = "weapon_set"\n\tsignature["weapon_atomic_slots"] = ["weapon_main", "weapon_offhand"]\n\tsignature["weapon_direct_slot_controls"] = false\n\tsignature["weapon_combat_loadout_mutation"] = false\n\tsignature["weapon_set_count"] = ModularFighterEquipmentRuntime.creator_weapon_set_ids().size()\n\treturn signature''','flow weapon')
+
+          rep('''\tlabel.position = Vector2(1055, 18)\n\tlabel.size = Vector2(200, 20)''','''\tlabel.position = Vector2(935, 18)\n\tlabel.size = Vector2(145, 20)''','hair label')
+          rep('''\tlabel.position = Vector2(860, 18)\n\tlabel.size = Vector2(180, 20)''','''\tlabel.position = Vector2(780, 18)\n\tlabel.size = Vector2(145, 20)''','uniform label')
+          rep('''\tlabel.size = Vector2(180, 20)\n\tlabel.text = "ARMADURA • BASE-04"''','''\tlabel.size = Vector2(145, 20)\n\tlabel.text = "ARMADURA • BASE-04"''','armor label size')
+          rep('''\t\t\tsubtitle.text = "BASE-01→04 • modular • presets"''','''\t\t\tsubtitle.text = "BASE-01→05 • modular • presets"''','subtitle')
+          rep('''\tlabel.position = Vector2(665, 18)\n\tlabel.size = Vector2(180, 20)''','''\tlabel.position = Vector2(625, 18)\n\tlabel.size = Vector2(145, 20)''','back label')
+
+          weapon_build='''\nfunc _build_weapon_set_control() -> void:\n\tif _weapon_set_option != null:\n\t\treturn\n\tvar label := Label.new()\n\tlabel.name = "WeaponSetLabel"\n\tlabel.position = Vector2(1090, 18)\n\tlabel.size = Vector2(165, 20)\n\tlabel.text = "ARMA • BASE-05"\n\tlabel.add_theme_font_size_override("font_size", 10)\n\tlabel.add_theme_color_override("font_color", Color("aaa397"))\n\tadd_child(label)\n\t_weapon_set_option = OptionButton.new()\n\t_weapon_set_option.name = "WeaponSetOption"\n\t_weapon_set_option.position = WEAPON_SET_CONTROL_POSITION\n\t_weapon_set_option.size = WEAPON_SET_CONTROL_SIZE\n\t_weapon_set_option.focus_mode = Control.FOCUS_ALL\n\t_weapon_set_option.item_selected.connect(_on_weapon_set_selected)\n\t_style_option_button(_weapon_set_option)\n\tadd_child(_weapon_set_option)\n\t_refresh_weapon_set_options()\n\n'''
+          rep('''func _refresh_hair_options() -> void:''', weapon_build+'''func _refresh_hair_options() -> void:''','build weapon control')
+
+          weapon_refresh='''\nfunc _refresh_weapon_set_options() -> void:\n\tif _weapon_set_option == null:\n\t\treturn\n\t_weapon_syncing = true\n\t_weapon_set_option.clear()\n\tvar sets := ModularFighterEquipmentRuntime.creator_weapon_set_ids()\n\tfor set_text in sets:\n\t\tvar set_id := StringName(set_text)\n\t\t_weapon_set_option.add_item(ModularFighterEquipmentRuntime.weapon_set_label(set_id))\n\t\t_weapon_set_option.set_item_metadata(_weapon_set_option.item_count - 1, String(set_id))\n\t_weapon_set_option.disabled = sets.is_empty()\n\t_sync_weapon_set_option_selection()\n\t_weapon_syncing = false\n\n'''
+          rep('''func _sync_hair_option_selection() -> void:''', weapon_refresh+'''func _sync_hair_option_selection() -> void:''','refresh weapon')
+
+          weapon_sync_select='''\nfunc _sync_weapon_set_option_selection() -> void:\n\tif _weapon_set_option == null:\n\t\treturn\n\tvar set_id := String(current_weapon_set_id())\n\tfor index in range(_weapon_set_option.item_count):\n\t\tif String(_weapon_set_option.get_item_metadata(index)) == set_id:\n\t\t\t_weapon_set_option.select(index)\n\t\t\treturn\n\n'''
+          rep('''func _sync_hair_control_and_preview() -> void:''', weapon_sync_select+'''func _sync_hair_control_and_preview() -> void:''','sync weapon option')
+
+          weapon_sync_preview='''\nfunc _sync_weapon_set_control_and_preview() -> void:\n\tif _weapon_syncing:\n\t\treturn\n\tvar profile := current_profile()\n\tvar assembler := current_assembler()\n\tif profile == null or assembler == null or not assembler.is_ready_for_render():\n\t\treturn\n\tvar set_failures := ModularFighterEquipmentRuntime.validate_profile_weapon_set(profile)\n\tif not set_failures.is_empty():\n\t\t_set_status("Preset contém conjunto de arma visual inválido", true)\n\t\treturn\n\tvar failures := ModularFighterEquipmentRuntime.assemble_weapon_main_profile(profile, assembler)\n\tif failures.is_empty() and profile.module_id(&"weapon_main") != &"":\n\t\tif not ModularFighterEquipmentRuntime.set_weapon_main_visible(assembler, true):\n\t\t\tfailures.append("creator_weapon_preview_visibility")\n\tif not failures.is_empty():\n\t\t_set_status("Arma visual do preset não pôde ser montada", true)\n\t\treturn\n\t_refresh_weapon_set_options()\n\n'''
+          rep('''func _on_hair_style_selected(index: int) -> void:''', weapon_sync_preview+'''func _on_hair_style_selected(index: int) -> void:''','sync weapon preview')
+
+          weapon_selected='''\nfunc _on_weapon_set_selected(index: int) -> void:\n\tif _weapon_syncing or _weapon_set_option == null:\n\t\treturn\n\tif index < 0 or index >= _weapon_set_option.item_count:\n\t\treturn\n\tset_weapon_set(StringName(String(_weapon_set_option.get_item_metadata(index))))\n\n'''
+          rep('''func _on_creator_state_changed_hair() -> void:''', weapon_selected+'''func _on_creator_state_changed_hair() -> void:''','weapon selected')
+
+          weapon_changed='''\nfunc _on_creator_state_changed_weapon_set() -> void:\n\tif _weapon_skip_next_state_reassembly:\n\t\t_weapon_skip_next_state_reassembly = false\n\t\t_sync_weapon_set_option_selection()\n\t\treturn\n\t_sync_weapon_set_control_and_preview()\n\n'''
+          rep('''func _apply_reviewed_scene_layout() -> void:''', weapon_changed+'''func _apply_reviewed_scene_layout() -> void:''','weapon state changed')
+
+          rep('''\tfor option in [_armor_set_option, _back_accessory_option, _uniform_set_option, _hair_style_option]:''','''\tfor option in [_armor_set_option, _back_accessory_option, _uniform_set_option, _hair_style_option, _weapon_set_option]:''','layout rects')
+
+          rep('''\t\t"hair_control_size": [HAIR_CONTROL_SIZE.x, HAIR_CONTROL_SIZE.y],\n\t\t"signature": "Tehkné Solutions",''','''\t\t"hair_control_size": [HAIR_CONTROL_SIZE.x, HAIR_CONTROL_SIZE.y],\n\t\t"weapon_set_control_position": [WEAPON_SET_CONTROL_POSITION.x, WEAPON_SET_CONTROL_POSITION.y],\n\t\t"weapon_set_control_size": [WEAPON_SET_CONTROL_SIZE.x, WEAPON_SET_CONTROL_SIZE.y],\n\t\t"signature": "Tehkné Solutions",''','layout signature weapon')
+
+          rep('''\tsignature["weapon_back_id"] = String(current_profile().module_id(&"weapon_back")) if current_profile() != null else ""\n\treturn signature''','''\tsignature["weapon_back_id"] = String(current_profile().module_id(&"weapon_back")) if current_profile() != null else ""\n\tsignature["weapon_set_id"] = String(current_weapon_set_id())\n\tsignature["weapon_main_id"] = String(current_profile().module_id(&"weapon_main")) if current_profile() != null else ""\n\tsignature["weapon_offhand_id"] = String(current_profile().module_id(&"weapon_offhand")) if current_profile() != null else ""\n\tsignature["combat_loadout_id"] = String(current_profile().combat_loadout_id) if current_profile() != null else ""\n\tsignature["weapon_set_combat_loadout_mutation"] = false\n\treturn signature''','battle handoff weapon')
+
+          path.write_text(s,encoding='utf-8')
+
+          bpath=Path('scripts/characters/modular_fighter_creator_bounded_scene.gd')
+          b=bpath.read_text(encoding='utf-8')
+          old='''const REVIEWED_CONTROL_BOUNDS := {\n\t"armor": {"position": Vector2(470.0, 38.0), "size": Vector2(180.0, 42.0)},\n\t"back": {"position": Vector2(665.0, 38.0), "size": Vector2(180.0, 42.0)},\n\t"uniform": {"position": Vector2(860.0, 38.0), "size": Vector2(180.0, 42.0)},\n\t"hair": {"position": Vector2(1055.0, 38.0), "size": Vector2(200.0, 42.0)},\n}'''
+          new='''const REVIEWED_CONTROL_BOUNDS := {\n\t"armor": {"position": Vector2(470.0, 38.0), "size": Vector2(145.0, 42.0)},\n\t"back": {"position": Vector2(625.0, 38.0), "size": Vector2(145.0, 42.0)},\n\t"uniform": {"position": Vector2(780.0, 38.0), "size": Vector2(145.0, 42.0)},\n\t"hair": {"position": Vector2(935.0, 38.0), "size": Vector2(145.0, 42.0)},\n\t"weapon": {"position": Vector2(1090.0, 38.0), "size": Vector2(165.0, 42.0)},\n}'''
+          assert old in b, 'missing bounded constants'
+          b=b.replace(old,new,1)
+          old='''\t\t"hair": hair_style_option(),\n\t}'''
+          new='''\t\t"hair": hair_style_option(),\n\t\t"weapon": weapon_set_option(),\n\t}'''
+          assert old in b, 'missing bounded controls'
+          b=b.replace(old,new,1)
+          b=b.replace('''## C68.5 keeps complete dropdown labels while clipping only the closed-button text''','''## BASE-05.4 keeps complete dropdown labels while clipping only the closed-button text''',1)
+          bpath.write_text(b,encoding='utf-8')
+
+          print('BASE05_4_CREATOR_PATCH=PASS files=2 weapon_set=true direct_slots=false')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Verify patch anchors and commit
+        run: |
+          set -euo pipefail
+          grep -q 'func set_weapon_set' scripts/characters/modular_fighter_creator_scene.gd
+          grep -q 'WeaponSetOption' scripts/characters/modular_fighter_creator_scene.gd
+          grep -q 'weapon_set_combat_loadout_mutation' scripts/characters/modular_fighter_creator_scene.gd
+          grep -q '"weapon": weapon_set_option()' scripts/characters/modular_fighter_creator_bounded_scene.gd
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'ci@tehkne.solutions'
+          git add scripts/characters/modular_fighter_creator_scene.gd scripts/characters/modular_fighter_creator_bounded_scene.gd
+          git diff --cached --quiet && { echo 'No Creator patch change'; exit 0; }
+          git commit -m 'BASE-05.4: integrate atomic weapon-set Creator control'
+          git push origin HEAD:agent/base05-4-weapon-set-creator-control
+
+      - name: Summary
+        run: echo 'BASE-05.4 disposable Creator patch completed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
