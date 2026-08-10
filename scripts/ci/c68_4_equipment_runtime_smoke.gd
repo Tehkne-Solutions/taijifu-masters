@@ -1,15 +1,15 @@
 extends SceneTree
 
-## C68.4 candidate-only runtime smoke. Production activation stays disabled.
-## Proves the canonical profile/assembler can own weapon_back independently from BASE-04.
+## C68.4 lifecycle-aware equipment runtime smoke.
+## Candidate mode is allowed only before promotion; production mode must assemble normally.
 ## Tehkné Solutions
 
 const BACK_CANDIDATE := "res://assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v3_guardian_panel/back_accessory.png"
 
 func _init() -> void:
 	var profile := ModularFighterProfile.new()
-	profile.profile_id = &"c68_4_equipment_candidate"
-	profile.display_name = "C68.4 Equipment Candidate"
+	profile.profile_id = &"c68_4_equipment_runtime"
+	profile.display_name = "C68.4 Equipment Runtime"
 	profile.base_body_id = &"base_fighter_v1"
 	profile.authored_facing = 1
 	profile.set_module(&"weapon_back", &"sheath_lian_wu_blue")
@@ -31,9 +31,10 @@ func _init() -> void:
 		_fail("hair_runtime:%s" % ",".join(failures))
 		return
 
-	failures = ModularFighterEquipmentRuntime.assemble_profile(profile, assembler, true)
+	var production := ModularFighterEquipmentRuntime.runtime_activation_enabled()
+	failures = ModularFighterEquipmentRuntime.assemble_profile(profile, assembler, not production)
 	if not failures.is_empty():
-		_fail("equipment_candidate_runtime:%s" % ",".join(failures))
+		_fail("equipment_runtime:%s" % ",".join(failures))
 		return
 
 	if not ResourceLoader.exists(BACK_CANDIDATE):
@@ -61,18 +62,20 @@ func _init() -> void:
 	if not (sheath.z_index == 3 and back.z_index == 4 and hair_back.z_index == 5):
 		_fail("z_chain_invalid:%d<%d<%d" % [sheath.z_index, back.z_index, hair_back.z_index])
 		return
-	if ModularFighterEquipmentRuntime.runtime_activation_enabled():
-		_fail("equipment_runtime_must_remain_fail_closed")
-		return
 
 	var signature := ModularFighterEquipmentRuntime.runtime_signature(profile, assembler)
 	var weapon_back = signature.get("nodes", {}).get("weapon_back", {})
 	if not bool(weapon_back.get("present", false)) or int(weapon_back.get("z", -1)) != 3:
 		_fail("equipment_runtime_signature_invalid")
 		return
+	var slots = signature.get("runtime_slots", [])
+	if not (slots is Array) or slots != ["weapon_back"]:
+		_fail("equipment_runtime_scope_invalid:%s" % str(slots))
+		return
 
-	print("C68_4_EQUIPMENT_RUNTIME=PASS module=sheath_lian_wu_blue candidate_mode=true production=false")
+	print("C68_4_EQUIPMENT_RUNTIME=PASS module=sheath_lian_wu_blue candidate_mode=%s production=%s" % [str(not production).to_lower(), str(production).to_lower()])
 	print("C68_4_Z_CHAIN=PASS weapon_back=3 back_accessory=4 hair_back=5")
+	print("C68_4_RUNTIME_SCOPE=PASS slots=weapon_back future=weapon_main,weapon_offhand")
 	print("C68_4_OWNERSHIP=PASS visual=SHARED_MODULAR_EQUIPMENT combat=WeaponKitCatalog_and_BattleLoadoutCatalog")
 	print("SIGNATURE=Tehkné Solutions")
 	quit(0)
