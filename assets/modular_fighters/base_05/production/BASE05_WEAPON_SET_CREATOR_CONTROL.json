@@ -1,0 +1,80 @@
+{
+  "schema": "tehkne/taijifu-base05-weapon-set-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.4",
+  "pack_id": "BASE05_WEAPON_SET_CREATOR_CONTROL",
+  "status": "validation_pending",
+  "control": {
+    "name": "WeaponSetOption",
+    "selection_unit": "weapon_set",
+    "atomic_slots": ["weapon_main", "weapon_offhand"],
+    "direct_slot_controls": false,
+    "weapon_back_creator_control": false,
+    "combat_loadout_mutation": false,
+    "production_options": [
+      "weapon_none",
+      "weapon_01_lian_serene_katana"
+    ],
+    "default_id": "weapon_none"
+  },
+  "preview_contract": {
+    "selected_weapon_main_visible": true,
+    "weapon_none_clears_only_weapon_main_and_weapon_offhand": true,
+    "weapon_back_must_survive": "sheath_lian_wu_blue",
+    "back_accessory_must_survive": "back_01_guardian_panel",
+    "hair_must_survive": "hair_01_lian_topknot",
+    "uniform_must_survive": "uniform_01_lian_martial",
+    "armor_must_survive": "armor_01_taijifu_guard"
+  },
+  "battle_contract": {
+    "weapon_main": "katana_lian_wu",
+    "weapon_back": "sheath_lian_wu_blue",
+    "combat_weapon_id": "serene_katana",
+    "neutral_weapon_main_visible": false,
+    "attack_light_weapon_main_visible": true,
+    "combat_behavior_owner": "WeaponKitCatalog",
+    "combat_loadout_mutation": false
+  },
+  "layout_contract": {
+    "viewport": [1280, 720],
+    "top_band_bottom": 108,
+    "identity_selector_top": 116,
+    "controls": {
+      "armor": {"position": [470, 38], "size": [145, 42]},
+      "back": {"position": [625, 38], "size": [145, 42]},
+      "uniform": {"position": [780, 38], "size": [145, 42]},
+      "hair": {"position": [935, 38], "size": [145, 42]},
+      "weapon": {"position": [1090, 38], "size": [165, 42]}
+    },
+    "controls_overlap": "pending",
+    "identity_overlap": "pending",
+    "fit_to_longest_item": false,
+    "closed_text_clipping": true
+  },
+  "validation": {
+    "static_contract": "pending",
+    "godot_import": "pending",
+    "real_option_button_selection": "pending",
+    "weapon_none_transaction": "pending",
+    "cross_pack_preservation": "pending",
+    "weapon_back_preservation": "pending",
+    "combat_loadout_preservation": "pending",
+    "preset_roundtrip": "pending",
+    "battle_handoff": "pending",
+    "state_aware_battle": "pending",
+    "layout_1280x720": "pending",
+    "visual_capture": "pending"
+  },
+  "evidence": null,
+  "promotion": {
+    "creator_exposure": true,
+    "production_ready": false,
+    "creator_validation": "pending",
+    "creator_visual_review": "pending"
+  },
+  "blockers": [
+    "weapon_set_creator_control_not_validated",
+    "creator_visual_review_not_validated"
+  ],
+  "next_stage": "BASE-05.4 closeout after read-only Creator, preset, battle and visual evidence"
+}
