@@ -16,7 +16,7 @@ def test_scene_matrix_smoke_contract():
         "generation() == 2",
         "reload_catalog()",
         "cache não foi invalidado por geração",
-        "res://scenes/main.tscn",
+        "res://scenes/vertical_slice/first_playable_menu.tscn",
     ]
     for token in required:
         assert token in text
