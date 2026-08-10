@@ -11,7 +11,6 @@ on:
       - 'scripts/characters/modular_fighter_equipment_runtime.gd'
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
       - 'scripts/ci/base05_4_weapon_set_creator_control_smoke.gd'
-      - '.github/workflows/base05-4-disposable-creator-patcher.yml'
       - '.github/workflows/base05-4-weapon-set-creator-control.yml'
   workflow_dispatch:
 
@@ -35,7 +34,6 @@ jobs:
           c=json.loads(Path('assets/modular_fighters/base_05/production/BASE05_WEAPON_SET_CREATOR_CONTROL.json').read_text())
           r=json.loads(Path('assets/modular_fighters/base_05/production/BASE05_KATANA_LIAN_WU_PACK_01_RUNTIME.json').read_text())
           source=Path('scripts/characters/modular_fighter_creator_scene.gd').read_text()
-          patcher=Path('.github/workflows/base05-4-disposable-creator-patcher.yml').read_text()
 
           assert m['pack_id']=='BASE05_WEAPONS'
           assert m['status'] in ('weapon_set_creator_validation_pending','production_approved_weapon_set_creator_control')
@@ -78,12 +76,11 @@ jobs:
           assert 'WeaponMainOption' not in source
           assert 'WeaponOffhandOption' not in source
           assert 'WeaponBackOption' not in source
-          assert 'contents: write' not in patcher
-          assert 'push:' not in patcher
-          assert 'contents: read' in patcher
+          assert not Path('.github/workflows/base05-4-disposable-creator-patcher.yml').exists()
+          assert not Path('.github/workflows/base05-4-disposable-runtime-fixer.yml').exists()
           print('BASE05_4_STATIC=PASS options=2 unit=weapon_set atomic=true direct_slots=false')
           print('BASE05_4_OWNERSHIP=PASS weapon_back_internal=true combat_mutation=false combat_owner=WeaponKitCatalog')
-          print('BASE05_4_PATCHER=DISABLED contents_write=false push=false')
+          print('BASE05_4_DISPOSABLE_WRITERS=ABSENT patcher=true fixer=true')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
