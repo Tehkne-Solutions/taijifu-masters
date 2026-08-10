@@ -1,0 +1,90 @@
+{
+  "schema": "tehkne/taijifu-base04-back-accessory-art-review/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_BACK_ACCESSORY_PACK_01_ART_REVIEW",
+  "stage": "C68.3",
+  "status": "art_direction_locked_candidate_generation_pending",
+  "selection_unit": "back_accessory",
+  "slot": "back_accessory",
+  "layer": 4,
+  "default_id": "back_none",
+  "runtime_activation": false,
+  "creator_exposure": false,
+  "candidate_count": 3,
+  "art_direction": {
+    "purpose": "first_complete_reusable_back_accessory_for_martial_fighter",
+    "style": "compact_pixel_art_martial_fantasy",
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false,
+    "gameplay_readability_first": true,
+    "connected_single_object_required": true,
+    "large_mmo_cape_forbidden": true,
+    "disconnected_two_strip_silhouette_forbidden": true,
+    "face_or_topknot_occlusion_forbidden": true,
+    "must_not_extend_below_calves": true,
+    "must_read_at_gameplay_scale": true
+  },
+  "candidate_briefs": {
+    "v1_guardian_yoke": {
+      "label": "Manto Curto da Guarda",
+      "concept": "single connected shoulder-blade yoke with a short central martial cloth panel and restrained blue-gold edging",
+      "silhouette": "wide_shallow_yoke_plus_short_center_panel",
+      "max_visual_mass": "compact",
+      "avoid": ["full_cape", "two_loose_strips", "large_armor_plate"]
+    },
+    "v2_martial_knot": {
+      "label": "Laço Marcial Taijifu",
+      "concept": "one clearly visible back knot mounted at upper waist with two very short connected tapered tails behaving as one accessory",
+      "silhouette": "central_knot_plus_short_connected_tails",
+      "max_visual_mass": "light",
+      "avoid": ["long_ribbons", "detached_tails", "festival_bow"]
+    },
+    "v3_guardian_panel": {
+      "label": "Painel Guardião",
+      "concept": "small unified upper-back guard with one short flexible fabric panel, more structured than a cape but lighter than armor",
+      "silhouette": "compact_upper_back_guard_plus_single_panel",
+      "max_visual_mass": "medium_light",
+      "avoid": ["backpack", "shield", "large_plate", "full_cape"]
+    }
+  },
+  "compatibility_matrix": {
+    "reference_identity": {
+      "skin": "skin_tone_03_warm",
+      "face": "face_01_balanced",
+      "eyes": "eyes_01_focused",
+      "brows": "brows_01_focused"
+    },
+    "reference_hair": "hair_01_lian_topknot",
+    "reference_uniform": "uniform_01_lian_martial",
+    "reference_armor": "armor_01_taijifu_guard",
+    "weapon_back_layer": 3,
+    "back_accessory_layer": 4,
+    "hair_back_layer": 5,
+    "must_review_without_weapon": true,
+    "must_review_with_weapon_back": true,
+    "must_review_authored_facing": true,
+    "must_review_flipped_facing": true,
+    "must_review_gameplay_scale": true
+  },
+  "promotion_gate": {
+    "candidate_visual_review": "pending",
+    "selected_candidate": null,
+    "exact_binary_materialization": "blocked_until_selection",
+    "runtime_validation": "blocked_until_selection",
+    "active_fight_visual_review": "blocked_until_runtime",
+    "creator_control": "blocked_until_back_accessory_production_ready"
+  },
+  "rejected_history": {
+    "c68_1_candidate_v1_back": {
+      "status": "rejected",
+      "reason": "read_as_two_disconnected_strips_instead_of_complete_reusable_back_accessory",
+      "must_not_reintroduce": true
+    }
+  },
+  "next_stage": "C68.3 — generate and compare three Back Accessory candidates"
+}
