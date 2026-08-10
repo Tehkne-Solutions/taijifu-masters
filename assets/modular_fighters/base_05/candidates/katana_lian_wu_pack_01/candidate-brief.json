@@ -1,0 +1,92 @@
+{
+  "schema": "tehkne/taijifu-base05-katana-candidate-brief/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.2",
+  "pack_id": "BASE05_KATANA_LIAN_WU_CANDIDATES",
+  "status": "specified_pre_materialization",
+  "selection_unit": "weapon_main",
+  "slot": "weapon_main",
+  "layer": 80,
+  "target_production_id": "katana_lian_wu",
+  "combat_reference": {
+    "weapon_kit_id": "serene_katana",
+    "label": "KATANA SERENA",
+    "behavior_owner": "WeaponKitCatalog",
+    "visual_candidate_must_not_define_damage": true
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false,
+    "character_pixels_allowed": false,
+    "hand_pixels_allowed": false,
+    "whole_character_crop_forbidden": true,
+    "controlled_standalone_redraw": true
+  },
+  "identity_reference": {
+    "neutral_sha256": "0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5",
+    "combat_sha256": "c8e6cd1feece7c2a54cf2279085c2a4bb33338dd6a3dcb3e4d5a2402b537631c",
+    "observed_hilt": "dark_navy_black_wrap_with_gold_brass_accents",
+    "observed_complete_blade": false,
+    "redraw_required": true
+  },
+  "art_direction": {
+    "single_edged_japanese_katana": true,
+    "slim_serene_silhouette": true,
+    "oversized_mmo_sword_forbidden": true,
+    "fantasy_glow_forbidden": true,
+    "blade_palette": ["steel", "cool_blue_reflection", "dark_spine"],
+    "hilt_palette": ["navy", "black", "gold_brass"],
+    "guard_must_remain_compact": true,
+    "readable_at_gameplay_scale": true
+  },
+  "reference_anchor": {
+    "review_hand_anchor": [356, 682],
+    "note": "Review-only anchor inferred from exact C63 canonical stance; runtime animation anchoring remains a later state-aware contract."
+  },
+  "candidates": {
+    "v1_serene_forward": {
+      "brief": "forward low-rise blade, restrained curve, round gold tsuba",
+      "tip": [830, 545],
+      "control": [600, 620],
+      "guard": [356, 682]
+    },
+    "v2_serene_rising": {
+      "brief": "higher diagonal blade, elegant upward read, diamond compact tsuba",
+      "tip": [720, 405],
+      "control": [565, 525],
+      "guard": [356, 682]
+    },
+    "v3_serene_low_guard": {
+      "brief": "longer low forward line, shallow curve, compact rectangular tsuba",
+      "tip": [850, 650],
+      "control": [625, 645],
+      "guard": [356, 682]
+    }
+  },
+  "review_contract": {
+    "authored_facing": true,
+    "flipped_facing": true,
+    "gameplay_scale": true,
+    "face_occlusion_review": true,
+    "body_overlap_review": true,
+    "exterior_silhouette_review": true,
+    "weapon_back_compatibility": "sheath_lian_wu_blue",
+    "back_accessory_compatibility": "back_01_guardian_panel",
+    "hair_reference": "hair_01_lian_topknot",
+    "uniform_reference": "uniform_01_lian_martial",
+    "armor_reference": "armor_01_taijifu_guard",
+    "runtime_promotion_before_selection": false,
+    "creator_exposure_before_runtime_validation": false
+  },
+  "runtime_future_contract": {
+    "neutral_weapon_main_visible": false,
+    "neutral_weapon_back_visible": true,
+    "weapon_main_visibility_must_be_state_aware": true,
+    "combat_behavior_must_remain_owned_by_existing_weapon_kit": true
+  }
+}
