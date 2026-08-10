@@ -1,0 +1,98 @@
+{
+  "schema": "tehkne/taijifu-base05-katana-lian-wu-art-review/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "BASE-05.2b",
+  "pack_id": "BASE05_KATANA_LIAN_WU_PACK_01_ART_REVIEW",
+  "status": "selected_art_only_runtime_blocked",
+  "target_production_id": "katana_lian_wu",
+  "slot": "weapon_main",
+  "layer": 80,
+  "combat_reference": "serene_katana",
+  "selected_candidate": "v1_serene_forward",
+  "selected_candidate_sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+  "runtime_promotion": false,
+  "creator_exposure": false,
+  "selection_basis": {
+    "owner_visual_review": "pass",
+    "decision": "v1_serene_forward",
+    "reason": "best_balanced_serene_forward_guard_read_from_front_hand_with_natural_slight_rise_across_authored_flipped_and_gameplay_views",
+    "automatic_metric_leader": "v3_serene_low_guard",
+    "automatic_metric_leader_not_selected_reason": "strongest_exterior_ratio_but_horizontal_line_reads_more_like_rigid_poke_than_default_serene_katana_guard",
+    "v2_not_selected_reason": "valid_and_readable_but_diagonal_rise_is_too_high_for_default_visual_identity",
+    "original_iteration_rejected": true,
+    "redraw_iteration": 2
+  },
+  "review_evidence": {
+    "workflow_run": 31416191696,
+    "artifact_id": 9073498188,
+    "artifact_digest": "sha256:d4f3753905242061d26831117d39d0b29491f18046ac9811a8fac2c54aaaa6b2",
+    "capture": "artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.review-1920x1080.png",
+    "report": "artifacts/base05_2/BASE05_2_KATANA_LIAN_WU_CANDIDATE_REVIEW.json",
+    "authored_facing": true,
+    "flipped_facing": true,
+    "flip_metric_equivalence": true,
+    "gameplay_scale": true,
+    "face_overlap_pixels_all_candidates": 0,
+    "pairwise_difference_pass": true,
+    "writer_disabled": true,
+    "candidate_manifest_selected_candidate_remains_null": true
+  },
+  "candidate_metrics": {
+    "v1_serene_forward": {
+      "sha256": "9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7",
+      "verdict": "selected_art_direction",
+      "visible_pixels": 8247,
+      "exterior_pixels": 4380,
+      "exterior_ratio": 0.531102,
+      "body_overlap_pixels": 3867,
+      "body_overlap_ratio": 0.468898,
+      "face_overlap_pixels": 0,
+      "gameplay_visible_pixels": 786,
+      "review_score": 39.8698
+    },
+    "v2_serene_rising": {
+      "sha256": "0bbd8a184a88c6ebba4b9243dd946a38a902c1e4fa8ee5f6d12f300c823566e4",
+      "verdict": "viable_not_selected",
+      "visible_pixels": 8575,
+      "exterior_pixels": 4311,
+      "exterior_ratio": 0.502741,
+      "body_overlap_pixels": 4264,
+      "body_overlap_ratio": 0.497259,
+      "face_overlap_pixels": 0,
+      "gameplay_visible_pixels": 816,
+      "review_score": 36.0574
+    },
+    "v3_serene_low_guard": {
+      "sha256": "9d6f206be2fa033fc0a96676b246bc469f253e95f4e7847f7d210555839fdb92",
+      "verdict": "metric_leader_not_selected",
+      "visible_pixels": 9249,
+      "exterior_pixels": 5665,
+      "exterior_ratio": 0.612499,
+      "body_overlap_pixels": 3584,
+      "body_overlap_ratio": 0.387501,
+      "face_overlap_pixels": 0,
+      "gameplay_visible_pixels": 868,
+      "review_score": 52.4924
+    }
+  },
+  "pairwise_difference": {
+    "v1_serene_forward:v2_serene_rising": 14488,
+    "v1_serene_forward:v3_serene_low_guard": 14871,
+    "v2_serene_rising:v3_serene_low_guard": 15727
+  },
+  "runtime_future_contract": {
+    "neutral_weapon_main_visible": false,
+    "neutral_weapon_back_visible": true,
+    "weapon_main_visibility_must_be_state_aware": true,
+    "combat_behavior_owner": "WeaponKitCatalog",
+    "visual_module_must_not_define_damage_or_techniques": true,
+    "weapon_back_must_survive_weapon_main_changes": true,
+    "back_accessory_must_survive_weapon_main_changes": true
+  },
+  "promotion_blockers": [
+    "selected_candidate_not_yet_promoted_to_production_module",
+    "weapon_main_runtime_state_awareness_not_validated",
+    "active_fight_visual_handoff_not_validated"
+  ],
+  "next_stage": "BASE-05.3 — promote exact v1 bitmap as katana_lian_wu and validate state-aware weapon_main runtime before any Creator exposure"
+}
