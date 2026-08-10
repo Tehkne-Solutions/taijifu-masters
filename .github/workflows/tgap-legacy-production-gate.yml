@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install TGAP test dependency
+        run: python -m pip install pytest
       - name: Run migration tests
         run: pytest -q tests/tgap/test_legacy_usage_audit.py tests/tgap/test_legacy_migration_batch_01.py
       - name: Audit production consumers
