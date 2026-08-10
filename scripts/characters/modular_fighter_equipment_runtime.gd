@@ -9,6 +9,8 @@ extends RefCounted
 const MANIFEST_PATH := "res://assets/modular_fighters/shared_equipment/manifest.json"
 const BASE05_MANIFEST_PATH := "res://assets/modular_fighters/base_05/manifest.json"
 const WEAPON_MAIN_SLOT := &"weapon_main"
+const WEAPON_OFFHAND_SLOT := &"weapon_offhand"
+const WEAPON_SET_SLOTS := [WEAPON_MAIN_SLOT, WEAPON_OFFHAND_SLOT]
 
 static func runtime_activation_enabled() -> bool:
 	var promotion = _manifest().get("promotion", {})
@@ -202,6 +204,119 @@ static func weapon_main_signature(profile: ModularFighterProfile, assembler: Mod
 		"signature": "Tehkné Solutions",
 	}
 
+## BASE-05.4 public selection is a weapon_set, never a raw visual slot. The set
+## owns weapon_main + weapon_offhand atomically while weapon_back stays delegated
+## to SHARED_MODULAR_EQUIPMENT and combat_loadout_id stays outside visual editing.
+static func weapon_set_creator_exposure_enabled() -> bool:
+	var manifest := _base05_manifest()
+	var controls = manifest.get("public_controls", {})
+	if not (controls is Dictionary):
+		return false
+	var weapon_set = controls.get("weapon_set", {})
+	var promotion = manifest.get("promotion", {})
+	return (
+		weapon_set is Dictionary
+		and promotion is Dictionary
+		and bool(weapon_set.get("creator_exposed", false))
+		and bool(promotion.get("creator_exposure", false))
+	)
+
+static func creator_weapon_set_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	if not weapon_set_creator_exposure_enabled():
+		return result
+	var sets = _base05_manifest().get("weapon_sets", {})
+	if not (sets is Dictionary):
+		return result
+	var others := PackedStringArray()
+	for raw_id in sets.keys():
+		var set_id := String(raw_id)
+		var contract = sets[set_id]
+		if not (contract is Dictionary):
+			continue
+		if not bool(contract.get("production_ready", false)) or not bool(contract.get("creator_ready", false)):
+			continue
+		if set_id == "weapon_none":
+			result.append(set_id)
+		else:
+			others.append(set_id)
+	others.sort()
+	result.append_array(others)
+	return result
+
+static func weapon_set_label(set_id: StringName) -> String:
+	var contract := _weapon_set_contract(set_id)
+	return String(contract.get("label", String(set_id))) if not contract.is_empty() else String(set_id)
+
+static func profile_weapon_set_id(profile: ModularFighterProfile) -> StringName:
+	if profile == null:
+		return &""
+	var sets = _base05_manifest().get("weapon_sets", {})
+	if not (sets is Dictionary):
+		return &""
+	var main_id := String(profile.module_id(WEAPON_MAIN_SLOT))
+	var offhand_id := String(profile.module_id(WEAPON_OFFHAND_SLOT))
+	for raw_id in sets.keys():
+		var set_id := String(raw_id)
+		var contract = sets[set_id]
+		if not (contract is Dictionary):
+			continue
+		var expected_main := String(contract.get("weapon_main", ""))
+		var expected_offhand := String(contract.get("weapon_offhand", ""))
+		if main_id == expected_main and offhand_id == expected_offhand:
+			return StringName(set_id)
+	return &""
+
+static func validate_profile_weapon_set(profile: ModularFighterProfile) -> PackedStringArray:
+	var failures := PackedStringArray()
+	if profile == null:
+		failures.append("weapon_set_profile_missing")
+		return failures
+	var set_id := profile_weapon_set_id(profile)
+	if set_id == &"":
+		failures.append("weapon_set_profile_not_atomic")
+		return failures
+	var contract := _weapon_set_contract(set_id)
+	if contract.is_empty() or not bool(contract.get("runtime_ready", false)):
+		failures.append("weapon_set_profile_not_runtime_ready:%s" % String(set_id))
+	return failures
+
+static func set_profile_weapon_set(profile: ModularFighterProfile, set_id: StringName) -> PackedStringArray:
+	var failures := PackedStringArray()
+	if profile == null:
+		failures.append("weapon_set_profile_missing")
+		return failures
+	if not creator_weapon_set_ids().has(String(set_id)):
+		failures.append("weapon_set_not_creator_ready:%s" % String(set_id))
+		return failures
+	var contract := _weapon_set_contract(set_id)
+	if contract.is_empty():
+		failures.append("weapon_set_contract_missing:%s" % String(set_id))
+		return failures
+	var weapon_back_before := profile.module_id(&"weapon_back")
+	var combat_before := profile.combat_loadout_id
+	_apply_optional_module(profile, WEAPON_MAIN_SLOT, contract.get("weapon_main", null))
+	_apply_optional_module(profile, WEAPON_OFFHAND_SLOT, contract.get("weapon_offhand", null))
+	if profile.module_id(&"weapon_back") != weapon_back_before:
+		failures.append("weapon_set_mutated_weapon_back")
+	if profile.combat_loadout_id != combat_before:
+		failures.append("weapon_set_mutated_combat_loadout")
+	failures.append_array(validate_profile_weapon_set(profile))
+	return failures
+
+static func weapon_set_creator_signature(profile: ModularFighterProfile) -> Dictionary:
+	return {
+		"creator_exposure": weapon_set_creator_exposure_enabled(),
+		"selection_unit": "weapon_set",
+		"atomic_slots": ["weapon_main", "weapon_offhand"],
+		"direct_slot_controls": false,
+		"weapon_back_creator_control": false,
+		"combat_loadout_mutation": false,
+		"production_sets": Array(creator_weapon_set_ids()),
+		"current_set": String(profile_weapon_set_id(profile)),
+		"signature": "Tehkné Solutions",
+	}
+
 static func runtime_signature(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> Dictionary:
 	var nodes := {}
 	for slot in runtime_slots():
@@ -220,6 +335,20 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		"visual_owner": "SHARED_MODULAR_EQUIPMENT_plus_BASE05_via_ModularFighterEquipmentRuntime",
 		"signature": "Tehkné Solutions",
 	}
+
+static func _weapon_set_contract(set_id: StringName) -> Dictionary:
+	var sets = _base05_manifest().get("weapon_sets", {})
+	if not (sets is Dictionary):
+		return {}
+	var contract = sets.get(String(set_id), {})
+	return contract as Dictionary if contract is Dictionary else {}
+
+static func _apply_optional_module(profile: ModularFighterProfile, slot: StringName, value: Variant) -> void:
+	var module_id := String(value) if value != null else ""
+	if module_id.is_empty():
+		profile.clear_module(slot)
+	else:
+		profile.set_module(slot, StringName(module_id))
 
 static func _sprite_from_contract(slot: StringName, module_id: String, contract: Dictionary) -> Dictionary:
 	var asset_path := "res://%s" % String(contract.get("path", ""))
