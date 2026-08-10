@@ -1,0 +1,52 @@
+{
+  "schema": "tehkne/taijifu-base05-weapons-foundation/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE05_WEAPONS_FOUNDATION",
+  "status": "specified_fail_closed",
+  "selection_unit": "weapon_set",
+  "owned_visual_slots": ["weapon_main", "weapon_offhand"],
+  "delegated_visual_slots": {
+    "weapon_back": "SHARED_MODULAR_EQUIPMENT"
+  },
+  "ownership_contract": {
+    "combat_behavior": "WeaponKitCatalog_and_BattleLoadoutCatalog",
+    "visual_profile": "ModularFighterProfile.modules",
+    "visual_assembly": "ModularFighterEquipmentRuntime",
+    "base05_must_not_own_damage_or_technique_resolution": true
+  },
+  "layer_contract": {
+    "weapon_back": 3,
+    "weapon_main": 80,
+    "weapon_offhand": 81
+  },
+  "existing_references": {
+    "preset_lian_wu_weapon_main": "katana_lian_wu",
+    "shared_weapon_back": "sheath_lian_wu_blue",
+    "existing_combat_kit": "serene_katana"
+  },
+  "unresolved_contracts": {
+    "katana_lian_wu_standalone_bitmap": "missing",
+    "katana_lian_wu_visual_review": "pending",
+    "visual_to_combat_binding": "pending_battle_loadout_verification",
+    "weapon_main_runtime_activation": "blocked",
+    "weapon_offhand_runtime_activation": "blocked",
+    "creator_control": "blocked"
+  },
+  "forbidden_shortcuts": [
+    "reuse_whole_character_sprite_as_weapon_module",
+    "invent_weapon_damage_catalog_in_base05",
+    "promote_weapon_main_without_standalone_rgba_asset",
+    "expose_weapon_main_creator_control_before_runtime_and_active_fight_validation",
+    "mutate_sheath_lian_wu_blue_when_weapon_main_changes"
+  ],
+  "acceptance": {
+    "fighter_standard_slots_verified": true,
+    "layer_policy_verified": true,
+    "preset_reference_verified": true,
+    "combat_kit_reference_verified": true,
+    "shared_equipment_delegation_verified": true,
+    "runtime_main_offhand_still_fail_closed": true,
+    "creator_exposure": false
+  },
+  "next_stage": "audit exact Lian Wu katana source and current combat-loadout binding; no art promotion until both are verified"
+}
