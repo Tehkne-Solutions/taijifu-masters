@@ -1,0 +1,48 @@
+name: BASE-05.3 Disposable Exact Katana Production Materializer
+
+on:
+  push:
+    branches:
+      - agent/base05-3-weapon-main-runtime
+    paths:
+      - '.github/workflows/base05-3-disposable-production-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/base05-3-weapon-main-runtime
+
+      - name: Copy exact selected art bitmap into production path
+        run: |
+          set -euo pipefail
+          SRC='assets/modular_fighters/base_05/candidates/katana_lian_wu_pack_01/v1_serene_forward.png'
+          DST='assets/modular_fighters/base_05/katana_lian_wu/weapon_main.png'
+          EXPECTED='9cd178f23ffce82019d4b2957f1bb18e9fc2942004799b86018769526580a9f7'
+          test -s "$SRC"
+          test "$(sha256sum "$SRC" | awk '{print $1}')" = "$EXPECTED"
+          mkdir -p "$(dirname "$DST")"
+          cp "$SRC" "$DST"
+          test "$(sha256sum "$DST" | awk '{print $1}')" = "$EXPECTED"
+          cmp -s "$SRC" "$DST"
+          echo 'BASE05_3_EXACT_BITMAP_COPY=PASS sha256='$EXPECTED
+          echo 'SIGNATURE=Tehkné Solutions'
+
+      - name: Commit exact production bitmap
+        run: |
+          set -euo pipefail
+          git config user.name 'Tehkné Solutions CI'
+          git config user.email 'ci@tehkne.solutions'
+          git add assets/modular_fighters/base_05/katana_lian_wu/weapon_main.png
+          git diff --cached --quiet && { echo 'No production bitmap change'; exit 0; }
+          git commit -m 'BASE-05.3: materialize exact selected Lian Wu katana bitmap'
+          git push origin HEAD:agent/base05-3-weapon-main-runtime
+
+      - name: Summary
+        run: echo 'BASE-05.3 exact bitmap materialization completed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
