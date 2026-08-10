@@ -7,11 +7,18 @@ extends RefCounted
 ## Tehkné Solutions
 
 const MANIFEST_PATH := "res://assets/modular_fighters/shared_equipment/manifest.json"
-const EQUIPMENT_SLOTS := [&"weapon_main", &"weapon_offhand", &"weapon_back"]
 
 static func runtime_activation_enabled() -> bool:
 	var promotion = _manifest().get("promotion", {})
 	return promotion is Dictionary and bool(promotion.get("runtime_activation", false))
+
+static func runtime_slots() -> Array[StringName]:
+	var result: Array[StringName] = []
+	var values = _manifest().get("runtime_slots", [])
+	if values is Array:
+		for value in values:
+			result.append(StringName(String(value)))
+	return result
 
 static func module_ids(slot: StringName = &"") -> PackedStringArray:
 	var result := PackedStringArray()
@@ -38,7 +45,7 @@ static func validate_profile(profile: ModularFighterProfile) -> PackedStringArra
 	if not (modules is Dictionary):
 		failures.append("equipment_manifest_modules_invalid")
 		return failures
-	for slot in EQUIPMENT_SLOTS:
+	for slot in runtime_slots():
 		var module_id := String(profile.module_id(slot))
 		if module_id.is_empty():
 			continue
@@ -67,7 +74,7 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 
 	var modules = _manifest().get("modules", {})
 	var pending: Array[Dictionary] = []
-	for slot in EQUIPMENT_SLOTS:
+	for slot in runtime_slots():
 		var module_id := String(profile.module_id(slot))
 		if module_id.is_empty():
 			continue
@@ -112,13 +119,13 @@ static func assemble_profile(profile: ModularFighterProfile, assembler: ModularF
 			failures.append("equipment_attach_failed:%s" % String(item["module"]))
 			break
 	if not failures.is_empty():
-		for slot in EQUIPMENT_SLOTS:
+		for slot in runtime_slots():
 			assembler.clear_visual_module(slot)
 	return failures
 
 static func runtime_signature(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> Dictionary:
 	var nodes := {}
-	for slot in EQUIPMENT_SLOTS:
+	for slot in runtime_slots():
 		var node := assembler.get_node_or_null("Module_%s" % String(slot)) as Sprite2D if assembler != null else null
 		nodes[String(slot)] = {
 			"module_id": String(profile.module_id(slot)) if profile != null else "",
@@ -127,6 +134,7 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		}
 	return {
 		"runtime_activation": runtime_activation_enabled(),
+		"runtime_slots": runtime_slots().map(func(value): return String(value)),
 		"nodes": nodes,
 		"combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
 		"visual_owner": "SHARED_MODULAR_EQUIPMENT",
