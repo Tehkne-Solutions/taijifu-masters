@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate fail-closed C68.3 art direction
+      - name: Validate fail-closed C68.3 selected art contract
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -25,6 +25,7 @@ jobs:
           from pathlib import Path
           m=json.loads(Path('assets/modular_fighters/base_04/manifest.json').read_text())
           c=json.loads(Path('assets/modular_fighters/base_04/production/BASE04_BACK_ACCESSORY_PACK_01_ART_REVIEW.json').read_text())
+          x=json.loads(Path('assets/modular_fighters/base_04/candidates/back_accessory_pack_01/candidates.json').read_text())
           assert c['stage']=='C68.3'
           assert c['candidate_count']==3
           assert c['selection_unit']=='back_accessory'
@@ -44,22 +45,31 @@ jobs:
           assert matrix['reference_hair']=='hair_01_lian_topknot'
           assert matrix['reference_uniform']=='uniform_01_lian_martial'
           assert matrix['reference_armor']=='armor_01_taijifu_guard'
+          assert matrix['reference_weapon_back']=='sheath_lian_wu_blue'
           assert matrix['weapon_back_layer']==3
           assert matrix['back_accessory_layer']==4
           assert matrix['hair_back_layer']==5
+          assert matrix['weapon_back_standalone_module_status']=='not_materialized_in_current_closed_inventory'
           assert matrix['must_review_authored_facing'] is True
           assert matrix['must_review_flipped_facing'] is True
           assert matrix['must_review_gameplay_scale'] is True
-          assert c['promotion_gate']['selected_candidate'] is None
-          assert c['promotion_gate']['exact_binary_materialization']=='blocked_until_selection'
+          assert c['selection_review']['selected_candidate']=='v3_guardian_panel'
+          assert x['selection']['selected_candidate']=='v3_guardian_panel'
+          assert x['selection']['production_promotion'] is False
+          assert x['selection']['promotion_blocker']=='weapon_back_standalone_module_required'
+          assert c['promotion_gate']['candidate_visual_review']=='pass_selected_v3'
+          assert c['promotion_gate']['weapon_back_compatibility']=='blocked_standalone_module_required'
+          assert c['promotion_gate']['runtime_validation']=='blocked_weapon_back_compatibility'
           assert c['rejected_history']['c68_1_candidate_v1_back']['must_not_reintroduce'] is True
+          assert c['rejected_history']['c68_3_v2_martial_knot']['must_not_promote'] is True
           assert m['promotion']['back_accessory_runtime_activation'] is False
           assert m['promotion']['back_accessory_creator_exposure'] is False
           assert list(m['back_accessories'])==['back_none']
-          print('C68_3_ART_REVIEW_CONTRACT=PASS candidates=3 runtime=false creator=false')
-          print('C68_3_REJECTED_STRIPS_GUARD=PASS')
+          print('C68_3_ART_SELECTION=PASS selected=v3_guardian_panel')
+          print('C68_3_WEAPON_BACK_BLOCKER=PASS sheath_lian_wu_blue standalone_required')
+          print('C68_3_PROMOTION_FAIL_CLOSED=PASS runtime=false creator=false')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
       - name: Summary
-        run: echo 'C68.3 Back Accessory Art Review foundation — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C68.3 selected art + weapon_back blocker contract — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
