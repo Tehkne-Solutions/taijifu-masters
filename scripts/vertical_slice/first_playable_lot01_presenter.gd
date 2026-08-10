@@ -25,9 +25,6 @@ func _ready() -> void:
 		_last_health = _fighter.health
 	z_index = 5
 	_try_activate_real_assets()
-	# C65 starts only from an already valid canonical LOT01. The modular creator
-	# presenter overlays this node after complete BASE-01 assembly; if anything
-	# fails, this presenter stays available as the production fallback.
 	call_deferred("_install_modular_creator_overlay")
 
 func _process(delta: float) -> void:
@@ -47,7 +44,13 @@ func using_real_assets() -> bool:
 	return _using_real_assets
 
 func expected_sprite_frames_path() -> String:
-	return TgapAssetLoader.resolve(TGAP_PACK_ALIAS, SPRITE_FRAMES_LOGICAL)
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return ""
+	var loader := tree.root.get_node_or_null("TgapAssetLoader")
+	if loader == null or not loader.has_method("resolve"):
+		return ""
+	return String(loader.call("resolve", TGAP_PACK_ALIAS, SPRITE_FRAMES_LOGICAL))
 
 func _try_activate_real_assets() -> void:
 	var sprite_frames_path := expected_sprite_frames_path()
@@ -90,11 +93,6 @@ func _install_modular_creator_overlay() -> void:
 func _hide_legacy_visual_surfaces() -> void:
 	if not is_instance_valid(_fighter):
 		return
-	# FirstPlayableIdentity is the old character-identity surface. The fighter scene
-	# also owns a ProvisionalSpritePresenter atlas at `SpritePresenter`; once the
-	# canonical LOT01 is valid both legacy surfaces must be hidden or the character
-	# renders twice. Only CanvasItem visibility changes here: controller, collision,
-	# outcome, weapon trail and combat state remain untouched.
 	for node_name in ["FirstPlayableIdentity", "SpritePresenter"]:
 		var surface := _fighter.get_node_or_null(node_name) as CanvasItem
 		if surface != null:
