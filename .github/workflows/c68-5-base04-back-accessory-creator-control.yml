@@ -8,6 +8,7 @@ on:
       - 'scripts/characters/modular_fighter_armor_runtime.gd'
       - 'scripts/characters/modular_fighter_creator_scene.gd'
       - 'scripts/characters/modular_fighter_equipment_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
       - 'scripts/ci/base04_back_accessory_creator_control_smoke.gd'
       - 'scripts/ci/base04_back_accessory_creator_visual_review.gd'
@@ -53,8 +54,6 @@ jobs:
           assert 'WeaponBackOption' in c['forbidden_creator_nodes']
           assert e['promotion']['creator_exposure'] is False
           assert e['modules']['sheath_lian_wu_blue']['production_ready'] is True
-          # This is a validation branch; final evidence is promoted only after the
-          # read-only runtime and visual gates below succeed.
           assert c['status'] in ('validation_pending','production_approved')
           assert m['promotion']['creator_validation'] in ('c68_5_pending','pass')
           print('C68_5_STATIC_CONTRACT=PASS options=2 back_control=true weapon_control=false')
