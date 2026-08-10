@@ -14,7 +14,25 @@ EDITOR_URL="https://github.com/godotengine/godot/releases/download/${GODOT_RELEA
 TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
 
 log() { printf '\n[taijifu-web] %s\n' "$*"; }
-download() { local url="$1" destination="$2"; mkdir -p "$(dirname "${destination}")"; curl --fail --location --retry 3 --retry-delay 2 --output "${destination}" "${url}"; }
+download() {
+  local url="$1" destination="$2"
+  mkdir -p "$(dirname "${destination}")"
+  # Hosted runners can occasionally receive a transient bad TLS chain while
+  # following GitHub release redirects. Keep certificate verification enabled,
+  # but retry *all* transport failures so the next connection can recover.
+  # Tehkné Solutions
+  curl \
+    --fail \
+    --location \
+    --proto '=https' \
+    --tlsv1.2 \
+    --retry 6 \
+    --retry-all-errors \
+    --retry-delay 2 \
+    --connect-timeout 20 \
+    --output "${destination}" \
+    "${url}"
+}
 install_editor() {
   [[ -x "${GODOT_BIN}" ]] && return
   log "Baixando Godot ${GODOT_VERSION} ${GODOT_CHANNEL}"

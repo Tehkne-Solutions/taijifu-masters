@@ -17,7 +17,7 @@ permissions:
 jobs:
   validate-ranking:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Instalar dependências
@@ -30,11 +30,21 @@ jobs:
           unzip -q godot.zip
           mv Godot_v4.3-stable_linux.x86_64 godot
           chmod +x godot
-      - name: Validar parser e ranking
+      - name: Importar projeto completamente
         run: |
           set -o pipefail
-          ./godot --headless --editor --path . --quit 2>&1 | tee godot-ranking-import.log
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee godot-ranking-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|Scan thread aborted|SHADER ERROR|Shader compilation failed|ERR_FILE_CORRUPT' godot-ranking-import.log; then
+            exit 1
+          fi
+      - name: Validar ranking
+        run: |
+          set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/ghost_rival_ranking_smoke_test.gd 2>&1 | tee godot-ranking.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error' godot-ranking.log; then
+            exit 1
+          fi
       - name: Publicar logs quando houver falha
         if: failure()
         uses: actions/upload-artifact@v4
@@ -43,3 +53,5 @@ jobs:
           path: |
             godot-ranking-import.log
             godot-ranking.log
+
+# Tehkné Solutions
