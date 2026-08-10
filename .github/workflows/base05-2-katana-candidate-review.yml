@@ -11,6 +11,7 @@ on:
       - 'assets/modular_fighters/base_04/**'
       - 'assets/modular_fighters/shared_equipment/**'
       - 'scripts/ci/base05_2_katana_candidate_review.py'
+      - '.github/workflows/base05-2-disposable-katana-materializer.yml'
       - '.github/workflows/base05-2-katana-candidate-review.yml'
   workflow_dispatch:
 
