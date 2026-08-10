@@ -43,9 +43,20 @@ func _run() -> void:
 		_fail("C68_2_VISUAL=BLOCKED raw_controls")
 		return
 
+	var armor_rect := Rect2(armor_option.position, armor_option.size)
+	var uniform_rect := Rect2(uniform_option.position, uniform_option.size)
+	var hair_rect := Rect2(hair_option.position, hair_option.size)
+	if armor_rect.intersects(uniform_rect) or armor_rect.intersects(hair_rect) or uniform_rect.intersects(hair_rect):
+		_fail("C68_2_VISUAL=BLOCKED actual_control_overlap")
+		return
+	for rect in [armor_rect, uniform_rect, hair_rect]:
+		if rect.position.x < 0.0 or rect.position.y < 0.0 or rect.end.x > 1280.0 or rect.end.y > 720.0:
+			_fail("C68_2_VISUAL=BLOCKED control_bounds")
+			return
+
 	var layout := creator.reviewed_layout_signature()
 	if bool(layout.get("controls_overlap", true)):
-		_fail("C68_2_VISUAL=BLOCKED layout_overlap")
+		_fail("C68_2_VISUAL=BLOCKED layout_signature_overlap")
 		return
 	var preview := creator.current_assembler()
 	var head := preview.get_node_or_null("Module_head_accessory") as Sprite2D
@@ -71,7 +82,7 @@ func _run() -> void:
 		return
 
 	print("C68_2_CREATOR_VISUAL=PASS armor=armor_01_taijifu_guard hair=hair_01_lian_topknot uniform=uniform_01_lian_martial")
-	print("C68_2_CREATOR_LAYOUT=PASS controls=armor_set,uniform_set,hair_style raw_armor_controls=false back_control=false")
+	print("C68_2_CREATOR_LAYOUT=PASS controls=armor_set,uniform_set,hair_style raw_armor_controls=false back_control=false overlap=false")
 	print("C68_2_CREATOR_PREVIEW=PASS head_z=60 shoulders_z=70 back=back_none")
 	print("C68_2_VISUAL_OUTPUT=" + OUTPUT)
 	print("SIGNATURE=Tehkné Solutions")
