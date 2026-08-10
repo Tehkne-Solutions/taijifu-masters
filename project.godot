@@ -15,7 +15,6 @@ config/icon="res://web/taijifu-web-icon.svg"
 [autoload]
 
 TgapAssetLoader="*res://scripts/runtime/tgap_asset_loader.gd"
-AssetPackRegistry="*res://scripts/runtime/asset_pack_registry.gd"
 InputBootstrapRuntime="*res://scripts/runtime/input_bootstrap_runtime.gd"
 ProceduralArenaPickupRuntime="*res://scripts/runtime/procedural_arena_pickup_runtime.gd"
 PickupSynergyRuntime="*res://scripts/runtime/pickup_synergy_runtime.gd"
