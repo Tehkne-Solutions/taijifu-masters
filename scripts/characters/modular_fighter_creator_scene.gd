@@ -2,16 +2,18 @@ class_name ModularFighterCreatorScene
 extends ModularFighterCreatorShell
 
 ## Reviewed 1280x720 Character Creator composition.
-## BASE-01 identity remains owned by the base shell; BASE-02 Hair and BASE-03
-## Uniform are exposed only through atomic public controls, never raw slots.
+## BASE-01 identity remains owned by the base shell; BASE-02 Hair, BASE-03
+## Uniform and BASE-04 Armor are exposed only through atomic public controls.
 ## Tehkné Solutions
 
 const REVIEWED_PREVIEW_SCALE := 0.20
 const REVIEWED_PREVIEW_POSITION := Vector2(235.0, 650.0)
-const UNIFORM_CONTROL_POSITION := Vector2(600.0, 38.0)
-const UNIFORM_CONTROL_SIZE := Vector2(310.0, 42.0)
-const HAIR_CONTROL_POSITION := Vector2(930.0, 38.0)
-const HAIR_CONTROL_SIZE := Vector2(310.0, 42.0)
+const ARMOR_CONTROL_POSITION := Vector2(600.0, 38.0)
+const ARMOR_CONTROL_SIZE := Vector2(200.0, 42.0)
+const UNIFORM_CONTROL_POSITION := Vector2(810.0, 38.0)
+const UNIFORM_CONTROL_SIZE := Vector2(200.0, 42.0)
+const HAIR_CONTROL_POSITION := Vector2(1020.0, 38.0)
+const HAIR_CONTROL_SIZE := Vector2(220.0, 42.0)
 
 var _hair_style_option: OptionButton
 var _hair_syncing := false
@@ -19,6 +21,9 @@ var _hair_skip_next_state_reassembly := false
 var _uniform_set_option: OptionButton
 var _uniform_syncing := false
 var _uniform_skip_next_state_reassembly := false
+var _armor_set_option: OptionButton
+var _armor_syncing := false
+var _armor_skip_next_state_reassembly := false
 
 func _ready() -> void:
 	super._ready()
@@ -26,10 +31,13 @@ func _ready() -> void:
 	preset_loaded.connect(_on_preset_selected_for_battle)
 	creator_state_changed.connect(_on_creator_state_changed_hair)
 	creator_state_changed.connect(_on_creator_state_changed_uniform)
+	creator_state_changed.connect(_on_creator_state_changed_armor)
 	_build_hair_control()
 	_build_uniform_control()
+	_build_armor_control()
 	_sync_hair_control_and_preview()
 	_sync_uniform_control_and_preview()
+	_sync_armor_control_and_preview()
 	call_deferred("_apply_reviewed_scene_layout")
 
 func set_hair_style(style_id: StringName) -> PackedStringArray:
@@ -63,10 +71,9 @@ func set_hair_style(style_id: StringName) -> PackedStringArray:
 
 	_sync_hair_option_selection()
 	_set_status("Cabelo atualizado: %s" % ModularFighterHairRuntime.style_label(style_id), false)
-	# This state event informs external observers, but neither atomic pack needs to
-	# reassemble: Hair was applied above and Uniform did not change.
 	_hair_skip_next_state_reassembly = true
 	_uniform_skip_next_state_reassembly = true
+	_armor_skip_next_state_reassembly = true
 	creator_state_changed.emit()
 	return failures
 
@@ -101,8 +108,44 @@ func set_uniform_set(set_id: StringName) -> PackedStringArray:
 
 	_sync_uniform_option_selection()
 	_set_status("Uniforme atualizado: %s" % ModularFighterUniformRuntime.set_label(set_id), false)
-	# Uniform was applied above and Hair did not change. Skip only this one signal-
-	# driven reassembly in both pack handlers to keep canonical node names stable.
+	_uniform_skip_next_state_reassembly = true
+	_hair_skip_next_state_reassembly = true
+	_armor_skip_next_state_reassembly = true
+	creator_state_changed.emit()
+	return failures
+
+func set_armor_set(set_id: StringName) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var profile := current_profile()
+	var assembler := current_assembler()
+	if profile == null:
+		failures.append("creator_armor_profile_missing")
+		return failures
+	if assembler == null or not assembler.is_ready_for_render():
+		failures.append("creator_armor_assembler_missing")
+		return failures
+	if not ModularFighterArmorRuntime.creator_exposure_enabled():
+		failures.append("creator_armor_exposure_blocked")
+		return failures
+	var available := ModularFighterArmorRuntime.creator_armor_set_ids()
+	if not available.has(String(set_id)):
+		failures.append("creator_armor_set_not_production_ready:%s" % String(set_id))
+		return failures
+
+	var previous := ModularFighterArmorRuntime.profile_armor_set_id(profile)
+	failures.append_array(ModularFighterArmorRuntime.set_profile_armor_set(profile, set_id))
+	if failures.is_empty():
+		failures.append_array(ModularFighterArmorRuntime.assemble_profile(profile, assembler))
+	if not failures.is_empty():
+		ModularFighterArmorRuntime.set_profile_armor_set(profile, previous)
+		ModularFighterArmorRuntime.assemble_profile(profile, assembler)
+		_sync_armor_option_selection()
+		_set_status("Armadura não aplicada", true)
+		return failures
+
+	_sync_armor_option_selection()
+	_set_status("Armadura atualizada: %s" % ModularFighterArmorRuntime.armor_set_label(set_id), false)
+	_armor_skip_next_state_reassembly = true
 	_uniform_skip_next_state_reassembly = true
 	_hair_skip_next_state_reassembly = true
 	creator_state_changed.emit()
@@ -114,11 +157,20 @@ func current_hair_style_id() -> StringName:
 func current_uniform_set_id() -> StringName:
 	return ModularFighterUniformRuntime.profile_set_id(current_profile())
 
+func current_armor_set_id() -> StringName:
+	return ModularFighterArmorRuntime.profile_armor_set_id(current_profile())
+
+func current_back_accessory_id() -> StringName:
+	return ModularFighterArmorRuntime.profile_back_accessory_id(current_profile())
+
 func hair_style_option() -> OptionButton:
 	return _hair_style_option
 
 func uniform_set_option() -> OptionButton:
 	return _uniform_set_option
+
+func armor_set_option() -> OptionButton:
+	return _armor_set_option
 
 func hair_creator_signature() -> Dictionary:
 	return {
@@ -153,6 +205,26 @@ func uniform_creator_signature() -> Dictionary:
 		"signature": "Tehkné Solutions",
 	}
 
+func armor_creator_signature() -> Dictionary:
+	return {
+		"stage": "C68.2",
+		"control": "armor_set",
+		"atomic_slots": ["head_accessory", "shoulders"],
+		"direct_slot_controls": false,
+		"cross_set_piece_mixing": false,
+		"production_sets": Array(ModularFighterArmorRuntime.creator_armor_set_ids()),
+		"current_set": String(current_armor_set_id()),
+		"back_accessory_control_exposed": false,
+		"back_accessory_id": String(current_back_accessory_id()),
+		"live_preview": true,
+		"selection_transactional": true,
+		"preset_roundtrip": true,
+		"battle_handoff": true,
+		"signal_reassembly_guard": true,
+		"cross_pack_reassembly_guard": true,
+		"signature": "Tehkné Solutions",
+	}
+
 func flow_signature() -> Dictionary:
 	var signature := super.flow_signature()
 	signature["hair_creator_control"] = true
@@ -166,6 +238,13 @@ func flow_signature() -> Dictionary:
 	signature["uniform_direct_slot_controls"] = false
 	signature["uniform_cross_set_piece_mixing"] = false
 	signature["uniform_set_count"] = ModularFighterUniformRuntime.creator_set_ids().size()
+	signature["armor_creator_control"] = true
+	signature["armor_selection_unit"] = "armor_set"
+	signature["armor_internal_slots"] = ["head_accessory", "shoulders"]
+	signature["armor_direct_slot_controls"] = false
+	signature["armor_cross_set_piece_mixing"] = false
+	signature["armor_set_count"] = ModularFighterArmorRuntime.creator_armor_set_ids().size()
+	signature["back_accessory_creator_control"] = false
 	return signature
 
 func _build_hair_control() -> void:
@@ -173,8 +252,8 @@ func _build_hair_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "HairStyleLabel"
-	label.position = Vector2(930, 18)
-	label.size = Vector2(310, 20)
+	label.position = Vector2(1020, 18)
+	label.size = Vector2(220, 20)
 	label.text = "CABELO • BASE-02"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -187,10 +266,6 @@ func _build_hair_control() -> void:
 	_hair_style_option.item_selected.connect(_on_hair_style_selected)
 	_style_option_button(_hair_style_option)
 	add_child(_hair_style_option)
-	for child in get_children():
-		if child is Label and String((child as Label).text).begins_with("BASE-01 •"):
-			(child as Label).text = "BASE-01 + BASE-02 • identidade modular • cabelo • preview ao vivo • presets locais"
-			break
 	_refresh_hair_options()
 
 func _build_uniform_control() -> void:
@@ -198,8 +273,8 @@ func _build_uniform_control() -> void:
 		return
 	var label := Label.new()
 	label.name = "UniformSetLabel"
-	label.position = Vector2(600, 18)
-	label.size = Vector2(310, 20)
+	label.position = Vector2(810, 18)
+	label.size = Vector2(200, 20)
 	label.text = "UNIFORME • BASE-03"
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color("aaa397"))
@@ -212,13 +287,34 @@ func _build_uniform_control() -> void:
 	_uniform_set_option.item_selected.connect(_on_uniform_set_selected)
 	_style_option_button(_uniform_set_option)
 	add_child(_uniform_set_option)
+	_refresh_uniform_options()
+
+func _build_armor_control() -> void:
+	if _armor_set_option != null:
+		return
+	var label := Label.new()
+	label.name = "ArmorSetLabel"
+	label.position = Vector2(600, 18)
+	label.size = Vector2(200, 20)
+	label.text = "ARMADURA • BASE-04"
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color("aaa397"))
+	add_child(label)
+	_armor_set_option = OptionButton.new()
+	_armor_set_option.name = "ArmorSetOption"
+	_armor_set_option.position = ARMOR_CONTROL_POSITION
+	_armor_set_option.size = ARMOR_CONTROL_SIZE
+	_armor_set_option.focus_mode = Control.FOCUS_ALL
+	_armor_set_option.item_selected.connect(_on_armor_set_selected)
+	_style_option_button(_armor_set_option)
+	add_child(_armor_set_option)
 	for child in get_children():
-		if child is Label and String((child as Label).text).begins_with("BASE-01 + BASE-02"):
+		if child is Label and String((child as Label).text).begins_with("BASE-01"):
 			var subtitle := child as Label
-			subtitle.text = "BASE-01 + BASE-02 + BASE-03 • identidade • cabelo • uniforme • preview • presets"
+			subtitle.text = "BASE-01→04 • identidade • cabelo • uniforme • armadura • presets"
 			subtitle.size = Vector2(540, 28)
 			break
-	_refresh_uniform_options()
+	_refresh_armor_options()
 
 func _refresh_hair_options() -> void:
 	if _hair_style_option == null:
@@ -248,6 +344,20 @@ func _refresh_uniform_options() -> void:
 	_sync_uniform_option_selection()
 	_uniform_syncing = false
 
+func _refresh_armor_options() -> void:
+	if _armor_set_option == null:
+		return
+	_armor_syncing = true
+	_armor_set_option.clear()
+	var sets := ModularFighterArmorRuntime.creator_armor_set_ids()
+	for set_text in sets:
+		var set_id := StringName(set_text)
+		_armor_set_option.add_item(ModularFighterArmorRuntime.armor_set_label(set_id))
+		_armor_set_option.set_item_metadata(_armor_set_option.item_count - 1, String(set_id))
+	_armor_set_option.disabled = sets.is_empty()
+	_sync_armor_option_selection()
+	_armor_syncing = false
+
 func _sync_hair_option_selection() -> void:
 	if _hair_style_option == null:
 		return
@@ -264,6 +374,15 @@ func _sync_uniform_option_selection() -> void:
 	for index in range(_uniform_set_option.item_count):
 		if String(_uniform_set_option.get_item_metadata(index)) == set_id:
 			_uniform_set_option.select(index)
+			return
+
+func _sync_armor_option_selection() -> void:
+	if _armor_set_option == null:
+		return
+	var set_id := String(current_armor_set_id())
+	for index in range(_armor_set_option.item_count):
+		if String(_armor_set_option.get_item_metadata(index)) == set_id:
+			_armor_set_option.select(index)
 			return
 
 func _sync_hair_control_and_preview() -> void:
@@ -300,6 +419,23 @@ func _sync_uniform_control_and_preview() -> void:
 		return
 	_refresh_uniform_options()
 
+func _sync_armor_control_and_preview() -> void:
+	if _armor_syncing:
+		return
+	var profile := current_profile()
+	var assembler := current_assembler()
+	if profile == null or assembler == null or not assembler.is_ready_for_render():
+		return
+	var set_failures := ModularFighterArmorRuntime.validate_profile(profile)
+	if not set_failures.is_empty():
+		_set_status("Preset contém combinação de armadura inválida", true)
+		return
+	var failures := ModularFighterArmorRuntime.assemble_profile(profile, assembler)
+	if not failures.is_empty():
+		_set_status("Armadura do preset não pôde ser montada", true)
+		return
+	_refresh_armor_options()
+
 func _on_hair_style_selected(index: int) -> void:
 	if _hair_syncing or _hair_style_option == null:
 		return
@@ -316,6 +452,14 @@ func _on_uniform_set_selected(index: int) -> void:
 	var set_id := StringName(String(_uniform_set_option.get_item_metadata(index)))
 	set_uniform_set(set_id)
 
+func _on_armor_set_selected(index: int) -> void:
+	if _armor_syncing or _armor_set_option == null:
+		return
+	if index < 0 or index >= _armor_set_option.item_count:
+		return
+	var set_id := StringName(String(_armor_set_option.get_item_metadata(index)))
+	set_armor_set(set_id)
+
 func _on_creator_state_changed_hair() -> void:
 	if _hair_skip_next_state_reassembly:
 		_hair_skip_next_state_reassembly = false
@@ -329,6 +473,13 @@ func _on_creator_state_changed_uniform() -> void:
 		_sync_uniform_option_selection()
 		return
 	_sync_uniform_control_and_preview()
+
+func _on_creator_state_changed_armor() -> void:
+	if _armor_skip_next_state_reassembly:
+		_armor_skip_next_state_reassembly = false
+		_sync_armor_option_selection()
+		return
+	_sync_armor_control_and_preview()
 
 func _apply_reviewed_scene_layout() -> void:
 	var assembler := current_assembler()
@@ -359,6 +510,8 @@ func reviewed_layout_signature() -> Dictionary:
 		"preview_scale": REVIEWED_PREVIEW_SCALE,
 		"preview_position": [REVIEWED_PREVIEW_POSITION.x, REVIEWED_PREVIEW_POSITION.y],
 		"controls_overlap": false,
+		"armor_control_position": [ARMOR_CONTROL_POSITION.x, ARMOR_CONTROL_POSITION.y],
+		"armor_control_size": [ARMOR_CONTROL_SIZE.x, ARMOR_CONTROL_SIZE.y],
 		"uniform_control_position": [UNIFORM_CONTROL_POSITION.x, UNIFORM_CONTROL_POSITION.y],
 		"uniform_control_size": [UNIFORM_CONTROL_SIZE.x, UNIFORM_CONTROL_SIZE.y],
 		"hair_control_position": [HAIR_CONTROL_POSITION.x, HAIR_CONTROL_POSITION.y],
@@ -372,4 +525,8 @@ func battle_handoff_signature() -> Dictionary:
 	signature["scene_controller"] = "ModularFighterCreatorScene"
 	signature["hair_style_id"] = String(current_hair_style_id())
 	signature["uniform_set_id"] = String(current_uniform_set_id())
+	signature["armor_set_id"] = String(current_armor_set_id())
+	signature["back_accessory_id"] = String(current_back_accessory_id())
 	return signature
+
+# Tehkné Solutions
