@@ -1,0 +1,44 @@
+name: C68.3 BASE-04 Back Accessory Candidate Review
+
+on:
+  pull_request:
+    paths:
+      - 'assets/modular_fighters/base_04/candidates/back_accessory_pack_01/**'
+      - 'assets/modular_fighters/base_00/**'
+      - 'assets/modular_fighters/base_01/**'
+      - 'assets/modular_fighters/base_02/**'
+      - 'assets/modular_fighters/base_03/**'
+      - 'assets/modular_fighters/base_04/armor_01_taijifu_guard/**'
+      - 'scripts/ci/c68_3_back_accessory_candidate_review.py'
+      - '.github/workflows/c68-3-base04-back-accessory-candidate-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install image review dependency
+        run: python3 -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+
+      - name: Report candidate hashes
+        run: sha256sum assets/modular_fighters/base_04/candidates/back_accessory_pack_01/*/back_accessory.png
+
+      - name: Validate and render C68.3 candidate matrix
+        run: python3 scripts/ci/c68_3_back_accessory_candidate_review.py
+
+      - name: Upload C68.3 visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: c68-3-back-accessory-candidate-review
+          path: artifacts/c68_3/C68_3_BACK_ACCESSORY_CANDIDATES.review-1920x1080.png
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        run: echo 'C68.3 Back Accessory candidate materialization + real composition review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
