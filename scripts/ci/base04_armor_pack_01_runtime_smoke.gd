@@ -48,6 +48,7 @@ func _run() -> void:
 		_fail("C68_1_RUNTIME=BLOCKED shoulders_module")
 		return
 
+	# Invalid and partial selections must remain fail-closed before battle.
 	failures = ModularFighterArmorRuntime.set_profile_armor_set(profile, &"armor_missing_probe")
 	if failures.is_empty() or ModularFighterArmorRuntime.profile_armor_set_id(profile) != ARMOR_SET:
 		_fail("C68_1_RUNTIME=BLOCKED fail_closed")
@@ -80,27 +81,41 @@ func _run() -> void:
 	if presenter.active_hair_style_id() != HAIR_STYLE or presenter.active_uniform_set_id() != UNIFORM_SET:
 		_fail("C68_1_RUNTIME=BLOCKED prior_pack_regression")
 		return
-
-	# C68.1 candidate compatibility: attach to the real active-fight assembler
-	# without promoting automatic battle activation yet.
-	failures = ModularFighterArmorRuntime.assemble_profile(profile, presenter.assembler())
-	if not failures.is_empty():
-		_fail("C68_1_RUNTIME=BLOCKED battle_compat:%s" % ",".join(failures))
+	if presenter.active_armor_set_id() != ARMOR_SET:
+		_fail("C68_1_RUNTIME=BLOCKED auto_armor_state")
 		return
+	if presenter.active_back_accessory_id() != &"back_none":
+		_fail("C68_1_RUNTIME=BLOCKED auto_back_state")
+		return
+
+	# C68.1 production activation must already be present on the battle assembler;
+	# no test-only/manual attachment is allowed after presenter activation.
 	var signature := ModularFighterArmorRuntime.runtime_signature(profile, presenter.assembler())
 	if not bool(signature.get("head_accessory_present", false)) or int(signature.get("head_accessory_z", -1)) != 60:
-		_fail("C68_1_RUNTIME=BLOCKED head_attach")
+		_fail("C68_1_RUNTIME=BLOCKED head_auto_attach")
 		return
 	if not bool(signature.get("shoulders_present", false)) or int(signature.get("shoulders_z", -1)) != 70:
-		_fail("C68_1_RUNTIME=BLOCKED shoulders_attach")
+		_fail("C68_1_RUNTIME=BLOCKED shoulders_auto_attach")
 		return
 	if bool(signature.get("back_accessory_present", true)):
 		_fail("C68_1_RUNTIME=BLOCKED back_none")
 		return
 
+	var handoff_value = battle.player_one.get_meta("creator_battle_handoff", {})
+	if not (handoff_value is Dictionary):
+		_fail("C68_1_RUNTIME=BLOCKED battle_handoff")
+		return
+	if String(handoff_value.get("armor_set_id", "")) != String(ARMOR_SET):
+		_fail("C68_1_RUNTIME=BLOCKED handoff_armor")
+		return
+	if String(handoff_value.get("back_accessory_id", "")) != "back_none":
+		_fail("C68_1_RUNTIME=BLOCKED handoff_back")
+		return
+
 	print("C68_1_ARMOR_SET=PASS set=armor_01_taijifu_guard head=true shoulders=true atomic=true")
 	print("C68_1_BACK_ACCESSORY=PASS id=back_none deferred=true")
-	print("C68_1_BATTLE_COMPAT=PASS active_fight_assembler=true auto_activation=false")
+	print("C68_1_BATTLE_RUNTIME=PASS armor=armor_01_taijifu_guard back=back_none auto_activation=true")
+	print("C68_1_BATTLE_HANDOFF=PASS armor=armor_01_taijifu_guard back=back_none")
 	print("C68_1_ARMOR_PACK_RUNTIME=PASS")
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
