@@ -2,18 +2,12 @@
   "schema": "tehkne/taijifu-base04-back-accessory-candidates/v1",
   "signature": "Tehkné Solutions",
   "stage": "C68.3",
-  "status": "candidate_binaries_materialized_visual_selection_pending",
+  "status": "candidate_selected_art_only_promotion_blocked",
   "runtime_activation": false,
   "creator_exposure": false,
-  "canvas": [
-    1024,
-    1024
-  ],
+  "canvas": [1024, 1024],
   "mode": "RGBA",
-  "pivot": [
-    0.5,
-    0.92
-  ],
+  "pivot": [0.5, 0.92],
   "root_anchor": "bottom_center",
   "constraints": {
     "connected_single_object_required": true,
@@ -21,55 +15,74 @@
     "disconnected_two_strip_silhouette_forbidden": true,
     "max_bottom_y": 700,
     "transparent_border_required": true,
-    "candidate_count": 3
+    "candidate_count": 3,
+    "min_retained_pixels": 3500,
+    "min_retained_ratio": 0.08,
+    "min_pairwise_difference": 3000
   },
   "candidates": {
     "v1_guardian_yoke": {
       "label": "Manto Curto da Guarda",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v1_guardian_yoke/back_accessory.png",
       "sha256": "1f03951c9ee5dbacf128f282f6bfbc9cbde848f89c54ae7b60567c61dc770645",
-      "alpha_bbox": [
-        280,
-        260,
-        748,
-        612
-      ],
+      "alpha_bbox": [280, 260, 748, 612],
       "visible_pixels": 81712,
       "connected_components": 1,
-      "art_read": "wide connected guardian yoke with compact central panel and silhouette tabs"
+      "art_read": "wide connected guardian yoke with compact central panel and silhouette tabs",
+      "retained_pixels": 14065,
+      "retained_ratio": 0.1721,
+      "decision": "not_selected",
+      "decision_reason": "readable_but_higher_lateral_visual_mass_than_selected_v3"
     },
     "v2_martial_knot": {
       "label": "Laço Marcial Taijifu",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v2_martial_knot/back_accessory.png",
       "sha256": "39d40b006bec5547d56df92d0eaf474df16f6cefcffad52e373ebb5f0729ac83",
-      "alpha_bbox": [
-        264,
-        408,
-        764,
-        600
-      ],
+      "alpha_bbox": [264, 408, 764, 600],
       "visible_pixels": 30032,
       "connected_components": 1,
-      "art_read": "central martial knot with two very short connected lateral tapered tails"
+      "art_read": "central martial knot with two very short connected lateral tapered tails",
+      "retained_pixels": 7235,
+      "retained_ratio": 0.2409,
+      "decision": "rejected",
+      "decision_reason": "canonical_composition_reads_as_two_detached_lateral_strips_despite_connected_source_topology"
     },
     "v3_guardian_panel": {
       "label": "Painel Guardião",
       "path": "assets/modular_fighters/base_04/candidates/back_accessory_pack_01/v3_guardian_panel/back_accessory.png",
       "sha256": "e26ba3bd7b15e94fc430fd74905164c58ff13dce682e224a3559168c107ba960",
-      "alpha_bbox": [
-        304,
-        292,
-        724,
-        680
-      ],
+      "alpha_bbox": [304, 292, 724, 680],
       "visible_pixels": 86464,
       "connected_components": 1,
-      "art_read": "structured compact upper-back guard with one connected offset short flexible panel"
+      "art_read": "structured compact upper-back guard with one connected offset short flexible panel",
+      "retained_pixels": 11151,
+      "retained_ratio": 0.1290,
+      "decision": "selected_art_direction",
+      "decision_reason": "best_compact_integrated_read_with_clear_gameplay_silhouette_without_mmo_cape_mass"
     }
   },
-  "selection": {
-    "selected_candidate": null,
-    "review_state": "pending_real_composition_capture"
+  "pairwise_difference": {
+    "v1_guardian_yoke:v2_martial_knot": 21300,
+    "v1_guardian_yoke:v3_guardian_panel": 17520,
+    "v2_martial_knot:v3_guardian_panel": 18030
   },
-  "next_stage": "C68.3 — real composition capture and visual selection"
+  "selection": {
+    "selected_candidate": "v3_guardian_panel",
+    "selected_label": "Painel Guardião",
+    "review_state": "selected_art_only",
+    "production_promotion": false,
+    "promotion_blocker": "weapon_back_standalone_module_required",
+    "required_weapon_back_id": "sheath_lian_wu_blue"
+  },
+  "review_evidence": {
+    "workflow_run": 31390044029,
+    "artifact_id": 9063268074,
+    "artifact_digest": "sha256:a112e5ce18c4cd1f928485b63129f3819aa7e5c1f8bfcff8f2e276ecab953af2",
+    "capture": "artifacts/c68_3/C68_3_BACK_ACCESSORY_CANDIDATES.review-1920x1080.png",
+    "authored_facing": true,
+    "flipped_facing": true,
+    "gameplay_scale": true,
+    "canonical_z_order": true
+  },
+  "next_stage": "C68.4 — resolve standalone weapon_back compatibility and promote selected Back Accessory"
 }
