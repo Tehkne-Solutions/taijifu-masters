@@ -51,8 +51,8 @@
     "format": "PNG",
     "alpha": true,
     "background": "transparent",
-    "filename": "fNNN.png",
-    "directory_pattern": "<animation>/fNNN.png",
+    "filename": "char_training_rival__<animation>__fNNN.png",
+    "directory_pattern": "animations/<animation>/char_training_rival__<animation>__fNNN.png",
     "approval_requires": ["identity_consistency", "native_left_facing", "bottom_center_pivot", "single_weapon", "transparent_background", "runtime_readability"]
   },
   "production_policy": {
