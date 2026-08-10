@@ -1,0 +1,60 @@
+{
+  "schema": "tehkne/taijifu-base04-armor-creator-control/v1",
+  "signature": "Tehkné Solutions",
+  "component_id": "BASE04_ARMOR_CREATOR_CONTROL",
+  "stage": "C68.2",
+  "status": "candidate_validation_pending",
+  "public_control": {
+    "id": "armor_set",
+    "widget": "OptionButton",
+    "node_name": "ArmorSetOption",
+    "selection_unit": "armor_set",
+    "atomic_slots": ["head_accessory", "shoulders"],
+    "direct_slot_controls": false,
+    "cross_set_piece_mixing": false,
+    "production_only": true,
+    "default_id": "armor_none"
+  },
+  "production_options": [
+    {
+      "id": "armor_none",
+      "label": "Sem armadura externa"
+    },
+    {
+      "id": "armor_01_taijifu_guard",
+      "label": "Guarda Marcial Taijifu"
+    }
+  ],
+  "back_accessory": {
+    "creator_control_exposed": false,
+    "forced_compatible_default": "back_none",
+    "reason": "no_reviewed_production_back_accessory_art"
+  },
+  "cross_pack_contract": {
+    "hair_preserved": true,
+    "uniform_preserved": true,
+    "reference_hair": "hair_01_lian_topknot",
+    "reference_uniform": "uniform_01_lian_martial",
+    "preview_reassembly_transactional": true,
+    "signal_reassembly_guard": true
+  },
+  "persistence_contract": {
+    "profile_schema_change_required": false,
+    "preset_schema": "tehkne/taijifu-modular-fighter-preset/v2",
+    "save_load_roundtrip": true,
+    "battle_handoff": true
+  },
+  "forbidden_creator_nodes": [
+    "HeadAccessoryOption",
+    "ShouldersOption",
+    "BackAccessoryOption"
+  ],
+  "validation": {
+    "creator_runtime": "pending",
+    "live_preview": "pending",
+    "preset_roundtrip": "pending",
+    "battle_handoff": "pending",
+    "visual_capture": "pending"
+  },
+  "next_stage": "C68.2 — validate and promote Armor Creator Control"
+}
