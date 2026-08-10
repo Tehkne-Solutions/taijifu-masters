@@ -1,0 +1,98 @@
+{
+  "schema": "tehkne/taijifu-base05-weapons-manifest/v1",
+  "signature": "Tehkné Solutions",
+  "pack_id": "BASE05_WEAPONS",
+  "version": "1.0.0",
+  "status": "specified_foundation_fail_closed",
+  "depends_on": {
+    "fighter_standard": "tehkne/taijifu-modular-fighter-standard/v1",
+    "base_body": "base_fighter_v1",
+    "shared_visual_equipment": "SHARED_MODULAR_EQUIPMENT"
+  },
+  "ownership": {
+    "purpose": "production catalog and validation boundary for modular fighter weapon visuals",
+    "combat_logic_owner": "WeaponKitCatalog_and_BattleLoadoutCatalog",
+    "visual_profile_owner": "ModularFighterProfile.modules",
+    "visual_assembly_owner": "ModularFighterEquipmentRuntime",
+    "weapon_back_owner": "SHARED_MODULAR_EQUIPMENT",
+    "duplicate_combat_catalog_forbidden": true
+  },
+  "authoring": {
+    "canvas": [1024, 1024],
+    "mode": "RGBA",
+    "pivot": [0.5, 0.92],
+    "root_anchor": "bottom_center",
+    "native_transparency_required": true,
+    "background_allowed": false,
+    "text_allowed": false,
+    "preset_specific_sprite_sheet": false
+  },
+  "slots": ["weapon_main", "weapon_offhand"],
+  "delegated_slots": {
+    "weapon_back": "SHARED_MODULAR_EQUIPMENT"
+  },
+  "layer_contract": {
+    "weapon_main": 80,
+    "weapon_offhand": 81,
+    "weapon_back": 3,
+    "relation": "weapon_back < body_and_clothing < weapon_main < weapon_offhand"
+  },
+  "public_controls": {
+    "weapon_set": {
+      "creator_exposed": false,
+      "selection_atomic": true,
+      "direct_slot_controls": false,
+      "combat_loadout_mutation": false,
+      "default_id": "weapon_none"
+    }
+  },
+  "weapon_sets": {
+    "weapon_none": {
+      "label": "Sem arma visual principal",
+      "weapon_main": null,
+      "weapon_offhand": null,
+      "requires_art_assets": false,
+      "runtime_ready": false,
+      "production_ready": false
+    }
+  },
+  "modules": {},
+  "required_references": {
+    "katana_lian_wu": {
+      "slot": "weapon_main",
+      "required_by": ["preset_lian_wu"],
+      "profile_reference_status": "present",
+      "standalone_visual_status": "not_materialized",
+      "production_ready": false,
+      "combat_catalog_reference": "serene_katana",
+      "combat_catalog_reference_status": "existing_kit_verified",
+      "visual_to_combat_binding_status": "pending_battle_loadout_verification",
+      "must_not_extract_without_visual_review": true
+    }
+  },
+  "compatibility": {
+    "existing_weapon_back_reference": "sheath_lian_wu_blue",
+    "weapon_back_must_survive_weapon_main_changes": true,
+    "back_accessory_must_survive_weapon_main_changes": true,
+    "hair_uniform_armor_must_survive_weapon_main_changes": true,
+    "authored_facing_review_required": true,
+    "flipped_facing_review_required": true,
+    "gameplay_scale_review_required": true,
+    "active_fight_review_required": true
+  },
+  "promotion": {
+    "weapon_main_runtime_activation": false,
+    "weapon_offhand_runtime_activation": false,
+    "presenter_integration": false,
+    "creator_exposure": false,
+    "art_assets_present": false,
+    "runtime_validation": "pending",
+    "owner_visual_review": "pending",
+    "blockers": [
+      "katana_lian_wu_standalone_visual_not_materialized",
+      "visual_to_combat_binding_not_verified",
+      "weapon_main_runtime_not_validated"
+    ]
+  },
+  "next_stage": "BASE-05 Weapon Main Reference Audit — verify Lian Wu combat binding and standalone katana source before candidate production"
+}
