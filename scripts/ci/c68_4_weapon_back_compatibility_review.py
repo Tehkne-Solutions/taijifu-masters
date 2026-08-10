@@ -76,9 +76,13 @@ def main() -> None:
 
     assert equipment["pack_id"] == "SHARED_MODULAR_EQUIPMENT"
     assert equipment["runtime_slots"] == ["weapon_back"]
+    # C68.4 keeps weapon_back internal permanently; C68.5 may expose only Back Accessory.
     assert equipment["promotion"]["creator_exposure"] is False
     assert candidates["selection"]["selected_candidate"] == "v3_guardian_panel"
-    assert base04["promotion"]["back_accessory_creator_exposure"] is False
+    back_creator = bool(base04["promotion"].get("back_accessory_creator_exposure", False))
+    if back_creator:
+        assert base04["public_controls"]["back_accessory"]["creator_exposed"] is True
+        assert base04["public_controls"]["back_accessory"].get("weapon_back_control") is False
 
     equipment_promoted = bool(equipment["promotion"]["runtime_activation"])
     back_promoted = bool(base04["promotion"]["back_accessory_runtime_activation"])
@@ -105,11 +109,9 @@ def main() -> None:
 
     back = selected_candidate
     if back_promoted:
-        assert "back_01_guardian_panel" in base04["back_accessories"]
         back_entry = base04["back_accessories"]["back_01_guardian_panel"]
         assert back_entry["runtime_ready"] is True and back_entry["production_ready"] is True
         module_id = back_entry["back_accessory"]
-        assert module_id in base04["modules"]
         prod = base04["modules"][module_id]
         prod_path = ROOT / prod["path"]
         assert prod["slot"] == "back_accessory"
@@ -121,7 +123,6 @@ def main() -> None:
     sheath_only = compose(sheath, None)
     back_only = compose(None, back)
     combined = compose(sheath, back)
-
     sheath_retained = diff_pixels(sheath_only, baseline)
     sheath_ratio = sheath_retained / float(max(visible_pixels(sheath), 1))
     back_retained = diff_pixels(back_only, baseline)
@@ -133,7 +134,6 @@ def main() -> None:
     print(f"C68_4_SHEATH_READABILITY retained={sheath_retained} ratio={sheath_ratio:.4f}")
     print(f"C68_4_BACK_READABILITY retained={back_retained} ratio={back_ratio:.4f}")
     print(f"C68_4_COMBINED_DISTINCT combined={combined_delta} sheath_with_back={sheath_contribution_with_back} back_with_sheath={back_contribution_with_sheath}")
-
     assert sheath_retained >= MIN_SHEATH_RETAINED_PIXELS
     assert sheath_ratio >= MIN_SHEATH_RETAINED_RATIO
     assert back_retained >= MIN_BACK_RETAINED_PIXELS
@@ -156,13 +156,13 @@ def main() -> None:
         draw.text((x + 235, 600), "FLIPPED / GAMEPLAY CHECK", fill=(220, 220, 220))
         if index < 2:
             draw.line((x + 620, 0, x + 620, 1080), fill=(80, 86, 96), width=2)
-    state = f"equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} creator=false"
+    state = f"equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} back_creator={str(back_creator).lower()} weapon_creator=false"
     draw.text((20, 1048), f"C68.4 • sheath_lian_wu_blue z3 + Painel Guardiao z4 + hair_back z5 • {state} • Tehkné Solutions", fill=(220, 220, 220))
     sheet.save(OUTPUT)
 
     print("C68_4_LAYER_ORDER=PASS weapon_back=3 back_accessory=4 hair_back=5")
     print("C68_4_COMPATIBILITY=PASS authored=true flipped=true gameplay_scale=true")
-    print(f"C68_4_PROMOTION_STATE=PASS equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} creator=false")
+    print(f"C68_4_PROMOTION_STATE=PASS equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} back_creator={str(back_creator).lower()} weapon_creator=false")
     print(f"C68_4_VISUAL_OUTPUT={OUTPUT.relative_to(ROOT)}")
     print("SIGNATURE=Tehkné Solutions")
 
