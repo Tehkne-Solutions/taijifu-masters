@@ -62,19 +62,32 @@ func _run() -> void:
 	if presenter.active_hair_style_id() != HAIR_STYLE or presenter.active_uniform_set_id() != UNIFORM_SET:
 		_fail("C68_1_VISUAL=BLOCKED prior_pack_state")
 		return
-
-	failures = ModularFighterArmorRuntime.assemble_profile(profile, presenter.assembler())
-	if not failures.is_empty():
-		_fail("C68_1_VISUAL=BLOCKED armor_attach:%s" % ",".join(failures))
+	if presenter.active_armor_set_id() != ARMOR_SET:
+		_fail("C68_1_VISUAL=BLOCKED auto_armor_state")
 		return
-	for _frame in range(3):
-		await process_frame
+	if presenter.active_back_accessory_id() != &"back_none":
+		_fail("C68_1_VISUAL=BLOCKED auto_back_state")
+		return
+
+	# Production review must observe the automatically composed presenter state.
+	# No visual-review-only module attachment is permitted here.
 	var signature := ModularFighterArmorRuntime.runtime_signature(profile, presenter.assembler())
 	if int(signature.get("head_accessory_z", -1)) != 60 or int(signature.get("shoulders_z", -1)) != 70:
 		_fail("C68_1_VISUAL=BLOCKED layers")
 		return
+	if not bool(signature.get("head_accessory_present", false)) or not bool(signature.get("shoulders_present", false)):
+		_fail("C68_1_VISUAL=BLOCKED auto_modules")
+		return
 	if bool(signature.get("back_accessory_present", true)):
 		_fail("C68_1_VISUAL=BLOCKED back_none")
+		return
+
+	var handoff_value = battle.player_one.get_meta("creator_battle_handoff", {})
+	if not (handoff_value is Dictionary):
+		_fail("C68_1_VISUAL=BLOCKED battle_handoff")
+		return
+	if String(handoff_value.get("armor_set_id", "")) != String(ARMOR_SET) or String(handoff_value.get("back_accessory_id", "")) != "back_none":
+		_fail("C68_1_VISUAL=BLOCKED handoff_state")
 		return
 
 	var image := get_root().get_texture().get_image()
@@ -90,7 +103,7 @@ func _run() -> void:
 	print("C68_1_VISUAL_REVIEW=PASS armor=armor_01_taijifu_guard back=back_none")
 	print("C68_1_VISUAL_COMPOSITION=PASS hair=hair_01_lian_topknot uniform=uniform_01_lian_martial armor=armor_01_taijifu_guard back=back_none")
 	print("C68_1_VISUAL_LAYERING=PASS hair_front=50 head=60 torso_outer=65 shoulders=70")
-	print("C68_1_VISUAL_PHASE=PASS active_fight=true auto_activation=false")
+	print("C68_1_VISUAL_PHASE=PASS active_fight=true auto_activation=true")
 	print("C68_1_VISUAL_OUTPUT=" + OUTPUT)
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
