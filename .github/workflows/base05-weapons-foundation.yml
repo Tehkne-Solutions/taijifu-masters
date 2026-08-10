@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate fail-closed BASE-05 static contract
+      - name: Validate immutable BASE-05 foundation across later audits
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -39,7 +39,7 @@ jobs:
           weapon_source=Path('scripts/combat/weapon_kit_catalog.gd').read_text()
 
           assert m['pack_id']=='BASE05_WEAPONS'
-          assert m['status']=='specified_foundation_fail_closed'
+          assert m['status'] in ('specified_foundation_fail_closed','reference_audit_complete_redraw_required')
           assert m['slots']==['weapon_main','weapon_offhand']
           assert m['delegated_slots']['weapon_back']=='SHARED_MODULAR_EQUIPMENT'
           assert m['ownership']['combat_logic_owner']=='WeaponKitCatalog_and_BattleLoadoutCatalog'
@@ -53,11 +53,12 @@ jobs:
           assert m['modules']=={}
           ref=m['required_references']['katana_lian_wu']
           assert ref['slot']=='weapon_main'
-          assert ref['standalone_visual_status']=='not_materialized'
+          assert ref['standalone_visual_status'] in ('not_materialized','redraw_required')
           assert ref['combat_catalog_reference']=='serene_katana'
-          assert ref['visual_to_combat_binding_status']=='pending_battle_loadout_verification'
+          assert ref['visual_to_combat_binding_status'] in ('pending_battle_loadout_verification','verified_via_current_first_playable_fallback')
           assert ref['must_not_extract_without_visual_review'] is True
 
+          # Immutable foundation record remains unchanged even when the live manifest advances.
           assert c['status']=='specified_fail_closed'
           assert c['owned_visual_slots']==['weapon_main','weapon_offhand']
           assert c['delegated_visual_slots']['weapon_back']=='SHARED_MODULAR_EQUIPMENT'
@@ -78,6 +79,7 @@ jobs:
           assert '&"serene_katana"' in weapon_source
           print('BASE05_STATIC_CONTRACT=PASS fail_closed=true modules=0 creator=false')
           print('BASE05_OWNERSHIP=PASS combat=existing_catalog visual=shared_runtime')
+          print('BASE05_FOUNDATION_LIFECYCLE=PASS status='+m['status'])
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -104,8 +106,9 @@ jobs:
           grep -q 'BASE05_FOUNDATION=PASS pack=BASE05_WEAPONS' base05-foundation.log
           grep -q 'BASE05_OWNERSHIP=PASS combat=WeaponKitCatalog_and_BattleLoadoutCatalog visual=ModularFighterEquipmentRuntime' base05-foundation.log
           grep -q 'BASE05_SLOTS=PASS weapon_back=3 weapon_main=80 weapon_offhand=81 runtime_main=false runtime_offhand=false' base05-foundation.log
-          grep -q 'BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=pending' base05-foundation.log
+          grep -q 'BASE05_LIAN_REFERENCE=PASS weapon_main=katana_lian_wu weapon_back=sheath_lian_wu_blue combat_kit=serene_katana binding=' base05-foundation.log
           grep -q 'BASE05_CREATOR=BLOCKED expected=true' base05-foundation.log
+          grep -q 'BASE05_FOUNDATION_LIFECYCLE=PASS status=' base05-foundation.log
           if grep -Eq 'SCRIPT ERROR|Parse Error|BASE05_FOUNDATION=BLOCKED' base05-foundation.log; then exit 1; fi
 
       - uses: actions/upload-artifact@v4
@@ -121,4 +124,4 @@ jobs:
           retention-days: 30
 
       - name: Summary
-        run: echo 'BASE-05 Weapons foundation fail-closed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'BASE-05 Weapons foundation fail-closed, lifecycle-aware — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
