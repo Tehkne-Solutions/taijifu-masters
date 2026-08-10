@@ -12,6 +12,17 @@ SCRIPT = REPO / "scripts" / "tgap_visual_gate.py"
 
 
 def run_gate(pack: Path) -> subprocess.CompletedProcess[str]:
+    if not (pack / "manifest.json").is_file():
+        (pack / "manifest.json").write_text(
+            json.dumps({
+                "schema": "tgap/v1",
+                "pack_id": "pack_visual_fixture",
+                "asset_class": "character",
+                "version": "1.0.0",
+                "state": "validation",
+            }),
+            encoding="utf-8",
+        )
     return subprocess.run(
         [sys.executable, str(SCRIPT), str(pack)],
         cwd=REPO,
@@ -89,5 +100,6 @@ def test_visual_gate_reports_pivot_drift_by_animation(tmp_path: Path) -> None:
     result = run_gate(pack)
     report = read_report(pack)
 
-    assert result.returncode == 0
+    assert result.returncode == 1
     assert report["pivot_drift"]["idle"]["x"] == 40
+    assert any("pivot_drift_exceeded:idle" in error for error in report["errors"])
