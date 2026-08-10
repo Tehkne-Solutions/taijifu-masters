@@ -3,7 +3,7 @@
   "signature": "Tehkné Solutions",
   "stage": "BASE-05.3",
   "pack_id": "BASE05_KATANA_LIAN_WU_PACK_01_RUNTIME",
-  "status": "runtime_validation_pending",
+  "status": "production_approved_state_aware_runtime",
   "weapon_main": {
     "id": "katana_lian_wu",
     "slot": "weapon_main",
@@ -42,30 +42,44 @@
     "required_layer_chain": "weapon_back=3 < back_accessory=4 < hair_back=5 < weapon_main=80"
   },
   "validation": {
-    "static_contract": "pending",
-    "godot_import": "pending",
-    "runtime_smoke": "pending",
-    "active_fight": "pending",
-    "idle_hidden": "pending",
-    "attack_visible": "pending",
-    "idle_return_hidden": "pending",
-    "same_node_idempotence": "pending",
-    "battle_handoff": "pending",
-    "combat_binding": "pending",
-    "visual_capture": "pending"
+    "static_contract": "pass",
+    "godot_import": "pass",
+    "runtime_smoke": "pass",
+    "active_fight": "pass",
+    "idle_hidden": "pass",
+    "attack_visible": "pass",
+    "idle_return_hidden": "pass",
+    "same_node_idempotence": "pass",
+    "battle_handoff": "pass",
+    "combat_binding": "pass",
+    "visual_capture": "pass",
+    "owner_visual_review": "pass"
   },
-  "evidence": null,
+  "evidence": {
+    "workflow_run": 31418424009,
+    "head_sha": "ea5dbea49be62d45c0b09c4471cd6a49ac414f5a",
+    "artifact_id": 9074360706,
+    "artifact_digest": "sha256:86ccb396e8b3de329fc74c84fef6c93a8081ec003bc4075103b02ecdc53e44a1",
+    "capture": "artifacts/base05_3/BASE05_3_ACTIVE_FIGHT_ATTACK.review-1920x1080.png",
+    "active_fight": true,
+    "auto_activation": true,
+    "battle_handoff": true,
+    "idle_weapon_main_visible": false,
+    "attack_light_weapon_main_visible": true,
+    "idle_return_weapon_main_visible": false,
+    "same_weapon_main_node": true,
+    "combat_weapon_id": "serene_katana",
+    "layer_chain": [3, 4, 5, 80],
+    "prior_pack_modules_preserved": true,
+    "creator_exposure": false
+  },
   "promotion": {
     "weapon_main_runtime_activation": true,
-    "presenter_candidate_integration": true,
-    "presenter_integration": false,
+    "presenter_integration": true,
     "creator_exposure": false,
-    "production_ready": false,
-    "runtime_validation": "pending"
+    "production_ready": true,
+    "runtime_validation": "pass"
   },
-  "blockers": [
-    "state_aware_active_fight_not_validated",
-    "runtime_evidence_not_frozen"
-  ],
-  "next_stage": "BASE-05.3 closeout after read-only state-aware active-fight evidence"
+  "blockers": [],
+  "next_stage": "BASE-05.4 — Weapon Set Creator Control, still without direct weapon_main/offhand slot controls or combat-loadout mutation"
 }
