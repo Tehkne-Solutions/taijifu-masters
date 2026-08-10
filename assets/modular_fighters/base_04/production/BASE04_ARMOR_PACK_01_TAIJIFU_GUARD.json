@@ -3,15 +3,12 @@
   "signature": "Tehkné Solutions",
   "component_id": "BASE04_ARMOR_PACK_01_TAIJIFU_GUARD",
   "stage": "C68.1",
-  "status": "candidate_runtime_visual_review_pending",
+  "status": "production_approved_creator_control_pending",
   "armor_set_id": "armor_01_taijifu_guard",
   "label": "Guarda Marcial Taijifu",
   "selection": {
     "unit": "armor_set",
-    "atomic_slots": [
-      "head_accessory",
-      "shoulders"
-    ],
+    "atomic_slots": ["head_accessory", "shoulders"],
     "direct_piece_controls": false,
     "cross_set_piece_mixing": false
   },
@@ -40,18 +37,8 @@
     "armor_01_taijifu_guard_shoulders": "fcc80bb6fe2b10d0a6664a0306c6dcdca71545dc26c50fd3fdac4da314d3f82a"
   },
   "expected_alpha_bbox": {
-    "armor_01_taijifu_guard_head_accessory": [
-      496,
-      132,
-      620,
-      192
-    ],
-    "armor_01_taijifu_guard_shoulders": [
-      340,
-      328,
-      716,
-      420
-    ]
+    "armor_01_taijifu_guard_head_accessory": [496, 132, 620, 192],
+    "armor_01_taijifu_guard_shoulders": [340, 328, 716, 420]
   },
   "runtime_contract": {
     "boundary": "ModularFighterArmorRuntime",
@@ -64,12 +51,24 @@
     "combat_changes": false
   },
   "promotion": {
-    "runtime_validation": "pending",
-    "battle_activation": false,
-    "battle_visual_review": "pending",
+    "runtime_validation": "pass",
+    "battle_activation": true,
+    "battle_visual_review": "pass",
     "creator_exposure": false,
     "creator_control": "blocked_until_C68.2",
-    "back_accessory_art": "blocked_until_new_reviewed_asset"
+    "back_accessory_art": "blocked_until_new_reviewed_asset",
+    "visual_evidence": {
+      "workflow_run": 31343167852,
+      "artifact_id": 9046452849,
+      "artifact_sha256": "037ee5e6ed577fbb8ec88ee6a1a159a2a47b645464a7d7adebcd09d6ee610e68",
+      "capture": "artifacts/c68_1/C68_1_BASE04_TAIJIFU_GUARD.review-1920x1080.png",
+      "active_fight": true,
+      "owner_visual_review": "pass",
+      "hair_interaction": "pass",
+      "uniform_interaction": "pass",
+      "armor_candidate": "v2",
+      "back_accessory": "back_none"
+    }
   },
-  "next_stage": "C68.1 — runtime + active-fight visual review"
+  "next_stage": "C68.2 — Armor Creator Control"
 }
