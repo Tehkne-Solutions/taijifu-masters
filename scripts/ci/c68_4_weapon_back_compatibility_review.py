@@ -75,19 +75,22 @@ def main() -> None:
     candidates = json.loads(CANDIDATES.read_text(encoding="utf-8"))
 
     assert equipment["pack_id"] == "SHARED_MODULAR_EQUIPMENT"
-    assert equipment["promotion"]["runtime_activation"] is False
-    assert equipment["promotion"]["presenter_integration"] is False
+    assert equipment["runtime_slots"] == ["weapon_back"]
     assert equipment["promotion"]["creator_exposure"] is False
     assert candidates["selection"]["selected_candidate"] == "v3_guardian_panel"
-    assert candidates["selection"]["production_promotion"] is False
-    assert base04["promotion"]["back_accessory_runtime_activation"] is False
     assert base04["promotion"]["back_accessory_creator_exposure"] is False
+
+    equipment_promoted = bool(equipment["promotion"]["runtime_activation"])
+    back_promoted = bool(base04["promotion"]["back_accessory_runtime_activation"])
 
     modules = equipment["modules"]
     assert "sheath_lian_wu_blue" in modules
     sheath_contract = modules["sheath_lian_wu_blue"]
     assert sheath_contract["slot"] == "weapon_back"
     assert sheath_contract["layer"] == 3
+    if equipment_promoted:
+        assert sheath_contract["runtime_ready"] is True
+        assert sheath_contract["production_ready"] is True
     sheath_path = ROOT / sheath_contract["path"]
     raw = sheath_path.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == sheath_contract["sha256"]
@@ -95,10 +98,24 @@ def main() -> None:
     assert list(sheath.getchannel("A").getbbox()) == sheath_contract["alpha_bbox"]
     assert visible_pixels(sheath) == sheath_contract["visible_pixels"]
 
-    back_spec = candidates["candidates"]["v3_guardian_panel"]
-    back_path = ROOT / back_spec["path"]
-    back = rgba(back_path)
-    assert hashlib.sha256(back_path.read_bytes()).hexdigest() == back_spec["sha256"]
+    selected_spec = candidates["candidates"]["v3_guardian_panel"]
+    selected_candidate_path = ROOT / selected_spec["path"]
+    selected_candidate = rgba(selected_candidate_path)
+    assert hashlib.sha256(selected_candidate_path.read_bytes()).hexdigest() == selected_spec["sha256"]
+
+    back = selected_candidate
+    if back_promoted:
+        assert "back_01_guardian_panel" in base04["back_accessories"]
+        back_entry = base04["back_accessories"]["back_01_guardian_panel"]
+        assert back_entry["runtime_ready"] is True and back_entry["production_ready"] is True
+        module_id = back_entry["back_accessory"]
+        assert module_id in base04["modules"]
+        prod = base04["modules"][module_id]
+        prod_path = ROOT / prod["path"]
+        assert prod["slot"] == "back_accessory"
+        assert prod["sha256"] == selected_spec["sha256"]
+        assert hashlib.sha256(prod_path.read_bytes()).hexdigest() == selected_spec["sha256"]
+        back = rgba(prod_path)
 
     baseline = compose(None, None)
     sheath_only = compose(sheath, None)
@@ -128,11 +145,7 @@ def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     sheet = Image.new("RGB", (1920, 1080), (24, 28, 35))
     draw = ImageDraw.Draw(sheet)
-    views = [
-        ("SHEATH z3", sheath_only),
-        ("PAINEL GUARDIAO z4", back_only),
-        ("COMBINED z3<z4<z5", combined),
-    ]
+    views = [("SHEATH z3", sheath_only), ("PAINEL GUARDIAO z4", back_only), ("COMBINED z3<z4<z5", combined)]
     for index, (label, image) in enumerate(views):
         x = 20 + index * 635
         authored = image.resize((520, 520), Image.Resampling.NEAREST)
@@ -143,12 +156,13 @@ def main() -> None:
         draw.text((x + 235, 600), "FLIPPED / GAMEPLAY CHECK", fill=(220, 220, 220))
         if index < 2:
             draw.line((x + 620, 0, x + 620, 1080), fill=(80, 86, 96), width=2)
-    draw.text((20, 1048), "C68.4 • sheath_lian_wu_blue z3 + Painel Guardiao z4 + hair_back z5 • production still fail-closed • Tehkné Solutions", fill=(220, 220, 220))
+    state = f"equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} creator=false"
+    draw.text((20, 1048), f"C68.4 • sheath_lian_wu_blue z3 + Painel Guardiao z4 + hair_back z5 • {state} • Tehkné Solutions", fill=(220, 220, 220))
     sheet.save(OUTPUT)
 
     print("C68_4_LAYER_ORDER=PASS weapon_back=3 back_accessory=4 hair_back=5")
     print("C68_4_COMPATIBILITY=PASS authored=true flipped=true gameplay_scale=true")
-    print("C68_4_PROMOTION_STATE=PASS equipment_runtime=false back_runtime=false creator=false")
+    print(f"C68_4_PROMOTION_STATE=PASS equipment_runtime={str(equipment_promoted).lower()} back_runtime={str(back_promoted).lower()} creator=false")
     print(f"C68_4_VISUAL_OUTPUT={OUTPUT.relative_to(ROOT)}")
     print("SIGNATURE=Tehkné Solutions")
 
