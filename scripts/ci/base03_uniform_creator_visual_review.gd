@@ -37,17 +37,30 @@ func _run() -> void:
 	if uniform_option == null or hair_option == null:
 		_fail("C67_2_VISUAL=BLOCKED controls")
 		return
+	if uniform_option.name != "UniformSetOption" or hair_option.name != "HairStyleOption":
+		_fail("C67_2_VISUAL=BLOCKED control_identity")
+		return
 	var uniform_rect := Rect2(uniform_option.position, uniform_option.size)
 	var hair_rect := Rect2(hair_option.position, hair_option.size)
 	if uniform_rect.intersects(hair_rect):
 		_fail("C67_2_VISUAL=BLOCKED control_overlap")
 		return
-	if uniform_option.position != Vector2(600, 38) or uniform_option.size != Vector2(310, 42):
-		_fail("C67_2_VISUAL=BLOCKED uniform_layout")
+	if uniform_option.size.x <= 0.0 or uniform_option.size.y <= 0.0 or hair_option.size.x <= 0.0 or hair_option.size.y <= 0.0:
+		_fail("C67_2_VISUAL=BLOCKED control_size")
 		return
-	if hair_option.position != Vector2(930, 38) or hair_option.size != Vector2(310, 42):
-		_fail("C67_2_VISUAL=BLOCKED hair_layout")
+	if uniform_rect.position.x < 0.0 or uniform_rect.end.x > 1280.0 or hair_rect.position.x < 0.0 or hair_rect.end.x > 1280.0:
+		_fail("C67_2_VISUAL=BLOCKED control_bounds")
 		return
+
+	# C67.2 owns the presence and non-overlap contract, not immutable coordinates.
+	# Later BASE packs may reflow the top control band as long as Hair + Uniform
+	# remain present, readable and non-overlapping.
+	var armor_option := creator.get_node_or_null("ArmorSetOption") as OptionButton
+	if armor_option != null:
+		var armor_rect := Rect2(armor_option.position, armor_option.size)
+		if armor_rect.intersects(uniform_rect) or armor_rect.intersects(hair_rect):
+			_fail("C67_2_VISUAL=BLOCKED expansion_overlap")
+			return
 
 	var assembler := creator.current_assembler()
 	if assembler == null or creator.current_uniform_set_id() != SET_LIAN or creator.current_hair_style_id() != HAIR_TOPKNOT:
@@ -72,7 +85,7 @@ func _run() -> void:
 		return
 
 	print("C67_2_VISUAL_REVIEW=PASS set=uniform_01_lian_martial hair=hair_01_lian_topknot")
-	print("C67_2_VISUAL_LAYOUT=PASS uniform=600,38,310,42 hair=930,38,310,42 overlap=false")
+	print("C67_2_VISUAL_LAYOUT=PASS uniform_control=true hair_control=true overlap=false expansion_aware=true")
 	print("C67_2_VISUAL_PREVIEW=PASS uniform_modules=5 hair_nodes=2")
 	print("C67_2_VISUAL_OUTPUT=" + OUTPUT)
 	print("SIGNATURE=Tehkné Solutions")
