@@ -97,7 +97,15 @@ def main() -> None:
     assert contract["runtime_activation"] is False
     assert contract["creator_exposure"] is False
     assert contract["constraints"]["candidate_count"] == 3
-    assert contract["selection"]["selected_candidate"] is None
+
+    selection = contract["selection"]
+    selected = selection.get("selected_candidate")
+    assert selected in (None, "v3_guardian_panel")
+    if selected is not None:
+        assert selection["review_state"] == "selected_art_only"
+        assert selection["production_promotion"] is False
+        assert selection["promotion_blocker"] == "weapon_back_standalone_module_required"
+        assert selection["required_weapon_back_id"] == "sheath_lian_wu_blue"
 
     baseline = compose(None)
     composites: list[tuple[str, str, Image.Image]] = []
@@ -127,6 +135,10 @@ def main() -> None:
             failures.append(f"{candidate_id}:retained_pixels:{retained}<{MIN_RETAINED_PIXELS}")
         if ratio < MIN_RETAINED_RATIO:
             failures.append(f"{candidate_id}:retained_ratio:{ratio:.4f}<{MIN_RETAINED_RATIO:.4f}")
+        if "retained_pixels" in spec:
+            assert spec["retained_pixels"] == retained, candidate_id
+        if "retained_ratio" in spec:
+            assert abs(float(spec["retained_ratio"]) - ratio) < 0.0001, candidate_id
         composites.append((candidate_id, spec["label"], composed))
 
     for left_index in range(len(composites)):
@@ -134,9 +146,12 @@ def main() -> None:
             left_id, _, left = composites[left_index]
             right_id, _, right = composites[right_index]
             pair_diff = difference_pixels(left, right)
-            print(f"C68_3_DISTINCTNESS pair={left_id}:{right_id} pixels={pair_diff}")
+            pair_key = f"{left_id}:{right_id}"
+            print(f"C68_3_DISTINCTNESS pair={pair_key} pixels={pair_diff}")
             if pair_diff < MIN_PAIRWISE_DIFFERENCE:
-                failures.append(f"{left_id}:{right_id}:pair_diff:{pair_diff}<{MIN_PAIRWISE_DIFFERENCE}")
+                failures.append(f"{pair_key}:pair_diff:{pair_diff}<{MIN_PAIRWISE_DIFFERENCE}")
+            if "pairwise_difference" in contract:
+                assert contract["pairwise_difference"][pair_key] == pair_diff, pair_key
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     sheet = Image.new("RGB", (1920, 1080), (24, 28, 35))
@@ -152,6 +167,8 @@ def main() -> None:
         retained, ratio = readability[candidate_id]
         draw.text((x + 18, 20), f"{candidate_id} — {label}", fill=(240, 240, 240))
         draw.text((x + 18, 44), f"retained={retained} ({ratio:.1%})", fill=(220, 220, 220))
+        if candidate_id == selected:
+            draw.text((x + 18, 66), "SELECTED ART • PROMOTION BLOCKED", fill=(240, 240, 240))
         draw.text((x + 238, 600), "FLIPPED / GAMEPLAY CHECK", fill=(220, 220, 220))
         if index < 2:
             draw.line((x + panel_w, 0, x + panel_w, 1080), fill=(80, 86, 96), width=2)
@@ -165,7 +182,7 @@ def main() -> None:
     print("C68_3_CANDIDATE_BINARIES=PASS count=3 rgba=1024x1024 connected=1")
     print("C68_3_GAMEPLAY_READABILITY=PASS canonical_z_order=true")
     print("C68_3_COMPOSITION_MATRIX=PASS authored=true flipped=true gameplay_scale=true")
-    print("C68_3_PROMOTION_STATE=PASS runtime=false creator=false selected=null")
+    print(f"C68_3_SELECTION=PASS selected={selected or 'none'} production=false")
     print(f"C68_3_VISUAL_OUTPUT={OUTPUT.relative_to(ROOT)}")
     print("SIGNATURE=Tehkné Solutions")
 
