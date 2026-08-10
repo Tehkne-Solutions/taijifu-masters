@@ -21,9 +21,16 @@ if ($null -eq $p01 -or [int]$p01.frame_count -ne 14) { throw "VM02_C38_P01_CONTR
 Write-Host "VM02_C38_P01_CONTRACT=PASS frames=14 idle=6 run=8"
 
 $sourceRoot = Join-Path $assetsRepo ($plan.source_lot -replace '/', '\\')
+$animationsRoot = Join-Path $sourceRoot "animations"
 $expected = @()
-1..6 | ForEach-Object { $expected += (Join-Path $sourceRoot ("idle\f{0:D3}.png" -f $_)) }
-1..8 | ForEach-Object { $expected += (Join-Path $sourceRoot ("run\f{0:D3}.png" -f $_)) }
+1..6 | ForEach-Object {
+  $name = "char_training_rival__idle__f{0:D3}.png" -f $_
+  $expected += (Join-Path (Join-Path $animationsRoot "idle") $name)
+}
+1..8 | ForEach-Object {
+  $name = "char_training_rival__run__f{0:D3}.png" -f $_
+  $expected += (Join-Path (Join-Path $animationsRoot "run") $name)
+}
 
 $present = @($expected | Where-Object { Test-Path $_ })
 $missing = @($expected | Where-Object { -not (Test-Path $_) })
@@ -41,9 +48,7 @@ if ($present.Count -eq 14) {
   Write-Host "VM02_C38_P01_READY_FOR_REVIEW=BLOCKED"
 }
 
-# C37 has already been validated and merged. C38 consumes the C37 plan directly
-# and hands off only to C28, avoiding a nested git-sync subprocess that is fragile
-# under Windows PowerShell 5.1 stderr handling.
+# C37 defines pack-by-pack production. C28 remains the global 44/44 promotion owner.
 Write-Host "VM02_C38_C37_PLAN_HANDOFF=PASS"
 Write-Host "VM02_C38_C28_HANDOFF=BEGIN"
 & powershell -NoProfile -ExecutionPolicy Bypass -File $c28Path -RepoRoot $RepoRoot 2>&1 | Out-Host
@@ -70,6 +75,7 @@ $report = @(
   "P01_READY_FOR_REVIEW=$(if ($present.Count -eq 14) { 'PASS' } else { 'BLOCKED' })",
   "C37_HANDOFF=PASS",
   "C28_HANDOFF=PASS",
+  "RUNTIME_PROMOTION=BLOCKED_UNTIL_44_OF_44",
   "PIPELINE_READY=PASS",
   "PHASE_PROGRESS=99%",
   "V2_PLAYABLE_PROGRESS=$v2Progress%",
