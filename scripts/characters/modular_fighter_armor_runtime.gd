@@ -25,6 +25,33 @@ static func armor_set_ids(production_only := false) -> PackedStringArray:
 	result.sort()
 	return result
 
+static func creator_armor_set_ids() -> PackedStringArray:
+	var result := PackedStringArray()
+	if not creator_exposure_enabled():
+		return result
+	result = armor_set_ids(true)
+	var default_text := String(DEFAULT_ARMOR_SET)
+	var default_index := result.find(default_text)
+	if default_index > 0:
+		result.remove_at(default_index)
+		result.insert(0, default_text)
+	return result
+
+static func armor_set_label(set_id: StringName) -> String:
+	var sets = _manifest().get("armor_sets", {})
+	var key := String(set_id)
+	if not (sets is Dictionary) or not sets.has(key) or not (sets[key] is Dictionary):
+		return key
+	return String((sets[key] as Dictionary).get("label", key))
+
+static func creator_exposure_enabled() -> bool:
+	var promotion = _manifest().get("promotion", {})
+	return promotion is Dictionary and bool(promotion.get("creator_exposure", false))
+
+static func back_accessory_creator_exposure_enabled() -> bool:
+	var promotion = _manifest().get("promotion", {})
+	return promotion is Dictionary and bool(promotion.get("back_accessory_creator_exposure", false))
+
 static func back_accessory_ids(production_only := false) -> PackedStringArray:
 	var result := PackedStringArray()
 	var items = _manifest().get("back_accessories", {})
@@ -38,6 +65,13 @@ static func back_accessory_ids(production_only := false) -> PackedStringArray:
 		result.append(item_id)
 	result.sort()
 	return result
+
+static func back_accessory_label(accessory_id: StringName) -> String:
+	var items = _manifest().get("back_accessories", {})
+	var key := String(accessory_id)
+	if not (items is Dictionary) or not items.has(key) or not (items[key] is Dictionary):
+		return key
+	return String((items[key] as Dictionary).get("label", key))
 
 static func set_profile_armor_set(profile: ModularFighterProfile, set_id: StringName) -> PackedStringArray:
 	var failures := PackedStringArray()
@@ -173,6 +207,8 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		"back_accessory_z": back.z_index if back != null else -1,
 		"armor_set_atomic": true,
 		"back_accessory_independent": true,
+		"creator_exposure": creator_exposure_enabled(),
+		"back_accessory_creator_exposure": back_accessory_creator_exposure_enabled(),
 		"signature": "Tehkné Solutions"
 	}
 
