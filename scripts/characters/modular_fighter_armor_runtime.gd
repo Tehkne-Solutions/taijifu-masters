@@ -3,6 +3,8 @@ extends RefCounted
 
 ## BASE-04 Armor & Accessories runtime.
 ## armor_set owns head_accessory + shoulders atomically; back_accessory is independent.
+## Reassembly is boundary-idempotent so an independent Back Accessory change never
+## destroys/recreates unchanged Armor nodes in the same frame.
 ## Tehkné Solutions
 
 const MANIFEST_PATH := "res://assets/modular_fighters/base_04/manifest.json"
@@ -10,6 +12,7 @@ const DEFAULT_ARMOR_SET := &"armor_none"
 const DEFAULT_BACK_ACCESSORY := &"back_none"
 const ARMOR_SLOTS := [&"head_accessory", &"shoulders"]
 const BACK_SLOT := &"back_accessory"
+const MODULE_META := &"tehkne_module_id"
 
 static func armor_set_ids(production_only := false) -> PackedStringArray:
 	var result := PackedStringArray()
@@ -189,20 +192,25 @@ static func validate_profile(profile: ModularFighterProfile) -> PackedStringArra
 	return failures
 
 static func assemble_profile(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> PackedStringArray:
-	var failures := PackedStringArray()
-	if profile == null:
-		failures.append("armor_profile_missing")
-		return failures
-	if assembler == null or not assembler.is_ready_for_render():
-		failures.append("armor_assembler_not_ready")
-		return failures
-	failures.append_array(validate_profile(profile))
+	var failures := _validate_assembly_context(profile, assembler)
 	if not failures.is_empty():
 		return failures
 	failures.append_array(_assemble_boundary(profile, assembler, ARMOR_SLOTS, "armor_set"))
 	if failures.is_empty():
 		failures.append_array(_assemble_boundary(profile, assembler, [BACK_SLOT], "back_accessory"))
 	return failures
+
+static func assemble_armor_set(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> PackedStringArray:
+	var failures := _validate_assembly_context(profile, assembler)
+	if not failures.is_empty():
+		return failures
+	return _assemble_boundary(profile, assembler, ARMOR_SLOTS, "armor_set")
+
+static func assemble_back_accessory(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> PackedStringArray:
+	var failures := _validate_assembly_context(profile, assembler)
+	if not failures.is_empty():
+		return failures
+	return _assemble_boundary(profile, assembler, [BACK_SLOT], "back_accessory")
 
 static func runtime_signature(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> Dictionary:
 	var head := assembler.get_node_or_null("Module_head_accessory") as Sprite2D if assembler != null else null
@@ -219,13 +227,42 @@ static func runtime_signature(profile: ModularFighterProfile, assembler: Modular
 		"back_accessory_z": back.z_index if back != null else -1,
 		"armor_set_atomic": true,
 		"back_accessory_independent": true,
+		"boundary_idempotent": true,
 		"creator_exposure": creator_exposure_enabled(),
 		"back_accessory_creator_exposure": back_accessory_creator_exposure_enabled(),
 		"signature": "Tehkné Solutions"
 	}
 
+static func _validate_assembly_context(profile: ModularFighterProfile, assembler: ModularFighterAssembler) -> PackedStringArray:
+	var failures := PackedStringArray()
+	if profile == null:
+		failures.append("armor_profile_missing")
+		return failures
+	if assembler == null or not assembler.is_ready_for_render():
+		failures.append("armor_assembler_not_ready")
+		return failures
+	failures.append_array(validate_profile(profile))
+	return failures
+
+static func _boundary_matches(profile: ModularFighterProfile, assembler: ModularFighterAssembler, slots: Array) -> bool:
+	for raw_slot in slots:
+		var slot := StringName(raw_slot)
+		var expected := String(profile.module_id(slot))
+		var node := assembler.get_node_or_null("Module_%s" % String(slot)) as Sprite2D
+		if expected.is_empty():
+			if node != null:
+				return false
+			continue
+		if node == null:
+			return false
+		if String(node.get_meta(MODULE_META, "")) != expected:
+			return false
+	return true
+
 static func _assemble_boundary(profile: ModularFighterProfile, assembler: ModularFighterAssembler, slots: Array, boundary: String) -> PackedStringArray:
 	var failures := PackedStringArray()
+	if _boundary_matches(profile, assembler, slots):
+		return failures
 	var modules = _manifest().get("modules", {})
 	if not (modules is Dictionary):
 		failures.append("armor_modules_contract_invalid")
@@ -261,6 +298,7 @@ static func _assemble_boundary(profile: ModularFighterProfile, assembler: Modula
 		sprite.position = Vector2(texture.get_width() * (0.5 - float(pivot[0])), texture.get_height() * (0.5 - float(pivot[1])))
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sprite.z_index = ModularFighterLayerPolicy.z_index_for(slot)
+		sprite.set_meta(MODULE_META, module_id)
 		pending.append({"slot": slot, "sprite": sprite, "module": module_id})
 	if not failures.is_empty():
 		for item in pending:
