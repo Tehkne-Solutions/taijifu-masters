@@ -7,7 +7,8 @@ const ANIMATIONS := [
     "idle", "run", "jump_start", "airborne", "fall",
     "attack_light", "guard", "dodge", "hit", "ko"
 ]
-const LIAN_WU_FRAMES := "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres"
+const LIAN_WU_PACK_ALIAS := "lian_wu"
+const LIAN_WU_FRAMES_LOGICAL := "first_playable_spriteframes"
 const RIVAL_FRAMES := "res://assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres"
 
 @onready var lian_wu: AnimatedSprite2D = $Stage/LianWu
@@ -22,13 +23,13 @@ func _ready() -> void:
     for animation_name in ANIMATIONS:
         animation_picker.add_item(animation_name)
     animation_picker.item_selected.connect(_on_animation_selected)
-    _load_character_frames(lian_wu, LIAN_WU_FRAMES, "Lian Wu")
+    _load_character_frames(lian_wu, TgapAssetLoader.resolve(LIAN_WU_PACK_ALIAS, LIAN_WU_FRAMES_LOGICAL), "Lian Wu")
     _load_character_frames(rival, RIVAL_FRAMES, "Rival de Treino")
     _play_selected_animation()
     _update_status()
 
 func _load_character_frames(target: AnimatedSprite2D, path: String, label: String) -> void:
-    if not ResourceLoader.exists(path):
+    if path.is_empty() or not ResourceLoader.exists(path):
         target.visible = false
         target.set_meta("review_error", "%s: SpriteFrames ausente" % label)
         return
