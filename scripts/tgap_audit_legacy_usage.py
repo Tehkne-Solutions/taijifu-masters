@@ -26,9 +26,16 @@ DEFAULT_POLICY = {
     "allowed_globs": [
         "scripts/runtime/asset_pack_registry.gd",
         "scripts/tgap_audit_legacy_usage.py",
+        "scripts/ci/**",
         "tests/**",
         "docs/**",
         ".github/**",
+    ],
+    "retired_globs": [
+        "scripts/runtime/pack_*_preview.gd",
+        "scripts/runtime/pack_08_arena_unit_runtime.gd",
+        "scripts/runtime/pack_99_battle_visual_runtime.gd",
+        "scripts/runtime/pack_99_combat_event_runtime.gd",
     ],
 }
 
@@ -40,11 +47,31 @@ def load_policy(path: Path | None) -> dict:
     return {
         "production_globs": parsed.get("production_globs", DEFAULT_POLICY["production_globs"]),
         "allowed_globs": parsed.get("allowed_globs", DEFAULT_POLICY["allowed_globs"]),
+        "retired_globs": parsed.get("retired_globs", DEFAULT_POLICY["retired_globs"]),
     }
 
 
+def _glob_variants(pattern: str) -> tuple[str, ...]:
+    """Approximate pathspec-style **/ semantics with Python fnmatch.
+
+    fnmatch treats ``**`` as ordinary ``*``, so ``scripts/**/*.gd`` does not
+    match ``scripts/foo.gd``. TGAP policy globs are pathspec-style and are
+    intended to include both direct children and deeper descendants.
+    """
+    variants = [pattern]
+    collapsed = pattern
+    while "/**/" in collapsed:
+        collapsed = collapsed.replace("/**/", "/", 1)
+        variants.append(collapsed)
+    return tuple(dict.fromkeys(variants))
+
+
 def matches_any(value: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatch(value, pattern) for pattern in patterns)
+    return any(
+        fnmatch.fnmatch(value, variant)
+        for pattern in patterns
+        for variant in _glob_variants(pattern)
+    )
 
 
 def iter_files(root: Path):
@@ -57,20 +84,23 @@ def iter_files(root: Path):
 
 
 def classify(path: str, policy: dict) -> str:
-    if matches_any(path, policy["allowed_globs"]):
+    if matches_any(path, policy.get("allowed_globs", [])):
         return "allowed_infrastructure"
-    if matches_any(path, policy["production_globs"]):
+    if matches_any(path, policy.get("retired_globs", [])):
+        return "retired_legacy"
+    if matches_any(path, policy.get("production_globs", [])):
         return "production"
     return "non_production"
 
 
-def audit(root: Path, policy: dict) -> dict:
+def audit(root: Path, policy: dict | None = None) -> dict:
+    effective_policy = policy if policy is not None else DEFAULT_POLICY
     findings = []
     counts = Counter()
     scope_counts = Counter()
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        scope = classify(relative, policy)
+        scope = classify(relative, effective_policy)
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
@@ -84,6 +114,8 @@ def audit(root: Path, policy: dict) -> dict:
                 severity = "info"
                 if scope == "production":
                     severity = "error" if kind in {"legacy_pack_root", "direct_tgap_path"} else "warning"
+                elif scope == "retired_legacy":
+                    severity = "retired"
                 findings.append({
                     "kind": kind,
                     "path": relative,
@@ -93,15 +125,18 @@ def audit(root: Path, policy: dict) -> dict:
                     "severity": severity,
                 })
     production = [item for item in findings if item["scope"] == "production"]
+    retired = [item for item in findings if item["scope"] == "retired_legacy"]
     return {
-        "schema": "tgap/legacy-audit/v2",
+        "schema": "tgap/legacy-audit/v3",
         "root": root.as_posix(),
-        "policy": policy,
+        "policy": effective_policy,
         "summary": {
             "total_findings": len(findings),
             "production_findings": len(production),
+            "retired_findings": len(retired),
             "files_affected": len({item["path"] for item in findings}),
             "production_files_affected": len({item["path"] for item in production}),
+            "retired_files_affected": len({item["path"] for item in retired}),
             "by_kind": dict(sorted(counts.items())),
             "by_scope": dict(sorted(scope_counts.items())),
         },
@@ -109,11 +144,12 @@ def audit(root: Path, policy: dict) -> dict:
     }
 
 
-def migrate(root: Path, policy: dict) -> list[str]:
+def migrate(root: Path, policy: dict | None = None) -> list[str]:
+    effective_policy = policy if policy is not None else DEFAULT_POLICY
     changed = []
     for path in iter_files(root):
         relative = path.relative_to(root).as_posix()
-        if path.suffix.lower() != ".gd" or classify(relative, policy) != "production":
+        if path.suffix.lower() != ".gd" or classify(relative, effective_policy) != "production":
             continue
         text = path.read_text(encoding="utf-8")
         updated = text

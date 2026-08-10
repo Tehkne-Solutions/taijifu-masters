@@ -1,6 +1,6 @@
 {
   "schema": "tgap/aliases/v1",
-  "version": 1,
+  "version": 2,
   "aliases": {
     "lian_wu": {
       "pack_id": "pack_01_lian_wu",
@@ -17,7 +17,8 @@
       "spriteframes": "runtime/lian_wu_spriteframes.tres",
       "runtime_manifest": "runtime/lian_wu_runtime_manifest.json",
       "atlas_png": "atlases/char_lian_wu__atlas.png",
-      "atlas_json": "atlases/char_lian_wu__atlas.json"
+      "atlas_json": "atlases/char_lian_wu__atlas.json",
+      "first_playable_spriteframes": "first_playable_lot_01/lian_wu_first_playable_frames.tres"
     }
   },
   "fallbacks": {
@@ -25,7 +26,8 @@
       "allowed_states": ["scaffold", "specified", "production", "validation"],
       "paths": {
         "spriteframes": "res://assets/pack_01_characters/lian_wu/runtime/lian_wu_spriteframes.tres",
-        "runtime_manifest": "res://assets/pack_01_characters/lian_wu/runtime/lian_wu_runtime_manifest.json"
+        "runtime_manifest": "res://assets/pack_01_characters/lian_wu/runtime/lian_wu_runtime_manifest.json",
+        "first_playable_spriteframes": "res://assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres"
       }
     }
   }

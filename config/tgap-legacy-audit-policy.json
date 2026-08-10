@@ -1,5 +1,5 @@
 {
-  "schema": "tgap/legacy-audit-policy/v1",
+  "schema": "tgap/legacy-audit-policy/v2",
   "production_globs": [
     "scripts/**/*.gd",
     "scenes/**/*.tscn",
@@ -8,8 +8,15 @@
   "allowed_globs": [
     "scripts/runtime/asset_pack_registry.gd",
     "scripts/tgap_audit_legacy_usage.py",
+    "scripts/ci/**",
     "tests/**",
     "docs/**",
     ".github/**"
+  ],
+  "retired_globs": [
+    "scripts/runtime/pack_*_preview.gd",
+    "scripts/runtime/pack_08_arena_unit_runtime.gd",
+    "scripts/runtime/pack_99_battle_visual_runtime.gd",
+    "scripts/runtime/pack_99_combat_event_runtime.gd"
   ]
 }
