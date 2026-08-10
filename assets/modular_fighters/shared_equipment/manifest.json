@@ -96,9 +96,9 @@
   },
   "promotion": {
     "runtime_activation": true,
-    "presenter_integration": false,
+    "presenter_integration": true,
     "creator_exposure": false,
-    "blocker": "presenter_integration_and_active_fight_validation_required"
+    "blocker": "active_fight_validation_required"
   },
-  "next_stage": "C68.4 — presenter integration and active-fight validation with Painel Guardião"
+  "next_stage": "C68.4 — definitive active-fight validation and evidence closeout"
 }
