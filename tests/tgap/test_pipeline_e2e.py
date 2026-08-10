@@ -128,16 +128,20 @@ def test_canonical_pack_crosses_full_pipeline_and_release(tmp_path: Path) -> Non
     assert report["promotion_blocked"] is False
     assert [step["name"] for step in report["steps"]] == [
         "contract_gate",
+        "semantic_gate",
         "inventory",
         "visual_gate",
         "animation_gate",
         "runtime_gate",
         "pipeline_contract_gate",
+        "pipeline_semantic_gate",
     ]
     assert all(step["passed"] for step in report["steps"])
     contract_report = json.loads((pack / "validation/contract-gate-report.json").read_text(encoding="utf-8"))
     assert contract_report["contract_gate_passed"] is True
     assert any(item["name"] == "pipeline_report" for item in contract_report["results"])
+    semantic_report = json.loads((pack / "validation/semantic-gate-report.json").read_text(encoding="utf-8"))
+    assert semantic_report["semantic_gate_passed"] is True
 
     output_a = tmp_path / "release-a"
     output_b = tmp_path / "release-b"
