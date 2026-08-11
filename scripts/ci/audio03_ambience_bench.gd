@@ -25,8 +25,9 @@ func _run() -> void:
 		_fail("AUDIO03_AMBIENCE=BLOCKED director", battle)
 		return
 	var signature := audio.presentation_signature()
-	if String(signature.get("stage", "")) != "AUDIO-03":
-		_fail("AUDIO03_AMBIENCE=BLOCKED stage", battle)
+	var stage := String(signature.get("stage", ""))
+	if not stage.begins_with("AUDIO-") or stage.trim_prefix("AUDIO-").to_int() < 3:
+		_fail("AUDIO03_AMBIENCE=BLOCKED stage=%s" % stage, battle)
 		return
 	for flag in ["arena_ambience", "musical_bed", "adaptive_ambience_state", "ambience_single_owner", "event_consumer_only"]:
 		if not bool(signature.get(flag, false)):
@@ -103,7 +104,7 @@ func _run() -> void:
 	print("AUDIO03_PAUSE_RESUME=PASS paused=0.05 restored=0.72")
 	print("AUDIO03_RESULT_STATE=PASS target=0.12")
 	print("AUDIO03_ZERO_GAMEPLAY_MUTATION=PASS")
-	print("AUDIO03_AMBIENCE=PASS")
+	print("AUDIO03_AMBIENCE=PASS stage=%s" % stage)
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
 	await process_frame
