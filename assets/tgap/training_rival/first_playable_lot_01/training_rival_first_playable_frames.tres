@@ -1,0 +1,58 @@
+[gd_resource type="SpriteFrames" load_steps=45 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f001.png" id="1"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f002.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f003.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f004.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f005.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/idle/char_training_rival__idle__f006.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f001.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f002.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f003.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f004.png" id="10"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f005.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f006.png" id="12"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f007.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/run/char_training_rival__run__f008.png" id="14"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/jump_start/char_training_rival__jump_start__f001.png" id="15"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/jump_start/char_training_rival__jump_start__f002.png" id="16"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/jump_start/char_training_rival__jump_start__f003.png" id="17"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/airborne/char_training_rival__airborne__f001.png" id="18"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/airborne/char_training_rival__airborne__f002.png" id="19"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/fall/char_training_rival__fall__f001.png" id="20"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/fall/char_training_rival__fall__f002.png" id="21"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f001.png" id="22"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f002.png" id="23"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f003.png" id="24"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f004.png" id="25"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f005.png" id="26"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/attack_light/char_training_rival__attack_light__f006.png" id="27"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/guard/char_training_rival__guard__f001.png" id="28"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/guard/char_training_rival__guard__f002.png" id="29"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/guard/char_training_rival__guard__f003.png" id="30"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/dodge/char_training_rival__dodge__f001.png" id="31"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/dodge/char_training_rival__dodge__f002.png" id="32"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/dodge/char_training_rival__dodge__f003.png" id="33"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/dodge/char_training_rival__dodge__f004.png" id="34"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/dodge/char_training_rival__dodge__f005.png" id="35"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/hit/char_training_rival__hit__f001.png" id="36"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/hit/char_training_rival__hit__f002.png" id="37"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/hit/char_training_rival__hit__f003.png" id="38"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f001.png" id="39"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f002.png" id="40"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f003.png" id="41"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f004.png" id="42"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f005.png" id="43"]
+[ext_resource type="Texture2D" path="res://assets/tgap/training_rival/first_playable_lot_01/animations/ko/char_training_rival__ko__f006.png" id="44"]
+
+[resource]
+animations = [{"frames": [{"duration": 1.0, "texture": ExtResource("1")}, {"duration": 1.0, "texture": ExtResource("2")}, {"duration": 1.0, "texture": ExtResource("3")}, {"duration": 1.0, "texture": ExtResource("4")}, {"duration": 1.0, "texture": ExtResource("5")}, {"duration": 1.0, "texture": ExtResource("6")}], "loop": true, "name": &"idle", "speed": 8.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("7")}, {"duration": 1.0, "texture": ExtResource("8")}, {"duration": 1.0, "texture": ExtResource("9")}, {"duration": 1.0, "texture": ExtResource("10")}, {"duration": 1.0, "texture": ExtResource("11")}, {"duration": 1.0, "texture": ExtResource("12")}, {"duration": 1.0, "texture": ExtResource("13")}, {"duration": 1.0, "texture": ExtResource("14")}], "loop": true, "name": &"run", "speed": 12.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("15")}, {"duration": 1.0, "texture": ExtResource("16")}, {"duration": 1.0, "texture": ExtResource("17")}], "loop": false, "name": &"jump_start", "speed": 10.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("18")}, {"duration": 1.0, "texture": ExtResource("19")}], "loop": true, "name": &"airborne", "speed": 8.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("20")}, {"duration": 1.0, "texture": ExtResource("21")}], "loop": true, "name": &"fall", "speed": 8.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("22")}, {"duration": 1.0, "texture": ExtResource("23")}, {"duration": 1.0, "texture": ExtResource("24")}, {"duration": 1.0, "texture": ExtResource("25")}, {"duration": 1.0, "texture": ExtResource("26")}, {"duration": 1.0, "texture": ExtResource("27")}], "loop": false, "name": &"attack_light", "speed": 10.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("28")}, {"duration": 1.0, "texture": ExtResource("29")}, {"duration": 1.0, "texture": ExtResource("30")}], "loop": true, "name": &"guard", "speed": 8.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("31")}, {"duration": 1.0, "texture": ExtResource("32")}, {"duration": 1.0, "texture": ExtResource("33")}, {"duration": 1.0, "texture": ExtResource("34")}, {"duration": 1.0, "texture": ExtResource("35")}], "loop": false, "name": &"dodge", "speed": 12.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("36")}, {"duration": 1.0, "texture": ExtResource("37")}, {"duration": 1.0, "texture": ExtResource("38")}], "loop": false, "name": &"hit", "speed": 10.00},
+{"frames": [{"duration": 1.0, "texture": ExtResource("39")}, {"duration": 1.0, "texture": ExtResource("40")}, {"duration": 1.0, "texture": ExtResource("41")}, {"duration": 1.0, "texture": ExtResource("42")}, {"duration": 1.0, "texture": ExtResource("43")}, {"duration": 1.0, "texture": ExtResource("44")}], "loop": false, "name": &"ko", "speed": 8.00}]
