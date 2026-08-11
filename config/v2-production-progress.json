@@ -1,20 +1,21 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VM02-C48-V2-ATTACK-CADENCE-IMPACT",
+  "updated_by_gate": "C28_CANONICAL_DUO_ACTIVE_FIGHT_VISUAL_REVIEW",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 79,
+    "progress_percent": 92,
+    "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
     "runtime_combat_core": 100,
     "round_match_loop": 100,
-    "canonical_player": 70,
-    "canonical_second_fighter": 20,
+    "canonical_player": 100,
+    "canonical_second_fighter": 100,
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
     "vfx_presentation": 72,
@@ -28,9 +29,11 @@
     "attack_cadence_impact": 100
   },
   "project": {
-    "progress_percent": 57
+    "progress_percent": 57,
+    "note": "Preserved because whole-project scope is broader than the V2 playable pillar and no authoritative whole-project recalculation gate was executed in this closeout."
   },
-  "blocked_art_dependencies": [
+  "blocked_art_dependencies": [],
+  "resolved_art_dependencies": [
     "training_rival_master",
     "training_rival_p01_to_p05",
     "remaining_lian_wu_canonical_animation_coverage"
@@ -60,13 +63,38 @@
       "timing_scale": true,
       "godot_bootstrap": true,
       "validated_commit": "c16a467cadd7"
+    },
+    "lian_wu_c64_runtime": {
+      "status": "approved_first_playable_runtime",
+      "manifest": "assets/tgap/pack_01_lian_wu/first_playable_lot_01/manifest.json",
+      "animations": 10,
+      "frames": 45,
+      "visual_review": "pass"
+    },
+    "training_rival_c28_runtime": {
+      "status": "validated_runtime_active_proxy_fallback_preserved",
+      "assets_frames": 44,
+      "animations": 10,
+      "game_import_merge": "200e607ba6cab23a7a79cfd8daf825b4e839c808",
+      "runtime_evidence": "config/c28-training-rival-runtime-evidence.json",
+      "real_assets_active": true
+    },
+    "c28_canonical_duo_visual_review": {
+      "status": "pass",
+      "merge_commit": "a0125d676b54ef5b5c26ea04884b06ccea25e6dd",
+      "evidence": "config/c28-canonical-duo-visual-evidence.json",
+      "lian_visual_height": 132.0,
+      "rival_visual_height": 133.716,
+      "height_ratio": 1.013,
+      "lian_combat_view_visible_fraction": 1.0,
+      "rival_combat_view_visible_fraction": 1.0,
+      "fallbacks_preserved": true
     }
   },
   "next_priority": [
-    "build the C49 packaged Windows playtest from the validated C48 combat feel runtime",
-    "run a repeated-F abuse test and confirm mash is no longer an efficient winning strategy",
-    "run a deliberate Tai Ji Fu timing test and compare effectiveness against repeated F",
-    "evaluate startup contact recovery feel before introducing any further combat tuning",
-    "resume canonical character art only after combat cadence is human-approved"
+    "audit the current procedural combat audio layer and define the canonical V2 audio contract instead of leaving the audio pillar at 0%",
+    "materialize and validate the minimum canonical combat audio set for strike, block, dodge, KO, round and UI feedback without changing combat timing ownership",
+    "close the remaining VFX/presentation gap from 72% using the canonical duo active-fight evidence as the visual baseline",
+    "run a post-canonical-duo human combat-feel playtest only after audio/VFX presentation is no longer masking impact readability"
   ]
 }
