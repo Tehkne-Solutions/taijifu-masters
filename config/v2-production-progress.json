@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "C28_CANONICAL_DUO_ACTIVE_FIGHT_VISUAL_REVIEW",
+  "updated_by_gate": "AUDIO-02_CANONICAL_SOUND_DESIGN",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 92,
+    "progress_percent": 96,
     "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
@@ -19,7 +19,7 @@
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
     "vfx_presentation": 72,
-    "audio": 0,
+    "audio": 65,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
     "interactive_playtest_handoff": 100,
@@ -27,6 +27,19 @@
     "combat_readability_balance": 100,
     "comparative_playtest_build": 100,
     "attack_cadence_impact": 100
+  },
+  "audio_progress": {
+    "progress_percent": 65,
+    "method": "weighted_audio_scope_completion",
+    "completed": {
+      "event_consumer_foundation": 25,
+      "round_and_ui_cues": 20,
+      "canonical_layering_and_spatial_identity": 20
+    },
+    "remaining": {
+      "arena_ambience_and_music": 20,
+      "final_mastering_and_accessibility_mix_controls": 15
+    }
   },
   "project": {
     "progress_percent": 57,
@@ -89,12 +102,32 @@
       "lian_combat_view_visible_fraction": 1.0,
       "rival_combat_view_visible_fraction": 1.0,
       "fallbacks_preserved": true
+    },
+    "audio01_foundation": {
+      "status": "pass",
+      "merge_commit": "93230d61d46705150e61c3114c89a4bf48ee8025",
+      "evidence": "config/audio01-foundation-evidence.json",
+      "fighter_connections": 2,
+      "impact_cues": 5,
+      "event_consumer_only": true,
+      "zero_gameplay_mutation": true
+    },
+    "audio02_canonical_sound": {
+      "status": "pass",
+      "merge_commit": "47745511cee43116320affc4c9f6b0c1105dec56",
+      "evidence": "config/audio02-canonical-sound-evidence.json",
+      "canonical_cues": 15,
+      "mix_rate_hz": 44100,
+      "procedural_layering": true,
+      "spatial_pan": true,
+      "round_and_ui_cues": true,
+      "zero_gameplay_mutation": true
     }
   },
   "next_priority": [
-    "audit the current procedural combat audio layer and define the canonical V2 audio contract instead of leaving the audio pillar at 0%",
-    "materialize and validate the minimum canonical combat audio set for strike, block, dodge, KO, round and UI feedback without changing combat timing ownership",
+    "build AUDIO-03 arena ambience and restrained musical bed without giving audio ownership of combat timing, damage or AI",
+    "add final audio mastering and accessibility mix controls after ambience/music behavior is runtime-validated",
     "close the remaining VFX/presentation gap from 72% using the canonical duo active-fight evidence as the visual baseline",
-    "run a post-canonical-duo human combat-feel playtest only after audio/VFX presentation is no longer masking impact readability"
+    "run a post-audio/VFX human combat-feel playtest once presentation no longer masks impact readability"
   ]
 }
