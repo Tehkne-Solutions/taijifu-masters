@@ -1,0 +1,38 @@
+name: VFX-02 Readability Contract Materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/vfx02-canonical-impact-readability'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Materialize VFX readability contract
+        run: |
+          python3 tools/vfx02_patch_readability_contract.py
+          grep -q '"stage": "VFX-02"' scripts/runtime/impact_director.gd
+          grep -q 'const MAX_PHYSICAL_IMPACT_EXTENT := ' scripts/runtime/impact_director.gd
+          grep -q 'const MAX_ELEMENT_RADIUS := ' scripts/runtime/impact_director.gd
+          grep -q 'const MAX_HITSTOP_SECONDS := 0.105' scripts/runtime/impact_director.gd
+          grep -q 'VFX01_PRESENTATION_OWNER=PASS stage=' scripts/ci/vfx01_presentation_owner_bench.gd
+      - name: Remove disposable writer
+        run: |
+          rm tools/vfx02_patch_readability_contract.py
+          rm .github/workflows/vfx02-readability-materializer.yml
+      - name: Commit materialized contract
+        run: |
+          git config user.name 'Tehkne Solutions Automation'
+          git config user.email 'automation@users.noreply.github.com'
+          git add scripts/runtime/impact_director.gd scripts/ci/vfx01_presentation_owner_bench.gd tools/vfx02_patch_readability_contract.py .github/workflows/vfx02-readability-materializer.yml
+          git diff --cached --check
+          git commit -m 'VFX-02: materialize canonical impact readability contract'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
