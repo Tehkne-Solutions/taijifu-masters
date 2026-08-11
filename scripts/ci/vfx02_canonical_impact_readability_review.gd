@@ -167,6 +167,10 @@ func _review_state(
 		0.86,
 		battle.player_two.global_position + Vector2(0.0, -38.0)
 	)
+	# Camera punch and hitstop are dispatched synchronously by the impact signal.
+	# Sample them before the next frame, where SHAKE_DECAY may already reduce strength.
+	var shake_strength := float(composition.get("_shake_strength"))
+	var time_scale_immediate := Engine.time_scale
 	await process_frame
 	var layer := feedback.get_node_or_null("CombatFeedbackLayer") as CanvasLayer
 	var popup := _latest_popup(layer)
@@ -185,16 +189,14 @@ func _review_state(
 	if critical and (critical_label == null or critical_label.text != expected):
 		_fail("VFX02_READABILITY=BLOCKED critical_label state=%s" % state_id, battle)
 		return false
-	var shake_strength := float(composition.get("_shake_strength"))
 	var camera := battle.camera as Camera2D
 	var camera_offset := camera.offset.length() if camera != null else INF
 	if camera_offset > 7.15:
 		_fail("VFX02_READABILITY=BLOCKED camera_offset state=%s value=%.3f" % [state_id, camera_offset], battle)
 		return false
-	if state_id != &"blocked" and shake_strength <= 0.0:
+	if shake_strength <= 0.0:
 		_fail("VFX02_READABILITY=BLOCKED camera_punch_missing state=%s" % state_id, battle)
 		return false
-	var time_scale_immediate := Engine.time_scale
 	if time_scale_immediate >= 0.99:
 		_fail("VFX02_READABILITY=BLOCKED hitstop_missing state=%s" % state_id, battle)
 		return false
