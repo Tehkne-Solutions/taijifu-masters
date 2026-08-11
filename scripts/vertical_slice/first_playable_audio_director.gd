@@ -4,6 +4,8 @@ extends Node
 signal cue_emitted(cue_id: StringName, intensity: float)
 signal ambience_state_changed(state_id: StringName, target_level: float)
 
+const MIX_POLICY_SCRIPT := preload("res://scripts/vertical_slice/first_playable_audio_mix_policy.gd")
+
 const CONNECT_INTERVAL := 0.35
 const MIX_RATE := 44100.0
 const AMBIENCE_MIX_RATE := 22050.0
@@ -44,9 +46,12 @@ var _ambience_target := 0.12
 var _ambience_state: StringName = &"pre_fight"
 var _pre_pause_ambience_target := 0.12
 var _pre_pause_ambience_state: StringName = &"pre_fight"
+var _mix_policy: FirstPlayableAudioMixPolicy
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_mix_policy = MIX_POLICY_SCRIPT.new() as FirstPlayableAudioMixPolicy
+	_mix_policy.load_preferences()
 	_install_combat_player()
 	_install_ambience_player()
 	_connect_parent_presentation()
@@ -87,7 +92,7 @@ func _process(delta: float) -> void:
 
 func presentation_signature() -> Dictionary:
 	return {
-		"stage": "AUDIO-03",
+		"stage": "AUDIO-04",
 		"impact_audio": true,
 		"round_audio": true,
 		"ui_audio": true,
@@ -100,6 +105,12 @@ func presentation_signature() -> Dictionary:
 		"musical_bed": true,
 		"adaptive_ambience_state": true,
 		"ambience_single_owner": true,
+		"final_mastering": true,
+		"soft_limiter": true,
+		"master_ceiling": _mix_policy.master_ceiling(),
+		"accessibility_mix_controls": true,
+		"persistent_mix_preferences": true,
+		"accessibility_profiles": ["standard", "combat_focus", "reduced_dynamics", "mono_accessible"],
 		"mix_rate_hz": int(MIX_RATE),
 		"ambience_mix_rate_hz": int(AMBIENCE_MIX_RATE),
 		"external_audio_assets_required": false,
@@ -112,7 +123,7 @@ func presentation_signature() -> Dictionary:
 		"round_cues": ["countdown", "fight", "ko", "timeout", "round_win", "round_loss"],
 		"ui_cues": ["ui_pause", "ui_resume", "ui_select", "ui_confirm"],
 		"ambience_states": ["pre_fight", "countdown", "battle", "resolution", "result", "paused"],
-		"remaining_audio_scope": ["final_mastering", "accessibility_mix_controls"],
+		"remaining_audio_scope": [],
 		"balance_changes": false,
 		"signature": "Tehkné Solutions"
 	}
@@ -201,6 +212,34 @@ func ambience_clock_seconds() -> float:
 func ambience_player_active() -> bool:
 	return is_instance_valid(_ambience_player) and _ambience_player.playing and is_instance_valid(_ambience_playback)
 
+func audio_mix_snapshot() -> Dictionary:
+	return _mix_policy.snapshot() if _mix_policy != null else {}
+
+func accessibility_profile() -> StringName:
+	return _mix_policy.profile_id() if _mix_policy != null else &"standard"
+
+func accessibility_profiles() -> Array[StringName]:
+	return _mix_policy.profile_ids() if _mix_policy != null else []
+
+func set_accessibility_profile(profile_id: StringName) -> bool:
+	return _mix_policy.set_profile(profile_id, true) if _mix_policy != null else false
+
+func cycle_accessibility_profile() -> StringName:
+	return _mix_policy.cycle_profile() if _mix_policy != null else &"standard"
+
+func audio_level(channel_id: StringName) -> float:
+	return _mix_policy.level(channel_id) if _mix_policy != null else 1.0
+
+func adjust_audio_level(channel_id: StringName, direction: int) -> float:
+	return _mix_policy.adjust_level_step(channel_id, direction) if _mix_policy != null else 1.0
+
+func reset_master_peak() -> void:
+	if _mix_policy != null:
+		_mix_policy.reset_peak_observed()
+
+func master_peak_observed() -> float:
+	return _mix_policy.peak_observed() if _mix_policy != null else 0.0
+
 func _connect_parent_presentation() -> void:
 	var controller := get_parent()
 	if controller == null or not controller.has_signal("presentation_cue_requested"):
@@ -267,18 +306,21 @@ func _on_impact_resolved(
 
 func _dispatch_cue(cue_id: StringName, intensity: float, pan: float) -> void:
 	_last_cue = cue_id
-	_last_pan = clampf(pan, -MAX_WORLD_PAN, MAX_WORLD_PAN)
+	_last_pan = _mix_policy.apply_pan(clampf(pan, -MAX_WORLD_PAN, MAX_WORLD_PAN))
 	_cue_counts[cue_id] = cue_count(cue_id) + 1
 	cue_emitted.emit(cue_id, intensity)
 	var recipe := cue_recipe(cue_id)
 	var amplitude := float(recipe["amplitude"]) * lerpf(0.72, 1.0, intensity)
+	amplitude = _mix_policy.shape_cue_amplitude(amplitude)
+	var channel_id: StringName = &"ui" if cue_id in [CUE_UI_PAUSE, CUE_UI_RESUME, CUE_UI_SELECT, CUE_UI_CONFIRM] else &"combat"
 	_emit_layered(
 		recipe["frequencies"],
 		float(recipe["duration"]),
 		amplitude,
 		float(recipe["sweep_hz"]),
 		float(recipe["decay_power"]),
-		_last_pan
+		_last_pan,
+		channel_id
 	)
 
 func _recipe(frequencies: Array, duration: float, amplitude: float, sweep_hz: float, decay_power: float) -> Dictionary:
@@ -302,7 +344,8 @@ func _emit_layered(
 	amplitude: float,
 	sweep_hz: float,
 	decay_power: float,
-	pan: float
+	pan: float,
+	channel_id: StringName
 ) -> void:
 	if not is_instance_valid(_playback):
 		return
@@ -322,7 +365,8 @@ func _emit_layered(
 			sample += sin(TAU * frequency * t)
 		sample /= maxf(1.0, float(frequencies.size()))
 		sample = clampf(sample * amplitude * envelope, -0.95, 0.95)
-		_playback.push_frame(Vector2(sample * left_gain, sample * right_gain))
+		var mastered := _mix_policy.master_frame(Vector2(sample * left_gain, sample * right_gain), channel_id)
+		_playback.push_frame(mastered)
 
 func _fill_ambience() -> void:
 	if not is_instance_valid(_ambience_playback):
@@ -365,7 +409,8 @@ func _fill_ambience() -> void:
 			+ temple_breath * 0.032
 			+ battle_pulse * 0.085 * battle_amount
 		) * base_level
-		_ambience_playback.push_frame(Vector2(clampf(left, -0.40, 0.40), clampf(right, -0.40, 0.40)))
+		var mastered := _mix_policy.master_frame(Vector2(clampf(left, -0.40, 0.40), clampf(right, -0.40, 0.40)), &"ambience")
+		_ambience_playback.push_frame(mastered)
 		_ambience_clock += 1.0 / AMBIENCE_MIX_RATE
 
 # Tehkné Solutions
