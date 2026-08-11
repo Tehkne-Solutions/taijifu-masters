@@ -32,11 +32,16 @@ jobs:
       - name: Checkout do jogo
         uses: actions/checkout@v4
 
-      - name: Checkout dos assets
+      - name: Checkout dos assets com LFS materializado
         uses: actions/checkout@v4
         with:
           repository: Tehkne-Solutions/taijifu-masters-assets
           path: external/taijifu-masters-assets
+          lfs: true
+
+      - name: Garantir objetos LFS dos assets
+        working-directory: external/taijifu-masters-assets
+        run: git lfs pull
 
       - name: Configurar Python
         uses: actions/setup-python@v5
