@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'config/v2-rival-intake-contract.json'
+      - 'config/c28-training-rival-runtime-evidence.json'
       - 'assets/tgap/training_rival/first_playable_lot_01/**'
       - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
       - 'tools/import_training_rival_c28_from_assets.py'
@@ -32,7 +33,7 @@ jobs:
           python -m py_compile tools/import_training_rival_c28_from_assets.py
           python -m py_compile tools/validate_training_rival_c28_import.py
           echo 'VM02_C28_PYTHON_PARSE=PASS'
-      - name: Validate imported Training Rival 44/44
+      - name: Validate imported Training Rival 44/44 and frozen runtime evidence
         shell: bash
         run: |
           set -o pipefail
@@ -41,8 +42,9 @@ jobs:
           grep -q 'VM02_C28_IMPORTED_HASHES=PASS frames=44' c28-training-rival-import.log
           grep -q 'VM02_C28_PRESENTER_PATH=PASS' c28-training-rival-import.log
           grep -q 'VM02_C28_SPRITEFRAMES_STATIC=PASS animations=10 frames=44' c28-training-rival-import.log
+          grep -q 'VM02_C28_RUNTIME_EVIDENCE=PASS frozen=true' c28-training-rival-import.log
           grep -q 'VM02_C28_DISPOSABLE_WRITER=ABSENT' c28-training-rival-import.log
-          grep -q 'VM02_C28_PROXY_RETIREMENT=BLOCKED godot_runtime_bench_required=true' c28-training-rival-import.log
+          grep -q 'VM02_C28_RUNTIME_READY=PASS presenter_using_real_assets=true fallback_preserved=true' c28-training-rival-import.log
           grep -q 'SIGNATURE=Tehkné Solutions' c28-training-rival-import.log
       - uses: actions/upload-artifact@v4
         if: always()
@@ -50,9 +52,10 @@ jobs:
           name: C28-TRAINING-RIVAL-44-IMPORT
           path: |
             c28-training-rival-import.log
+            config/c28-training-rival-runtime-evidence.json
             assets/tgap/training_rival/first_playable_lot_01/c28-import-manifest.json
             assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres
           if-no-files-found: ignore
           retention-days: 30
       - name: Summary
-        run: echo 'C28 Training Rival 44/44 import gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C28 Training Rival 44/44 import + frozen runtime evidence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
