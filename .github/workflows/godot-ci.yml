@@ -127,6 +127,27 @@ jobs:
           set -o pipefail
           ./godot --headless --path . --script res://scripts/ci/ghost_library_smoke_test.gd 2>&1 | tee godot-ghost-library.log
 
+      - name: C28 validar Training Rival 44/44 em runtime
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c28-training-rival-44-import')
+        run: |
+          set -o pipefail
+          ./godot --headless --path . --script res://tests/training_rival_c28_runtime_bench.gd 2>&1 | tee godot-c28-training-rival.log
+          grep -q 'VM02_C28_GODOT_SPRITEFRAMES=PASS animations=10 frames=44' godot-c28-training-rival.log
+          grep -q 'VM02_C28_PRESENTER_ACTIVATION=PASS using_real_assets=true' godot-c28-training-rival.log
+          grep -q 'VM02_C28_GODOT_RUNTIME_BENCH=PASS' godot-c28-training-rival.log
+          grep -q 'VM02_C28_PROXY_RETIREMENT=BLOCKED code_fallback_preserved=true' godot-c28-training-rival.log
+
+      - name: Publicar evidência C28 Training Rival
+        if: always() && github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c28-training-rival-44-import')
+        uses: actions/upload-artifact@v4
+        with:
+          name: C28-TRAINING-RIVAL-44-RUNTIME-BENCH
+          path: |
+            godot-c28-training-rival.log
+            assets/tgap/training_rival/first_playable_lot_01/c28-import-manifest.json
+            assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres
+          if-no-files-found: ignore
+
       - name: C68.1 validar Armor Pack 01 em runtime de luta
         if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/c68-1-armor-pack01-v2')
         run: |
@@ -176,6 +197,7 @@ jobs:
             godot-input-ghost-mastery.log
             godot-ghost-sharing.log
             godot-ghost-library.log
+            godot-c28-training-rival.log
             godot-c68-1-armor-runtime.log
             godot-c68-1-armor-visual.log
           if-no-files-found: ignore
