@@ -36,8 +36,9 @@ def main() -> int:
             return block(f"missing={path.relative_to(ROOT).as_posix()}")
 
     presenter_text = PRESENTER.read_text(encoding="utf-8")
-    expected_res = "res://" + str(contract["sprite_frames_resource"])
-    if expected_res not in presenter_text:
+    expected_root_literal = 'const LOT_ROOT := "res://' + str(contract["destination_root"]) + '"'
+    expected_resource_suffix = 'const SPRITE_FRAMES_PATH := LOT_ROOT + "/training_rival_first_playable_frames.tres"'
+    if expected_root_literal not in presenter_text or expected_resource_suffix not in presenter_text:
         return block("presenter_resource_path_drift")
 
     manifest = json.loads(import_manifest_path.read_text(encoding="utf-8"))
