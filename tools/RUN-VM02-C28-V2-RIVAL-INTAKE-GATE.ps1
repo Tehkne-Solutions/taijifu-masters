@@ -102,9 +102,10 @@ Write-Host "VM02_C28_V2_RIVAL_INTAKE_GATE=PASS"
 Write-Host "SIGNATURE=Tehkné Solutions"
 
 . $reportLib
-$branchName = (git branch --show-current).Trim()
-if ([string]::IsNullOrWhiteSpace($branchName)) { $branchName = "detached" }
-$commit = (git rev-parse --short=12 HEAD).Trim()
+$branchOutput = @(& git branch --show-current 2>$null)
+$branchName = if ($branchOutput.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$branchOutput[0])) { ([string]$branchOutput[0]).Trim() } else { "detached" }
+$commitOutput = @(& git rev-parse --short=12 HEAD 2>$null)
+$commit = if ($commitOutput.Count -gt 0) { ([string]$commitOutput[0]).Trim() } else { "unknown" }
 Write-TehkneGateReport -Gate "VM02-C28-V2-RIVAL-INTAKE-BRIDGE" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
   CONTRACT="PASS"
   SOURCE_REVISION=[string]$contract.source_revision
