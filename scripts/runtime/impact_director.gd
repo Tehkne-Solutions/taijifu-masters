@@ -3,6 +3,15 @@ extends Node2D
 
 const CONNECT_INTERVAL := 0.35
 const MAX_BURSTS := 26
+const IMPACT_LENGTH_BASE := 28.0
+const IMPACT_LENGTH_INTENSITY := 42.0
+const IMPACT_LENGTH_PROGRESS := 12.0
+const ELEMENT_RADIUS_BASE := 18.0
+const ELEMENT_RADIUS_INTENSITY := 24.0
+const ELEMENT_RADIUS_PROGRESS := 16.0
+const MAX_PHYSICAL_IMPACT_EXTENT := IMPACT_LENGTH_BASE + IMPACT_LENGTH_INTENSITY + IMPACT_LENGTH_PROGRESS
+const MAX_ELEMENT_RADIUS := ELEMENT_RADIUS_BASE + ELEMENT_RADIUS_INTENSITY + ELEMENT_RADIUS_PROGRESS
+const MAX_HITSTOP_SECONDS := 0.105
 const ELEMENT_COLORS := {
 	&"fire": Color(1.0, 0.28, 0.08),
 	&"water": Color(0.18, 0.64, 1.0),
@@ -170,7 +179,7 @@ func _draw() -> void:
 			draw_arc(center, (34.0 + progress * 22.0) * scale, 0.0, TAU, 20, Color(color, alpha * 0.72), 4.0)
 
 func _draw_impact_lines(center: Vector2, path_id: StringName, color: Color, intensity: float, progress: float) -> void:
-	var length := 28.0 + intensity * 42.0 + progress * 12.0
+	var length := IMPACT_LENGTH_BASE + intensity * IMPACT_LENGTH_INTENSITY + progress * IMPACT_LENGTH_PROGRESS
 	match path_id:
 		&"tai":
 			for offset in [-16.0, 0.0, 16.0]:
@@ -184,7 +193,7 @@ func _draw_impact_lines(center: Vector2, path_id: StringName, color: Color, inte
 			draw_arc(center + Vector2(8.0, -6.0), length * 0.82, -0.8, 3.5, 22, Color(color, color.a * 0.72), 2.0)
 
 func _draw_element_feedback(center: Vector2, element_id: StringName, color: Color, intensity: float, progress: float) -> void:
-	var radius := 18.0 + intensity * 24.0 + progress * 16.0
+	var radius := ELEMENT_RADIUS_BASE + intensity * ELEMENT_RADIUS_INTENSITY + progress * ELEMENT_RADIUS_PROGRESS
 	match element_id:
 		&"fire":
 			for index in range(6):
@@ -261,7 +270,7 @@ func _interaction_color(interaction_id: StringName, element_id: StringName) -> C
 func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: float) -> Array[float]:
 	if result_id == &"evaded": return [0.0, 1.0]
 	if result_id == &"parried": return [0.075, 0.08]
-	if result_id == &"posture_break": return [0.105, 0.055]
+	if result_id == &"posture_break": return [MAX_HITSTOP_SECONDS, 0.055]
 	var duration := 0.022 + intensity * 0.038
 	var scale := 0.18
 	if path_id == &"ji":
@@ -275,8 +284,13 @@ func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: flo
 
 func presentation_signature() -> Dictionary:
 	return {
-		"stage": "VFX-01",
+		"stage": "VFX-02",
 		"world_space_impact_shapes": true,
+		"canonical_impact_readability_contract": true,
+		"max_physical_impact_extent_world": MAX_PHYSICAL_IMPACT_EXTENT,
+		"max_element_radius_world": MAX_ELEMENT_RADIUS,
+		"max_hitstop_seconds": MAX_HITSTOP_SECONDS,
+		"max_bursts": MAX_BURSTS,
 		"elemental_shapes": true,
 		"elemental_state_text": true,
 		"elemental_interaction_text": true,
