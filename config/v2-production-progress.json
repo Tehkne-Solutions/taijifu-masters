@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "AUDIO-02_CANONICAL_SOUND_DESIGN",
+  "updated_by_gate": "AUDIO-03_AMBIENCE_MUSICAL_BED",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 96,
+    "progress_percent": 97,
     "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
@@ -19,7 +19,7 @@
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
     "vfx_presentation": 72,
-    "audio": 65,
+    "audio": 85,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
     "interactive_playtest_handoff": 100,
@@ -29,15 +29,15 @@
     "attack_cadence_impact": 100
   },
   "audio_progress": {
-    "progress_percent": 65,
+    "progress_percent": 85,
     "method": "weighted_audio_scope_completion",
     "completed": {
       "event_consumer_foundation": 25,
       "round_and_ui_cues": 20,
-      "canonical_layering_and_spatial_identity": 20
+      "canonical_layering_and_spatial_identity": 20,
+      "arena_ambience_and_music": 20
     },
     "remaining": {
-      "arena_ambience_and_music": 20,
       "final_mastering_and_accessibility_mix_controls": 15
     }
   },
@@ -122,11 +122,29 @@
       "spatial_pan": true,
       "round_and_ui_cues": true,
       "zero_gameplay_mutation": true
+    },
+    "audio021_single_owner": {
+      "status": "pass",
+      "merge_commit": "052bb3236cc34c2896990349c642791821c15c06",
+      "audio_director_count": 1,
+      "audio_owner": "first_playable_scene",
+      "environment_installs_audio": false
+    },
+    "audio03_ambience": {
+      "status": "pass",
+      "merge_commit": "b1344ba25a49aa7b8831452f63caeadc5d7827dc",
+      "evidence": "config/audio03-ambience-evidence.json",
+      "ambience_mix_rate_hz": 22050,
+      "adaptive_states": true,
+      "battle_target": 0.72,
+      "paused_target": 0.05,
+      "result_target": 0.12,
+      "audio02_regression": "pass",
+      "zero_gameplay_mutation": true
     }
   },
   "next_priority": [
-    "build AUDIO-03 arena ambience and restrained musical bed without giving audio ownership of combat timing, damage or AI",
-    "add final audio mastering and accessibility mix controls after ambience/music behavior is runtime-validated",
+    "build AUDIO-04 final mastering and accessibility mix controls over the single-owner AUDIO-03 runtime",
     "close the remaining VFX/presentation gap from 72% using the canonical duo active-fight evidence as the visual baseline",
     "run a post-audio/VFX human combat-feel playtest once presentation no longer masks impact readability"
   ]
