@@ -1,0 +1,67 @@
+name: C28 Canonical Duo Visual Review
+
+on:
+  pull_request:
+    paths:
+      - 'assets/tgap/pack_01_lian_wu/**'
+      - 'assets/tgap/training_rival/**'
+      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
+      - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
+      - 'scripts/ci/c28_canonical_duo_visual_review.gd'
+      - '.github/workflows/review-c28-canonical-duo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-duo-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee c28-duo-import.log
+      - name: Capture and validate canonical duo in active fight
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot \
+            --path . \
+            --rendering-method gl_compatibility \
+            --audio-driver Dummy \
+            --script res://scripts/ci/c28_canonical_duo_visual_review.gd \
+            2>&1 | tee c28-duo-visual.log
+          grep -q 'C28_DUO_REAL_ASSETS=PASS lian=true rival=true fallback_hidden=true' c28-duo-visual.log
+          grep -q 'C28_DUO_SCALE=PASS' c28-duo-visual.log
+          grep -q 'C28_DUO_FOOTLINE=PASS' c28-duo-visual.log
+          grep -q 'C28_DUO_VISUAL=PASS' c28-duo-visual.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: C28-CANONICAL-DUO-VISUAL-REVIEW
+          path: |
+            c28-duo-import.log
+            c28-duo-visual.log
+            artifacts/c28_duo/C28_CANONICAL_DUO.review-1920x1080.png
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'C28 canonical Lian Wu + Training Rival active-fight visual review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
