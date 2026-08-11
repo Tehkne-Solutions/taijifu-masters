@@ -47,6 +47,9 @@ jobs:
             --audio-driver Dummy \
             --script res://scripts/ci/vfx02_canonical_impact_readability_review.gd \
             2>&1 | tee vfx02-readability.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' vfx02-readability.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' vfx02-readability.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' vfx02-readability.log
           grep -q 'VFX02_CANONICAL_DUO=PASS' vfx02-readability.log
           grep -q 'VFX02_EFFECT_SCALE=PASS' vfx02-readability.log
           grep -q 'VFX02_CAMERA_PUNCH=PASS max_px=7.00' vfx02-readability.log
