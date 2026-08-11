@@ -1,0 +1,34 @@
+name: VFX-02 Review Sampling Materializer
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/vfx02-canonical-impact-readability'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch synchronous presentation sampling
+        run: |
+          python3 tools/vfx02_patch_review_sampling.py
+          grep -q 'Sample them before the next frame' scripts/ci/vfx02_canonical_impact_readability_review.gd
+      - name: Remove disposable writer
+        run: |
+          rm tools/vfx02_patch_review_sampling.py
+          rm .github/workflows/vfx02-review-sampling-materializer.yml
+      - name: Commit corrected review bench
+        run: |
+          git config user.name 'Tehkne Solutions Automation'
+          git config user.email 'automation@users.noreply.github.com'
+          git add scripts/ci/vfx02_canonical_impact_readability_review.gd tools/vfx02_patch_review_sampling.py .github/workflows/vfx02-review-sampling-materializer.yml
+          git diff --cached --check
+          git commit -m 'VFX-02: sample camera punch and hitstop at impact dispatch'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
