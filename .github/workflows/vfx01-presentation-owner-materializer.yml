@@ -1,0 +1,39 @@
+name: VFX-01 Presentation Owner Materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/vfx01-single-presentation-owner'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch ImpactDirector ownership boundaries
+        run: |
+          python3 tools/vfx01_patch_impact_director.py
+          grep -q '"stage": "VFX-01"' scripts/runtime/impact_director.gd
+          grep -q '"camera_shake_owner": false' scripts/runtime/impact_director.gd
+          grep -q '"physical_impact_text_emitted_here": false' scripts/runtime/impact_director.gd
+          grep -q '"hitstop_owner": true' scripts/runtime/impact_director.gd
+          ! grep -q 'camera.offset' scripts/runtime/impact_director.gd
+          ! grep -q 'func _start_shake' scripts/runtime/impact_director.gd
+      - name: Remove disposable writer
+        run: |
+          rm tools/vfx01_patch_impact_director.py
+          rm .github/workflows/vfx01-presentation-owner-materializer.yml
+      - name: Commit materialized product
+        run: |
+          git config user.name 'Tehkne Solutions Automation'
+          git config user.email 'automation@users.noreply.github.com'
+          git add scripts/runtime/impact_director.gd tools/vfx01_patch_impact_director.py .github/workflows/vfx01-presentation-owner-materializer.yml
+          git diff --cached --check
+          git commit -m 'VFX-01: enforce single camera and physical-text presentation owners'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
