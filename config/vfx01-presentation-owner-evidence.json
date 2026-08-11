@@ -1,0 +1,33 @@
+{
+  "schema": "tehkne/taijifu-vfx01-presentation-owner-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "VFX-01",
+  "status": "pass",
+  "validated_product_head_sha": "ae7dfe7004fcfd754878af1e30b846b5b17effbd",
+  "workflow": {
+    "name": "VFX-01 Presentation Owner Gate",
+    "run_id": 31490085890,
+    "job_id": 93774246096,
+    "artifact_id": 9100663951,
+    "artifact_name": "VFX-01-PRESENTATION-OWNER-EVIDENCE",
+    "artifact_digest": "sha256:d0973661ca4dfb30c869d75e958cfcc149dffeba5f44e311e9de6ae530c23c75"
+  },
+  "proof": {
+    "camera_owner": "FightCameraComposition",
+    "physical_text_owner": "FirstPlayableCombatFeedbackRuntime",
+    "impact_world_shapes": "pass",
+    "elemental_text": "BURN!",
+    "hitstop_owner": "ImpactDirector",
+    "popup_budget_max": 2,
+    "popup_active_observed": 1,
+    "zero_gameplay_mutation": true
+  },
+  "ownership_policy": {
+    "impact_director_writes_camera_offset": false,
+    "impact_director_emits_physical_text": false,
+    "impact_director_keeps_elemental_text": true,
+    "impact_director_keeps_hitstop": true,
+    "camera_punch_delegated": true
+  },
+  "next_stage": "VFX-02_CANONICAL_IMPACT_READABILITY"
+}
