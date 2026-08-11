@@ -9,6 +9,7 @@ on:
       - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
       - 'tools/import_training_rival_c28_from_assets.py'
       - 'tools/validate_training_rival_c28_import.py'
+      - 'tools/RUN-VM02-C28-V2-RIVAL-INTAKE-GATE.ps1'
       - 'tests/training_rival_c28_runtime_bench.gd'
       - '.github/workflows/validate-c28-training-rival-import.yml'
       - '.github/workflows/godot-ci.yml'
@@ -20,7 +21,7 @@ permissions:
 jobs:
   c28-import:
     runs-on: ubuntu-22.04
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +47,38 @@ jobs:
           grep -q 'VM02_C28_DISPOSABLE_WRITER=ABSENT' c28-training-rival-import.log
           grep -q 'VM02_C28_RUNTIME_READY=PASS presenter_using_real_assets=true fallback_preserved=true' c28-training-rival-import.log
           grep -q 'SIGNATURE=Tehkné Solutions' c28-training-rival-import.log
+      - name: Validate historical PowerShell C28 entrypoint end-to-end
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/RUN-VM02-C28-V2-RIVAL-INTAKE-GATE.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          )
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Host 'VM02_C28_POWERSHELL_PARSE=PASS'
+          $output = @(& pwsh -NoProfile -File tools/RUN-VM02-C28-V2-RIVAL-INTAKE-GATE.ps1 2>&1)
+          $exitCode = $LASTEXITCODE
+          $output | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { throw "VM02_C28_POWERSHELL_GATE=BLOCKED exit=$exitCode" }
+          $text = $output -join "`n"
+          foreach ($marker in @(
+            'VM02_C28_REPO_ROOT=PASS',
+            'VM02_C28_VALIDATOR=PASS',
+            'VM02_C28_FRAME_COUNT=44/44',
+            'VM02_C28_RIVAL_CANONICAL_READY=PASS',
+            'VM02_C28_REAL_ASSETS_ACTIVE=PASS',
+            'VM02_C28_PROCEDURAL_FALLBACK=PRESERVED',
+            'VM02_C28_V2_RIVAL_INTAKE_GATE=PASS'
+          )) {
+            if (-not $text.Contains($marker)) { throw "VM02_C28_POWERSHELL_GATE=BLOCKED missing_marker=$marker" }
+          }
+          Write-Host 'VM02_C28_POWERSHELL_GATE=PASS runtime_active=true frames=44/44'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -58,4 +91,4 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
       - name: Summary
-        run: echo 'C28 Training Rival 44/44 import + frozen runtime evidence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C28 Training Rival 44/44 import + runtime evidence + PowerShell compatibility — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
