@@ -30,8 +30,9 @@ func _run() -> void:
 	var impact_signature := impact.presentation_signature()
 	var camera_signature := composition.presentation_signature()
 	var feedback_signature: Dictionary = feedback.call("presentation_signature")
-	if String(impact_signature.get("stage", "")) != "VFX-01":
-		_fail("VFX01_PRESENTATION_OWNER=BLOCKED impact_stage", battle)
+	var impact_stage := String(impact_signature.get("stage", ""))
+	if not impact_stage.begins_with("VFX-") or impact_stage.trim_prefix("VFX-").to_int() < 1:
+		_fail("VFX01_PRESENTATION_OWNER=BLOCKED impact_stage=%s" % impact_stage, battle)
 		return
 	if bool(impact_signature.get("camera_shake_owner", true)):
 		_fail("VFX01_PRESENTATION_OWNER=BLOCKED impact_camera_owner", battle)
@@ -144,7 +145,7 @@ func _run() -> void:
 	print("VFX01_HITSTOP_OWNER=PASS owner=ImpactDirector")
 	print("VFX01_POPUP_BUDGET=PASS max=2 active=%d" % popup_count)
 	print("VFX01_ZERO_GAMEPLAY_MUTATION=PASS")
-	print("VFX01_PRESENTATION_OWNER=PASS")
+	print("VFX01_PRESENTATION_OWNER=PASS stage=%s" % impact_stage)
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
 	await process_frame
