@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_difficulty_controller.gd" id="6_difficulty"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_hud_controller.gd" id="7_hud"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_combat_guide.gd" id="8_guide"]
+[ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_audio_director.gd" id="9_audio"]
 
 [node name="FirstPlayable" type="Node2D"]
 script = ExtResource("1_controller")
@@ -30,6 +31,9 @@ script = ExtResource("6_difficulty")
 
 [node name="HudController" type="Node" parent="."]
 script = ExtResource("7_hud")
+
+[node name="AudioDirector" type="Node" parent="."]
+script = ExtResource("9_audio")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(1400, 500)
