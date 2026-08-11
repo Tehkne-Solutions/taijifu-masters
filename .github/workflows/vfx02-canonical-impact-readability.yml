@@ -6,6 +6,7 @@ on:
       - 'scripts/runtime/impact_director.gd'
       - 'scripts/ci/vfx01_presentation_owner_bench.gd'
       - 'scripts/ci/vfx02_canonical_impact_readability_review.gd'
+      - 'config/v2-arena-intake-contract.json'
       - 'config/vfx02-canonical-impact-readability-evidence.json'
       - '.github/workflows/vfx02-canonical-impact-readability.yml'
   workflow_dispatch:
@@ -19,6 +20,52 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Sync canonical arena from official assets source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ASSETS_ROOT="$RUNNER_TEMP/taijifu-masters-assets"
+          rm -rf "$ASSETS_ROOT"
+          git clone --depth 1 https://github.com/Tehkne-Solutions/taijifu-masters-assets.git "$ASSETS_ROOT"
+          python3 - <<'PY' 2>&1 | tee vfx02-arena-intake.log
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          repo_root = Path.cwd()
+          assets_root = Path(os.environ["ASSETS_ROOT"])
+          contract = json.loads((repo_root / "config/v2-arena-intake-contract.json").read_text(encoding="utf-8"))
+
+          if contract.get("signature") != "Tehkné Solutions":
+              raise SystemExit("VFX02_ARENA_INTAKE=BLOCKED reason=contract_signature")
+          if contract.get("arena_id") != "mountain_dojo_night":
+              raise SystemExit("VFX02_ARENA_INTAKE=BLOCKED reason=arena_id")
+
+          source_root = assets_root / contract["source_root"]
+          required = [str(name) for name in contract["required_files"]]
+          missing = [name for name in required if not (source_root / name).is_file()]
+          print(f"VFX02_ARENA_SOURCE_FILE_COUNT={len(required) - len(missing)}/{len(required)}")
+          for name in missing:
+              print(f"VFX02_ARENA_SOURCE_MISSING={name}")
+          if missing:
+              raise SystemExit("VFX02_ARENA_INTAKE=BLOCKED reason=incomplete_official_source")
+
+          manifest = json.loads((source_root / "manifest.json").read_text(encoding="utf-8"))
+          if manifest.get("signature") != "Tehkné Solutions" or manifest.get("arena_id") != "mountain_dojo_night":
+              raise SystemExit("VFX02_ARENA_INTAKE=BLOCKED reason=source_manifest")
+
+          destination = repo_root / contract["destination_root"]
+          if destination.exists():
+              shutil.rmtree(destination)
+          shutil.copytree(source_root, destination)
+
+          print("VFX02_ARENA_SOURCE_MANIFEST=PASS")
+          print("VFX02_ARENA_SOURCE_FILE_CONTRACT=PASS")
+          print(f"VFX02_ARENA_IMPORT=PASS destination={destination.as_posix()}")
+          print("VFX02_ARENA_INTAKE=PASS")
+          print("SIGNATURE=Tehkné Solutions")
+          PY
       - name: Install visual runtime dependencies
         run: |
           sudo apt-get update
@@ -47,6 +94,9 @@ jobs:
             --audio-driver Dummy \
             --script res://scripts/ci/vfx02_canonical_impact_readability_review.gd \
             2>&1 | tee vfx02-readability.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' vfx02-readability.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' vfx02-readability.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' vfx02-readability.log
           grep -q 'VFX02_CANONICAL_DUO=PASS' vfx02-readability.log
           grep -q 'VFX02_EFFECT_SCALE=PASS' vfx02-readability.log
           grep -q 'VFX02_CAMERA_PUNCH=PASS max_px=7.00' vfx02-readability.log
@@ -59,6 +109,7 @@ jobs:
         with:
           name: VFX-02-CANONICAL-IMPACT-READABILITY
           path: |
+            vfx02-arena-intake.log
             vfx02-import.log
             vfx02-readability.log
             artifacts/vfx02/VFX02_METRICS.json
