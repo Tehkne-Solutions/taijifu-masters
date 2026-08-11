@@ -5,9 +5,19 @@
   "character_id": "training_rival",
   "display_name": "Sparring Rival",
   "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
+  "source_revision": "cf160e3472f0ff180cbad52b5ff82c86d3920033",
   "source_lot": "production/first_playable/training_rival/first_playable_lot_01",
-  "source_manifest": "production/first_playable/training_rival/first_playable_lot_01/work-manifest.json",
-  "destination_root": "assets/pack_02_characters/training_rival/first_playable_lot_01",
+  "source_canonical_contract": "production/first_playable/training_rival/canonical-production-v1.json",
+  "source_final_review": "production/first_playable/training_rival/source/PRESET02_P05_REVIEW.json",
+  "source_pack_manifests": {
+    "P01": "production/first_playable/training_rival/first_playable_lot_01/p01-manifest.json",
+    "P02": "production/first_playable/training_rival/first_playable_lot_01/p02-manifest.json",
+    "P03": "production/first_playable/training_rival/first_playable_lot_01/p03-manifest.json",
+    "P04": "production/first_playable/training_rival/first_playable_lot_01/p04-manifest.json",
+    "P05": "production/first_playable/training_rival/first_playable_lot_01/p05-manifest.json"
+  },
+  "destination_root": "assets/tgap/training_rival/first_playable_lot_01",
+  "sprite_frames_resource": "assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres",
   "runtime_identity": {
     "independent_from_lian_wu": true,
     "native_facing": "left",
@@ -37,12 +47,27 @@
     "hit": 3,
     "ko": 6
   },
+  "animation_settings": {
+    "idle": {"fps": 8.0, "loop": true},
+    "run": {"fps": 12.0, "loop": true},
+    "jump_start": {"fps": 10.0, "loop": false},
+    "airborne": {"fps": 8.0, "loop": true},
+    "fall": {"fps": 8.0, "loop": true},
+    "attack_light": {"fps": 10.0, "loop": false},
+    "guard": {"fps": 8.0, "loop": true},
+    "dodge": {"fps": 12.0, "loop": false},
+    "hit": {"fps": 10.0, "loop": false},
+    "ko": {"fps": 8.0, "loop": false}
+  },
   "required_total_frames": 44,
   "import_policy": {
-    "auto_clone_assets_repo": true,
-    "auto_fast_forward_assets_repo": true,
-    "auto_import_when_complete": true,
+    "pin_assets_revision": true,
+    "validate_canonical_44_of_44": true,
+    "validate_final_visual_review": true,
+    "validate_frame_hashes_from_pack_manifests": true,
     "overwrite_destination_only_after_full_validation": true,
-    "preserve_gameplay_contract": true
+    "preserve_gameplay_contract": true,
+    "hide_proxy_only_after_spriteframes_load": true,
+    "retire_proxy_only_after_runtime_bench": true
   }
 }
