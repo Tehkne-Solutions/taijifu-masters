@@ -19,6 +19,47 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: Validate frozen AUDIO-03 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/audio03-ambience-evidence.json')
+          if not path.exists():
+              raise SystemExit('AUDIO03_EVIDENCE=BLOCKED missing')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-audio03-ambience-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'AUDIO-03'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == '52966c65b174985884a680fed8043f4ffe90f533'
+          workflow = data['workflow']
+          assert workflow['run_id'] == 31487261404
+          assert workflow['job_id'] == 93765394616
+          assert workflow['artifact_id'] == 9099610107
+          assert workflow['artifact_name'] == 'AUDIO-03-AMBIENCE-EVIDENCE'
+          assert workflow['artifact_digest'] == 'sha256:b63d5154db07644cd85dba70b0acd9656a42f03ed6590a8a42b40d3688c14500'
+          proof = data['proof']
+          assert proof['ambience_player'] == 'pass'
+          assert proof['ambience_mix_rate_hz'] == 22050
+          assert proof['stream_clock_after'] > proof['stream_clock_before']
+          assert abs(float(proof['battle_target']) - 0.72) < 0.001
+          assert abs(float(proof['paused_target']) - 0.05) < 0.001
+          assert abs(float(proof['resume_restored_target']) - 0.72) < 0.001
+          assert abs(float(proof['result_target']) - 0.12) < 0.001
+          assert proof['zero_gameplay_mutation'] is True
+          assert proof['audio02_regression'] == 'pass'
+          policy = data['runtime_policy']
+          assert policy['single_audio_owner'] is True
+          assert policy['event_consumer_only'] is True
+          assert policy['gameplay_timing_owner'] is False
+          assert policy['damage_owner'] is False
+          assert policy['ai_owner'] is False
+          assert policy['balance_changes'] is False
+          print('AUDIO03_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
       - name: Install Godot 4.3
         run: |
           curl --fail --location --retry 3 --retry-all-errors \
