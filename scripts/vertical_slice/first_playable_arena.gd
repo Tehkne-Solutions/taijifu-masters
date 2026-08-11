@@ -3,6 +3,8 @@ extends TriplePathArena
 
 const PLAYABLE_LEFT := 80.0
 const PLAYABLE_RIGHT := 2720.0
+const FIRST_DUEL_P1_SPAWN := Vector2(720.0, 827.0)
+const FIRST_DUEL_P2_SPAWN := Vector2(2080.0, 827.0)
 
 func start_battle_flow() -> void:
 	super.start_battle_flow()
@@ -20,6 +22,12 @@ func stop_battle_flow() -> void:
 	_left_boundary = -180.0
 	_set_environment_round_active(false)
 	queue_redraw()
+
+func respawn_point(player_index: int) -> Vector2:
+	# O duelo inicial precisa caber inteiro na faixa de zoom legível. Os pontos
+	# genéricos do TriplePathArena são deliberadamente extremos e faziam os dois
+	# personagens canônicos nascerem simultaneamente fora da câmera.
+	return FIRST_DUEL_P1_SPAWN if player_index == 1 else FIRST_DUEL_P2_SPAWN
 
 func _build_blockout() -> void:
 	# Piso contínuo: evita aprisionamento entre paredes e deixa a leitura imediata.
@@ -61,6 +69,9 @@ func presentation_signature() -> Dictionary:
 		"sector_closure": false,
 		"pressure_wall": false,
 		"first_combat_readability": true,
+		"initial_duel_camera_readable": true,
+		"initial_duel_p1_spawn": FIRST_DUEL_P1_SPAWN,
+		"initial_duel_p2_spawn": FIRST_DUEL_P2_SPAWN,
 		"signature": "Tehkné Solutions"
 	}
 
