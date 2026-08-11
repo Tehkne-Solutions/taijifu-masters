@@ -1,0 +1,54 @@
+name: AUDIO-02 Single Audio Owner Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_environment_art.gd'
+      - 'scripts/ci/audio02_single_owner_bench.gd'
+      - '.github/workflows/audio02-single-owner-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  single-audio-owner:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio02-owner-import.log
+      - name: Prove one scene-owned AudioDirector
+        run: |
+          set -o pipefail
+          ./godot --headless --audio-driver Dummy --path . \
+            --script res://scripts/ci/audio02_single_owner_bench.gd \
+            2>&1 | tee audio02-owner.log
+          grep -q 'AUDIO02_AUDIO_DIRECTOR_COUNT=PASS count=1' audio02-owner.log
+          grep -q 'AUDIO02_AUDIO_OWNER=PASS first_playable_scene' audio02-owner.log
+          grep -q 'AUDIO02_ENVIRONMENT_AUDIO_INSTALL=PASS disabled' audio02-owner.log
+          grep -q 'AUDIO02_SINGLE_OWNER=PASS' audio02-owner.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-02-SINGLE-OWNER-EVIDENCE
+          path: |
+            audio02-owner-import.log
+            audio02-owner.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-02 single scene-owned audio director — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
