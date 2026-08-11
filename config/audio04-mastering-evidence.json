@@ -1,0 +1,45 @@
+{
+  "schema": "tehkne/taijifu-audio04-mastering-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "AUDIO-04",
+  "status": "pass",
+  "validated_product_head_sha": "6637ab7e4b632c371dfeb5d7954d0c73706d8f1a",
+  "workflow": {
+    "name": "AUDIO-04 Mastering Gate",
+    "run_id": 31488619167,
+    "job_id": 93769645128,
+    "artifact_id": 9100119994,
+    "artifact_name": "AUDIO-04-MASTERING-EVIDENCE",
+    "artifact_digest": "sha256:b996b259afde81dae5e7b5538b4fcf384481e92bb95372bf154b6bcc7038bc0c"
+  },
+  "proof": {
+    "master_ceiling": 0.86,
+    "observed_limiter_peak": 0.86,
+    "accessibility_profiles": [
+      "standard",
+      "combat_focus",
+      "reduced_dynamics",
+      "mono_accessible"
+    ],
+    "mono_pan": "pass",
+    "reduced_dynamics": "pass",
+    "combat_focus": "pass",
+    "preference_persistence": "pass",
+    "mix_levels": ["master", "combat", "ambience", "ui"],
+    "pause_ui": "pass",
+    "zero_gameplay_mutation": true,
+    "audio03_regression_expected": true
+  },
+  "runtime_policy": {
+    "single_audio_owner": true,
+    "event_consumer_only": true,
+    "gameplay_timing_owner": false,
+    "damage_owner": false,
+    "ai_owner": false,
+    "balance_changes": false,
+    "external_audio_assets_required": false,
+    "persistent_user_preferences": true
+  },
+  "remaining_audio_scope": [],
+  "next_stage": "VFX_PRESENTATION_CLOSEOUT"
+}

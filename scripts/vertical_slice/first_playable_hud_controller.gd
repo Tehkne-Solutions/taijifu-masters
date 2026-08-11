@@ -32,6 +32,10 @@ var _export_report_button: Button
 var _qa_toggle: Button
 var _qa_controls: Array[Control] = []
 var _qa_visible := false
+var _audio_profile_button: Button
+var _audio_status: Label
+var _audio_master_label: Label
+var _audio_mix_buttons: Array[Button] = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -40,6 +44,7 @@ func _ready() -> void:
 	resume_button.pressed.connect(func() -> void: resume_requested.emit())
 	pause_menu_button.pressed.connect(func() -> void: menu_requested.emit())
 	_build_playtest_controls()
+	_build_audio_accessibility_controls()
 	FirstPlayableHudSkin.apply(self)
 	hide_result()
 	show_pause(false)
@@ -71,6 +76,7 @@ func show_pause(active: bool) -> void:
 		return
 	pause_overlay.visible = active
 	if active:
+		_refresh_audio_accessibility_controls()
 		resume_button.grab_focus()
 
 func set_report_status(message: String) -> void:
@@ -94,8 +100,122 @@ func presentation_signature() -> Dictionary:
 		"native_file_reveal": true,
 		"mouse_supported": true,
 		"gamepad_focus_supported": true,
+		"audio_accessibility_controls": true,
+		"audio_profile_control": true,
+		"audio_master_control": true,
+		"audio_channel_controls": ["combat", "ambience", "ui"],
 		"final_skin": FirstPlayableHudSkin.presentation_signature()
 	}
+
+func _build_audio_accessibility_controls() -> void:
+	var content := get_node_or_null("../HUD/PauseOverlay/Panel/Content") as VBoxContainer
+	var panel := get_node_or_null("../HUD/PauseOverlay/Panel") as PanelContainer
+	if content == null or panel == null:
+		return
+	panel.offset_top = 112.0
+	panel.offset_bottom = 608.0
+
+	var title := Label.new()
+	title.name = "AudioAccessibilityTitle"
+	title.custom_minimum_size = Vector2(0.0, 28.0)
+	title.text = "ÁUDIO & ACESSIBILIDADE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 12)
+	content.add_child(title)
+
+	_audio_profile_button = Button.new()
+	_audio_profile_button.name = "AudioProfileButton"
+	_audio_profile_button.custom_minimum_size = Vector2(0.0, 38.0)
+	_audio_profile_button.pressed.connect(_on_audio_profile_cycle)
+	content.add_child(_audio_profile_button)
+
+	_audio_master_label = Label.new()
+	_audio_master_label.name = "AudioMasterLabel"
+	_audio_master_label.custom_minimum_size = Vector2(0.0, 22.0)
+	_audio_master_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_audio_master_label.add_theme_font_size_override("font_size", 10)
+	content.add_child(_audio_master_label)
+
+	var master_row := HBoxContainer.new()
+	master_row.name = "AudioMasterControls"
+	master_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	master_row.add_theme_constant_override("separation", 8)
+	content.add_child(master_row)
+	_add_audio_adjust_button(master_row, "MasterDown", "VOLUME −", &"master", -1)
+	_add_audio_adjust_button(master_row, "MasterUp", "VOLUME +", &"master", 1)
+
+	var mix_row := HBoxContainer.new()
+	mix_row.name = "AudioChannelControls"
+	mix_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	mix_row.add_theme_constant_override("separation", 4)
+	content.add_child(mix_row)
+	_add_audio_adjust_button(mix_row, "CombatDown", "FX−", &"combat", -1, 54.0)
+	_add_audio_adjust_button(mix_row, "CombatUp", "FX+", &"combat", 1, 54.0)
+	_add_audio_adjust_button(mix_row, "AmbienceDown", "AMB−", &"ambience", -1, 58.0)
+	_add_audio_adjust_button(mix_row, "AmbienceUp", "AMB+", &"ambience", 1, 58.0)
+	_add_audio_adjust_button(mix_row, "UiDown", "UI−", &"ui", -1, 54.0)
+	_add_audio_adjust_button(mix_row, "UiUp", "UI+", &"ui", 1, 54.0)
+
+	_audio_status = Label.new()
+	_audio_status.name = "AudioMixStatus"
+	_audio_status.custom_minimum_size = Vector2(0.0, 30.0)
+	_audio_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_audio_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_audio_status.add_theme_font_size_override("font_size", 9)
+	content.add_child(_audio_status)
+
+	content.move_child(resume_button, content.get_child_count() - 2)
+	content.move_child(pause_menu_button, content.get_child_count() - 1)
+	_refresh_audio_accessibility_controls()
+
+func _add_audio_adjust_button(parent: HBoxContainer, node_name: String, label: String, channel_id: StringName, direction: int, width: float = 130.0) -> void:
+	var button := Button.new()
+	button.name = node_name
+	button.custom_minimum_size = Vector2(width, 32.0)
+	button.text = label
+	button.add_theme_font_size_override("font_size", 9)
+	button.pressed.connect(_on_audio_level_adjust.bind(channel_id, direction))
+	parent.add_child(button)
+	_audio_mix_buttons.append(button)
+
+func _audio_director() -> FirstPlayableAudioDirector:
+	var match_controller := get_parent()
+	if match_controller == null:
+		return null
+	return match_controller.get_node_or_null("AudioDirector") as FirstPlayableAudioDirector
+
+func _on_audio_profile_cycle() -> void:
+	var audio := _audio_director()
+	if audio == null:
+		return
+	audio.cycle_accessibility_profile()
+	_refresh_audio_accessibility_controls()
+
+func _on_audio_level_adjust(channel_id: StringName, direction: int) -> void:
+	var audio := _audio_director()
+	if audio == null:
+		return
+	audio.adjust_audio_level(channel_id, direction)
+	_refresh_audio_accessibility_controls()
+
+func _refresh_audio_accessibility_controls() -> void:
+	var audio := _audio_director()
+	if audio == null or not is_instance_valid(_audio_profile_button) or not is_instance_valid(_audio_status):
+		return
+	_audio_profile_button.text = "PERFIL: %s" % _audio_profile_label(audio.accessibility_profile())
+	_audio_master_label.text = "VOLUME GERAL • %d%%" % int(round(audio.audio_level(&"master") * 100.0))
+	_audio_status.text = "FX %d%%  •  AMB %d%%  •  UI %d%%" % [
+		int(round(audio.audio_level(&"combat") * 100.0)),
+		int(round(audio.audio_level(&"ambience") * 100.0)),
+		int(round(audio.audio_level(&"ui") * 100.0)),
+	]
+
+func _audio_profile_label(profile_id: StringName) -> String:
+	match profile_id:
+		&"combat_focus": return "FOCO EM COMBATE"
+		&"reduced_dynamics": return "DINÂMICA REDUZIDA"
+		&"mono_accessible": return "MONO ACESSÍVEL"
+		_: return "PADRÃO"
 
 func _build_playtest_controls() -> void:
 	result_panel.offset_left = 420.0

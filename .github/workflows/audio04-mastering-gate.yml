@@ -1,0 +1,62 @@
+name: AUDIO-04 Mastering Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_audio_director.gd'
+      - 'scripts/vertical_slice/first_playable_audio_mix_policy.gd'
+      - 'scripts/vertical_slice/first_playable_hud_controller.gd'
+      - 'scripts/ci/audio03_ambience_bench.gd'
+      - 'scripts/ci/audio04_mastering_accessibility_bench.gd'
+      - 'config/audio04-mastering-evidence.json'
+      - '.github/workflows/audio04-mastering-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio04-mastering:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio04-import.log
+      - name: Prove AUDIO-04 mastering and accessibility
+        run: |
+          set -o pipefail
+          ./godot --headless --audio-driver Dummy --path . \
+            --script res://scripts/ci/audio04_mastering_accessibility_bench.gd \
+            2>&1 | tee audio04-mastering.log
+          grep -q 'AUDIO04_LIMITER=PASS ceiling=0.86' audio04-mastering.log
+          grep -q 'AUDIO04_PROFILES=PASS count=4 mono=true reduced_dynamics=true combat_focus=true' audio04-mastering.log
+          grep -q 'AUDIO04_PERSISTENCE=PASS' audio04-mastering.log
+          grep -q 'AUDIO04_MIX_LEVELS=PASS master combat ambience ui' audio04-mastering.log
+          grep -q 'AUDIO04_PAUSE_UI=PASS' audio04-mastering.log
+          grep -q 'AUDIO04_ZERO_GAMEPLAY_MUTATION=PASS' audio04-mastering.log
+          grep -q 'AUDIO04_MASTERING=PASS' audio04-mastering.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-04-MASTERING-EVIDENCE
+          path: |
+            audio04-import.log
+            audio04-mastering.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-04 final mastering and accessibility mix controls — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
