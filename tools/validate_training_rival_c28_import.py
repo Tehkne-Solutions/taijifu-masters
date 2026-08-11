@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "config/v2-rival-intake-contract.json"
 PRESENTER = ROOT / "scripts/vertical_slice/training_rival_lot01_presenter.gd"
+WRITER = ROOT / ".github/workflows/materialize-c28-training-rival-import.yml"
 
 
 def block(reason: str) -> int:
@@ -22,6 +23,8 @@ def digest(path: Path) -> str:
 def main() -> int:
     if not CONTRACT.is_file() or not PRESENTER.is_file():
         return block("required_contract_or_presenter_missing")
+    if WRITER.exists():
+        return block("disposable_writer_present")
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     destination = ROOT / str(contract["destination_root"])
     resource = ROOT / str(contract["sprite_frames_resource"])
@@ -95,6 +98,7 @@ def main() -> int:
     print("VM02_C28_IMPORTED_HASHES=PASS frames=44")
     print("VM02_C28_PRESENTER_PATH=PASS")
     print("VM02_C28_SPRITEFRAMES_STATIC=PASS animations=10 frames=44")
+    print("VM02_C28_DISPOSABLE_WRITER=ABSENT")
     print("VM02_C28_PROXY_RETIREMENT=BLOCKED godot_runtime_bench_required=true")
     print("SIGNATURE=Tehkné Solutions")
     return 0
