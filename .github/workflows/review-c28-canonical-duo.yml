@@ -5,9 +5,12 @@ on:
     paths:
       - 'assets/tgap/pack_01_lian_wu/**'
       - 'assets/tgap/training_rival/**'
+      - 'config/c28-canonical-duo-visual-evidence.json'
+      - 'scripts/vertical_slice/first_playable_arena.gd'
       - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
       - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
       - 'scripts/ci/c28_canonical_duo_visual_review.gd'
+      - 'tools/validate_c28_canonical_duo_visual_evidence.py'
       - '.github/workflows/review-c28-canonical-duo.yml'
   workflow_dispatch:
 
@@ -20,6 +23,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen canonical duo evidence contract
+        run: |
+          python -m py_compile tools/validate_c28_canonical_duo_visual_evidence.py
+          python tools/validate_c28_canonical_duo_visual_evidence.py | tee c28-duo-evidence.log
+          grep -q 'C28_DUO_EVIDENCE=PASS frozen=true' c28-duo-evidence.log
+          grep -q 'C28_DUO_SCALE_CONTRACT=PASS ratio=1.0130' c28-duo-evidence.log
+          grep -q 'C28_DUO_VIEWPORT_CONTRACT=PASS visibility=1.0/1.0' c28-duo-evidence.log
+          grep -q 'C28_DUO_READY=PASS' c28-duo-evidence.log
       - name: Install runtime dependencies
         run: |
           sudo apt-get update
@@ -51,14 +65,17 @@ jobs:
           grep -q 'C28_DUO_REAL_ASSETS=PASS lian=true rival=true fallback_hidden=true' c28-duo-visual.log
           grep -q 'C28_DUO_SCALE=PASS' c28-duo-visual.log
           grep -q 'C28_DUO_FOOTLINE=PASS' c28-duo-visual.log
+          grep -q 'C28_DUO_VIEWPORT_VISIBILITY=PASS' c28-duo-visual.log
           grep -q 'C28_DUO_VISUAL=PASS' c28-duo-visual.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: C28-CANONICAL-DUO-VISUAL-REVIEW
           path: |
+            c28-duo-evidence.log
             c28-duo-import.log
             c28-duo-visual.log
+            config/c28-canonical-duo-visual-evidence.json
             artifacts/c28_duo/C28_CANONICAL_DUO.review-1920x1080.png
           if-no-files-found: ignore
           retention-days: 30
