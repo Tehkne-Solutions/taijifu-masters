@@ -7,7 +7,6 @@ const PARALLAX_LAYER := preload("res://scripts/vertical_slice/first_playable_par
 const CANONICAL_ARENA := preload("res://scripts/vertical_slice/canonical_arena_parallax.gd")
 const PLATFORM_READABILITY_LAYER := preload("res://scripts/vertical_slice/first_playable_platform_readability_layer.gd")
 const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
-const AUDIO_DIRECTOR := preload("res://scripts/vertical_slice/first_playable_audio_director.gd")
 
 const CANONICAL_ROOT := "res://assets/pack_03_stages/mountain_dojo_night"
 const CANONICAL_FILES := [
@@ -84,10 +83,8 @@ func _install_combat_feedback() -> void:
 		var impact_director := IMPACT_DIRECTOR.new() as ImpactDirector
 		impact_director.name = "ImpactDirector"
 		root.add_child.call_deferred(impact_director)
-	if not root.has_node("FirstPlayableAudioDirector"):
-		var audio_director := AUDIO_DIRECTOR.new() as FirstPlayableAudioDirector
-		audio_director.name = "FirstPlayableAudioDirector"
-		root.add_child.call_deferred(audio_director)
+	# Audio ownership is explicit in first_playable.tscn. Environment art must
+	# never instantiate a parallel FirstPlayableAudioDirector.
 
 func presentation_signature() -> Dictionary:
 	return {
@@ -109,6 +106,8 @@ func presentation_signature() -> Dictionary:
 		"collision_changes": false,
 		"impact_director": true,
 		"procedural_combat_audio": true,
+		"audio_owner": &"first_playable_scene",
+		"environment_installs_audio": false,
 		"balance_changes": false,
 		"export_safe_resource_loading": true,
 		"signature": "Tehkné Solutions"
