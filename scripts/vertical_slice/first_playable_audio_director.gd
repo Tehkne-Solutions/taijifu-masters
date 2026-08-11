@@ -13,6 +13,7 @@ const WORLD_AUDIO_CENTER_X := 1400.0
 const WORLD_AUDIO_HALF_WIDTH := 1400.0
 const MAX_WORLD_PAN := 0.42
 const AMBIENCE_SLEW_PER_SECOND := 0.72
+const MASTER_CEILING_FALLBACK := 0.86
 
 const CUE_HIT := &"hit"
 const CUE_EVADE := &"evade"
@@ -91,6 +92,7 @@ func _process(delta: float) -> void:
 	_fill_ambience()
 
 func presentation_signature() -> Dictionary:
+	var master_ceiling := _mix_policy.master_ceiling() if _mix_policy != null else MASTER_CEILING_FALLBACK
 	return {
 		"stage": "AUDIO-04",
 		"impact_audio": true,
@@ -107,7 +109,7 @@ func presentation_signature() -> Dictionary:
 		"ambience_single_owner": true,
 		"final_mastering": true,
 		"soft_limiter": true,
-		"master_ceiling": _mix_policy.master_ceiling(),
+		"master_ceiling": master_ceiling,
 		"accessibility_mix_controls": true,
 		"persistent_mix_preferences": true,
 		"accessibility_profiles": ["standard", "combat_focus", "reduced_dynamics", "mono_accessible"],
