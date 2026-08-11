@@ -50,8 +50,9 @@ func _run() -> void:
 		return
 
 	var signature := audio.presentation_signature()
-	if String(signature.get("stage", "")) != "AUDIO-02":
-		_fail("AUDIO02_CANONICAL_SOUND=BLOCKED stage", battle)
+	var stage := String(signature.get("stage", ""))
+	if not stage.begins_with("AUDIO-") or stage.trim_prefix("AUDIO-").to_int() < 2:
+		_fail("AUDIO02_CANONICAL_SOUND=BLOCKED stage=%s" % stage, battle)
 		return
 	for required_flag in [
 		"canonical_sound_design",
@@ -177,7 +178,7 @@ func _run() -> void:
 	print("AUDIO02_SPATIAL_PAN=PASS left=%.3f right=%.3f" % [left_pan, right_pan])
 	print("AUDIO02_KO_RESULT_UI=PASS")
 	print("AUDIO02_ZERO_GAMEPLAY_MUTATION=PASS")
-	print("AUDIO02_CANONICAL_SOUND=PASS")
+	print("AUDIO02_CANONICAL_SOUND=PASS stage=%s" % stage)
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
 	await process_frame
