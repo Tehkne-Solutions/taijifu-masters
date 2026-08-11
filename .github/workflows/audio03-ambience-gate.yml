@@ -1,0 +1,59 @@
+name: AUDIO-03 Ambience Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_audio_director.gd'
+      - 'scripts/ci/audio02_canonical_sound_bench.gd'
+      - 'scripts/ci/audio03_ambience_bench.gd'
+      - 'config/audio03-ambience-evidence.json'
+      - '.github/workflows/audio03-ambience-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio03-ambience:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio03-import.log
+      - name: Prove AUDIO-03 adaptive ambience and musical bed
+        run: |
+          set -o pipefail
+          ./godot --headless --audio-driver Dummy --path . \
+            --script res://scripts/ci/audio03_ambience_bench.gd \
+            2>&1 | tee audio03-ambience.log
+          grep -q 'AUDIO03_AMBIENCE_PLAYER=PASS mix_rate=22050' audio03-ambience.log
+          grep -q 'AUDIO03_STREAM_CLOCK=PASS' audio03-ambience.log
+          grep -q 'AUDIO03_BATTLE_STATE=PASS target=0.72' audio03-ambience.log
+          grep -q 'AUDIO03_PAUSE_RESUME=PASS paused=0.05 restored=0.72' audio03-ambience.log
+          grep -q 'AUDIO03_RESULT_STATE=PASS target=0.12' audio03-ambience.log
+          grep -q 'AUDIO03_ZERO_GAMEPLAY_MUTATION=PASS' audio03-ambience.log
+          grep -q 'AUDIO03_AMBIENCE=PASS' audio03-ambience.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-03-AMBIENCE-EVIDENCE
+          path: |
+            audio03-import.log
+            audio03-ambience.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-03 adaptive arena ambience and musical bed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
