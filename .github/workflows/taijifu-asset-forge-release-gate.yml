@@ -26,7 +26,17 @@ jobs:
           set +e
           python tools/asset_forge/release_pipeline.py asset-forge/release/pack_01_lian_wu_base.json --strict
           code=$?
-          test "$code" -eq 7
+          set -e
+          test "$code" -eq 11
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('artifacts/asset-forge/pack_01_lian_wu_base__release-pipeline.json').read_text(encoding='utf-8'))
+          assert report['schema'] == 'taijifu/asset-forge-release-pipeline/v3'
+          assert report['ready'] is False
+          assert report['bundle_promoted'] is False
+          print('ASSET_FORGE_RELEASE_BLOCK=PASS exit=11 ready=false bundle_promoted=false')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: asset-forge-pack01-release-gate-diagnostic

@@ -1,0 +1,335 @@
+{
+  "schema": "tehkne/taijifu-c28-training-rival-import/v1",
+  "signature": "Tehkné Solutions",
+  "character_id": "training_rival",
+  "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
+  "source_revision": "cf160e3472f0ff180cbad52b5ff82c86d3920033",
+  "source_canonical_sha256": "8898d0a7dab0451051b10e6c5f5ef241c1c09c26c8353b73505450542bdabfff",
+  "source_final_review_sha256": "cfd173e1834f6234095fd4c70eb19b32b205e7394bffdb788bbdc4ac808cd4b0",
+  "frame_count": 44,
+  "required_animations": {
+    "idle": 6,
+    "run": 8,
+    "jump_start": 3,
+    "airborne": 2,
+    "fall": 2,
+    "attack_light": 6,
+    "guard": 3,
+    "dodge": 5,
+    "hit": 3,
+    "ko": 6
+  },
+  "animation_settings": {
+    "idle": {
+      "fps": 8.0,
+      "loop": true
+    },
+    "run": {
+      "fps": 12.0,
+      "loop": true
+    },
+    "jump_start": {
+      "fps": 10.0,
+      "loop": false
+    },
+    "airborne": {
+      "fps": 8.0,
+      "loop": true
+    },
+    "fall": {
+      "fps": 8.0,
+      "loop": true
+    },
+    "attack_light": {
+      "fps": 10.0,
+      "loop": false
+    },
+    "guard": {
+      "fps": 8.0,
+      "loop": true
+    },
+    "dodge": {
+      "fps": 12.0,
+      "loop": false
+    },
+    "hit": {
+      "fps": 10.0,
+      "loop": false
+    },
+    "ko": {
+      "fps": 8.0,
+      "loop": false
+    }
+  },
+  "frames": [
+    {
+      "animation": "idle",
+      "index": 1,
+      "name": "char_training_rival__idle__f001.png",
+      "sha256": "e02b6f0e46dac8864663fe7b51109a38b0192367d2e272066bfdeee64c1c4d38"
+    },
+    {
+      "animation": "idle",
+      "index": 2,
+      "name": "char_training_rival__idle__f002.png",
+      "sha256": "8bfa284cc1346bfba2e9750c281f7acbdfd9f8d5e6b88942389510628129f2f6"
+    },
+    {
+      "animation": "idle",
+      "index": 3,
+      "name": "char_training_rival__idle__f003.png",
+      "sha256": "8bfa284cc1346bfba2e9750c281f7acbdfd9f8d5e6b88942389510628129f2f6"
+    },
+    {
+      "animation": "idle",
+      "index": 4,
+      "name": "char_training_rival__idle__f004.png",
+      "sha256": "e02b6f0e46dac8864663fe7b51109a38b0192367d2e272066bfdeee64c1c4d38"
+    },
+    {
+      "animation": "idle",
+      "index": 5,
+      "name": "char_training_rival__idle__f005.png",
+      "sha256": "f0c297ad69e87a2e4594bce458f915e4cfcf6de4a5925bac664ce7206d09d10b"
+    },
+    {
+      "animation": "idle",
+      "index": 6,
+      "name": "char_training_rival__idle__f006.png",
+      "sha256": "f0c297ad69e87a2e4594bce458f915e4cfcf6de4a5925bac664ce7206d09d10b"
+    },
+    {
+      "animation": "run",
+      "index": 1,
+      "name": "char_training_rival__run__f001.png",
+      "sha256": "43cc5cd0e6bc919fff75b64e32dee998b36647f3e6e73be7f3b67b55c72ac9b6"
+    },
+    {
+      "animation": "run",
+      "index": 2,
+      "name": "char_training_rival__run__f002.png",
+      "sha256": "027883071afaa49b06e43511205bdcf04763edfb12e788f07e6359f0d991c07c"
+    },
+    {
+      "animation": "run",
+      "index": 3,
+      "name": "char_training_rival__run__f003.png",
+      "sha256": "2f39dd9ff51c02278d836c0e0efc55f8b8ab90bd120c56204a1eacddecdedc56"
+    },
+    {
+      "animation": "run",
+      "index": 4,
+      "name": "char_training_rival__run__f004.png",
+      "sha256": "027883071afaa49b06e43511205bdcf04763edfb12e788f07e6359f0d991c07c"
+    },
+    {
+      "animation": "run",
+      "index": 5,
+      "name": "char_training_rival__run__f005.png",
+      "sha256": "43cc5cd0e6bc919fff75b64e32dee998b36647f3e6e73be7f3b67b55c72ac9b6"
+    },
+    {
+      "animation": "run",
+      "index": 6,
+      "name": "char_training_rival__run__f006.png",
+      "sha256": "6cb310c66242cff0e4ffc2e0c81b638a87c22e8bc53e3e49a1ab22aa8ca60337"
+    },
+    {
+      "animation": "run",
+      "index": 7,
+      "name": "char_training_rival__run__f007.png",
+      "sha256": "64112275347c2585e59a8703bf431bd9285581c600039512115f686f725a7fc0"
+    },
+    {
+      "animation": "run",
+      "index": 8,
+      "name": "char_training_rival__run__f008.png",
+      "sha256": "6cb310c66242cff0e4ffc2e0c81b638a87c22e8bc53e3e49a1ab22aa8ca60337"
+    },
+    {
+      "animation": "jump_start",
+      "index": 1,
+      "name": "char_training_rival__jump_start__f001.png",
+      "sha256": "4e5bd8e44ab104ad3251baaaafde6f723a7168896d176f3e225d3cff834a6361"
+    },
+    {
+      "animation": "jump_start",
+      "index": 2,
+      "name": "char_training_rival__jump_start__f002.png",
+      "sha256": "a52f8da619f8fbb9a2fa0038fec45caf0b90f02b7c16d8d2c6c48a75a469650c"
+    },
+    {
+      "animation": "jump_start",
+      "index": 3,
+      "name": "char_training_rival__jump_start__f003.png",
+      "sha256": "f0b4189946f34608444bf9993dbe25b6a04a49e037b1953c5fa14132cfeda8f8"
+    },
+    {
+      "animation": "airborne",
+      "index": 1,
+      "name": "char_training_rival__airborne__f001.png",
+      "sha256": "ec3be8ae7b492bf10015f1548e4990228f2ed93453c5d8213094511aaf40764f"
+    },
+    {
+      "animation": "airborne",
+      "index": 2,
+      "name": "char_training_rival__airborne__f002.png",
+      "sha256": "3e33e3be7a9a93a9cea8ace3301a628f14654ebd11deed123ebf7d4ce551517d"
+    },
+    {
+      "animation": "fall",
+      "index": 1,
+      "name": "char_training_rival__fall__f001.png",
+      "sha256": "379935dd4aa31b3302e1a67d258ba079d9eb275e44e3c92d6fb171226844bd9d"
+    },
+    {
+      "animation": "fall",
+      "index": 2,
+      "name": "char_training_rival__fall__f002.png",
+      "sha256": "b8eda8a223a6849650efc7cc471a9a0c34b6fe3c4790b2ea259b06487f6c3c2c"
+    },
+    {
+      "animation": "attack_light",
+      "index": 1,
+      "name": "char_training_rival__attack_light__f001.png",
+      "sha256": "4b0c0371fbb5678a8cea3d4609cbc526091de3ec23483790714b307e528767b8"
+    },
+    {
+      "animation": "attack_light",
+      "index": 2,
+      "name": "char_training_rival__attack_light__f002.png",
+      "sha256": "a34f6c5b52f76e67825742cf25c26fed5c24e95f1132089fb86b97ab77534404"
+    },
+    {
+      "animation": "attack_light",
+      "index": 3,
+      "name": "char_training_rival__attack_light__f003.png",
+      "sha256": "5a4eaaa30a4639fe65b1815a0f2f773ef09a89acc7a14a66a7a384c6562e83fc"
+    },
+    {
+      "animation": "attack_light",
+      "index": 4,
+      "name": "char_training_rival__attack_light__f004.png",
+      "sha256": "ed3eaa00dc539563cf9d53352a1e0f4564c928bcfc55c4dec999dbf230a0d152"
+    },
+    {
+      "animation": "attack_light",
+      "index": 5,
+      "name": "char_training_rival__attack_light__f005.png",
+      "sha256": "b0e59d91cb49a86d45501021cd174ad966a07db3c50b135540543b9a5f269840"
+    },
+    {
+      "animation": "attack_light",
+      "index": 6,
+      "name": "char_training_rival__attack_light__f006.png",
+      "sha256": "e8606f45b24dd82c957243457017b2be21cdb86f49fc68e21017fd1119ff9ebf"
+    },
+    {
+      "animation": "guard",
+      "index": 1,
+      "name": "char_training_rival__guard__f001.png",
+      "sha256": "a8b993c08c53d6f7ccdd901ee0a2acdb0a5640d408e8e1ef2ffc1d82f5b9b8d6"
+    },
+    {
+      "animation": "guard",
+      "index": 2,
+      "name": "char_training_rival__guard__f002.png",
+      "sha256": "2ae4aafe48c0410f9bca8aca9f61d907724faa3ef408af73b28546cd6b126461"
+    },
+    {
+      "animation": "guard",
+      "index": 3,
+      "name": "char_training_rival__guard__f003.png",
+      "sha256": "3af220dc1eb97a4f339b424df8e013bc79b042b42249faf97b9476ee6204b620"
+    },
+    {
+      "animation": "dodge",
+      "index": 1,
+      "name": "char_training_rival__dodge__f001.png",
+      "sha256": "1830061976eb95c45347bb80d5415e6702ab3e4c1f9d8353df9076ba39acccb5"
+    },
+    {
+      "animation": "dodge",
+      "index": 2,
+      "name": "char_training_rival__dodge__f002.png",
+      "sha256": "0bc03465e6459f7abaa0b8d3fab0b95c4d6833954bb43cb2a606a10ca1b2c4e4"
+    },
+    {
+      "animation": "dodge",
+      "index": 3,
+      "name": "char_training_rival__dodge__f003.png",
+      "sha256": "50d5abea31509026b1a57961051e15ef415cf7e13db8a1246110664e987c1f7c"
+    },
+    {
+      "animation": "dodge",
+      "index": 4,
+      "name": "char_training_rival__dodge__f004.png",
+      "sha256": "c9076ec2b55c787c7900a3cdb5f3190d383ac22464827f8789d8b3589eabc8f8"
+    },
+    {
+      "animation": "dodge",
+      "index": 5,
+      "name": "char_training_rival__dodge__f005.png",
+      "sha256": "d3a3b6dce710ddd32a6a40ef5857d1dee348a48b8d858abb830e6c5ffca82fcf"
+    },
+    {
+      "animation": "hit",
+      "index": 1,
+      "name": "char_training_rival__hit__f001.png",
+      "sha256": "904a33545aa10e0b93b253e8bb22b899d3b8f7bd6467bbb9d3a8091de043f8ea"
+    },
+    {
+      "animation": "hit",
+      "index": 2,
+      "name": "char_training_rival__hit__f002.png",
+      "sha256": "81c60adee7ba1ef7f1b4a0213198a53baf778d97758160934109e87e8a9b2764"
+    },
+    {
+      "animation": "hit",
+      "index": 3,
+      "name": "char_training_rival__hit__f003.png",
+      "sha256": "86239ef1b696b5efc78b812af804f38649e93399a02620a30f871db327ed9432"
+    },
+    {
+      "animation": "ko",
+      "index": 1,
+      "name": "char_training_rival__ko__f001.png",
+      "sha256": "36f512b16179a3970b10975d5ac777fd4d6f9aafd77a059bac94618865c703f5"
+    },
+    {
+      "animation": "ko",
+      "index": 2,
+      "name": "char_training_rival__ko__f002.png",
+      "sha256": "b70533e9ec34e391f5f18c69bc1283a4ca5fddc8eb538860141f30dc3d94340e"
+    },
+    {
+      "animation": "ko",
+      "index": 3,
+      "name": "char_training_rival__ko__f003.png",
+      "sha256": "75858c70ae94aa382738a8ef7b46ca93ad6b1057909f1244328c5be70a1dd411"
+    },
+    {
+      "animation": "ko",
+      "index": 4,
+      "name": "char_training_rival__ko__f004.png",
+      "sha256": "5ca2baa5ddff73db4d80173fa6b0dff7139fe674f3983d1efd31713814ac16fb"
+    },
+    {
+      "animation": "ko",
+      "index": 5,
+      "name": "char_training_rival__ko__f005.png",
+      "sha256": "0d4d2f1b671e4698030cfa850505c959e668fafb78039cfb03d5be1ef9d296f3"
+    },
+    {
+      "animation": "ko",
+      "index": 6,
+      "name": "char_training_rival__ko__f006.png",
+      "sha256": "5d1b8af500764acc6d238356668fd982220aa72675e79861fde741b226d27402"
+    }
+  ],
+  "sprite_frames_resource": "assets/tgap/training_rival/first_playable_lot_01/training_rival_first_playable_frames.tres",
+  "runtime_policy": {
+    "proxy_retirement_allowed": false,
+    "requires_godot_runtime_bench": true
+  }
+}

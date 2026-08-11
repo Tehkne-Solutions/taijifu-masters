@@ -26,8 +26,17 @@ def dump_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def display_path(path: Path) -> str:
+    """Render repository paths relatively while preserving valid external test paths."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT.resolve()))
+    except ValueError:
+        return str(resolved)
+
+
 def run_step(name: str, command: list[str], required_inputs: list[Path] | None = None) -> dict[str, Any]:
-    missing_inputs = [str(path.relative_to(ROOT)) for path in (required_inputs or []) if not path.is_file()]
+    missing_inputs = [display_path(path) for path in (required_inputs or []) if not path.is_file()]
     if missing_inputs:
         return {
             "name": name,
