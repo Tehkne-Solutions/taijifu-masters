@@ -1,0 +1,42 @@
+{
+  "schema": "tehkne/taijifu-c28-training-rival-runtime-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "character_id": "training_rival",
+  "stage": "C28 canonical 44/44 game import and Godot runtime bench",
+  "status": "validated_runtime_active_proxy_fallback_preserved",
+  "validated_product_head_sha": "673c7dc23fe641cbb3950ec7ede3b44722e97375",
+  "source_assets_revision": "cf160e3472f0ff180cbad52b5ff82c86d3920033",
+  "static_import_evidence": {
+    "workflow_run_id": 31446407367,
+    "artifact_id": 9084682798,
+    "artifact_digest": "sha256:6db837ac786cbbd74cbbeb2b21de3144d2e15aff1261d00c8ca28df61843cff8",
+    "artifact_name": "C28-TRAINING-RIVAL-44-IMPORT",
+    "result": "pass"
+  },
+  "godot_runtime_evidence": {
+    "workflow_run_id": 31446407240,
+    "artifact_id": 9084703609,
+    "artifact_digest": "sha256:325f7d5edcb41b7c8db18f830fe54eeebfffdd49c4a5382fcd75555b50da551b",
+    "artifact_name": "C28-TRAINING-RIVAL-44-RUNTIME-BENCH",
+    "spriteframes": "10 animations / 44 frames",
+    "presenter_using_real_assets": true,
+    "result": "pass"
+  },
+  "release_gate": {
+    "workflow_run_id": 31446407435,
+    "result": "pass",
+    "assets_lfs_materialized": true
+  },
+  "asset_governance": {
+    "workflow_run_id": 31446407271,
+    "result": "pass"
+  },
+  "runtime_policy": {
+    "real_training_rival_active_when_resource_loads": true,
+    "procedural_fallback_code_preserved": true,
+    "fallback_hidden_after_real_asset_activation": true,
+    "physical_proxy_code_removal_required_for_c28": false,
+    "runtime_ready": true
+  },
+  "next_action": "Rerun the read-only C28 and Godot gates with this frozen evidence, merge C28, then promote the assets-repo canonical contract to game_c28_import_complete=true and godot_runtime_bench_complete=true."
+}
