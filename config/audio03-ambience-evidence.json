@@ -1,0 +1,41 @@
+{
+  "schema": "tehkne/taijifu-audio03-ambience-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "AUDIO-03",
+  "status": "pass",
+  "validated_product_head_sha": "52966c65b174985884a680fed8043f4ffe90f533",
+  "workflow": {
+    "name": "AUDIO-03 Ambience Gate",
+    "run_id": 31487261404,
+    "job_id": 93765394616,
+    "artifact_id": 9099610107,
+    "artifact_name": "AUDIO-03-AMBIENCE-EVIDENCE",
+    "artifact_digest": "sha256:b63d5154db07644cd85dba70b0acd9656a42f03ed6590a8a42b40d3688c14500"
+  },
+  "proof": {
+    "ambience_player": "pass",
+    "ambience_mix_rate_hz": 22050,
+    "stream_clock_before": 1.3003,
+    "stream_clock_after": 1.4860,
+    "battle_target": 0.72,
+    "paused_target": 0.05,
+    "resume_restored_target": 0.72,
+    "result_target": 0.12,
+    "zero_gameplay_mutation": true,
+    "audio02_regression": "pass"
+  },
+  "runtime_policy": {
+    "single_audio_owner": true,
+    "event_consumer_only": true,
+    "gameplay_timing_owner": false,
+    "damage_owner": false,
+    "ai_owner": false,
+    "balance_changes": false,
+    "external_audio_assets_required": false
+  },
+  "remaining_audio_scope": [
+    "final_mastering",
+    "accessibility_mix_controls"
+  ],
+  "next_stage": "AUDIO-04_MASTERING_ACCESSIBILITY"
+}

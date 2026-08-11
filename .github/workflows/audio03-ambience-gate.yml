@@ -1,0 +1,100 @@
+name: AUDIO-03 Ambience Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_audio_director.gd'
+      - 'scripts/ci/audio02_canonical_sound_bench.gd'
+      - 'scripts/ci/audio03_ambience_bench.gd'
+      - 'config/audio03-ambience-evidence.json'
+      - '.github/workflows/audio03-ambience-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio03-ambience:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate frozen AUDIO-03 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/audio03-ambience-evidence.json')
+          if not path.exists():
+              raise SystemExit('AUDIO03_EVIDENCE=BLOCKED missing')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-audio03-ambience-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'AUDIO-03'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == '52966c65b174985884a680fed8043f4ffe90f533'
+          workflow = data['workflow']
+          assert workflow['run_id'] == 31487261404
+          assert workflow['job_id'] == 93765394616
+          assert workflow['artifact_id'] == 9099610107
+          assert workflow['artifact_name'] == 'AUDIO-03-AMBIENCE-EVIDENCE'
+          assert workflow['artifact_digest'] == 'sha256:b63d5154db07644cd85dba70b0acd9656a42f03ed6590a8a42b40d3688c14500'
+          proof = data['proof']
+          assert proof['ambience_player'] == 'pass'
+          assert proof['ambience_mix_rate_hz'] == 22050
+          assert proof['stream_clock_after'] > proof['stream_clock_before']
+          assert abs(float(proof['battle_target']) - 0.72) < 0.001
+          assert abs(float(proof['paused_target']) - 0.05) < 0.001
+          assert abs(float(proof['resume_restored_target']) - 0.72) < 0.001
+          assert abs(float(proof['result_target']) - 0.12) < 0.001
+          assert proof['zero_gameplay_mutation'] is True
+          assert proof['audio02_regression'] == 'pass'
+          policy = data['runtime_policy']
+          assert policy['single_audio_owner'] is True
+          assert policy['event_consumer_only'] is True
+          assert policy['gameplay_timing_owner'] is False
+          assert policy['damage_owner'] is False
+          assert policy['ai_owner'] is False
+          assert policy['balance_changes'] is False
+          print('AUDIO03_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio03-import.log
+      - name: Prove AUDIO-03 adaptive ambience and musical bed
+        run: |
+          set -o pipefail
+          ./godot --headless --audio-driver Dummy --path . \
+            --script res://scripts/ci/audio03_ambience_bench.gd \
+            2>&1 | tee audio03-ambience.log
+          grep -q 'AUDIO03_AMBIENCE_PLAYER=PASS mix_rate=22050' audio03-ambience.log
+          grep -q 'AUDIO03_STREAM_CLOCK=PASS' audio03-ambience.log
+          grep -q 'AUDIO03_BATTLE_STATE=PASS target=0.72' audio03-ambience.log
+          grep -q 'AUDIO03_PAUSE_RESUME=PASS paused=0.05 restored=0.72' audio03-ambience.log
+          grep -q 'AUDIO03_RESULT_STATE=PASS target=0.12' audio03-ambience.log
+          grep -q 'AUDIO03_ZERO_GAMEPLAY_MUTATION=PASS' audio03-ambience.log
+          grep -q 'AUDIO03_AMBIENCE=PASS' audio03-ambience.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-03-AMBIENCE-EVIDENCE
+          path: |
+            audio03-import.log
+            audio03-ambience.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-03 adaptive arena ambience and musical bed — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
