@@ -1,0 +1,32 @@
+{
+  "schema": "tehkne/taijifu-audio01-foundation-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "AUDIO-01",
+  "status": "pass",
+  "validated_product_head_sha": "f3e370186ae9ced6b40cfc78ce8c4289dc8c8aa6",
+  "workflow": {
+    "name": "AUDIO-01 Foundation Gate",
+    "run_id": 31484939561,
+    "job_id": 93758067434,
+    "artifact_id": 9098721303,
+    "artifact_name": "AUDIO-01-FOUNDATION-EVIDENCE",
+    "artifact_digest": "sha256:da4683de2a123a6b216353be817d8fc141232d8b4ee90af078257d5934b114e1"
+  },
+  "proof": {
+    "scene_mount": "pass",
+    "fighter_connections": 2,
+    "impact_cues": ["hit", "evade", "block", "parry", "posture_break"],
+    "event_consumer_only": true,
+    "zero_health_mutation": true,
+    "zero_posture_mutation": true,
+    "zero_match_time_mutation": true,
+    "audio_stream_generator_present": true
+  },
+  "runtime_policy": {
+    "gameplay_timing_owner": false,
+    "damage_owner": false,
+    "ai_owner": false,
+    "balance_changes": false
+  },
+  "next_stage": "AUDIO-02_CANONICAL_SOUND_DESIGN"
+}
