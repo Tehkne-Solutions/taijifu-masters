@@ -1,9 +1,7 @@
 name: C28 Training Rival Remote Materializer
 
 on:
-  push:
-    branches:
-      - agent/c28-training-rival-44-import
+  pull_request:
     paths:
       - 'config/v2-rival-intake-contract.json'
       - 'tools/import_training_rival_c28_from_assets.py'
@@ -15,12 +13,14 @@ permissions:
 
 jobs:
   materialize:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/c28-training-rival-44-import'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
-      - name: Checkout game repository
+      - name: Checkout game head branch
         uses: actions/checkout@v4
         with:
+          ref: agent/c28-training-rival-44-import
           fetch-depth: 0
       - name: Checkout pinned assets repository
         uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
           grep -q 'VM02_C28_RIVAL_IMPORT=PASS' c28-materialize.log
           grep -q 'VM02_C28_SPRITEFRAMES_GENERATED=PASS animations=10 frames=44' c28-materialize.log
           grep -q 'VM02_C28_IMPORT=PASS' c28-materialize.log
-      - name: Remove writer and validate staged product read-only
+      - name: Remove writer and validate product read-only
         shell: bash
         run: |
           set -euo pipefail
