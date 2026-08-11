@@ -8,8 +8,16 @@ from pathlib import Path
 # C28 closeout validator intentionally runs only after the disposable importer is absent.
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "config/v2-rival-intake-contract.json"
+EVIDENCE = ROOT / "config/c28-training-rival-runtime-evidence.json"
 PRESENTER = ROOT / "scripts/vertical_slice/training_rival_lot01_presenter.gd"
 WRITER = ROOT / ".github/workflows/materialize-c28-training-rival-import.yml"
+EXPECTED_PRODUCT_HEAD = "673c7dc23fe641cbb3950ec7ede3b44722e97375"
+EXPECTED_STATIC_RUN = 31446407367
+EXPECTED_STATIC_ARTIFACT = 9084682798
+EXPECTED_STATIC_DIGEST = "sha256:6db837ac786cbbd74cbbeb2b21de3144d2e15aff1261d00c8ca28df61843cff8"
+EXPECTED_GODOT_RUN = 31446407240
+EXPECTED_GODOT_ARTIFACT = 9084703609
+EXPECTED_GODOT_DIGEST = "sha256:325f7d5edcb41b7c8db18f830fe54eeebfffdd49c4a5382fcd75555b50da551b"
 
 
 def block(reason: str) -> int:
@@ -22,11 +30,32 @@ def digest(path: Path) -> str:
 
 
 def main() -> int:
-    if not CONTRACT.is_file() or not PRESENTER.is_file():
-        return block("required_contract_or_presenter_missing")
+    if not CONTRACT.is_file() or not EVIDENCE.is_file() or not PRESENTER.is_file():
+        return block("required_contract_evidence_or_presenter_missing")
     if WRITER.exists():
         return block("disposable_writer_present")
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
+    if evidence.get("schema") != "tehkne/taijifu-c28-training-rival-runtime-evidence/v1":
+        return block("runtime_evidence_schema")
+    if evidence.get("signature") != "Tehkné Solutions" or evidence.get("character_id") != "training_rival":
+        return block("runtime_evidence_identity")
+    if evidence.get("status") != "validated_runtime_active_proxy_fallback_preserved":
+        return block("runtime_evidence_status")
+    if evidence.get("validated_product_head_sha") != EXPECTED_PRODUCT_HEAD:
+        return block("runtime_evidence_product_head")
+    if evidence.get("source_assets_revision") != contract.get("source_revision"):
+        return block("runtime_evidence_source_revision")
+    static = evidence.get("static_import_evidence", {})
+    godot = evidence.get("godot_runtime_evidence", {})
+    if static.get("workflow_run_id") != EXPECTED_STATIC_RUN or static.get("artifact_id") != EXPECTED_STATIC_ARTIFACT or static.get("artifact_digest") != EXPECTED_STATIC_DIGEST or static.get("result") != "pass":
+        return block("static_evidence")
+    if godot.get("workflow_run_id") != EXPECTED_GODOT_RUN or godot.get("artifact_id") != EXPECTED_GODOT_ARTIFACT or godot.get("artifact_digest") != EXPECTED_GODOT_DIGEST or godot.get("presenter_using_real_assets") is not True or godot.get("result") != "pass":
+        return block("godot_evidence")
+    runtime_policy = evidence.get("runtime_policy", {})
+    if runtime_policy.get("runtime_ready") is not True or runtime_policy.get("real_training_rival_active_when_resource_loads") is not True or runtime_policy.get("procedural_fallback_code_preserved") is not True:
+        return block("runtime_evidence_policy")
+
     destination = ROOT / str(contract["destination_root"])
     resource = ROOT / str(contract["sprite_frames_resource"])
     import_manifest_path = destination / "c28-import-manifest.json"
@@ -100,8 +129,9 @@ def main() -> int:
     print("VM02_C28_IMPORTED_HASHES=PASS frames=44")
     print("VM02_C28_PRESENTER_PATH=PASS")
     print("VM02_C28_SPRITEFRAMES_STATIC=PASS animations=10 frames=44")
+    print("VM02_C28_RUNTIME_EVIDENCE=PASS frozen=true")
     print("VM02_C28_DISPOSABLE_WRITER=ABSENT")
-    print("VM02_C28_PROXY_RETIREMENT=BLOCKED godot_runtime_bench_required=true")
+    print("VM02_C28_RUNTIME_READY=PASS presenter_using_real_assets=true fallback_preserved=true")
     print("SIGNATURE=Tehkné Solutions")
     return 0
 
