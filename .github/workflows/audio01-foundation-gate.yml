@@ -20,6 +20,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate frozen AUDIO-01 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/audio01-foundation-evidence.json')
+          if not path.exists():
+              raise SystemExit('AUDIO01_EVIDENCE=BLOCKED missing')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-audio01-foundation-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'AUDIO-01'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == 'f3e370186ae9ced6b40cfc78ce8c4289dc8c8aa6'
+          workflow = data['workflow']
+          assert workflow['run_id'] == 31484939561
+          assert workflow['job_id'] == 93758067434
+          assert workflow['artifact_id'] == 9098721303
+          assert workflow['artifact_name'] == 'AUDIO-01-FOUNDATION-EVIDENCE'
+          assert workflow['artifact_digest'] == 'sha256:da4683de2a123a6b216353be817d8fc141232d8b4ee90af078257d5934b114e1'
+          proof = data['proof']
+          assert proof['scene_mount'] == 'pass'
+          assert proof['fighter_connections'] == 2
+          assert proof['impact_cues'] == ['hit', 'evade', 'block', 'parry', 'posture_break']
+          assert proof['event_consumer_only'] is True
+          assert proof['zero_health_mutation'] is True
+          assert proof['zero_posture_mutation'] is True
+          assert proof['zero_match_time_mutation'] is True
+          assert proof['audio_stream_generator_present'] is True
+          policy = data['runtime_policy']
+          assert policy['gameplay_timing_owner'] is False
+          assert policy['damage_owner'] is False
+          assert policy['ai_owner'] is False
+          assert policy['balance_changes'] is False
+          print('AUDIO01_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
       - name: Install Godot 4.3
         run: |
           curl --fail --location --retry 3 --retry-all-errors \
