@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "AUDIO-03_AMBIENCE_MUSICAL_BED",
+  "updated_by_gate": "AUDIO-04_MASTERING_ACCESSIBILITY",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 97,
+    "progress_percent": 98,
     "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
@@ -19,7 +19,7 @@
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
     "vfx_presentation": 72,
-    "audio": 85,
+    "audio": 100,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
     "interactive_playtest_handoff": 100,
@@ -29,17 +29,16 @@
     "attack_cadence_impact": 100
   },
   "audio_progress": {
-    "progress_percent": 85,
+    "progress_percent": 100,
     "method": "weighted_audio_scope_completion",
     "completed": {
       "event_consumer_foundation": 25,
       "round_and_ui_cues": 20,
       "canonical_layering_and_spatial_identity": 20,
-      "arena_ambience_and_music": 20
-    },
-    "remaining": {
+      "arena_ambience_and_music": 20,
       "final_mastering_and_accessibility_mix_controls": 15
-    }
+    },
+    "remaining": {}
   },
   "project": {
     "progress_percent": 57,
@@ -141,11 +140,23 @@
       "result_target": 0.12,
       "audio02_regression": "pass",
       "zero_gameplay_mutation": true
+    },
+    "audio04_mastering_accessibility": {
+      "status": "pass",
+      "product_merge_commit": "0303726f2302c0c0968cbd8fef5d99bdd46fbeb9",
+      "evidence_closeout_merge_commit": "f6b2d066c14b07b3e77fdcb860d82cd99303432a",
+      "evidence": "config/audio04-mastering-evidence.json",
+      "master_ceiling": 0.86,
+      "accessibility_profiles": 4,
+      "persistent_mix_preferences": true,
+      "pause_ui_controls": true,
+      "remaining_audio_scope": [],
+      "zero_gameplay_mutation": true
     }
   },
   "next_priority": [
-    "build AUDIO-04 final mastering and accessibility mix controls over the single-owner AUDIO-03 runtime",
-    "close the remaining VFX/presentation gap from 72% using the canonical duo active-fight evidence as the visual baseline",
-    "run a post-audio/VFX human combat-feel playtest once presentation no longer masks impact readability"
+    "audit and close the remaining VFX/presentation gap from 72% using canonical duo runtime evidence as the baseline",
+    "remove duplicate or provisional presentation ownership before adding new effects",
+    "run a post-VFX human combat-feel playtest once impact readability and presentation are final"
   ]
 }
