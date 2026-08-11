@@ -36,6 +36,9 @@ def stage(ok: bool, state: str, detail: str, evidence: list[str] | None = None) 
 
 
 def build_board(dna_path: Path, root: Path) -> dict:
+    root = root.resolve()
+    dna_path = dna_path if dna_path.is_absolute() else root / dna_path
+    dna_path = dna_path.resolve()
     dna = read_json(dna_path)
     if not dna:
         raise ValueError(f"DNA ausente ou inválido: {dna_path}")
@@ -128,7 +131,9 @@ def main() -> int:
         print(json.dumps({"schema": SCHEMA, "ok": False, "error": str(exc)}, ensure_ascii=False))
         return 14
 
-    output = args.output or args.root / "artifacts" / "asset-forge" / "boards" / board["character_id"]
+    root = args.root.resolve()
+    output = args.output or root / "artifacts" / "asset-forge" / "boards" / board["character_id"]
+    output = output if output.is_absolute() else root / output
     output.mkdir(parents=True, exist_ok=True)
     (output / "board.json").write_text(json.dumps(board, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (output / "index.html").write_text(render_html(board), encoding="utf-8")
