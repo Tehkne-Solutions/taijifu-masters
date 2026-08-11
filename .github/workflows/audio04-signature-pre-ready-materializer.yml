@@ -1,0 +1,36 @@
+name: AUDIO-04 Signature Pre-Ready Materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/audio04-signature-pre-ready-fix'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch presentation signature fallback
+        run: |
+          python3 tools/audio04_patch_signature_pre_ready.py
+          grep -q 'const MASTER_CEILING_FALLBACK := 0.86' scripts/vertical_slice/first_playable_audio_director.gd
+          grep -q 'var master_ceiling := _mix_policy.master_ceiling() if _mix_policy != null else MASTER_CEILING_FALLBACK' scripts/vertical_slice/first_playable_audio_director.gd
+          grep -q '"master_ceiling": master_ceiling' scripts/vertical_slice/first_playable_audio_director.gd
+      - name: Remove disposable writer
+        run: |
+          rm tools/audio04_patch_signature_pre_ready.py
+          rm .github/workflows/audio04-signature-pre-ready-materializer.yml
+      - name: Commit robust signature product
+        run: |
+          git config user.name 'Tehkne Solutions Automation'
+          git config user.email 'automation@users.noreply.github.com'
+          git add scripts/vertical_slice/first_playable_audio_director.gd tools/audio04_patch_signature_pre_ready.py .github/workflows/audio04-signature-pre-ready-materializer.yml
+          git diff --cached --check
+          git commit -m 'AUDIO-04: make presentation signature safe before ready'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
