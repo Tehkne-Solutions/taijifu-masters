@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
+# C28 closeout validator intentionally runs only after the disposable importer is absent.
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "config/v2-rival-intake-contract.json"
 PRESENTER = ROOT / "scripts/vertical_slice/training_rival_lot01_presenter.gd"
