@@ -1,0 +1,44 @@
+{
+  "schema": "tehkne/taijifu-audio02-canonical-sound-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "AUDIO-02",
+  "status": "pass",
+  "validated_product_head_sha": "f9220bd1b8e578b92a81d5ec341dc2eec5a54949",
+  "workflow": {
+    "name": "AUDIO-02 Canonical Sound Gate",
+    "run_id": 31485866723,
+    "job_id": 93760995459,
+    "artifact_id": 9099081253,
+    "artifact_name": "AUDIO-02-CANONICAL-SOUND-EVIDENCE",
+    "artifact_digest": "sha256:8ba604241009a45815216ccea2b0d25186eb8174ba184a0d1b0d655a0c0419d8"
+  },
+  "proof": {
+    "presentation_connection": "pass",
+    "canonical_cue_count": 15,
+    "layered_recipes": "pass",
+    "mix_rate_hz": 44100,
+    "countdown_cues": 3,
+    "fight_cues": 1,
+    "spatial_pan": {
+      "left": -0.384,
+      "right": 0.384
+    },
+    "ko_result_ui": "pass",
+    "zero_gameplay_mutation": true
+  },
+  "runtime_policy": {
+    "event_consumer_only": true,
+    "gameplay_timing_owner": false,
+    "damage_owner": false,
+    "ai_owner": false,
+    "balance_changes": false,
+    "external_audio_assets_required": false
+  },
+  "remaining_audio_scope": [
+    "arena_ambience",
+    "music",
+    "final_mastering",
+    "accessibility_mix_controls"
+  ],
+  "next_stage": "AUDIO-03_AMBIENCE_MIX"
+}
