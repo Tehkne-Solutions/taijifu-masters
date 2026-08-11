@@ -1,0 +1,72 @@
+{
+  "schema": "tehkne/taijifu-c28-canonical-duo-visual-evidence/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "C28 post-import canonical duo active-fight visual review",
+  "status": "approved_canonical_duo_active_fight",
+  "validated_product_head_sha": "29999afea07a10de5bd9cdc47ec0109a45eebeaa",
+  "evidence": {
+    "workflow_run_id": 31448641790,
+    "artifact_id": 9085499161,
+    "artifact_digest": "sha256:ad8e08c6e51c3629e65f81d4c0b70a545598f78f97dcaee3d05b7228b81e30c8",
+    "artifact_name": "C28-CANONICAL-DUO-VISUAL-REVIEW",
+    "capture": "artifacts/c28_duo/C28_CANONICAL_DUO.review-1920x1080.png"
+  },
+  "canonical_metrics": {
+    "lian_wu": {
+      "visual_height_world_px": 132.0,
+      "footline_local": 0.147,
+      "sprite_scale": 0.146667,
+      "screen_rect": [168.0871, 415.2201, 40.39885, 90.8974],
+      "combat_view_visible_fraction": 1.0
+    },
+    "training_rival": {
+      "visual_height_world_px": 133.716,
+      "footline_local": 1.716,
+      "sprite_scale": 0.143012,
+      "screen_rect": [1023.512, 415.0735, 87.64758, 92.07913],
+      "combat_view_visible_fraction": 1.0
+    },
+    "height_ratio_rival_to_lian": 1.0130,
+    "camera_zoom": 0.689,
+    "fighter_world_positions": {
+      "p1": [720.0, 827.0],
+      "p2_observed_after_countdown": [1998.0, 826.93]
+    }
+  },
+  "visual_review": {
+    "both_real_presenters_active": "pass",
+    "legacy_visual_surfaces_hidden": "pass",
+    "relative_scale": "pass",
+    "footline_alignment": "pass",
+    "viewport_visibility": "pass",
+    "hud_overlap": "pass",
+    "identity_separation": "pass",
+    "single_weapon_readability": "pass",
+    "active_fight_composition": "pass"
+  },
+  "defects_found_and_closed": [
+    {
+      "id": "C28-DUO-01",
+      "defect": "Training Rival used 1.0 sprite scale and legacy y=-34 offset, producing about 7.08x Lian visual height and +436 px footline drift.",
+      "resolution": "Canonical scale derived from 132/923 and baseline derived from y=970; result height ratio 1.013 and footline drift 1.716 px."
+    },
+    {
+      "id": "C28-DUO-02",
+      "defect": "Training Rival presenter referenced removed _hitstun_timer runtime state.",
+      "resolution": "Hit visualization now follows health-delta timer and current _is_blocking contract, matching the maintained Lian presenter pattern."
+    },
+    {
+      "id": "C28-DUO-03",
+      "defect": "Generic arena respawns at extreme edges placed both canonical fighters outside the camera-readable viewport simultaneously.",
+      "resolution": "First Playable-specific respawns moved to x=720 and x=2080 while preserving camera readability zoom range; final combat-view visibility is 100% for both."
+    }
+  ],
+  "runtime_policy": {
+    "training_rival_real_assets_active": true,
+    "lian_wu_real_assets_active": true,
+    "procedural_fallback_code_preserved": true,
+    "procedural_fallback_hidden_when_real_assets_active": true,
+    "canonical_duo_visual_ready": true
+  },
+  "next_action": "Validate this frozen evidence read-only, merge the canonical duo visual fix, then reconcile v2-production-progress.json by removing the resolved Training Rival blockers and reassessing the historical Lian Wu coverage blocker against the current 45-frame runtime resource."
+}
