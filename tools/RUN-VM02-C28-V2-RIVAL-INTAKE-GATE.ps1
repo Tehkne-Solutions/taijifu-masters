@@ -1,129 +1,121 @@
 param(
-  [string]$RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
+  [string]$RepoRoot = "",
   [string]$AssetsRepoRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+$scriptPath = $MyInvocation.MyCommand.Path
+if ([string]::IsNullOrWhiteSpace($scriptPath)) { throw "VM02_C28_REPO_ROOT=BLOCKED script_path_unavailable" }
+$scriptRoot = Split-Path -Parent $scriptPath
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+  $RepoRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
+} else {
+  $RepoRoot = (Resolve-Path $RepoRoot).Path
+}
+if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { throw "VM02_C28_REPO_ROOT=BLOCKED path=$RepoRoot" }
 Set-Location $RepoRoot
+Write-Host "VM02_C28_REPO_ROOT=PASS path=$RepoRoot"
+
+# Kept only for backwards-compatible invocation. C28 is now a read-only gate over
+# the already imported, revision-pinned product; re-import belongs to the Python importer.
+if (-not [string]::IsNullOrWhiteSpace($AssetsRepoRoot)) {
+  Write-Host "VM02_C28_ASSETS_REPO_ROOT=IGNORED legacy_parameter=true"
+}
 
 $contractPath = Join-Path $RepoRoot "config\v2-rival-intake-contract.json"
+$evidencePath = Join-Path $RepoRoot "config\c28-training-rival-runtime-evidence.json"
+$validatorPath = Join-Path $RepoRoot "tools\validate_training_rival_c28_import.py"
 $progressPath = Join-Path $RepoRoot "config\v2-production-progress.json"
 $reportLib = Join-Path $RepoRoot "tools\lib\Write-TehkneGateReport.ps1"
-foreach ($file in @($contractPath, $progressPath, $reportLib)) {
-  if (-not (Test-Path $file)) { throw "VM02_C28_REQUIRED_FILES=BLOCKED missing=$file" }
+foreach ($file in @($contractPath, $evidencePath, $validatorPath, $progressPath, $reportLib)) {
+  if (-not (Test-Path $file -PathType Leaf)) { throw "VM02_C28_REQUIRED_FILES=BLOCKED missing=$file" }
 }
 Write-Host "VM02_C28_REQUIRED_FILES=PASS"
 
 $contract = Get-Content $contractPath -Raw | ConvertFrom-Json
+$evidence = Get-Content $evidencePath -Raw | ConvertFrom-Json
 $progress = Get-Content $progressPath -Raw | ConvertFrom-Json
-if ($contract.signature -ne "Tehkné Solutions") { throw "VM02_C28_SIGNATURE=BLOCKED" }
-if ($contract.character_id -ne "training_rival") { throw "VM02_C28_CHARACTER_CONTRACT=BLOCKED" }
-if ([int]$contract.required_total_frames -ne 44) { throw "VM02_C28_FRAME_CONTRACT=BLOCKED" }
-Write-Host "VM02_C28_CONTRACT=PASS"
-
-if (-not $AssetsRepoRoot) {
-  $workspace = Split-Path $RepoRoot -Parent
-  $AssetsRepoRoot = Join-Path $workspace "taijifu-masters-assets"
+if ($contract.signature -ne "Tehkné Solutions" -or $contract.character_id -ne "training_rival" -or [int]$contract.required_total_frames -ne 44) {
+  throw "VM02_C28_CONTRACT=BLOCKED"
 }
-
-$assetsRepoDetected = Test-Path (Join-Path $AssetsRepoRoot ".git")
-if (-not $assetsRepoDetected -and [bool]$contract.import_policy.auto_clone_assets_repo) {
-  Write-Host "VM02_C28_ASSETS_REPO_CLONE=BEGIN path=$AssetsRepoRoot"
-  git clone --quiet $contract.source_repository $AssetsRepoRoot
-  if ($LASTEXITCODE -ne 0) { throw "VM02_C28_ASSETS_REPO_CLONE=BLOCKED" }
-  $assetsRepoDetected = Test-Path (Join-Path $AssetsRepoRoot ".git")
-  Write-Host "VM02_C28_ASSETS_REPO_CLONE=PASS"
+if ($evidence.signature -ne "Tehkné Solutions" -or $evidence.character_id -ne "training_rival") {
+  throw "VM02_C28_EVIDENCE=BLOCKED identity"
 }
-if (-not $assetsRepoDetected) { throw "VM02_C28_ASSETS_REPO=BLOCKED path=$AssetsRepoRoot" }
-Write-Host "VM02_C28_ASSETS_REPO=PASS path=$AssetsRepoRoot"
+if ($evidence.status -ne "validated_runtime_active_proxy_fallback_preserved") {
+  throw "VM02_C28_EVIDENCE=BLOCKED status=$($evidence.status)"
+}
+if (-not [bool]$evidence.runtime_policy.runtime_ready -or -not [bool]$evidence.runtime_policy.real_training_rival_active_when_resource_loads) {
+  throw "VM02_C28_RUNTIME_READY=BLOCKED"
+}
+Write-Host "VM02_C28_CONTRACT=PASS source_revision=$($contract.source_revision)"
+Write-Host "VM02_C28_RUNTIME_EVIDENCE=PASS product_head=$($evidence.validated_product_head_sha)"
 
-if ([bool]$contract.import_policy.auto_fast_forward_assets_repo) {
-  Push-Location $AssetsRepoRoot
-  try {
-    git fetch origin --quiet
-    if ($LASTEXITCODE -ne 0) { throw "VM02_C28_ASSETS_FETCH=BLOCKED" }
-    $branch = (git branch --show-current).Trim()
-    if (-not $branch) { $branch = "main" }
-    git pull --ff-only --quiet origin $branch
-    if ($LASTEXITCODE -ne 0) { throw "VM02_C28_ASSETS_PULL=BLOCKED branch=$branch" }
-    Write-Host "VM02_C28_ASSETS_SYNC=PASS branch=$branch"
-  } finally {
-    Pop-Location
+function Resolve-Python {
+  foreach ($candidate in @("py", "python", "python3")) {
+    try {
+      Get-Command $candidate -ErrorAction Stop | Out-Null
+      return $candidate
+    } catch {}
   }
+  throw "VM02_C28_PYTHON=BLOCKED missing"
 }
 
-$sourceLot = Join-Path $AssetsRepoRoot ([string]$contract.source_lot)
-$sourceManifest = Join-Path $AssetsRepoRoot ([string]$contract.source_manifest)
-$manifestReady = Test-Path $sourceManifest
-Write-Host ("VM02_C28_SOURCE_MANIFEST=" + $(if ($manifestReady) { "PASS" } else { "BLOCKED" }))
-
-$frameCount = 0
-$frameContractReady = $false
-$sourceManifestValid = $false
-$missing = New-Object System.Collections.Generic.List[string]
-
-if ($manifestReady) {
-  try {
-    $manifest = Get-Content $sourceManifest -Raw | ConvertFrom-Json
-    $sourceManifestValid = ($manifest.signature -eq "Tehkné Solutions") -and ($manifest.character_id -eq "training_rival") -and ([int]$manifest.required_frames -eq 44)
-  } catch {
-    $sourceManifestValid = $false
-  }
-  Write-Host ("VM02_C28_SOURCE_MANIFEST_SCHEMA=" + $(if ($sourceManifestValid) { "PASS" } else { "BLOCKED" }))
-
-  foreach ($property in $contract.required_animations.PSObject.Properties) {
-    $animation = $property.Name
-    $expected = [int]$property.Value
-    $folder = Join-Path $sourceLot ("animations\" + $animation)
-    for ($i = 1; $i -le $expected; $i++) {
-      $name = "char_training_rival__{0}__f{1:d3}.png" -f $animation, $i
-      $path = Join-Path $folder $name
-      if (Test-Path $path) { $frameCount++ } else { $missing.Add(("{0}/f{1:d3}" -f $animation, $i)) }
-    }
-  }
-  $frameContractReady = $sourceManifestValid -and ($frameCount -eq 44) -and ($missing.Count -eq 0)
+$python = Resolve-Python
+Write-Host "VM02_C28_VALIDATOR=BEGIN executable=$python"
+if ($python -eq "py") {
+  $validatorOutput = @(& py -3 $validatorPath 2>&1)
+} else {
+  $validatorOutput = @(& $python $validatorPath 2>&1)
 }
+$validatorExit = $LASTEXITCODE
+$validatorOutput | ForEach-Object { Write-Host $_ }
+if ($validatorExit -ne 0) { throw "VM02_C28_VALIDATOR=BLOCKED exit=$validatorExit" }
 
-Write-Host "VM02_C28_RIVAL_FRAME_COUNT=$frameCount/44"
-Write-Host ("VM02_C28_RIVAL_FRAME_CONTRACT=" + $(if ($frameContractReady) { "PASS" } else { "BLOCKED" }))
-if ($missing.Count -gt 0) {
-  Write-Host "VM02_C28_MISSING_FRAME_COUNT=$($missing.Count)"
-  $missing | Select-Object -First 8 | ForEach-Object { Write-Host "VM02_C28_MISSING_FRAME=$_" }
+$validatorText = $validatorOutput -join "`n"
+foreach ($marker in @(
+  "VM02_C28_IMPORTED_PACK=PASS frames=44/44",
+  "VM02_C28_IMPORTED_HASHES=PASS frames=44",
+  "VM02_C28_PRESENTER_PATH=PASS",
+  "VM02_C28_SPRITEFRAMES_STATIC=PASS animations=10 frames=44",
+  "VM02_C28_RUNTIME_EVIDENCE=PASS frozen=true",
+  "VM02_C28_DISPOSABLE_WRITER=ABSENT",
+  "VM02_C28_RUNTIME_READY=PASS presenter_using_real_assets=true fallback_preserved=true"
+)) {
+  if (-not $validatorText.Contains($marker)) { throw "VM02_C28_VALIDATOR=BLOCKED missing_marker=$marker" }
 }
+Write-Host "VM02_C28_VALIDATOR=PASS"
 
 $destination = Join-Path $RepoRoot ([string]$contract.destination_root)
-$imported = $false
-if ($frameContractReady -and [bool]$contract.import_policy.auto_import_when_complete) {
-  $staging = "$destination.__c28_staging"
-  if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
-  New-Item -ItemType Directory -Force -Path $staging | Out-Null
-  Copy-Item (Join-Path $sourceLot "animations") -Destination $staging -Recurse -Force
-  Copy-Item $sourceManifest -Destination (Join-Path $staging "source-work-manifest.json") -Force
-  if (Test-Path $destination) { Remove-Item $destination -Recurse -Force }
-  Move-Item $staging $destination
-  $imported = $true
-  Write-Host "VM02_C28_RIVAL_IMPORT=PASS destination=$destination"
-} else {
-  Write-Host "VM02_C28_RIVAL_IMPORT=BLOCKED waiting_for_complete_canonical_pack"
+$resource = Join-Path $RepoRoot ([string]$contract.sprite_frames_resource)
+$manifest = Join-Path $destination "c28-import-manifest.json"
+foreach ($path in @($destination, $resource, $manifest)) {
+  if (-not (Test-Path $path)) { throw "VM02_C28_PRODUCT=BLOCKED missing=$path" }
 }
-
-$rivalReady = $frameContractReady -and $imported
-Write-Host ("VM02_C28_RIVAL_CANONICAL_READY=" + $(if ($rivalReady) { "PASS" } else { "BLOCKED" }))
-Write-Host "VM02_C28_PIPELINE_READY=PASS"
+$frameCount = @(Get-ChildItem (Join-Path $destination "animations") -Filter "char_training_rival__*.png" -File -Recurse).Count
+if ($frameCount -ne 44) { throw "VM02_C28_FRAME_COUNT=BLOCKED frames=$frameCount/44" }
+Write-Host "VM02_C28_FRAME_COUNT=44/44"
+Write-Host "VM02_C28_RIVAL_CANONICAL_READY=PASS"
+Write-Host "VM02_C28_REAL_ASSETS_ACTIVE=PASS"
+Write-Host "VM02_C28_PROCEDURAL_FALLBACK=PRESERVED"
 Write-Host "VM02_C28_V2_RIVAL_INTAKE_GATE=PASS"
+Write-Host "SIGNATURE=Tehkné Solutions"
 
 . $reportLib
-$branchName = (git branch --show-current).Trim()
-$commit = (git rev-parse --short=12 HEAD).Trim()
+$branchOutput = @(& git branch --show-current 2>$null)
+$branchName = if ($branchOutput.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$branchOutput[0])) { ([string]$branchOutput[0]).Trim() } else { "detached" }
+$commitOutput = @(& git rev-parse --short=12 HEAD 2>$null)
+$commit = if ($commitOutput.Count -gt 0) { ([string]$commitOutput[0]).Trim() } else { "unknown" }
 Write-TehkneGateReport -Gate "VM02-C28-V2-RIVAL-INTAKE-BRIDGE" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
   CONTRACT="PASS"
-  ASSETS_REPO="PASS"
-  SOURCE_MANIFEST=$(if ($manifestReady -and $sourceManifestValid) { "PASS" } else { "BLOCKED" })
-  FRAME_COUNT="$frameCount/44"
-  FRAME_CONTRACT=$(if ($frameContractReady) { "PASS" } else { "BLOCKED" })
-  RIVAL_IMPORT=$(if ($imported) { "PASS" } else { "BLOCKED" })
-  RIVAL_CANONICAL_READY=$(if ($rivalReady) { "PASS" } else { "BLOCKED" })
-  PIPELINE_READY="PASS"
+  SOURCE_REVISION=[string]$contract.source_revision
+  FRAME_COUNT="44/44"
+  IMPORTED_HASHES="PASS"
+  SPRITEFRAMES="10/10 animations; 44/44 frames"
+  GODOT_RUNTIME_BENCH="PASS"
+  PRESENTER_REAL_ASSETS="PASS"
+  FALLBACK="PRESERVED"
+  RUNTIME_READY="PASS"
   PHASE_PROGRESS="$($progress.phase.progress_percent)%"
   V2_PLAYABLE_PROGRESS="$($progress.v2_playable.progress_percent)%"
   PROJECT_PROGRESS="$($progress.project.progress_percent)%"
