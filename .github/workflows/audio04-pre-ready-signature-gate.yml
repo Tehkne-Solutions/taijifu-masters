@@ -1,0 +1,51 @@
+name: AUDIO-04 Pre-Ready Signature Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_audio_director.gd'
+      - 'scripts/ci/audio04_pre_ready_signature_bench.gd'
+      - '.github/workflows/audio04-pre-ready-signature-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio04-pre-ready-signature:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio04-pre-ready-import.log
+      - name: Prove signature before ready
+        run: |
+          set -o pipefail
+          ./godot --headless --path . \
+            --script res://scripts/ci/audio04_pre_ready_signature_bench.gd \
+            2>&1 | tee audio04-pre-ready-signature.log
+          grep -q 'AUDIO04_PRE_READY_SIGNATURE=PASS ceiling=0.86' audio04-pre-ready-signature.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-04-PRE-READY-SIGNATURE-EVIDENCE
+          path: |
+            audio04-pre-ready-import.log
+            audio04-pre-ready-signature.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-04 pre-ready presentation signature regression gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
