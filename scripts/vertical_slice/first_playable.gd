@@ -1,6 +1,8 @@
 class_name FirstPlayableController
 extends Node2D
 
+signal presentation_cue_requested(cue_id: StringName, intensity: float)
+
 const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const CHARACTER_IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
 const MENU_SCENE := "res://scenes/vertical_slice/first_playable_menu.tscn"
@@ -135,11 +137,13 @@ func _start_match() -> void:
 		if generation != _match_generation:
 			return
 		center_label.text = str(value)
+		presentation_cue_requested.emit(&"countdown", clampf(float(value) / float(COUNTDOWN_SECONDS), 0.45, 1.0))
 		await get_tree().create_timer(countdown_step_seconds, false).timeout
 
 	if generation != _match_generation:
 		return
 	center_label.text = "LUTEM"
+	presentation_cue_requested.emit(&"fight", 1.0)
 	await get_tree().create_timer(fight_command_seconds, false).timeout
 	if generation != _match_generation:
 		return
@@ -204,6 +208,11 @@ func _finish_match(winner: FighterController, reason: String) -> void:
 	var winner_profile_id: StringName = &"p1" if player_won else &"p2"
 	var result_label := "VITÓRIA" if player_won else "DERROTA"
 	var reason_id := StringName(reason.to_lower())
+	if reason_id == &"ko":
+		presentation_cue_requested.emit(&"ko", 1.0)
+	elif reason_id == &"tempo":
+		presentation_cue_requested.emit(&"timeout", 0.88)
+	presentation_cue_requested.emit(&"round_win" if player_won else &"round_loss", 1.0)
 	_telemetry.record_event(winner_profile_id, &"match_won", reason_id)
 	_telemetry.record_event(&"p1", &"match_finished", reason_id)
 	_last_telemetry_path = _telemetry.finish_round(winner_profile_id, {
@@ -234,6 +243,7 @@ func _set_paused(active: bool) -> void:
 	_is_paused = active
 	hud_controller.show_pause(active)
 	get_tree().paused = active
+	presentation_cue_requested.emit(&"ui_pause" if active else &"ui_resume", 0.72)
 	if _state == MatchState.COUNTDOWN or _state == MatchState.BATTLE:
 		_telemetry.record_event(&"p1", &"pause" if active else &"resume")
 
@@ -270,6 +280,7 @@ func _on_feedback_submitted(rating_id: StringName) -> void:
 	if _state != MatchState.RESULT or _feedback_submitted:
 		return
 	_feedback_submitted = true
+	presentation_cue_requested.emit(&"ui_confirm", 0.78)
 	_last_telemetry_path = _telemetry.annotate_last_round({
 		"balance_feedback": String(rating_id),
 		"feedback_submitted_unix": int(Time.get_unix_time_from_system())
@@ -284,6 +295,7 @@ func _copy_playtest_report() -> void:
 		hud_controller.set_report_status("RELATÓRIO AINDA NÃO DISPONÍVEL")
 		return
 	DisplayServer.clipboard_set(report)
+	presentation_cue_requested.emit(&"ui_confirm", 0.72)
 	hud_controller.set_report_status(
 		"RELATÓRIO COPIADO • SESSÃO %s" % _telemetry.session_id()
 	)
@@ -296,6 +308,7 @@ func _on_difficulty_changed(difficulty_id: StringName, label: String) -> void:
 		"difficulty_label": label
 	})
 	_telemetry.record_event(&"p1", &"difficulty_changed", difficulty_id)
+	presentation_cue_requested.emit(&"ui_select", 0.68)
 
 func _fighter_final_state(fighter: FighterController) -> Dictionary:
 	if not is_instance_valid(fighter):
