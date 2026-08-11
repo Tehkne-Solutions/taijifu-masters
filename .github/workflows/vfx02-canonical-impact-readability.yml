@@ -1,0 +1,73 @@
+name: VFX-02 Canonical Impact Readability
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/impact_director.gd'
+      - 'scripts/ci/vfx01_presentation_owner_bench.gd'
+      - 'scripts/ci/vfx02_canonical_impact_readability_review.gd'
+      - 'config/vfx02-canonical-impact-readability-evidence.json'
+      - '.github/workflows/vfx02-canonical-impact-readability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vfx02-readability:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install visual runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee vfx02-import.log
+      - name: Capture and validate canonical impact readability
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot \
+            --path . \
+            --rendering-method gl_compatibility \
+            --audio-driver Dummy \
+            --script res://scripts/ci/vfx02_canonical_impact_readability_review.gd \
+            2>&1 | tee vfx02-readability.log
+          grep -q 'VFX02_CANONICAL_DUO=PASS' vfx02-readability.log
+          grep -q 'VFX02_EFFECT_SCALE=PASS' vfx02-readability.log
+          grep -q 'VFX02_CAMERA_PUNCH=PASS max_px=7.00' vfx02-readability.log
+          grep -q 'VFX02_HITSTOP=PASS max_seconds=0.105' vfx02-readability.log
+          grep -q 'VFX02_SAFE_AREA=PASS states=4' vfx02-readability.log
+          grep -q 'VFX02_CAPTURE_SET=PASS hit block parry posture_break' vfx02-readability.log
+          grep -q 'VFX02_READABILITY=PASS' vfx02-readability.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VFX-02-CANONICAL-IMPACT-READABILITY
+          path: |
+            vfx02-import.log
+            vfx02-readability.log
+            artifacts/vfx02/VFX02_METRICS.json
+            artifacts/vfx02/VFX02_HIT.review-1920x1080.png
+            artifacts/vfx02/VFX02_BLOCKED.review-1920x1080.png
+            artifacts/vfx02/VFX02_PARRIED.review-1920x1080.png
+            artifacts/vfx02/VFX02_POSTURE_BREAK.review-1920x1080.png
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'VFX-02 canonical impact readability review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
