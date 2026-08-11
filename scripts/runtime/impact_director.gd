@@ -10,21 +10,13 @@ const ELEMENT_COLORS := {
 	&"air": Color(0.62, 0.94, 1.0)
 }
 
-@onready var camera: Camera2D = get_node("../Camera2D")
-
 var _bursts: Array[Dictionary] = []
 var _connect_timer := 0.0
-var _shake_time := 0.0
-var _shake_duration := 0.0
-var _shake_amplitude := 0.0
-var _base_camera_offset := Vector2.ZERO
 var _hitstop_token := 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	z_index = 80
-	if is_instance_valid(camera):
-		_base_camera_offset = camera.offset
 	_connect_fighters()
 
 func _process(delta: float) -> void:
@@ -33,7 +25,6 @@ func _process(delta: float) -> void:
 		_connect_timer = CONNECT_INTERVAL
 		_connect_fighters()
 	_update_bursts(delta)
-	_update_camera_shake(delta)
 	queue_redraw()
 
 func _connect_fighters() -> void:
@@ -65,12 +56,12 @@ func _on_impact_resolved(
 		return
 	var path_id := StringName(technique.path)
 	var element_id := StringName(technique.element_id) if technique.has_element() else &""
-	var text := _onomatopoeia(path_id, result_id, element_id)
+	# Physical impact text belongs exclusively to FirstPlayableCombatFeedbackRuntime.
+	# ImpactDirector keeps shapes/elemental feedback + hitstop only.
+	var text := ""
 	var color := _impact_color(path_id, result_id, element_id)
 	var duration := 0.42 + intensity * 0.22
 	_append_burst(world_position, text, color, path_id, result_id, intensity, duration, element_id)
-	var shake_profile := _shake_profile(path_id, result_id, intensity)
-	_start_shake(float(shake_profile[0]), float(shake_profile[1]))
 	var hitstop_profile := _hitstop_profile(path_id, result_id, intensity)
 	if float(hitstop_profile[0]) > 0.0:
 		_apply_hitstop(float(hitstop_profile[0]), float(hitstop_profile[1]))
@@ -109,7 +100,6 @@ func _on_elemental_interaction(
 		0.82,
 		element_id
 	)
-	_start_shake(0.10, 4.0)
 
 func _append_burst(
 	world_position: Vector2,
@@ -141,37 +131,6 @@ func _update_bursts(delta: float) -> void:
 		if float(_bursts[index]["age"]) >= float(_bursts[index]["duration"]):
 			_bursts.remove_at(index)
 
-func _update_camera_shake(delta: float) -> void:
-	if not is_instance_valid(camera):
-		return
-	if _shake_time > 0.0:
-		_shake_time = maxf(0.0, _shake_time - delta)
-		var ratio := 0.0
-		if _shake_duration > 0.0:
-			ratio = _shake_time / _shake_duration
-		var amplitude := _shake_amplitude * ratio
-		camera.offset = _base_camera_offset + Vector2(
-			randf_range(-amplitude, amplitude),
-			randf_range(-amplitude * 0.62, amplitude * 0.62)
-		)
-	else:
-		_shake_duration = 0.0
-		_shake_amplitude = 0.0
-		camera.offset = camera.offset.lerp(_base_camera_offset, minf(1.0, delta * 18.0))
-
-func _start_shake(duration: float, amplitude: float) -> void:
-	if duration <= 0.0 or amplitude <= 0.0:
-		return
-	if _shake_time <= 0.0:
-		_shake_time = duration
-		_shake_duration = duration
-		_shake_amplitude = amplitude
-		return
-	if duration >= _shake_time or amplitude >= _shake_amplitude:
-		_shake_time = maxf(_shake_time, duration)
-		_shake_duration = maxf(_shake_duration, duration)
-		_shake_amplitude = maxf(_shake_amplitude, amplitude)
-
 func _apply_hitstop(duration: float, time_scale: float) -> void:
 	_hitstop_token += 1
 	var token := _hitstop_token
@@ -199,15 +158,16 @@ func _draw() -> void:
 		_draw_impact_lines(center, path_id, Color(color, alpha * 0.62), intensity, progress)
 		if element_id != &"":
 			_draw_element_feedback(center, element_id, Color(color, alpha * 0.78), intensity, progress)
-		draw_set_transform(center, 0.0, Vector2(scale, scale))
 		var text := String(burst["text"])
-		var font_size := int(22.0 + intensity * 18.0)
-		var shadow_color := Color(0.02, 0.02, 0.035, alpha * 0.90)
-		draw_string(font, Vector2(-font_size * 0.72 + 3.0, 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
-		draw_string(font, Vector2(-font_size * 0.72, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(color, alpha))
+		if text != "":
+			draw_set_transform(center, 0.0, Vector2(scale, scale))
+			var font_size := int(22.0 + intensity * 18.0)
+			var shadow_color := Color(0.02, 0.02, 0.035, alpha * 0.90)
+			draw_string(font, Vector2(-font_size * 0.72 + 3.0, 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, shadow_color)
+			draw_string(font, Vector2(-font_size * 0.72, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(color, alpha))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		if result_id == &"posture_break":
-			draw_arc(Vector2.ZERO, 34.0 + progress * 22.0, 0.0, TAU, 20, Color(color, alpha * 0.72), 4.0)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_arc(center, (34.0 + progress * 22.0) * scale, 0.0, TAU, 20, Color(color, alpha * 0.72), 4.0)
 
 func _draw_impact_lines(center: Vector2, path_id: StringName, color: Color, intensity: float, progress: float) -> void:
 	var length := 28.0 + intensity * 42.0 + progress * 12.0
@@ -251,24 +211,6 @@ func _draw_element_feedback(center: Vector2, element_id: StringName, color: Colo
 			draw_arc(center + Vector2(8.0, -5.0), radius, -1.0, 2.4, 22, Color(color, color.a * 0.62), 2.2)
 			for offset in [-12.0, 2.0, 16.0]:
 				draw_line(center + Vector2(-radius, offset), center + Vector2(-radius * 0.25, offset - 6.0), Color(color, color.a * 0.56), 2.0)
-
-func _onomatopoeia(path_id: StringName, result_id: StringName, element_id: StringName) -> String:
-	match result_id:
-		&"evaded": return "SWISH!"
-		&"blocked": return "THOK!"
-		&"parried": return "CLANG!"
-		&"posture_break": return "KRAK!"
-	if element_id != &"":
-		match element_id:
-			&"fire": return "FWOOM!"
-			&"water": return "SPLASH!"
-			&"earth": return "KROOM!"
-			&"air": return "VWOOSH!"
-	match path_id:
-		&"tai": return "VUSH!"
-		&"ji": return "DOOM!"
-		&"fu": return "FLUX!"
-		_: return "WHAM!"
 
 func _impact_color(path_id: StringName, result_id: StringName, element_id: StringName) -> Color:
 	match result_id:
@@ -316,16 +258,6 @@ func _interaction_color(interaction_id: StringName, element_id: StringName) -> C
 		&"extinguished": return Color(0.42, 0.75, 1.0)
 	return _element_color(element_id)
 
-func _shake_profile(path_id: StringName, result_id: StringName, intensity: float) -> Array[float]:
-	if result_id == &"evaded": return [0.0, 0.0]
-	if result_id == &"parried": return [0.14, 7.0]
-	if result_id == &"posture_break": return [0.24, 13.0]
-	var duration := 0.08 + intensity * 0.10
-	var amplitude := 2.0 + intensity * 6.0
-	if path_id == &"ji": amplitude *= 1.32
-	elif path_id == &"tai": duration *= 0.78
-	return [duration, amplitude]
-
 func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: float) -> Array[float]:
 	if result_id == &"evaded": return [0.0, 1.0]
 	if result_id == &"parried": return [0.075, 0.08]
@@ -341,8 +273,33 @@ func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: flo
 	if result_id == &"blocked": duration *= 0.72
 	return [duration, scale]
 
+func presentation_signature() -> Dictionary:
+	return {
+		"stage": "VFX-01",
+		"world_space_impact_shapes": true,
+		"elemental_shapes": true,
+		"elemental_state_text": true,
+		"elemental_interaction_text": true,
+		"physical_impact_text_owner": &"FirstPlayableCombatFeedbackRuntime",
+		"physical_impact_text_emitted_here": false,
+		"camera_shake_owner": false,
+		"camera_shake_delegated_to": &"FightCameraComposition",
+		"hitstop_owner": true,
+		"hitstop_visual_only": true,
+		"damage_changes": false,
+		"frame_data_changes": false,
+		"ai_changes": false,
+		"signature": "Tehkné Solutions"
+	}
+
+func active_burst_count() -> int:
+	return _bursts.size()
+
+func last_burst_text() -> String:
+	if _bursts.is_empty():
+		return ""
+	return String(_bursts.back().get("text", ""))
+
 func _exit_tree() -> void:
 	_hitstop_token += 1
 	Engine.time_scale = 1.0
-	if is_instance_valid(camera):
-		camera.offset = _base_camera_offset

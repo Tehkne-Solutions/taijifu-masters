@@ -1,0 +1,103 @@
+name: VFX-01 Presentation Owner Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/impact_director.gd'
+      - 'scripts/ci/vfx01_presentation_owner_bench.gd'
+      - 'config/vfx01-presentation-owner-evidence.json'
+      - '.github/workflows/vfx01-presentation-owner-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vfx01-presentation-owner:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate frozen VFX-01 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('config/vfx01-presentation-owner-evidence.json').read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-vfx01-presentation-owner-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'VFX-01'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == 'ae7dfe7004fcfd754878af1e30b846b5b17effbd'
+          wf = data['workflow']
+          assert wf['run_id'] == 31490085890
+          assert wf['job_id'] == 93774246096
+          assert wf['artifact_id'] == 9100663951
+          assert wf['artifact_name'] == 'VFX-01-PRESENTATION-OWNER-EVIDENCE'
+          assert wf['artifact_digest'] == 'sha256:d0973661ca4dfb30c869d75e958cfcc149dffeba5f44e311e9de6ae530c23c75'
+          proof = data['proof']
+          assert proof['camera_owner'] == 'FightCameraComposition'
+          assert proof['physical_text_owner'] == 'FirstPlayableCombatFeedbackRuntime'
+          assert proof['impact_world_shapes'] == 'pass'
+          assert proof['elemental_text'] == 'BURN!'
+          assert proof['hitstop_owner'] == 'ImpactDirector'
+          assert proof['popup_budget_max'] == 2
+          assert proof['popup_active_observed'] <= 2
+          assert proof['zero_gameplay_mutation'] is True
+          policy = data['ownership_policy']
+          assert policy['impact_director_writes_camera_offset'] is False
+          assert policy['impact_director_emits_physical_text'] is False
+          assert policy['impact_director_keeps_elemental_text'] is True
+          assert policy['impact_director_keeps_hitstop'] is True
+          assert policy['camera_punch_delegated'] is True
+          print('VFX01_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Verify static ownership boundary
+        run: |
+          grep -q '"camera_shake_owner": false' scripts/runtime/impact_director.gd
+          grep -q '"physical_impact_text_emitted_here": false' scripts/runtime/impact_director.gd
+          grep -q '"hitstop_owner": true' scripts/runtime/impact_director.gd
+          ! grep -q 'camera.offset' scripts/runtime/impact_director.gd
+          ! grep -q 'func _start_shake' scripts/runtime/impact_director.gd
+          ! grep -q 'func _shake_profile' scripts/runtime/impact_director.gd
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee vfx01-import.log
+      - name: Prove single presentation ownership
+        run: |
+          set -o pipefail
+          ./godot --headless --audio-driver Dummy --path . \
+            --script res://scripts/ci/vfx01_presentation_owner_bench.gd \
+            2>&1 | tee vfx01-owner.log
+          grep -q 'VFX01_CAMERA_OWNER=PASS owner=FightCameraComposition' vfx01-owner.log
+          grep -q 'VFX01_PHYSICAL_TEXT_OWNER=PASS owner=FirstPlayableCombatFeedbackRuntime' vfx01-owner.log
+          grep -q 'VFX01_IMPACT_WORLD_SHAPES=PASS' vfx01-owner.log
+          grep -q 'VFX01_ELEMENT_TEXT=PASS value=BURN!' vfx01-owner.log
+          grep -q 'VFX01_HITSTOP_OWNER=PASS owner=ImpactDirector' vfx01-owner.log
+          grep -q 'VFX01_POPUP_BUDGET=PASS max=2' vfx01-owner.log
+          grep -q 'VFX01_ZERO_GAMEPLAY_MUTATION=PASS' vfx01-owner.log
+          grep -q 'VFX01_PRESENTATION_OWNER=PASS' vfx01-owner.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VFX-01-PRESENTATION-OWNER-EVIDENCE
+          path: |
+            vfx01-import.log
+            vfx01-owner.log
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'VFX-01 single camera/text presentation ownership — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
