@@ -1,0 +1,113 @@
+name: AUDIO-02 Canonical Sound Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable.gd'
+      - 'scripts/vertical_slice/first_playable_audio_director.gd'
+      - 'scripts/ci/audio01_foundation_bench.gd'
+      - 'scripts/ci/audio02_canonical_sound_bench.gd'
+      - 'config/audio02-canonical-sound-evidence.json'
+      - '.github/workflows/audio02-canonical-sound-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio02-canonical-sound:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate frozen AUDIO-02 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/audio02-canonical-sound-evidence.json')
+          if not path.exists():
+              raise SystemExit('AUDIO02_EVIDENCE=BLOCKED missing')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-audio02-canonical-sound-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'AUDIO-02'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == 'f9220bd1b8e578b92a81d5ec341dc2eec5a54949'
+          workflow = data['workflow']
+          assert workflow['run_id'] == 31485866723
+          assert workflow['job_id'] == 93760995459
+          assert workflow['artifact_id'] == 9099081253
+          assert workflow['artifact_name'] == 'AUDIO-02-CANONICAL-SOUND-EVIDENCE'
+          assert workflow['artifact_digest'] == 'sha256:8ba604241009a45815216ccea2b0d25186eb8174ba184a0d1b0d655a0c0419d8'
+          proof = data['proof']
+          assert proof['presentation_connection'] == 'pass'
+          assert proof['canonical_cue_count'] == 15
+          assert proof['layered_recipes'] == 'pass'
+          assert proof['mix_rate_hz'] == 44100
+          assert proof['countdown_cues'] == 3
+          assert proof['fight_cues'] == 1
+          assert abs(float(proof['spatial_pan']['left']) + 0.384) < 0.001
+          assert abs(float(proof['spatial_pan']['right']) - 0.384) < 0.001
+          assert proof['ko_result_ui'] == 'pass'
+          assert proof['zero_gameplay_mutation'] is True
+          policy = data['runtime_policy']
+          assert policy['event_consumer_only'] is True
+          assert policy['gameplay_timing_owner'] is False
+          assert policy['damage_owner'] is False
+          assert policy['ai_owner'] is False
+          assert policy['balance_changes'] is False
+          print('AUDIO02_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee audio02-import.log
+
+      - name: Prove AUDIO-02 canonical sound design
+        run: |
+          set -o pipefail
+          ./godot \
+            --headless \
+            --audio-driver Dummy \
+            --path . \
+            --script res://scripts/ci/audio02_canonical_sound_bench.gd \
+            2>&1 | tee audio02-canonical-sound.log
+          grep -q 'AUDIO02_PRESENTATION_CONNECTION=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_CANONICAL_CUES=PASS count=15' audio02-canonical-sound.log
+          grep -q 'AUDIO02_LAYERED_RECIPES=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_44100_MIX=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_COUNTDOWN_FIGHT=PASS countdown=3 fight=1' audio02-canonical-sound.log
+          grep -q 'AUDIO02_SPATIAL_PAN=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_KO_RESULT_UI=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_ZERO_GAMEPLAY_MUTATION=PASS' audio02-canonical-sound.log
+          grep -q 'AUDIO02_CANONICAL_SOUND=PASS' audio02-canonical-sound.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AUDIO-02-CANONICAL-SOUND-EVIDENCE
+          path: |
+            audio02-import.log
+            audio02-canonical-sound.log
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: echo 'AUDIO-02 canonical layered combat, round and UI sound design — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

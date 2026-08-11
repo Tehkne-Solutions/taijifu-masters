@@ -47,8 +47,9 @@ func _run() -> void:
 		return
 
 	var signature := audio.presentation_signature()
-	if String(signature.get("stage", "")) != "AUDIO-01":
-		_fail("AUDIO01_FOUNDATION=BLOCKED wrong_stage", battle)
+	var stage := String(signature.get("stage", ""))
+	if not stage.begins_with("AUDIO-") or stage.trim_prefix("AUDIO-").to_int() < 1:
+		_fail("AUDIO01_FOUNDATION=BLOCKED wrong_stage=%s" % stage, battle)
 		return
 	if not bool(signature.get("event_consumer_only", false)):
 		_fail("AUDIO01_FOUNDATION=BLOCKED event_consumer_only", battle)
@@ -107,7 +108,7 @@ func _run() -> void:
 	print("AUDIO01_CUE_MAP=PASS hit evade block parry posture_break")
 	print("AUDIO01_EVENT_CONSUMER_ONLY=PASS")
 	print("AUDIO01_ZERO_GAMEPLAY_MUTATION=PASS")
-	print("AUDIO01_FOUNDATION=PASS")
+	print("AUDIO01_FOUNDATION=PASS stage=%s" % stage)
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
 	await process_frame
