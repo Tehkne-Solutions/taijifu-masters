@@ -2,12 +2,15 @@ class_name FirstPlayableAudioDirector
 extends Node
 
 signal cue_emitted(cue_id: StringName, intensity: float)
+signal ambience_state_changed(state_id: StringName, target_level: float)
 
 const CONNECT_INTERVAL := 0.35
 const MIX_RATE := 44100.0
+const AMBIENCE_MIX_RATE := 22050.0
 const WORLD_AUDIO_CENTER_X := 1400.0
 const WORLD_AUDIO_HALF_WIDTH := 1400.0
 const MAX_WORLD_PAN := 0.42
+const AMBIENCE_SLEW_PER_SECOND := 0.72
 
 const CUE_HIT := &"hit"
 const CUE_EVADE := &"evade"
@@ -28,14 +31,28 @@ const CUE_UI_CONFIRM := &"ui_confirm"
 var _connect_timer := 0.0
 var _player: AudioStreamPlayer
 var _playback: AudioStreamGeneratorPlayback
+var _ambience_player: AudioStreamPlayer
+var _ambience_playback: AudioStreamGeneratorPlayback
 var _cue_counts: Dictionary = {}
 var _last_cue: StringName = &""
 var _last_pan := 0.0
 var _connected_fighter_ids: Dictionary = {}
 var _presentation_connected := false
+var _ambience_clock := 0.0
+var _ambience_level := 0.12
+var _ambience_target := 0.12
+var _ambience_state: StringName = &"pre_fight"
+var _pre_pause_ambience_target := 0.12
+var _pre_pause_ambience_state: StringName = &"pre_fight"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_install_combat_player()
+	_install_ambience_player()
+	_connect_parent_presentation()
+	_connect_fighters()
+
+func _install_combat_player() -> void:
 	_player = AudioStreamPlayer.new()
 	_player.name = "CombatAudioPlayer"
 	var stream := AudioStreamGenerator.new()
@@ -46,8 +63,18 @@ func _ready() -> void:
 	add_child(_player)
 	_player.play()
 	_playback = _player.get_stream_playback() as AudioStreamGeneratorPlayback
-	_connect_parent_presentation()
-	_connect_fighters()
+
+func _install_ambience_player() -> void:
+	_ambience_player = AudioStreamPlayer.new()
+	_ambience_player.name = "ArenaAmbiencePlayer"
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = AMBIENCE_MIX_RATE
+	stream.buffer_length = 0.45
+	_ambience_player.stream = stream
+	_ambience_player.volume_db = -17.5
+	add_child(_ambience_player)
+	_ambience_player.play()
+	_ambience_playback = _ambience_player.get_stream_playback() as AudioStreamGeneratorPlayback
 
 func _process(delta: float) -> void:
 	_connect_timer -= delta
@@ -55,10 +82,12 @@ func _process(delta: float) -> void:
 		_connect_timer = CONNECT_INTERVAL
 		_connect_parent_presentation()
 		_connect_fighters()
+	_ambience_level = move_toward(_ambience_level, _ambience_target, AMBIENCE_SLEW_PER_SECOND * delta)
+	_fill_ambience()
 
 func presentation_signature() -> Dictionary:
 	return {
-		"stage": "AUDIO-02",
+		"stage": "AUDIO-03",
 		"impact_audio": true,
 		"round_audio": true,
 		"ui_audio": true,
@@ -67,7 +96,12 @@ func presentation_signature() -> Dictionary:
 		"procedural_layering": true,
 		"deterministic_recipes": true,
 		"stereo_spatialization": true,
+		"arena_ambience": true,
+		"musical_bed": true,
+		"adaptive_ambience_state": true,
+		"ambience_single_owner": true,
 		"mix_rate_hz": int(MIX_RATE),
+		"ambience_mix_rate_hz": int(AMBIENCE_MIX_RATE),
 		"external_audio_assets_required": false,
 		"event_consumer_only": true,
 		"gameplay_timing_owner": false,
@@ -77,7 +111,8 @@ func presentation_signature() -> Dictionary:
 		"impact_cues": ["hit", "evade", "block", "parry", "posture_break"],
 		"round_cues": ["countdown", "fight", "ko", "timeout", "round_win", "round_loss"],
 		"ui_cues": ["ui_pause", "ui_resume", "ui_select", "ui_confirm"],
-		"remaining_audio_scope": ["arena_ambience", "music", "final_mastering", "accessibility_mix_controls"],
+		"ambience_states": ["pre_fight", "countdown", "battle", "resolution", "result", "paused"],
+		"remaining_audio_scope": ["final_mastering", "accessibility_mix_controls"],
 		"balance_changes": false,
 		"signature": "Tehkné Solutions"
 	}
@@ -151,6 +186,21 @@ func connected_fighter_count() -> int:
 func presentation_connected() -> bool:
 	return _presentation_connected
 
+func ambience_state() -> StringName:
+	return _ambience_state
+
+func ambience_level() -> float:
+	return _ambience_level
+
+func ambience_target() -> float:
+	return _ambience_target
+
+func ambience_clock_seconds() -> float:
+	return _ambience_clock
+
+func ambience_player_active() -> bool:
+	return is_instance_valid(_ambience_player) and _ambience_player.playing and is_instance_valid(_ambience_playback)
+
 func _connect_parent_presentation() -> void:
 	var controller := get_parent()
 	if controller == null or not controller.has_signal("presentation_cue_requested"):
@@ -171,7 +221,30 @@ func _connect_fighters() -> void:
 			_connected_fighter_ids[fighter.get_instance_id()] = true
 
 func _on_presentation_cue_requested(cue_id: StringName, intensity: float) -> void:
+	_update_ambience_from_cue(cue_id)
 	_dispatch_cue(cue_id, clampf(intensity, 0.0, 1.0), 0.0)
+
+func _update_ambience_from_cue(cue_id: StringName) -> void:
+	match cue_id:
+		CUE_COUNTDOWN:
+			_set_ambience_state(&"countdown", 0.28)
+		CUE_FIGHT:
+			_set_ambience_state(&"battle", 0.72)
+		CUE_KO, CUE_TIMEOUT:
+			_set_ambience_state(&"resolution", 0.20)
+		CUE_ROUND_WIN, CUE_ROUND_LOSS:
+			_set_ambience_state(&"result", 0.12)
+		CUE_UI_PAUSE:
+			_pre_pause_ambience_target = _ambience_target
+			_pre_pause_ambience_state = _ambience_state
+			_set_ambience_state(&"paused", 0.05)
+		CUE_UI_RESUME:
+			_set_ambience_state(_pre_pause_ambience_state, _pre_pause_ambience_target)
+
+func _set_ambience_state(state_id: StringName, target_level: float) -> void:
+	_ambience_state = state_id
+	_ambience_target = clampf(target_level, 0.0, 1.0)
+	ambience_state_changed.emit(_ambience_state, _ambience_target)
 
 func _on_impact_resolved(
 	_target: Node,
@@ -250,5 +323,49 @@ func _emit_layered(
 		sample /= maxf(1.0, float(frequencies.size()))
 		sample = clampf(sample * amplitude * envelope, -0.95, 0.95)
 		_playback.push_frame(Vector2(sample * left_gain, sample * right_gain))
+
+func _fill_ambience() -> void:
+	if not is_instance_valid(_ambience_playback):
+		return
+	var frames := mini(_ambience_playback.get_frames_available(), 2048)
+	if frames <= 0:
+		return
+	for _index in range(frames):
+		var t := _ambience_clock
+		var wind_lfo := 0.56 + 0.44 * sin(TAU * 0.071 * t + 0.35)
+		var wind_left := (
+			sin(TAU * 173.0 * t + sin(TAU * 0.13 * t) * 1.8)
+			+ sin(TAU * 239.0 * t + 0.8)
+			+ sin(TAU * 317.0 * t + 1.7)
+		) / 3.0
+		var wind_right := (
+			sin(TAU * 181.0 * t + sin(TAU * 0.11 * t) * 1.6)
+			+ sin(TAU * 251.0 * t + 1.1)
+			+ sin(TAU * 331.0 * t + 2.0)
+		) / 3.0
+		var drone_mod := 0.78 + 0.22 * sin(TAU * 0.047 * t)
+		var drone := (
+			sin(TAU * 55.0 * t)
+			+ 0.62 * sin(TAU * 82.5 * t + 0.18)
+			+ 0.38 * sin(TAU * 110.0 * t + 0.44)
+		) / 2.0
+		var temple_breath := pow(maxf(0.0, sin(TAU * 0.083 * t)), 8.0) * sin(TAU * 293.66 * t)
+		var battle_pulse := pow(maxf(0.0, sin(TAU * 0.625 * t)), 10.0) * sin(TAU * 73.42 * t)
+		var battle_amount := clampf((_ambience_level - 0.28) / 0.44, 0.0, 1.0)
+		var base_level := _ambience_level
+		var left := (
+			wind_left * 0.075 * wind_lfo
+			+ drone * 0.105 * drone_mod
+			+ temple_breath * 0.035
+			+ battle_pulse * 0.085 * battle_amount
+		) * base_level
+		var right := (
+			wind_right * 0.075 * (1.0 - wind_lfo * 0.18)
+			+ drone * 0.105 * drone_mod
+			+ temple_breath * 0.032
+			+ battle_pulse * 0.085 * battle_amount
+		) * base_level
+		_ambience_playback.push_frame(Vector2(clampf(left, -0.40, 0.40), clampf(right, -0.40, 0.40)))
+		_ambience_clock += 1.0 / AMBIENCE_MIX_RATE
 
 # Tehkné Solutions
