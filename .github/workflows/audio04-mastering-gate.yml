@@ -21,6 +21,50 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: Validate frozen AUDIO-04 evidence contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/audio04-mastering-evidence.json')
+          if not path.exists():
+              raise SystemExit('AUDIO04_EVIDENCE=BLOCKED missing')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          assert data['schema'] == 'tehkne/taijifu-audio04-mastering-evidence/v1'
+          assert data['signature'] == 'Tehkné Solutions'
+          assert data['stage'] == 'AUDIO-04'
+          assert data['status'] == 'pass'
+          assert data['validated_product_head_sha'] == '6637ab7e4b632c371dfeb5d7954d0c73706d8f1a'
+          workflow = data['workflow']
+          assert workflow['run_id'] == 31488619167
+          assert workflow['job_id'] == 93769645128
+          assert workflow['artifact_id'] == 9100119994
+          assert workflow['artifact_name'] == 'AUDIO-04-MASTERING-EVIDENCE'
+          assert workflow['artifact_digest'] == 'sha256:b996b259afde81dae5e7b5538b4fcf384481e92bb95372bf154b6bcc7038bc0c'
+          proof = data['proof']
+          assert abs(float(proof['master_ceiling']) - 0.86) < 0.001
+          assert abs(float(proof['observed_limiter_peak']) - 0.86) < 0.001
+          assert proof['accessibility_profiles'] == ['standard', 'combat_focus', 'reduced_dynamics', 'mono_accessible']
+          assert proof['mono_pan'] == 'pass'
+          assert proof['reduced_dynamics'] == 'pass'
+          assert proof['combat_focus'] == 'pass'
+          assert proof['preference_persistence'] == 'pass'
+          assert proof['mix_levels'] == ['master', 'combat', 'ambience', 'ui']
+          assert proof['pause_ui'] == 'pass'
+          assert proof['zero_gameplay_mutation'] is True
+          policy = data['runtime_policy']
+          assert policy['single_audio_owner'] is True
+          assert policy['event_consumer_only'] is True
+          assert policy['gameplay_timing_owner'] is False
+          assert policy['damage_owner'] is False
+          assert policy['ai_owner'] is False
+          assert policy['balance_changes'] is False
+          assert policy['persistent_user_preferences'] is True
+          assert data['remaining_audio_scope'] == []
+          print('AUDIO04_EVIDENCE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
       - name: Install Godot 4.3
         run: |
           curl --fail --location --retry 3 --retry-all-errors \
