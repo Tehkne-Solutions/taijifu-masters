@@ -1,14 +1,15 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "VFX-02_CANONICAL_IMPACT_READABILITY",
+  "updated_by_gate": "VFX-03_FINAL_PRESENTATION_COHERENCE",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
-    "progress_percent": 99
+    "progress_percent": 99,
+    "note": "V2 playable runtime is complete, while VM02 production bridge remains at 99 until the separately tracked canonical arena visual-fidelity debt is resolved."
   },
   "v2_playable": {
-    "progress_percent": 99,
+    "progress_percent": 100,
     "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
@@ -18,7 +19,7 @@
     "canonical_second_fighter": 100,
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
-    "vfx_presentation": 91,
+    "vfx_presentation": 100,
     "audio": 100,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
@@ -29,16 +30,16 @@
     "attack_cadence_impact": 100
   },
   "vfx_progress": {
-    "progress_percent": 91,
+    "progress_percent": 100,
     "method": "baseline_plus_equal_validated_closeout_stages",
     "baseline_percent": 72,
     "baseline_origin": "canonical_duo_closeout_snapshot",
     "baseline_had_internal_stage_weights": false,
     "remaining_gap_at_baseline": 28,
     "closeout_stages_total": 3,
-    "closeout_stages_complete": 2,
+    "closeout_stages_complete": 3,
     "closeout_stage_weight": 9.3333333333,
-    "calculation": "round(72 + (28 * 2 / 3)) = 91",
+    "calculation": "round(72 + (28 * 3 / 3)) = 100",
     "completed": {
       "VFX-01": {
         "status": "pass",
@@ -53,14 +54,17 @@
         "evidence": "config/vfx02-canonical-impact-readability-evidence.json",
         "reviewed_artifact_id": 9162462697,
         "reviewed_artifact_digest": "sha256:8eb9fb018ec7fc19d4e209051c0c46613131f31b0b9efabea40d784fcd68b9a8"
-      }
-    },
-    "remaining": {
+      },
       "VFX-03": {
-        "status": "pending",
-        "scope": "final_presentation_coherence_and_closeout"
+        "status": "pass",
+        "scope": "final_presentation_coherence_and_closeout",
+        "merge_commit": "c2f77e21325cb62f8f9a5b7b9cbd04bd21174ef7",
+        "evidence": "config/vfx03-final-presentation-evidence.json",
+        "reviewed_artifact_id": 9163025887,
+        "reviewed_artifact_digest": "sha256:baa28096826aaed81de8762391d4b4d1123318ee1f69c1b7dd0da81fd02d4303"
       }
     },
+    "remaining": {},
     "separate_debt": [
       "canonical_arena_visual_fidelity"
     ]
@@ -210,11 +214,24 @@
       "max_camera_punch_radial_pixels": 7.0,
       "manual_visual_review": "pass_for_vfx02_scope",
       "whole_presentation_complete": false
+    },
+    "vfx03_final_presentation_coherence": {
+      "status": "pass",
+      "merge_commit": "c2f77e21325cb62f8f9a5b7b9cbd04bd21174ef7",
+      "evidence": "config/vfx03-final-presentation-evidence.json",
+      "reviewed_artifact_id": 9163025887,
+      "reviewed_artifact_digest": "sha256:baa28096826aaed81de8762391d4b4d1123318ee1f69c1b7dd0da81fd02d4303",
+      "elemental_state_anchor_y": -176.0,
+      "elemental_interaction_anchor_y": -168.0,
+      "elemental_text_clear_of_fighter_silhouette": true,
+      "recovery_clean": true,
+      "vfx_closeout_chain_complete": true,
+      "arena_visual_fidelity_promoted": false
     }
   },
   "next_priority": [
-    "execute VFX-03 final presentation coherence and closeout against the canonical duo runtime",
-    "keep canonical arena visual fidelity as an explicit environment-art debt rather than silently promoting it through VFX-02",
-    "run the post-VFX human combat-feel playtest only after VFX-03 is evidence-frozen"
+    "run the post-VFX human combat-feel playtest against the evidence-frozen VFX-03 runtime",
+    "open a dedicated environment-art fidelity lane for Mountain Dojo Night without regressing canonical runtime validation",
+    "keep whole-project progress separate from the completed V2 playable runtime until a dedicated project-scope recalculation gate runs"
   ]
 }
