@@ -70,14 +70,26 @@ func _run() -> void:
 	if not bool(impact_signature.get("canonical_impact_readability_contract", false)):
 		_fail("VFX03_COHERENCE=BLOCKED vfx02_contract", battle)
 		return
+	if bool(impact_signature.get("camera_shake_owner", true)):
+		_fail("VFX03_COHERENCE=BLOCKED impact_camera_owner", battle)
+		return
+	if StringName(impact_signature.get("camera_shake_delegated_to", &"")) != &"FightCameraComposition":
+		_fail("VFX03_COHERENCE=BLOCKED camera_delegation", battle)
+		return
+	if bool(impact_signature.get("physical_impact_text_emitted_here", true)):
+		_fail("VFX03_COHERENCE=BLOCKED duplicate_physical_text_owner", battle)
+		return
+	if StringName(impact_signature.get("physical_impact_text_owner", &"")) != &"FirstPlayableCombatFeedbackRuntime":
+		_fail("VFX03_COHERENCE=BLOCKED physical_text_owner", battle)
+		return
+	if not bool(impact_signature.get("hitstop_owner", false)):
+		_fail("VFX03_COHERENCE=BLOCKED hitstop_owner", battle)
+		return
 	if float(camera_signature.get("max_shake_pixels", INF)) > MAX_CAMERA_OFFSET:
 		_fail("VFX03_COHERENCE=BLOCKED camera_contract", battle)
 		return
 	if int(feedback_signature.get("popup_budget", 999)) != MAX_POPUPS:
 		_fail("VFX03_COHERENCE=BLOCKED popup_budget", battle)
-		return
-	if bool(impact_signature.get("physical_text_enabled", true)):
-		_fail("VFX03_COHERENCE=BLOCKED duplicate_physical_text_owner", battle)
 		return
 
 	var technique := TechniqueCatalog.get_technique(&"ji_body_hook")
@@ -93,7 +105,6 @@ func _run() -> void:
 		"max_popup_budget": MAX_POPUPS
 	}
 
-	# Baseline must start clean before any presentation stimulus.
 	if impact.active_burst_count() != 0 or _popup_count(layer) != 0:
 		_fail("VFX03_COHERENCE=BLOCKED baseline_residue", battle)
 		return
@@ -103,7 +114,6 @@ func _run() -> void:
 	_capture("VFX03_BASELINE.review-1920x1080.png")
 	_record_state("baseline_clean", impact, layer, camera, Engine.time_scale)
 
-	# Normal physical hit: exactly one world burst, one physical popup, no duplicate ImpactDirector text.
 	Engine.time_scale = 1.0
 	battle.player_one.impact_resolved.emit(
 		battle.player_two,
@@ -136,7 +146,6 @@ func _run() -> void:
 		await process_frame
 	Engine.time_scale = 1.0
 
-	# Critical hierarchy: posture break must use both local popup and center feedback, within the radial camera cap.
 	battle.player_one.impact_resolved.emit(
 		battle.player_two,
 		battle.player_one,
@@ -169,7 +178,6 @@ func _run() -> void:
 		await process_frame
 	Engine.time_scale = 1.0
 
-	# Elemental feedback remains owned by ImpactDirector and must not create a physical popup.
 	var popups_before_element := _popup_count(layer)
 	impact._on_elemental_state_changed(battle.player_two, &"burning")
 	await process_frame
@@ -182,7 +190,6 @@ func _run() -> void:
 	_capture("VFX03_ELEMENTAL.review-1920x1080.png")
 	_record_state("elemental_state", impact, layer, camera, Engine.time_scale)
 
-	# Final recovery is part of presentation quality: no stale burst, popup, critical label, hitstop or camera offset.
 	await create_timer(1.30, true, false, true).timeout
 	for _frame in range(10):
 		await process_frame
