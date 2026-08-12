@@ -1,0 +1,47 @@
+{
+  "schema": "tehkne/taijifu-vfx03-final-presentation-contract/v1",
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "stage": "VFX-03",
+  "scope": "final_presentation_coherence_and_closeout",
+  "policy": {
+    "audit_before_tuning": true,
+    "no_new_effect_required_by_default": true,
+    "vfx01_single_ownership_cumulative": true,
+    "vfx02_readability_cumulative": true,
+    "gameplay_mutation_allowed": false,
+    "arena_art_fidelity_promoted_by_this_gate": false
+  },
+  "required_runtime_states": [
+    "baseline_clean",
+    "physical_hit",
+    "critical_posture_break",
+    "elemental_state",
+    "recovery_clean"
+  ],
+  "acceptance": {
+    "canonical_arena_required": true,
+    "canonical_arena_layers": 3,
+    "legacy_dressing": "retired",
+    "canonical_duo_required": true,
+    "max_camera_offset_radial_pixels": 7.0,
+    "max_active_physical_popups": 2,
+    "critical_feedback_required": true,
+    "elemental_feedback_required": true,
+    "duplicate_physical_text_allowed": false,
+    "recovery_burst_count": 0,
+    "recovery_popup_count": 0,
+    "recovery_critical_text": "",
+    "recovery_camera_offset_max_pixels": 0.5,
+    "recovery_time_scale": 1.0
+  },
+  "capture_set": [
+    "VFX03_BASELINE.review-1920x1080.png",
+    "VFX03_CRITICAL.review-1920x1080.png",
+    "VFX03_ELEMENTAL.review-1920x1080.png",
+    "VFX03_RECOVERY.review-1920x1080.png"
+  ],
+  "separate_debt": {
+    "canonical_arena_visual_fidelity": "environment_art_scope"
+  }
+}
