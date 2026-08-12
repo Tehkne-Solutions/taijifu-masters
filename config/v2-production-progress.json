@@ -1,14 +1,14 @@
 {
   "product": "Taijifu Masters",
   "signature": "Tehkné Solutions",
-  "updated_by_gate": "AUDIO-04_MASTERING_ACCESSIBILITY",
+  "updated_by_gate": "VFX-02_CANONICAL_IMPACT_READABILITY",
   "phase": {
     "id": "VM02",
     "name": "Combat Core + V.2 Production Bridge",
     "progress_percent": 99
   },
   "v2_playable": {
-    "progress_percent": 98,
+    "progress_percent": 99,
     "progress_method": "rounded_mean_of_explicit_v2_pillars",
     "runtime_ready": true,
     "art_complete": false,
@@ -18,7 +18,7 @@
     "canonical_second_fighter": 100,
     "canonical_arena": 100,
     "canonical_arena_export_runtime": 100,
-    "vfx_presentation": 72,
+    "vfx_presentation": 91,
     "audio": 100,
     "playtest_packaging": 100,
     "packaged_build_smoke": 100,
@@ -27,6 +27,43 @@
     "combat_readability_balance": 100,
     "comparative_playtest_build": 100,
     "attack_cadence_impact": 100
+  },
+  "vfx_progress": {
+    "progress_percent": 91,
+    "method": "baseline_plus_equal_validated_closeout_stages",
+    "baseline_percent": 72,
+    "baseline_origin": "canonical_duo_closeout_snapshot",
+    "baseline_had_internal_stage_weights": false,
+    "remaining_gap_at_baseline": 28,
+    "closeout_stages_total": 3,
+    "closeout_stages_complete": 2,
+    "closeout_stage_weight": 9.3333333333,
+    "calculation": "round(72 + (28 * 2 / 3)) = 91",
+    "completed": {
+      "VFX-01": {
+        "status": "pass",
+        "scope": "single_presentation_ownership",
+        "merge_commit": "3b88cef16f1605231974caf4459e3fa1f31e0dbc",
+        "evidence": "config/vfx01-presentation-owner-evidence.json"
+      },
+      "VFX-02": {
+        "status": "pass",
+        "scope": "canonical_impact_readability",
+        "merge_commit": "ed54fa08e8f0d4316f682ec3a313fbc36f358e13",
+        "evidence": "config/vfx02-canonical-impact-readability-evidence.json",
+        "reviewed_artifact_id": 9162462697,
+        "reviewed_artifact_digest": "sha256:8eb9fb018ec7fc19d4e209051c0c46613131f31b0b9efabea40d784fcd68b9a8"
+      }
+    },
+    "remaining": {
+      "VFX-03": {
+        "status": "pending",
+        "scope": "final_presentation_coherence_and_closeout"
+      }
+    },
+    "separate_debt": [
+      "canonical_arena_visual_fidelity"
+    ]
   },
   "audio_progress": {
     "progress_percent": 100,
@@ -48,7 +85,8 @@
   "resolved_art_dependencies": [
     "training_rival_master",
     "training_rival_p01_to_p05",
-    "remaining_lian_wu_canonical_animation_coverage"
+    "remaining_lian_wu_canonical_animation_coverage",
+    "mountain_dojo_night_c33_source_recovery"
   ],
   "evidence": {
     "c45_playtest": {
@@ -152,11 +190,31 @@
       "pause_ui_controls": true,
       "remaining_audio_scope": [],
       "zero_gameplay_mutation": true
+    },
+    "vfx01_presentation_ownership": {
+      "status": "pass",
+      "merge_commit": "3b88cef16f1605231974caf4459e3fa1f31e0dbc",
+      "evidence": "config/vfx01-presentation-owner-evidence.json",
+      "single_camera_owner": true,
+      "single_physical_text_owner": true,
+      "zero_gameplay_mutation": true
+    },
+    "vfx02_canonical_impact_readability": {
+      "status": "pass",
+      "merge_commit": "ed54fa08e8f0d4316f682ec3a313fbc36f358e13",
+      "evidence": "config/vfx02-canonical-impact-readability-evidence.json",
+      "canonical_arena_selection": "pass",
+      "canonical_arena_runtime_layers": 3,
+      "legacy_dressing": "retired",
+      "safe_area_states": 4,
+      "max_camera_punch_radial_pixels": 7.0,
+      "manual_visual_review": "pass_for_vfx02_scope",
+      "whole_presentation_complete": false
     }
   },
   "next_priority": [
-    "audit and close the remaining VFX/presentation gap from 72% using canonical duo runtime evidence as the baseline",
-    "remove duplicate or provisional presentation ownership before adding new effects",
-    "run a post-VFX human combat-feel playtest once impact readability and presentation are final"
+    "execute VFX-03 final presentation coherence and closeout against the canonical duo runtime",
+    "keep canonical arena visual fidelity as an explicit environment-art debt rather than silently promoting it through VFX-02",
+    "run the post-VFX human combat-feel playtest only after VFX-03 is evidence-frozen"
   ]
 }
