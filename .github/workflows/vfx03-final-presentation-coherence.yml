@@ -1,0 +1,167 @@
+name: VFX-03 Final Presentation Coherence
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/impact_director.gd'
+      - 'scripts/vertical_slice/first_playable_camera_composition.gd'
+      - 'scripts/vertical_slice/first_playable_combat_feedback_runtime.gd'
+      - 'scripts/ci/vfx03_final_presentation_coherence_review.gd'
+      - 'config/v2-arena-intake-contract.json'
+      - 'config/vfx01-presentation-owner-evidence.json'
+      - 'config/vfx02-canonical-impact-readability-evidence.json'
+      - 'config/vfx03-final-presentation-contract.json'
+      - 'config/vfx03-final-presentation-evidence.json'
+      - '.github/workflows/vfx03-final-presentation-coherence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vfx03-coherence:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require cumulative frozen VFX evidence
+        run: |
+          set -euo pipefail
+          test -f config/vfx01-presentation-owner-evidence.json
+          test -f config/vfx02-canonical-impact-readability-evidence.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for path in [
+              Path('config/vfx01-presentation-owner-evidence.json'),
+              Path('config/vfx02-canonical-impact-readability-evidence.json'),
+          ]:
+              data = json.loads(path.read_text(encoding='utf-8'))
+              if data.get('signature') != 'Tehkné Solutions' or data.get('status') != 'pass':
+                  raise SystemExit(f'VFX03_CUMULATIVE_EVIDENCE=BLOCKED file={path}')
+          print('VFX03_CUMULATIVE_EVIDENCE=PASS stages=2')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Require VFX-03 elemental readability contract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          contract = json.loads(Path('config/vfx03-final-presentation-contract.json').read_text(encoding='utf-8'))
+          acceptance = contract.get('acceptance', {})
+          if contract.get('signature') != 'Tehkné Solutions' or contract.get('stage') != 'VFX-03':
+              raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=contract_identity')
+          if float(acceptance.get('elemental_state_anchor_y_max', 0.0)) > -150.0:
+              raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=state_contract')
+          if float(acceptance.get('elemental_interaction_anchor_y_max', 0.0)) > -150.0:
+              raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=interaction_contract')
+          if acceptance.get('elemental_text_fighter_occlusion_manual_review') != 'pass_required':
+              raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=manual_review_policy')
+
+          source = Path('scripts/runtime/impact_director.gd').read_text(encoding='utf-8')
+          required_literals = [
+              'const ELEMENT_STATE_OFFSET_Y := -176.0',
+              'const ELEMENT_INTERACTION_OFFSET_Y := -168.0',
+              '"stage": "VFX-02"',
+              '"final_presentation_stage": "VFX-03"',
+              '"final_presentation_coherence_contract": true',
+              '"elemental_text_anchor_above_fighter": true',
+          ]
+          missing = [literal for literal in required_literals if literal not in source]
+          if missing:
+              raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED missing=' + '|'.join(missing))
+          print('VFX03_ELEMENTAL_READABILITY_CONTRACT=PASS base_stage=VFX-02 final_stage=VFX-03 state_y=-176 interaction_y=-168 manual_review=required')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Sync canonical arena from official assets source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ASSETS_ROOT="$RUNNER_TEMP/taijifu-masters-assets"
+          rm -rf "$ASSETS_ROOT"
+          git clone --depth 1 https://github.com/Tehkne-Solutions/taijifu-masters-assets.git "$ASSETS_ROOT"
+          python3 - <<'PY' 2>&1 | tee vfx03-arena-intake.log
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          repo_root = Path.cwd()
+          assets_root = Path(os.environ['ASSETS_ROOT'])
+          contract = json.loads((repo_root / 'config/v2-arena-intake-contract.json').read_text(encoding='utf-8'))
+          source_root = assets_root / contract['source_root']
+          required = [str(name) for name in contract['required_files']]
+          missing = [name for name in required if not (source_root / name).is_file()]
+          print(f'VFX03_ARENA_SOURCE_FILE_COUNT={len(required) - len(missing)}/{len(required)}')
+          if missing:
+              for name in missing:
+                  print(f'VFX03_ARENA_SOURCE_MISSING={name}')
+              raise SystemExit('VFX03_ARENA_INTAKE=BLOCKED reason=incomplete_official_source')
+          manifest = json.loads((source_root / 'manifest.json').read_text(encoding='utf-8'))
+          if manifest.get('signature') != 'Tehkné Solutions' or manifest.get('arena_id') != 'mountain_dojo_night':
+              raise SystemExit('VFX03_ARENA_INTAKE=BLOCKED reason=source_manifest')
+          destination = repo_root / contract['destination_root']
+          if destination.exists():
+              shutil.rmtree(destination)
+          shutil.copytree(source_root, destination)
+          print('VFX03_ARENA_INTAKE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Install visual runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+      - name: Import project
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee vfx03-import.log
+      - name: Capture and validate final presentation coherence
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot \
+            --path . \
+            --rendering-method gl_compatibility \
+            --audio-driver Dummy \
+            --script res://scripts/ci/vfx03_final_presentation_coherence_review.gd \
+            2>&1 | tee vfx03-coherence.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' vfx03-coherence.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' vfx03-coherence.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' vfx03-coherence.log
+          grep -q 'VFX03_BASELINE_CLEAN=PASS' vfx03-coherence.log
+          grep -q 'VFX03_PHYSICAL_OWNERSHIP=PASS bursts=1 popups=1 duplicate_text=0' vfx03-coherence.log
+          grep -q 'VFX03_CRITICAL_HIERARCHY=PASS center=QUEBRA max_camera_px=7.00' vfx03-coherence.log
+          grep -q 'VFX03_ELEMENTAL_OWNERSHIP=PASS text=BURN! physical_popup_delta=0' vfx03-coherence.log
+          grep -q 'VFX03_RECOVERY_CLEAN=PASS bursts=0 popups=0 critical_text=0 camera_max=0.50 time_scale=1.0' vfx03-coherence.log
+          grep -q 'VFX03_CAPTURE_SET=PASS baseline critical elemental recovery' vfx03-coherence.log
+          grep -q 'VFX03_COHERENCE=PASS' vfx03-coherence.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VFX-03-FINAL-PRESENTATION-COHERENCE
+          path: |
+            vfx03-arena-intake.log
+            vfx03-import.log
+            vfx03-coherence.log
+            artifacts/vfx03/VFX03_METRICS.json
+            artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png
+            artifacts/vfx03/VFX03_CRITICAL.review-1920x1080.png
+            artifacts/vfx03/VFX03_ELEMENTAL.review-1920x1080.png
+            artifacts/vfx03/VFX03_RECOVERY.review-1920x1080.png
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Summary
+        if: always()
+        run: echo 'VFX-03 final presentation coherence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

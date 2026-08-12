@@ -9,6 +9,8 @@ const IMPACT_LENGTH_PROGRESS := 12.0
 const ELEMENT_RADIUS_BASE := 18.0
 const ELEMENT_RADIUS_INTENSITY := 24.0
 const ELEMENT_RADIUS_PROGRESS := 16.0
+const ELEMENT_STATE_OFFSET_Y := -176.0
+const ELEMENT_INTERACTION_OFFSET_Y := -168.0
 const MAX_PHYSICAL_IMPACT_EXTENT := IMPACT_LENGTH_BASE + IMPACT_LENGTH_INTENSITY + IMPACT_LENGTH_PROGRESS
 const MAX_ELEMENT_RADIUS := ELEMENT_RADIUS_BASE + ELEMENT_RADIUS_INTENSITY + ELEMENT_RADIUS_PROGRESS
 const MAX_HITSTOP_SECONDS := 0.105
@@ -81,7 +83,7 @@ func _on_elemental_state_changed(fighter: FighterController, status_id: StringNa
 	var element_id := _element_for_status(status_id)
 	var color := _element_color(element_id)
 	_append_burst(
-		fighter.global_position + Vector2(0.0, -46.0),
+		fighter.global_position + Vector2(0.0, ELEMENT_STATE_OFFSET_Y),
 		_status_text(status_id),
 		color,
 		&"fu",
@@ -100,7 +102,7 @@ func _on_elemental_interaction(
 		return
 	var interaction_color := _interaction_color(interaction_id, element_id)
 	_append_burst(
-		fighter.global_position + Vector2(0.0, -40.0),
+		fighter.global_position + Vector2(0.0, ELEMENT_INTERACTION_OFFSET_Y),
 		_interaction_text(interaction_id),
 		interaction_color,
 		&"fu",
@@ -285,8 +287,10 @@ func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: flo
 func presentation_signature() -> Dictionary:
 	return {
 		"stage": "VFX-02",
+		"final_presentation_stage": "VFX-03",
 		"world_space_impact_shapes": true,
 		"canonical_impact_readability_contract": true,
+		"final_presentation_coherence_contract": true,
 		"max_physical_impact_extent_world": MAX_PHYSICAL_IMPACT_EXTENT,
 		"max_element_radius_world": MAX_ELEMENT_RADIUS,
 		"max_hitstop_seconds": MAX_HITSTOP_SECONDS,
@@ -294,6 +298,9 @@ func presentation_signature() -> Dictionary:
 		"elemental_shapes": true,
 		"elemental_state_text": true,
 		"elemental_interaction_text": true,
+		"elemental_state_anchor_y": ELEMENT_STATE_OFFSET_Y,
+		"elemental_interaction_anchor_y": ELEMENT_INTERACTION_OFFSET_Y,
+		"elemental_text_anchor_above_fighter": true,
 		"physical_impact_text_owner": &"FirstPlayableCombatFeedbackRuntime",
 		"physical_impact_text_emitted_here": false,
 		"camera_shake_owner": false,
