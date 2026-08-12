@@ -47,24 +47,23 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json
-          import re
           from pathlib import Path
 
           contract = json.loads(Path('config/vfx03-final-presentation-contract.json').read_text(encoding='utf-8'))
           acceptance = contract.get('acceptance', {})
           if contract.get('signature') != 'Tehkné Solutions' or contract.get('stage') != 'VFX-03':
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=contract_identity')
-          if float(acceptance.get('elemental_state_anchor_y_max', 0.0)) > -80.0:
+          if float(acceptance.get('elemental_state_anchor_y_max', 0.0)) > -150.0:
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=state_contract')
-          if float(acceptance.get('elemental_interaction_anchor_y_max', 0.0)) > -80.0:
+          if float(acceptance.get('elemental_interaction_anchor_y_max', 0.0)) > -150.0:
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=interaction_contract')
           if acceptance.get('elemental_text_fighter_occlusion_manual_review') != 'pass_required':
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED reason=manual_review_policy')
 
           source = Path('scripts/runtime/impact_director.gd').read_text(encoding='utf-8')
           required_literals = [
-              'const ELEMENT_STATE_OFFSET_Y := -96.0',
-              'const ELEMENT_INTERACTION_OFFSET_Y := -88.0',
+              'const ELEMENT_STATE_OFFSET_Y := -176.0',
+              'const ELEMENT_INTERACTION_OFFSET_Y := -168.0',
               '"stage": "VFX-03"',
               '"final_presentation_coherence_contract": true',
               '"elemental_text_anchor_above_fighter": true',
@@ -72,7 +71,7 @@ jobs:
           missing = [literal for literal in required_literals if literal not in source]
           if missing:
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED missing=' + '|'.join(missing))
-          print('VFX03_ELEMENTAL_READABILITY_CONTRACT=PASS state_y=-96 interaction_y=-88 manual_review=required')
+          print('VFX03_ELEMENTAL_READABILITY_CONTRACT=PASS state_y=-176 interaction_y=-168 manual_review=required')
           print('SIGNATURE=Tehkné Solutions')
           PY
       - name: Sync canonical arena from official assets source
