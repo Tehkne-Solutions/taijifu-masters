@@ -76,8 +76,10 @@ func _apply_shake(delta: float) -> void:
 		return
 	_shake_phase += delta * 52.0
 	var amplitude := MAX_SHAKE_PIXELS * _shake_strength
-	var shake := Vector2(sin(_shake_phase * 1.7), cos(_shake_phase * 2.3)) * amplitude
-	_camera.offset = shake
+	var direction := Vector2(sin(_shake_phase * 1.7), cos(_shake_phase * 2.3))
+	if direction.length_squared() > 1.0:
+		direction = direction.normalized()
+	_camera.offset = direction * amplitude
 	_shake_strength = maxf(0.0, _shake_strength - delta * SHAKE_DECAY)
 
 func presentation_signature() -> Dictionary:
