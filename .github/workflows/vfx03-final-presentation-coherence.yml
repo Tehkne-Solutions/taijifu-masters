@@ -64,14 +64,15 @@ jobs:
           required_literals = [
               'const ELEMENT_STATE_OFFSET_Y := -176.0',
               'const ELEMENT_INTERACTION_OFFSET_Y := -168.0',
-              '"stage": "VFX-03"',
+              '"stage": "VFX-02"',
+              '"final_presentation_stage": "VFX-03"',
               '"final_presentation_coherence_contract": true',
               '"elemental_text_anchor_above_fighter": true',
           ]
           missing = [literal for literal in required_literals if literal not in source]
           if missing:
               raise SystemExit('VFX03_ELEMENTAL_READABILITY_CONTRACT=BLOCKED missing=' + '|'.join(missing))
-          print('VFX03_ELEMENTAL_READABILITY_CONTRACT=PASS state_y=-176 interaction_y=-168 manual_review=required')
+          print('VFX03_ELEMENTAL_READABILITY_CONTRACT=PASS base_stage=VFX-02 final_stage=VFX-03 state_y=-176 interaction_y=-168 manual_review=required')
           print('SIGNATURE=Tehkné Solutions')
           PY
       - name: Sync canonical arena from official assets source
