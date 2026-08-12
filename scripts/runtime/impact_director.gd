@@ -286,7 +286,8 @@ func _hitstop_profile(path_id: StringName, result_id: StringName, intensity: flo
 
 func presentation_signature() -> Dictionary:
 	return {
-		"stage": "VFX-03",
+		"stage": "VFX-02",
+		"final_presentation_stage": "VFX-03",
 		"world_space_impact_shapes": true,
 		"canonical_impact_readability_contract": true,
 		"final_presentation_coherence_contract": true,
