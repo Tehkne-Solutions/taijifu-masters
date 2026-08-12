@@ -1,0 +1,86 @@
+{
+  "schema": "tehkne/taijifu-vfx02-evidence/v1",
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "stage": "VFX-02",
+  "status": "pass",
+  "review_scope": "canonical_impact_readability",
+  "reviewed_run": {
+    "workflow": "VFX-02 Canonical Impact Readability",
+    "run_id": 31650697343,
+    "artifact_id": 9162462697,
+    "artifact_digest": "sha256:8eb9fb018ec7fc19d4e209051c0c46613131f31b0b9efabea40d784fcd68b9a8",
+    "resolution": "1920x1080",
+    "capture_count": 4,
+    "head_commit": "093693a26df68769634e32446120bf4e16eefd81"
+  },
+  "canonical_context": {
+    "arena_id": "mountain_dojo_night",
+    "arena_selection": "pass",
+    "arena_runtime_layers": 3,
+    "legacy_dressing": "retired",
+    "canonical_duo": "pass",
+    "lian_wu_visual_height_world": 132.0,
+    "training_rival_visual_height_world": 133.716
+  },
+  "readability_contract": {
+    "physical_extent_to_fighter_height": 0.6212,
+    "elemental_radius_to_fighter_height": 0.4394,
+    "max_camera_punch_radial_pixels": 7.0,
+    "max_hitstop_seconds": 0.105,
+    "safe_area_states": 4,
+    "duplicate_physical_text": false
+  },
+  "states": {
+    "hit": {
+      "camera_offset_pixels": 6.02,
+      "popup_safe_fraction": 1.0,
+      "critical_center_feedback": false,
+      "visual_review": "pass"
+    },
+    "blocked": {
+      "camera_offset_pixels": 2.709,
+      "popup_safe_fraction": 1.0,
+      "critical_center_feedback": false,
+      "visual_review": "pass"
+    },
+    "parried": {
+      "camera_offset_pixels": 4.853,
+      "popup_safe_fraction": 1.0,
+      "critical_center_feedback": true,
+      "visual_review": "pass"
+    },
+    "posture_break": {
+      "camera_offset_pixels": 2.54,
+      "popup_safe_fraction": 1.0,
+      "critical_center_feedback": true,
+      "visual_review": "pass"
+    }
+  },
+  "manual_visual_review": {
+    "status": "pass_for_vfx02_scope",
+    "state_differentiation": "pass",
+    "fighter_occlusion": "pass",
+    "critical_hierarchy": "pass",
+    "safe_area": "pass",
+    "hit": "localized impact feedback remains readable without critical-center escalation",
+    "blocked": "restrained defensive response is visually distinct from a clean hit",
+    "parried": "blue localized response plus central critical feedback produces a clear hierarchy step",
+    "posture_break": "red-orange localized and radial response plus central critical feedback produces the strongest hierarchy step"
+  },
+  "camera_contract_fix": {
+    "pull_request": 473,
+    "policy": "camera offset radial length never exceeds max_shake_pixels",
+    "reason": "previous per-axis amplitude could exceed the declared radial 7px contract"
+  },
+  "separate_debt": {
+    "canonical_arena_visual_fidelity": "open",
+    "note": "Mountain Dojo Night is canonical and runtime-valid, but its current visual fidelity remains a separate environment-art/presentation concern. This VFX-02 approval does not promote arena art quality or whole presentation to final."
+  },
+  "promotion": {
+    "vfx02_scope_closed": true,
+    "whole_vfx_presentation_complete": false,
+    "vfx_progress_recalculation_required": true,
+    "next_stage": "VFX-03"
+  }
+}
