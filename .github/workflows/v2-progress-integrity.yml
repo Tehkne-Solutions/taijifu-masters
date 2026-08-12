@@ -1,0 +1,79 @@
+name: V2 Progress Integrity
+
+on:
+  pull_request:
+    paths:
+      - 'config/v2-production-progress.json'
+      - '.github/workflows/v2-progress-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-progress:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V2 and VFX progress arithmetic
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('config/v2-production-progress.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+
+          if data.get('signature') != 'Tehkné Solutions':
+              raise SystemExit('V2_PROGRESS_SIGNATURE=BLOCKED')
+
+          v2 = data['v2_playable']
+          pillar_names = [
+              'runtime_combat_core',
+              'round_match_loop',
+              'canonical_player',
+              'canonical_second_fighter',
+              'canonical_arena',
+              'canonical_arena_export_runtime',
+              'vfx_presentation',
+              'audio',
+              'playtest_packaging',
+              'packaged_build_smoke',
+              'interactive_playtest_handoff',
+              'presentation_cleanup',
+              'combat_readability_balance',
+              'comparative_playtest_build',
+              'attack_cadence_impact',
+          ]
+          values = [int(v2[name]) for name in pillar_names]
+          expected_v2 = round(sum(values) / len(values))
+          actual_v2 = int(v2['progress_percent'])
+          print(f'V2_PROGRESS_PILLARS={len(values)}')
+          print(f'V2_PROGRESS_MEAN={sum(values) / len(values):.6f}')
+          if actual_v2 != expected_v2:
+              raise SystemExit(
+                  f'V2_PROGRESS_INTEGRITY=BLOCKED expected={expected_v2} actual={actual_v2}'
+              )
+          print(f'V2_PROGRESS_INTEGRITY=PASS value={actual_v2}')
+
+          vfx = data['vfx_progress']
+          baseline = float(vfx['baseline_percent'])
+          gap = float(vfx['remaining_gap_at_baseline'])
+          total = int(vfx['closeout_stages_total'])
+          complete = int(vfx['closeout_stages_complete'])
+          expected_vfx = round(baseline + gap * complete / total)
+          actual_vfx = int(vfx['progress_percent'])
+          pillar_vfx = int(v2['vfx_presentation'])
+          if actual_vfx != expected_vfx or pillar_vfx != expected_vfx:
+              raise SystemExit(
+                  f'VFX_PROGRESS_INTEGRITY=BLOCKED expected={expected_vfx} '
+                  f'progress={actual_vfx} pillar={pillar_vfx}'
+              )
+          if complete != len(vfx.get('completed', {})):
+              raise SystemExit('VFX_PROGRESS_INTEGRITY=BLOCKED reason=completed_stage_count')
+          if total - complete != len(vfx.get('remaining', {})):
+              raise SystemExit('VFX_PROGRESS_INTEGRITY=BLOCKED reason=remaining_stage_count')
+          print(f'VFX_PROGRESS_INTEGRITY=PASS value={actual_vfx}')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
