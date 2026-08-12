@@ -1,0 +1,100 @@
+{
+  "schema": "tehkne/taijifu-vfx03-evidence/v1",
+  "product": "Taijifu Masters",
+  "signature": "Tehkné Solutions",
+  "stage": "VFX-03",
+  "status": "pass",
+  "review_scope": "final_presentation_coherence_and_closeout",
+  "reviewed_run": {
+    "workflow": "VFX-03 Final Presentation Coherence",
+    "run_id": 31652237134,
+    "artifact_id": 9163025887,
+    "artifact_digest": "sha256:baa28096826aaed81de8762391d4b4d1123318ee1f69c1b7dd0da81fd02d4303",
+    "resolution": "1920x1080",
+    "capture_count": 4,
+    "head_commit": "884e325aca1a440aec476d91bea39463af73136f"
+  },
+  "cumulative_context": {
+    "vfx01_single_ownership": "pass",
+    "vfx02_canonical_impact_readability": "pass",
+    "canonical_arena_id": "mountain_dojo_night",
+    "canonical_arena_runtime_layers": 3,
+    "legacy_dressing": "retired",
+    "canonical_duo": "pass"
+  },
+  "runtime_states": {
+    "baseline_clean": {
+      "burst_count": 0,
+      "popup_count": 0,
+      "camera_offset_pixels": 0.0,
+      "time_scale": 1.0,
+      "visual_review": "pass"
+    },
+    "physical_hit": {
+      "burst_count": 1,
+      "popup_count": 1,
+      "camera_offset_pixels": 5.46354103088379,
+      "time_scale": 0.1,
+      "duplicate_physical_text": false,
+      "visual_review": "pass"
+    },
+    "critical_posture_break": {
+      "burst_count": 1,
+      "popup_count": 1,
+      "camera_offset_pixels": 7.0,
+      "time_scale": 0.055,
+      "critical_center_text": "QUEBRA",
+      "visual_review": "pass"
+    },
+    "elemental_state": {
+      "burst_count": 1,
+      "popup_count": 0,
+      "camera_offset_pixels": 0.000289876974420622,
+      "time_scale": 1.0,
+      "last_burst_text": "BURN!",
+      "state_anchor_y": -176.0,
+      "interaction_anchor_y": -168.0,
+      "fighter_occlusion": false,
+      "visual_review": "pass"
+    },
+    "recovery_clean": {
+      "burst_count": 0,
+      "popup_count": 0,
+      "camera_offset_pixels": 7.51166056439656e-13,
+      "time_scale": 1.0,
+      "critical_text": "",
+      "visual_review": "pass"
+    }
+  },
+  "manual_visual_review": {
+    "status": "pass_for_vfx03_scope",
+    "baseline_residue": "none",
+    "physical_ownership": "pass",
+    "critical_hierarchy": "pass",
+    "elemental_readability": "pass",
+    "elemental_text_clear_of_fighter_silhouette": true,
+    "recovery_clean": "pass",
+    "note": "The first technically green VFX-03 artifact was not accepted because elemental text overlapped the fighter silhouette. Final reviewed evidence uses the full-silhouette clearance tuning and keeps the entire elemental text/effect above the rival."
+  },
+  "presentation_contract": {
+    "max_camera_offset_radial_pixels": 7.0,
+    "max_active_physical_popups": 2,
+    "duplicate_physical_text_allowed": false,
+    "elemental_text_anchor_above_fighter": true,
+    "recovery_burst_count": 0,
+    "recovery_popup_count": 0,
+    "recovery_camera_offset_max_pixels": 0.5,
+    "recovery_time_scale": 1.0
+  },
+  "separate_debt": {
+    "canonical_arena_visual_fidelity": "open_environment_art_scope",
+    "note": "VFX-03 validates presentation coherence in the canonical arena runtime context. It does not claim Mountain Dojo Night environment art is visually final."
+  },
+  "promotion": {
+    "vfx03_scope_closed": true,
+    "vfx_closeout_chain_complete": true,
+    "vfx_progress_recalculation_required": true,
+    "post_vfx_human_combat_feel_playtest_required": true,
+    "arena_visual_fidelity_debt_remains_open": true
+  }
+}
