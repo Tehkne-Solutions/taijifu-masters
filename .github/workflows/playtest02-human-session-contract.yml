@@ -1,0 +1,49 @@
+name: PLAYTEST-02 Human Session Contract
+on:
+  pull_request:
+    paths:
+      - 'config/PLAYTEST02_SESSION_TEMPLATE.json'
+      - 'config/playtest02-post-vfx-human-gate.json'
+      - 'tools/validate_playtest02_session.py'
+      - '.github/workflows/playtest02-human-session-contract.yml'
+permissions:
+  contents: read
+jobs:
+  validate-contract:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Incomplete template must fail
+        run: |
+          if python3 tools/validate_playtest02_session.py config/PLAYTEST02_SESSION_TEMPLATE.json > /tmp/incomplete.log 2>&1; then exit 1; fi
+          cat /tmp/incomplete.log
+          grep -q 'PLAYTEST02_SESSION=BLOCKED reason=session_incomplete' /tmp/incomplete.log
+          echo 'PLAYTEST02_FAIL_CLOSED=PASS'
+      - name: Complete synthetic fixture must pass structure only
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('config/PLAYTEST02_SESSION_TEMPLATE.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          d['session_complete']=True
+          d['runtime_health_present']=True
+          for k in d['scores']: d['scores'][k]=3
+          for k in d['notes']: d['notes'][k]='synthetic validator fixture'
+          d['human_verdict']='PASS_WITH_NOTES'
+          Path('/tmp/valid.json').write_text(json.dumps(d,ensure_ascii=False),encoding='utf-8')
+          PY
+          python3 tools/validate_playtest02_session.py /tmp/valid.json | tee /tmp/valid.log
+          grep -q 'PLAYTEST02_SESSION=PASS' /tmp/valid.log
+      - name: Automation cannot decide fun
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('config/playtest02-post-vfx-human-gate.json').read_text(encoding='utf-8'))
+          p=d['automation_policy']
+          assert p['ci_may_decide_fun'] is False
+          assert p['ci_may_invent_human_verdict'] is False
+          print('PLAYTEST02_AUTOMATION_BOUNDARY=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
