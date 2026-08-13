@@ -1,0 +1,25 @@
+{
+  "schema": "tehkne/taijifu-playtest02-session/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "PLAYTEST-02",
+  "session_complete": false,
+  "runtime_health_present": false,
+  "scores": {
+    "movement_feel": null,
+    "combat_clarity": null,
+    "impact_feel": null,
+    "camera_comfort": null,
+    "ai_engagement": null,
+    "difficulty_fairness": null,
+    "visual_readability": null,
+    "audio_feedback": null,
+    "fun": null
+  },
+  "notes": {
+    "best_moment": "",
+    "worst_moment": "",
+    "most_confusing_moment": "",
+    "one_change_before_next_slice": ""
+  },
+  "human_verdict": null
+}
