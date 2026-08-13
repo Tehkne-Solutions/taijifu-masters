@@ -1,0 +1,83 @@
+name: PLAYTEST-02 Human Session Contract
+
+on:
+  pull_request:
+    paths:
+      - 'config/PLAYTEST02_SESSION_TEMPLATE.json'
+      - 'config/playtest02-post-vfx-human-gate.json'
+      - 'tools/validate_playtest02_session.py'
+      - '.github/workflows/playtest02-human-session-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-contract:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove incomplete template is fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 tools/validate_playtest02_session.py config/PLAYTEST02_SESSION_TEMPLATE.json > playtest02-incomplete.log 2>&1; then
+            cat playtest02-incomplete.log
+            echo 'PLAYTEST02_FAIL_CLOSED=BLOCKED reason=incomplete_template_was_accepted'
+            exit 1
+          fi
+          cat playtest02-incomplete.log
+          grep -q 'PLAYTEST02_SESSION=BLOCKED reason=session_incomplete' playtest02-incomplete.log
+          echo 'PLAYTEST02_FAIL_CLOSED=PASS'
+      - name: Prove complete synthetic fixture is structurally accepted
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          source = Path('config/PLAYTEST02_SESSION_TEMPLATE.json')
+          data = json.loads(source.read_text(encoding='utf-8'))
+          data['session_complete'] = True
+          data['runtime_health_present'] = True
+          for key in data['scores']:
+              data['scores'][key] = 3
+          data['notes'] = {
+              'best_moment': 'synthetic validator fixture',
+              'worst_moment': 'synthetic validator fixture',
+              'most_confusing_moment': 'synthetic validator fixture',
+              'one_change_before_next_slice': 'synthetic validator fixture'
+          }
+          data['human_verdict'] = 'PASS_WITH_NOTES'
+          Path('/tmp/playtest02-valid-fixture.json').write_text(
+              json.dumps(data, ensure_ascii=False, indent=2),
+              encoding='utf-8'
+          )
+          PY
+          python3 tools/validate_playtest02_session.py /tmp/playtest02-valid-fixture.json | tee playtest02-valid.log
+          grep -q 'PLAYTEST02_SESSION=PASS' playtest02-valid.log
+          grep -q 'PLAYTEST02_HUMAN_SCORES=PASS count=9' playtest02-valid.log
+          grep -q 'PLAYTEST02_HUMAN_NOTES=PASS count=4' playtest02-valid.log
+          echo 'PLAYTEST02_VALIDATOR_SELFTEST=PASS'
+      - name: Guard automation policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          gate = json.loads(Path('config/playtest02-post-vfx-human-gate.json').read_text(encoding='utf-8'))
+          policy = gate['automation_policy']
+          assert policy['ci_may_validate_completeness'] is True
+          assert policy['ci_may_validate_runtime_health'] is True
+          assert policy['ci_may_decide_fun'] is False
+          assert policy['ci_may_invent_human_verdict'] is False
+          print('PLAYTEST02_AUTOMATION_BOUNDARY=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+      - name: Summary
+        if: always()
+        run: echo 'PLAYTEST-02 human-session contract — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
