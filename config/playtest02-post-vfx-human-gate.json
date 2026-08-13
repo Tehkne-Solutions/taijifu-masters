@@ -1,0 +1,43 @@
+{
+  "schema": "tehkne/taijifu-playtest02-human-gate/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "PLAYTEST-02",
+  "purpose": "Human validation of the evidence-frozen V2 first playable after VFX-03 closeout.",
+  "prerequisites": {
+    "v2_playable_percent": 100,
+    "vfx_presentation_percent": 100,
+    "audio_percent": 100,
+    "canonical_arena_required": true,
+    "canonical_duo_required": true
+  },
+  "required_human_scores": {
+    "movement_feel": {"min": 1, "max": 5},
+    "combat_clarity": {"min": 1, "max": 5},
+    "impact_feel": {"min": 1, "max": 5},
+    "camera_comfort": {"min": 1, "max": 5},
+    "ai_engagement": {"min": 1, "max": 5},
+    "difficulty_fairness": {"min": 1, "max": 5},
+    "visual_readability": {"min": 1, "max": 5},
+    "audio_feedback": {"min": 1, "max": 5},
+    "fun": {"min": 1, "max": 5}
+  },
+  "required_text_fields": [
+    "best_moment",
+    "worst_moment",
+    "most_confusing_moment",
+    "one_change_before_next_slice"
+  ],
+  "required_verdicts": ["PASS", "PASS_WITH_NOTES", "FAIL"],
+  "automation_policy": {
+    "ci_may_validate_completeness": true,
+    "ci_may_validate_runtime_health": true,
+    "ci_may_decide_fun": false,
+    "ci_may_invent_human_verdict": false
+  },
+  "export_policy": {
+    "json_required": true,
+    "txt_summary_required": true,
+    "incomplete_session_must_not_export_as_approved": true,
+    "explicit_human_verdict_required": true
+  }
+}
