@@ -15,6 +15,18 @@ SCHEMA = "tehkne/taijifu-first-playable-build/v1"
 TELEMETRY_SCHEMA = "tehkne/taijifu-match-telemetry/v3"
 EXPECTED_MAIN_SCENE = "res://scenes/vertical_slice/first_playable_menu.tscn"
 SIGNATURE = "Tehkné Solutions"
+ASSET_CONTRACT_PATH = Path("config/v2-arena-intake-contract.json")
+EXPECTED_ASSET_SNAPSHOT = {
+    "tag": "assets-first-playable-v1.0.0",
+    "commit": "b6767d9d30fb2980de5d0a57a8a4c414b854cad5",
+    "archive": "TAIJIFU_FIRST_PLAYABLE_ASSETS_v1.0.0.zip",
+    "archive_sha256": "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2",
+    "content_sha256": "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec",
+    "fighter_frames": 89,
+    "fighter_animations": 20,
+    "stage": "mountain_dojo_night",
+    "stage_layers": 3,
+}
 
 
 def sha256(path: Path) -> str:
@@ -60,6 +72,40 @@ def collect_files(output_dir: Path) -> list[dict]:
     return files
 
 
+def asset_snapshot(root: Path) -> dict:
+    contract_path = root / ASSET_CONTRACT_PATH
+    if not contract_path.is_file():
+        raise SystemExit(f"Missing First Playable asset contract: {contract_path}")
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    if contract.get("signature") != SIGNATURE:
+        raise SystemExit("Invalid First Playable asset contract signature")
+
+    snapshot_contract = contract.get("snapshot_contract") or {}
+    actual = {
+        "tag": contract.get("source_ref"),
+        "commit": contract.get("source_commit"),
+        "archive": contract.get("source_release_asset"),
+        "archive_sha256": contract.get("source_release_sha256"),
+        "content_sha256": contract.get("source_content_sha256"),
+        "fighter_frames": snapshot_contract.get("fighter_frames"),
+        "fighter_animations": snapshot_contract.get("fighter_animations"),
+        "stage": contract.get("arena_id"),
+        "stage_layers": snapshot_contract.get("stage_layers"),
+    }
+    if actual != EXPECTED_ASSET_SNAPSHOT:
+        raise SystemExit(
+            "First Playable asset snapshot diverged from frozen build baseline: "
+            + json.dumps(actual, sort_keys=True)
+        )
+    return {
+        "schema": "tehkne/taijifu-first-playable-asset-snapshot/v1",
+        "signature": SIGNATURE,
+        **actual,
+        "immutable": bool((contract.get("import_policy") or {}).get("immutable_source_ref")),
+        "source_pin_verified_by_build_gate": True,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--platform", required=True, choices=["web", "windows"])
@@ -83,6 +129,7 @@ def main() -> int:
         raise SystemExit(f"No build files found in {output_dir}")
 
     commit = git_sha(root)
+    snapshot = asset_snapshot(root)
     manifest = {
         "schema": SCHEMA,
         "product": "Taijifu Masters",
@@ -95,6 +142,7 @@ def main() -> int:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "main_scene": main_scene,
         "battle_scene": "res://scenes/vertical_slice/first_playable.tscn",
+        "asset_snapshot": snapshot,
         "telemetry": {
             "schema": TELEMETRY_SCHEMA,
             "storage": "user://telemetry",
@@ -106,7 +154,8 @@ def main() -> int:
         "features": [
             "first_playable_menu",
             "lian_wu_vs_training_rival",
-            "triple_path_ruins",
+            "canonical_89_frame_fighter_runtime",
+            "mountain_dojo_night",
             "tactical_ai_three_difficulties",
             "pause_result_rematch_flow",
             "local_playtest_telemetry",
@@ -123,7 +172,12 @@ def main() -> int:
     destination.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    print(json.dumps(manifest["totals"], ensure_ascii=False))
+    print(json.dumps({
+        **manifest["totals"],
+        "asset_snapshot": snapshot["tag"],
+        "fighter_frames": snapshot["fighter_frames"],
+        "stage": snapshot["stage"],
+    }, ensure_ascii=False))
     print(destination)
     return 0
 
