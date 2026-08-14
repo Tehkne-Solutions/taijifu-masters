@@ -1,4 +1,4 @@
-name: PACK 03 Release-Pinned Intake
+name: First Playable Snapshot-Pinned Intake
 
 on:
   pull_request:
@@ -18,26 +18,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run C30 against isolated pinned Asset Vault clone
+      - name: Run C30 against isolated composed Asset Vault snapshot
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-pack03-pinned'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-first-playable-pinned'
           if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
-          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath pack03-c30-pinned.log
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-c30-pinned.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Verify pinned intake evidence
+      - name: Verify composed snapshot intake evidence
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'VM02_C30_SOURCE_PIN_CONTRACT=PASS ref=assets-pack-03-v1.0.0 commit=2b9ef783e2bed539cb6364c08051dfa3e3fdb220' pack03-c30-pinned.log
-          grep -q 'VM02_C30_SOURCE_PIN=PASS' pack03-c30-pinned.log
-          grep -q 'VM02_C30_ARENA_FILE_COUNT=6/6' pack03-c30-pinned.log
-          grep -q 'VM02_C30_SOURCE_MANIFEST_SCHEMA=PASS' pack03-c30-pinned.log
-          grep -q 'VM02_C30_ARENA_IMPORT=PASS' pack03-c30-pinned.log
-          grep -q 'VM02_C30_ARENA_CANONICAL_READY=PASS' pack03-c30-pinned.log
-          grep -q 'VM02_C30_V2_ARENA_INTAKE_GATE=PASS' pack03-c30-pinned.log
+          grep -q 'VM02_C30_SOURCE_PIN_CONTRACT=PASS ref=assets-first-playable-v1.0.0 commit=b6767d9d30fb2980de5d0a57a8a4c414b854cad5' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SNAPSHOT_FREEZE=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SNAPSHOT_STAGE=PASS layers=3' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_FILE_COUNT=6/6' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_SOURCE_MANIFEST_SCHEMA=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_IMPORT=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_CANONICAL_READY=PASS' first-playable-c30-pinned.log
+          grep -q 'VM02_C30_V2_ARENA_INTAKE_GATE=PASS' first-playable-c30-pinned.log
           python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
@@ -51,24 +57,24 @@ jobs:
           for name,digest in expected.items():
               actual=hashlib.sha256((root/name).read_bytes()).hexdigest()
               if actual != digest:
-                  raise SystemExit(f'PACK03_PINNED_LAYER=BLOCKED file={name} actual={actual}')
-              print(f'PACK03_PINNED_LAYER=PASS file={name} sha256={actual}')
+                  raise SystemExit(f'FIRST_PLAYABLE_PINNED_STAGE_LAYER=BLOCKED file={name} actual={actual}')
+              print(f'FIRST_PLAYABLE_PINNED_STAGE_LAYER=PASS file={name} sha256={actual}')
           manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8-sig'))
           if manifest.get('status')!='art_final' or manifest.get('version')!='1.0.0' or manifest.get('promotion',{}).get('canonical_ready') is not True:
-              raise SystemExit('PACK03_PINNED_MANIFEST=BLOCKED')
-          print('PACK03_PINNED_MANIFEST=PASS version=1.0.0 status=art_final')
-          print('PACK03_RELEASE_PINNED_INTAKE=PASS')
+              raise SystemExit('FIRST_PLAYABLE_PINNED_STAGE_MANIFEST=BLOCKED')
+          print('FIRST_PLAYABLE_PINNED_STAGE_MANIFEST=PASS version=1.0.0 status=art_final')
+          print('FIRST_PLAYABLE_SNAPSHOT_PINNED_INTAKE=PASS fighters=89 stage_layers=3')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PACK-03-RELEASE-PINNED-INTAKE
-          path: pack03-c30-pinned.log
+          name: FIRST-PLAYABLE-SNAPSHOT-PINNED-INTAKE
+          path: first-playable-c30-pinned.log
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Summary
         if: always()
-        run: echo 'PACK 03 release-pinned C30 intake — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'First Playable composed snapshot-pinned C30 intake — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
