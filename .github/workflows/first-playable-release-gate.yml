@@ -8,6 +8,7 @@ on:
       - "scenes/vertical_slice/**"
       - "assets/tgap/pack_01_lian_wu/**"
       - "assets/tgap/training_rival/**"
+      - "config/v2-arena-intake-contract.json"
       - "tests/first_playable_*"
       - "tests/training_rival_*"
       - "tests/test_first_playable_lot01_importer.py"
@@ -17,12 +18,6 @@ on:
       - "tools/release/**"
       - ".github/workflows/first-playable-release-gate.yml"
   workflow_dispatch:
-    inputs:
-      strict_assets:
-        description: "Bloquear enquanto os 88 frames reais não estiverem aprovados"
-        required: true
-        default: false
-        type: boolean
 
 jobs:
   validate:
@@ -32,16 +27,43 @@ jobs:
       - name: Checkout do jogo
         uses: actions/checkout@v4
 
-      - name: Checkout dos assets com LFS materializado
+      - name: Checkout do snapshot canônico dos assets
         uses: actions/checkout@v4
         with:
           repository: Tehkne-Solutions/taijifu-masters-assets
+          ref: assets-pack-03-v1.0.0
           path: external/taijifu-masters-assets
           lfs: true
+          fetch-depth: 1
 
-      - name: Garantir objetos LFS dos assets
+      - name: Garantir snapshot imutável e objetos LFS
         working-directory: external/taijifu-masters-assets
-        run: git lfs pull
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs pull
+          ACTUAL=$(git rev-parse HEAD)
+          EXPECTED=2b9ef783e2bed539cb6364c08051dfa3e3fdb220
+          test "$ACTUAL" = "$EXPECTED"
+          echo "FIRST_PLAYABLE_ASSET_SNAPSHOT=PASS ref=assets-pack-03-v1.0.0 commit=$ACTUAL"
+
+      - name: Validar contrato release-pinned da arena
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          c=json.loads(Path('config/v2-arena-intake-contract.json').read_text(encoding='utf-8'))
+          assert c['signature']=='Tehkné Solutions'
+          assert c['source_ref']=='assets-pack-03-v1.0.0'
+          assert c['source_commit']=='2b9ef783e2bed539cb6364c08051dfa3e3fdb220'
+          assert c['import_policy']['immutable_source_ref'] is True
+          assert c['import_policy']['verify_source_commit'] is True
+          assert c['import_policy']['auto_fast_forward_assets_repo'] is False
+          print('FIRST_PLAYABLE_ARENA_PIN=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -67,23 +89,23 @@ jobs:
             exit 1
           fi
 
-      - name: Gerar relatório artístico canônico
+      - name: Gerar relatório artístico canônico estrito
         shell: bash
         run: |
+          set -euo pipefail
           python external/taijifu-masters-assets/tools/validate_first_playable_art_production.py \
-            --allow-incomplete \
             --report ../../artifacts/first-playable-art-preflight.json
+          python tools/release/validate_art_preflight_report.py \
+            artifacts/first-playable-art-preflight.json \
+            --strict
 
-      - name: Executar gate de integração
+      - name: Executar gate de integração estrito
         shell: bash
         run: |
-          STRICT=""
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.strict_assets }}" == "true" ]]; then
-            STRICT="--strict-assets"
-          fi
+          set -euo pipefail
           python tools/release/run_first_playable_release_gate.py \
             --art-report artifacts/first-playable-art-preflight.json \
-            $STRICT
+            --strict-assets
 
       - name: Publicar relatórios
         if: always()
