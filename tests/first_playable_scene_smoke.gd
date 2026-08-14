@@ -284,28 +284,48 @@ func _validate_character(
 	if not CharacterVisualCatalog.has_character(expected_character_id):
 		_fail("visual catalog does not recognize %s" % String(expected_character_id))
 		return false
-	if not CharacterVisualCatalog.uses_procedural_fallback(expected_character_id):
-		_fail("%s must keep the explicit procedural base render available" % String(expected_character_id))
+
+	var identity := fighter.get_node_or_null("FirstPlayableIdentity") as FirstPlayableCharacterIdentity
+	if not is_instance_valid(identity):
+		_fail("FirstPlayableIdentity contract node is missing for %s" % expected_name)
 		return false
-	if CharacterVisualCatalog.sheet_path(expected_character_id) != "":
-		_fail("%s inherited an unexpected legacy atlas" % String(expected_character_id))
+	var identity_signature := identity.presentation_signature()
+	if bool(identity_signature.get("procedural_character_renderer", true)):
+		_fail("procedural character renderer must remain retired for %s" % expected_name)
 		return false
-	var presenter := fighter.get_node_or_null("SpritePresenter") as ProvisionalSpritePresenter
-	if not is_instance_valid(presenter) or presenter.character_id() != expected_character_id:
-		_fail("sprite presenter resolved the wrong character for %s" % expected_name)
+	if bool(identity_signature.get("procedural_fallback_until_real_assets", true)):
+		_fail("procedural fallback must remain retired for %s" % expected_name)
 		return false
-	if presenter.has_active_sprite():
-		_fail("legacy sprite presenter unexpectedly activated an atlas for %s" % expected_name)
+	if not bool(identity_signature.get("canonical_visual_cutover_required", false)):
+		_fail("canonical visual cutover contract is missing for %s" % expected_name)
 		return false
-	if fighter.get_node_or_null("FirstPlayableIdentity") == null:
-		_fail("procedural identity base is missing for %s" % expected_name)
+	if identity.visible:
+		_fail("legacy FirstPlayableIdentity surface must be hidden after canonical activation for %s" % expected_name)
 		return false
-	if expected_character_id == &"lian_wu" and fighter.get_node_or_null("LianWuCanonicalPresenter") == null:
-		_fail("Lian Wu canonical presenter is missing")
+
+	var legacy_presenter := fighter.get_node_or_null("SpritePresenter") as CanvasItem
+	if legacy_presenter != null and legacy_presenter.visible:
+		_fail("legacy SpritePresenter must be hidden after canonical activation for %s" % expected_name)
 		return false
-	if expected_character_id == &"training_rival" and fighter.get_node_or_null("TrainingRivalCanonicalPresenter") == null:
-		_fail("Training Rival canonical presenter is missing")
+
+	var real_presenter := fighter.get_node_or_null("FirstPlayableRealAssetPresenter")
+	if real_presenter == null:
+		_fail("FirstPlayableRealAssetPresenter is missing for %s" % expected_name)
 		return false
+	if expected_character_id == &"lian_wu":
+		if not real_presenter is FirstPlayableLot01Presenter:
+			_fail("Lian Wu real presenter has the wrong runtime type")
+			return false
+		if not (real_presenter as FirstPlayableLot01Presenter).using_real_assets():
+			_fail("Lian Wu real presenter did not activate canonical SpriteFrames")
+			return false
+	elif expected_character_id == &"training_rival":
+		if not real_presenter is TrainingRivalLot01Presenter:
+			_fail("Training Rival real presenter has the wrong runtime type")
+			return false
+		if not (real_presenter as TrainingRivalLot01Presenter).using_real_assets():
+			_fail("Training Rival real presenter did not activate canonical SpriteFrames")
+			return false
 	return true
 
 func _fail(message: String) -> void:
