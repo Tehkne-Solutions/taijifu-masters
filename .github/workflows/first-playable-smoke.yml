@@ -17,6 +17,8 @@ on:
       - "scripts/core/**"
       - "scripts/combat/**"
       - "scripts/visual/character_visual_catalog.gd"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "tools/playtest/**"
       - "playtest/pilots/**"
       - "docs/FIRST-PLAYABLE-PILOT-09.md"
@@ -34,6 +36,25 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: Materialize release-pinned Mountain Dojo Night through C30
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-first-playable'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require canonical arena before gameplay smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' first-playable-c30.log
+          grep -q 'VM02_C30_ARENA_FILE_COUNT=6/6' first-playable-c30.log
+          grep -q 'VM02_C30_SOURCE_MANIFEST_SCHEMA=PASS' first-playable-c30.log
+          grep -q 'VM02_C30_ARENA_CANONICAL_READY=PASS' first-playable-c30.log
+          echo 'FIRST_PLAYABLE_CANONICAL_ARENA=PASS ref=assets-pack-03-v1.0.0'
 
       - name: Run First Playable report aggregator tests
         run: python3 -m unittest discover -s tests -p 'test_first_playable_report_aggregator.py' -v
@@ -95,6 +116,9 @@ jobs:
         with:
           name: first-playable-smoke-diagnostics
           path: |
+            first-playable-c30.log
             first-playable-import.log
             first-playable-combo-contract.log
           if-no-files-found: ignore
+
+# Tehkné Solutions

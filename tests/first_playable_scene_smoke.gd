@@ -113,40 +113,102 @@ func _validate_arena_presentation(instance: FirstPlayableController) -> bool:
 	var environment := instance.get_node("EnvironmentArt") as FirstPlayableEnvironmentArt
 	var arena := instance.get_node("Arena") as FirstPlayableArena
 	var dressing := instance.get_node("ArenaDressing") as FirstPlayableArenaDressing
+	var canonical := instance.get_node_or_null("CanonicalArenaParallax") as CanonicalArenaParallax
+	var readability := instance.get_node_or_null("ArenaPlatformReadability") as FirstPlayablePlatformReadabilityLayer
 	if not is_instance_valid(environment) or not is_instance_valid(arena) or not is_instance_valid(dressing):
 		_fail("arena presentation nodes have invalid scripts")
+		return false
+	if not is_instance_valid(canonical):
+		_fail("canonical Mountain Dojo Night parallax is missing")
+		return false
+	if not is_instance_valid(readability):
+		_fail("canonical platform readability layer is missing")
 		return false
 	if environment.z_index >= arena.z_index:
 		_fail("environment art must remain behind arena collision presentation")
 		return false
-	if dressing.z_index <= arena.z_index:
-		_fail("arena dressing must remain above blockout surfaces")
-		return false
 	if arena.show_strategic_points:
 		_fail("debug strategic points must be hidden in First Playable")
 		return false
-	var environment_signature := environment.environment_signature()
-	if int(environment_signature.get("ink_mountains", 0)) < 3 or int(environment_signature.get("waterfalls", 0)) < 3:
-		_fail("environment background is incomplete")
+
+	var environment_signature := environment.presentation_signature()
+	if not bool(environment_signature.get("canonical_arena", false)):
+		_fail("Mountain Dojo Night must own the environment presentation")
 		return false
-	if not bool(environment_signature.get("animated_clouds", false)):
-		_fail("animated atmosphere is missing")
+	if StringName(environment_signature.get("canonical_arena_id", &"")) != &"mountain_dojo_night":
+		_fail("canonical arena id is invalid")
 		return false
+	if int(environment_signature.get("parallax_layers", 0)) != 3:
+		_fail("canonical arena must expose exactly 3 parallax layers")
+		return false
+	if not bool(environment_signature.get("platform_readability_layer", false)):
+		_fail("canonical platform readability layer contract is missing")
+		return false
+	if not bool(environment_signature.get("fighter_first", false)):
+		_fail("canonical arena must preserve fighter-first presentation")
+		return false
+	if bool(environment_signature.get("purple_tech_glow", true)):
+		_fail("purple tech glow is forbidden in the canonical arena")
+		return false
+
+	var arena_signature := arena.presentation_signature()
+	if not bool(arena_signature.get("canonical_stage_visual_owner", false)):
+		_fail("canonical stage must own arena visuals")
+		return false
+	if bool(arena_signature.get("legacy_blockout_visuals", true)):
+		_fail("legacy TriplePath blockout visuals must remain retired")
+		return false
+	if not bool(arena_signature.get("collision_blockout_preserved", false)):
+		_fail("canonical visuals must preserve collision blockout")
+		return false
+
 	var dressing_signature := dressing.presentation_signature()
-	if int(dressing_signature.get("static_platform_overlays", 0)) != 15:
-		_fail("expected 15 platform overlays")
+	if not bool(dressing_signature.get("canonical_presentation", false)):
+		_fail("legacy dressing must acknowledge canonical presentation")
 		return false
-	if int(dressing_signature.get("wall_overlays", 0)) != 3:
-		_fail("expected 3 wall overlays")
+	if bool(dressing_signature.get("legacy_dressing_visible", true)):
+		_fail("legacy dressing must be hidden under canonical presentation")
 		return false
-	if int(dressing_signature.get("route_beacons", 0)) != 3:
-		_fail("expected 3 route beacons")
-		return false
-	if int(dressing_signature.get("spawn_shrines", 0)) != 2:
-		_fail("expected 2 spawn shrines")
-		return false
+	for key in ["static_platform_overlays", "wall_overlays", "moving_platform_overlays", "spawn_shrines", "route_beacons"]:
+		if int(dressing_signature.get(key, -1)) != 0:
+			_fail("legacy dressing count must be zero for %s" % key)
+			return false
 	if bool(dressing_signature.get("collision_changes", true)):
 		_fail("visual dressing must not change collision")
+		return false
+
+	var canonical_signature := canonical.presentation_signature()
+	if int(canonical_signature.get("canonical_layers", 0)) != 3:
+		_fail("canonical parallax runtime did not materialize 3 layers")
+		return false
+	if canonical_signature.get("arena_origin", Vector2.ZERO) != Vector2(440.0, 0.0):
+		_fail("canonical arena origin must remain aligned at x=440")
+		return false
+	if absf(float(canonical_signature.get("safe_world_left", 0.0)) - 720.0) > 0.01:
+		_fail("canonical left safe-zone does not align with Lian spawn")
+		return false
+	if absf(float(canonical_signature.get("safe_world_right", 0.0)) - 2080.0) > 0.01:
+		_fail("canonical right safe-zone does not align with Rival spawn")
+		return false
+	if bool(canonical_signature.get("procedural_placeholder", true)):
+		_fail("canonical arena cannot use procedural placeholder geometry")
+		return false
+
+	var readability_signature := readability.presentation_signature()
+	if int(readability_signature.get("static_platforms", 0)) != 5:
+		_fail("First Playable canonical layout must expose 5 readable static platforms")
+		return false
+	if int(readability_signature.get("moving_platforms", -1)) != 0:
+		_fail("moving platforms must remain disabled in the First Playable")
+		return false
+	if not bool(readability_signature.get("simplified_first_playable_layout", false)):
+		_fail("platform readability must use the simplified First Playable layout")
+		return false
+	if bool(readability_signature.get("route_fu_uses_purple", true)):
+		_fail("Fu route cannot regress to purple tech language")
+		return false
+	if bool(readability_signature.get("collision_changes", true)) or bool(readability_signature.get("physics_changes", true)):
+		_fail("platform readability must remain presentation-only")
 		return false
 	return true
 
@@ -223,20 +285,26 @@ func _validate_character(
 		_fail("visual catalog does not recognize %s" % String(expected_character_id))
 		return false
 	if not CharacterVisualCatalog.uses_procedural_fallback(expected_character_id):
-		_fail("%s must use explicit procedural rendering" % String(expected_character_id))
+		_fail("%s must keep the explicit procedural base render available" % String(expected_character_id))
 		return false
 	if CharacterVisualCatalog.sheet_path(expected_character_id) != "":
-		_fail("%s inherited an unexpected atlas" % String(expected_character_id))
+		_fail("%s inherited an unexpected legacy atlas" % String(expected_character_id))
 		return false
 	var presenter := fighter.get_node_or_null("SpritePresenter") as ProvisionalSpritePresenter
 	if not is_instance_valid(presenter) or presenter.character_id() != expected_character_id:
 		_fail("sprite presenter resolved the wrong character for %s" % expected_name)
 		return false
 	if presenter.has_active_sprite():
-		_fail("procedural character %s unexpectedly activated an atlas" % expected_name)
+		_fail("legacy sprite presenter unexpectedly activated an atlas for %s" % expected_name)
 		return false
 	if fighter.get_node_or_null("FirstPlayableIdentity") == null:
-		_fail("procedural identity overlay is missing for %s" % expected_name)
+		_fail("procedural identity base is missing for %s" % expected_name)
+		return false
+	if expected_character_id == &"lian_wu" and fighter.get_node_or_null("LianWuCanonicalPresenter") == null:
+		_fail("Lian Wu canonical presenter is missing")
+		return false
+	if expected_character_id == &"training_rival" and fighter.get_node_or_null("TrainingRivalCanonicalPresenter") == null:
+		_fail("Training Rival canonical presenter is missing")
 		return false
 	return true
 
