@@ -16,23 +16,33 @@ def _load_module():
     return module
 
 
-def test_current_repository_is_explicitly_blocked_for_visual_release() -> None:
+def test_current_repository_has_canonical_89_frame_visual_runtime() -> None:
     report = _load_module().audit()
 
-    assert report["schema"] == "tehkne/taijifu-first-playable-visual-audit/v1"
+    assert report["schema"] == "tehkne/taijifu-first-playable-visual-audit/v2"
     assert report["signature"] == "Tehkné Solutions"
     assert report["scene"] == "scenes/vertical_slice/first_playable.tscn"
-    assert report["pack_01"]["expected"] == 163
-    assert report["pack_01"]["present"] == 0
-    assert report["pack_01"]["promotion_blocked"] is True
-    assert report["runtime"]["procedural_lian_wu"] is True
-    assert report["runtime"]["procedural_training_rival"] is True
-    assert report["visual_release_ready"] is False
-    assert report["blockers"]
+    assert report["fighters"]["lian_wu"]["expected"] == 45
+    assert report["fighters"]["lian_wu"]["present"] == 45
+    assert report["fighters"]["lian_wu"]["spriteframe_references"] == 45
+    assert report["fighters"]["lian_wu"]["ready"] is True
+    assert report["fighters"]["training_rival"]["expected"] == 44
+    assert report["fighters"]["training_rival"]["present"] == 44
+    assert report["fighters"]["training_rival"]["spriteframe_references"] == 44
+    assert report["fighters"]["training_rival"]["ready"] is True
+    assert report["fighters"]["total_expected"] == 89
+    assert report["fighters"]["total_present"] == 89
+    assert report["visual_release_ready"] is True
+    assert report["blockers"] == []
 
 
-def test_visual_release_requires_pack_and_runtime_gates() -> None:
+def test_visual_release_uses_real_presenters_without_procedural_renderer() -> None:
     report = _load_module().audit()
 
-    assert report["pack_01"]["ready"] is False
-    assert report["runtime"]["procedural_runtime_active"] is True
+    assert report["runtime"]["real_presenter_handoff"] is True
+    assert report["runtime"]["presenter_scripts_ready"] is True
+    assert report["runtime"]["procedural_character_renderer"] is False
+    assert report["visual_release_ready"] is True
+
+
+# Tehkné Solutions

@@ -32,12 +32,12 @@ on:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
-      - name: Materialize release-pinned Mountain Dojo Night through C30
+      - name: Materialize composed First Playable snapshot through C30
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -46,15 +46,21 @@ jobs:
           & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-c30.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Require canonical arena before gameplay smoke
+      - name: Require immutable 89-frame snapshot before gameplay smoke
         shell: bash
         run: |
           set -euo pipefail
           grep -q 'VM02_C30_SOURCE_PIN=PASS' first-playable-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FREEZE=PASS' first-playable-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10' first-playable-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10' first-playable-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' first-playable-c30.log
           grep -q 'VM02_C30_ARENA_FILE_COUNT=6/6' first-playable-c30.log
           grep -q 'VM02_C30_SOURCE_MANIFEST_SCHEMA=PASS' first-playable-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_STAGE=PASS layers=3' first-playable-c30.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' first-playable-c30.log
           grep -q 'VM02_C30_ARENA_CANONICAL_READY=PASS' first-playable-c30.log
-          echo 'FIRST_PLAYABLE_CANONICAL_ARENA=PASS ref=assets-pack-03-v1.0.0'
+          echo 'FIRST_PLAYABLE_CANONICAL_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 fighters=89 stage_layers=3'
 
       - name: Run First Playable report aggregator tests
         run: python3 -m unittest discover -s tests -p 'test_first_playable_report_aggregator.py' -v

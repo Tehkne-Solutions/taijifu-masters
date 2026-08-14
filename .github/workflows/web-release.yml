@@ -8,6 +8,8 @@ on:
       - "scenes/**"
       - "scripts/**"
       - "assets/**"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "web/**"
       - "web-tests/**"
       - "vercel.json"
@@ -29,11 +31,34 @@ jobs:
   build-and-test-web:
     name: Exportar Godot Web e validar Chromium
     runs-on: ubuntu-22.04
-    timeout-minutes: 22
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Materializar snapshot canônico do First Playable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-web-release'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-web-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content first-playable-web-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "FIRST_PLAYABLE_WEB_SNAPSHOT=BLOCKED missing=$required" }
+          }
+          Write-Host 'FIRST_PLAYABLE_WEB_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 fighters=89 stage_layers=3'
 
       - name: Exportar build Web
         env:
@@ -63,6 +88,24 @@ jobs:
           assert manifest["battle_scene"] == "res://scenes/vertical_slice/first_playable.tscn"
           assert manifest["signature"] == "Tehkné Solutions"
           assert manifest["totals"]["file_count"] > 0
+
+          snapshot = manifest["asset_snapshot"]
+          assert snapshot["schema"] == "tehkne/taijifu-first-playable-asset-snapshot/v1"
+          assert snapshot["signature"] == "Tehkné Solutions"
+          assert snapshot["tag"] == "assets-first-playable-v1.0.0"
+          assert snapshot["commit"] == "b6767d9d30fb2980de5d0a57a8a4c414b854cad5"
+          assert snapshot["archive"] == "TAIJIFU_FIRST_PLAYABLE_ASSETS_v1.0.0.zip"
+          assert snapshot["archive_sha256"] == "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2"
+          assert snapshot["content_sha256"] == "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec"
+          assert snapshot["fighter_frames"] == 89
+          assert snapshot["fighter_animations"] == 20
+          assert snapshot["stage"] == "mountain_dojo_night"
+          assert snapshot["stage_layers"] == 3
+          assert snapshot["immutable"] is True
+          assert "mountain_dojo_night" in manifest["features"]
+          assert "canonical_89_frame_fighter_runtime" in manifest["features"]
+          assert "triple_path_ruins" not in manifest["features"]
+
           telemetry = manifest["telemetry"]
           assert telemetry["schema"] == "tehkne/taijifu-match-telemetry/v3"
           assert telemetry["privacy"] == "local_only"
@@ -91,6 +134,12 @@ jobs:
               "web_validation": "approved",
               "web_contract": validation["web_contract"],
               "telemetry": "local-v3",
+              "asset_snapshot": snapshot["tag"],
+              "asset_snapshot_commit": snapshot["commit"],
+              "asset_snapshot_sha256": snapshot["archive_sha256"],
+              "fighter_frames": snapshot["fighter_frames"],
+              "stage": snapshot["stage"],
+              "stage_layers": snapshot["stage_layers"],
           }, indent=2))
           PY
 
@@ -145,6 +194,7 @@ jobs:
         with:
           name: taijifu-web-smoke-${{ github.sha }}
           path: |
+            first-playable-web-c30.log
             web-import.log
             web-build.log
             web-server.log

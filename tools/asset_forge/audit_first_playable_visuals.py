@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Audit the real visual integration state of the Taijifu First Playable.
+"""Audit the active canonical visual integration of the Taijifu First Playable.
 
-This gate intentionally distinguishes a technically playable build from a build
-that is using approved production assets. It uses only repository state and the
-Python standard library so it can run locally and in CI.
+The historical TGAP production-status file describes the larger 163-asset Pack 01
+roadmap and is not the release contract of the current First Playable. This audit
+therefore validates the runtime assets actually loaded by the First Playable:
+Lian Wu 45-frame SpriteFrames + Training Rival 44-frame SpriteFrames, both through
+real presenters and with no procedural character renderer.
 
 Assinatura: Tehkné Solutions
 """
@@ -16,10 +18,17 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-STATUS_PATH = ROOT / "assets/tgap/pack_01_lian_wu/production-status.json"
+LIAN_ROOT = ROOT / "assets/tgap/pack_01_lian_wu/first_playable_lot_01"
+RIVAL_ROOT = ROOT / "assets/tgap/training_rival/first_playable_lot_01"
+LIAN_MANIFEST = LIAN_ROOT / "manifest.json"
+RIVAL_IMPORT_MANIFEST = RIVAL_ROOT / "c28-import-manifest.json"
+LIAN_FRAMES = LIAN_ROOT / "lian_wu_first_playable_frames.tres"
+RIVAL_FRAMES = RIVAL_ROOT / "training_rival_first_playable_frames.tres"
 IDENTITY_PATH = ROOT / "scripts/vertical_slice/first_playable_character_identity.gd"
-CONTROLLER_PATH = ROOT / "scripts/vertical_slice/first_playable.gd"
+LIAN_PRESENTER = ROOT / "scripts/vertical_slice/first_playable_lot01_presenter.gd"
+RIVAL_PRESENTER = ROOT / "scripts/vertical_slice/training_rival_lot01_presenter.gd"
 SCENE_PATH = ROOT / "scenes/vertical_slice/first_playable.tscn"
+SIGNATURE = "Tehkné Solutions"
 
 
 def _read_text(path: Path) -> str:
@@ -32,66 +41,111 @@ def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(_read_text(path))
 
 
+def _png_count(root: Path) -> int:
+    animation_root = root / "animations"
+    if not animation_root.is_dir():
+        return 0
+    return sum(1 for path in animation_root.rglob("*.png") if path.is_file())
+
+
+def _texture_reference_count(path: Path) -> int:
+    return _read_text(path).count('ext_resource type="Texture2D"')
+
+
 def audit() -> dict[str, Any]:
-    status = _read_json(STATUS_PATH)
+    lian_manifest = _read_json(LIAN_MANIFEST)
+    rival_manifest = _read_json(RIVAL_IMPORT_MANIFEST)
     identity = _read_text(IDENTITY_PATH)
-    controller = _read_text(CONTROLLER_PATH)
     scene = _read_text(SCENE_PATH)
 
-    procedural_lian_wu = "func _draw_lian_wu()" in identity
-    procedural_rival = "func _draw_training_rival()" in identity
-    identity_attached = "FirstPlayableIdentity" in controller
-    canonical_scene = "FirstPlayable" in scene
+    lian_present = _png_count(LIAN_ROOT)
+    rival_present = _png_count(RIVAL_ROOT)
+    lian_refs = _texture_reference_count(LIAN_FRAMES)
+    rival_refs = _texture_reference_count(RIVAL_FRAMES)
 
-    expected = int(status.get("expected", 0))
-    present = int(status.get("present", 0))
-    missing = int(status.get("missing", max(0, expected - present)))
-    promotion_blocked = bool(status.get("promotion_blocked", True))
-    gates = status.get("gates", {})
-    all_pack_gates_green = bool(gates) and all(bool(value) for value in gates.values())
-
-    real_pack_ready = (
-        expected > 0
-        and present == expected
-        and missing == 0
-        and not promotion_blocked
-        and all_pack_gates_green
+    lian_ready = (
+        lian_present == 45
+        and lian_refs == 45
+        and lian_manifest.get("signature") == SIGNATURE
+        and lian_manifest.get("frame_count") == 45
+        and lian_manifest.get("animation_count") == 10
+        and lian_manifest.get("status") == "approved_first_playable_runtime"
+        and lian_manifest.get("visual_review") == "pass"
     )
-    procedural_runtime_active = identity_attached and (procedural_lian_wu or procedural_rival)
-    visual_release_ready = canonical_scene and real_pack_ready and not procedural_runtime_active
+    rival_ready = (
+        rival_present == 44
+        and rival_refs == 44
+        and rival_manifest.get("signature") == SIGNATURE
+        and rival_manifest.get("frame_count") == 44
+        and len(rival_manifest.get("required_animations", {})) == 10
+    )
+
+    procedural_draw = "func _draw_lian_wu()" in identity or "func _draw_training_rival()" in identity or "func _draw()" in identity
+    real_presenter_handoff = all(
+        marker in identity
+        for marker in (
+            'LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")',
+            'TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")',
+            'presenter.name = "FirstPlayableRealAssetPresenter"',
+            '"procedural_character_renderer": false',
+            '"procedural_fallback_until_real_assets": false',
+        )
+    )
+    presenter_scripts_ready = LIAN_PRESENTER.is_file() and RIVAL_PRESENTER.is_file()
+    canonical_scene = "FirstPlayable" in scene
+    total_frames = lian_present + rival_present
+    visual_release_ready = (
+        lian_ready
+        and rival_ready
+        and total_frames == 89
+        and real_presenter_handoff
+        and presenter_scripts_ready
+        and not procedural_draw
+        and canonical_scene
+    )
 
     blockers: list[str] = []
-    if present != expected or missing != 0:
-        blockers.append(f"Pack 01 incompleto: {present}/{expected} presentes; {missing} ausentes")
-    if promotion_blocked:
-        blockers.append("Promoção do Pack 01 está bloqueada")
-    if not all_pack_gates_green:
-        blockers.append("Um ou mais gates do Pack 01 estão vermelhos")
-    if procedural_lian_wu:
-        blockers.append("Lian Wu ainda usa desenho procedural no First Playable")
-    if procedural_rival:
-        blockers.append("Rival de Treino ainda usa desenho procedural no First Playable")
+    if not lian_ready:
+        blockers.append(f"Lian Wu runtime incompleto/inválido: PNG={lian_present}/45 SpriteFrames={lian_refs}/45")
+    if not rival_ready:
+        blockers.append(f"Training Rival runtime incompleto/inválido: PNG={rival_present}/44 SpriteFrames={rival_refs}/44")
+    if total_frames != 89:
+        blockers.append(f"Baseline de lutadores divergente: {total_frames}/89")
+    if procedural_draw:
+        blockers.append("Renderer procedural de personagem detectado na identidade ativa")
+    if not real_presenter_handoff:
+        blockers.append("Handoff para FirstPlayableRealAssetPresenter não está canônico")
+    if not presenter_scripts_ready:
+        blockers.append("Um ou mais presenters canônicos estão ausentes")
     if not canonical_scene:
         blockers.append("Cena canônica do First Playable não foi reconhecida")
 
     return {
-        "schema": "tehkne/taijifu-first-playable-visual-audit/v1",
-        "signature": "Tehkné Solutions",
+        "schema": "tehkne/taijifu-first-playable-visual-audit/v2",
+        "signature": SIGNATURE,
         "scene": str(SCENE_PATH.relative_to(ROOT)),
-        "pack_01": {
-            "state": status.get("state", "unknown"),
-            "expected": expected,
-            "present": present,
-            "missing": missing,
-            "promotion_blocked": promotion_blocked,
-            "gates": gates,
-            "ready": real_pack_ready,
+        "fighters": {
+            "lian_wu": {
+                "expected": 45,
+                "present": lian_present,
+                "spriteframe_references": lian_refs,
+                "animations": 10,
+                "ready": lian_ready,
+            },
+            "training_rival": {
+                "expected": 44,
+                "present": rival_present,
+                "spriteframe_references": rival_refs,
+                "animations": 10,
+                "ready": rival_ready,
+            },
+            "total_expected": 89,
+            "total_present": total_frames,
         },
         "runtime": {
-            "identity_overlay_attached": identity_attached,
-            "procedural_lian_wu": procedural_lian_wu,
-            "procedural_training_rival": procedural_rival,
-            "procedural_runtime_active": procedural_runtime_active,
+            "real_presenter_handoff": real_presenter_handoff,
+            "presenter_scripts_ready": presenter_scripts_ready,
+            "procedural_character_renderer": procedural_draw,
         },
         "visual_release_ready": visual_release_ready,
         "blockers": blockers,
@@ -100,7 +154,7 @@ def audit() -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--strict", action="store_true", help="return exit code 1 while visual release is blocked")
+    parser.add_argument("--strict", action="store_true", help="return exit code 1 while canonical visual release is blocked")
     parser.add_argument("--output", type=Path, help="optional JSON output path")
     args = parser.parse_args()
 

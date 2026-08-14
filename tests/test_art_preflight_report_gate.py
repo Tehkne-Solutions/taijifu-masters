@@ -10,7 +10,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-def payload(lian: int, rival: int, passed: bool) -> dict:
+def legacy_payload(lian: int, rival: int, passed: bool) -> dict:
     return {
         "signature": "Tehkné Solutions",
         "total_present": lian + rival,
@@ -22,30 +22,68 @@ def payload(lian: int, rival: int, passed: bool) -> dict:
     }
 
 
-def test_informative_mode_accepts_zero_of_eighty_eight() -> None:
-    assert module.validate(payload(0, 0, False), strict=False) == []
+def v3_payload(lian: int, rival: int, ready: bool) -> dict:
+    return {
+        "gate_id": "taijifu-first-playable-art-preflight-v3",
+        "signature": "Tehkné Solutions",
+        "expected_total": 89,
+        "present_total": lian + rival,
+        "ready": ready,
+        "characters": [
+            {
+                "character": "lian_wu",
+                "frames": lian,
+                "expected_frames": 45,
+                "animations": 10 if lian == 45 else 0,
+                "expected_animations": 10,
+                "errors": [],
+                "complete": ready and lian == 45,
+            },
+            {
+                "character": "training_rival",
+                "frames": rival,
+                "expected_frames": 44,
+                "animations": 10 if rival == 44 else 0,
+                "expected_animations": 10,
+                "errors": [],
+                "complete": ready and rival == 44,
+            },
+        ],
+    }
 
 
-def test_strict_mode_blocks_incomplete_production() -> None:
-    errors = module.validate(payload(44, 0, False), strict=True)
+def test_informative_mode_keeps_historical_schema_readable() -> None:
+    assert module.validate(legacy_payload(0, 0, False), strict=False) == []
+
+
+def test_strict_mode_blocks_incomplete_v3_production() -> None:
+    errors = module.validate(v3_payload(45, 0, False), strict=True)
     assert any("training_rival incompleto" in error for error in errors)
     assert any("produção incompleta" in error for error in errors)
+    assert any("preflight artístico não aprovado" in error for error in errors)
 
 
-def test_strict_mode_accepts_full_approved_production() -> None:
-    assert module.validate(payload(44, 44, True), strict=True) == []
+def test_strict_mode_accepts_full_approved_v3_production() -> None:
+    assert module.validate(v3_payload(45, 44, True), strict=True) == []
+
+
+def test_strict_mode_rejects_historical_44_44_even_if_marked_passed() -> None:
+    errors = module.validate(legacy_payload(44, 44, True), strict=True)
+    assert any("lian_wu incompleto" in error for error in errors)
+    assert any("produção incompleta" in error for error in errors)
+    assert any("schema histórico" in error for error in errors)
 
 
 def test_rejects_invalid_signature() -> None:
-    data = payload(44, 44, True)
+    data = v3_payload(45, 44, True)
     data["signature"] = "Outra empresa"
     assert "assinatura inválida" in module.validate(data, strict=True)
 
 
 def test_rejects_divergent_total() -> None:
-    data = payload(44, 44, True)
-    data["total_present"] = 87
-    assert "total_present diverge da soma por lutador" in module.validate(data, strict=True)
+    data = v3_payload(45, 44, True)
+    data["present_total"] = 88
+    assert "contagem total diverge da soma por lutador" in module.validate(data, strict=True)
 
 
 # Tehkné Solutions
