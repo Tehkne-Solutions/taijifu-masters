@@ -8,6 +8,8 @@ on:
       - "scenes/**"
       - "scripts/**"
       - "assets/**"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "tests/first_playable*.gd"
       - ".github/workflows/first-playable-windows-build.yml"
   push:
@@ -26,11 +28,34 @@ jobs:
   build-windows:
     name: Exportar First Playable Windows x86_64
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Materializar snapshot canônico do First Playable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-windows-build'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-windows-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content first-playable-windows-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "FIRST_PLAYABLE_WINDOWS_SNAPSHOT=BLOCKED missing=$required" }
+          }
+          Write-Host 'FIRST_PLAYABLE_WINDOWS_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 fighters=89 stage_layers=3'
 
       - name: Cache Godot e templates
         uses: actions/cache@v4
@@ -96,6 +121,9 @@ jobs:
               "zip_sha256": actual,
               "checksum_reference": referenced_name,
               "telemetry": "local-v3",
+              "asset_snapshot": "assets-first-playable-v1.0.0",
+              "fighter_frames": 89,
+              "stage_layers": 3,
           }, indent=2))
           PY
 
@@ -111,11 +139,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publicar log de exportação
+      - name: Publicar evidência de snapshot e exportação
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: taijifu-first-playable-windows-log-${{ github.sha }}
-          path: first-playable-windows-build.log
+          path: |
+            first-playable-windows-c30.log
+            first-playable-windows-build.log
           if-no-files-found: ignore
           retention-days: 14
