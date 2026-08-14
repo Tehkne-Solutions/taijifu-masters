@@ -1,0 +1,175 @@
+name: PACK 03 ENV-01 Runtime Review
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pack03-env01-runtime-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  env01-runtime-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync PACK 03 candidate from official Asset Vault branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ASSETS_ROOT="$RUNNER_TEMP/taijifu-masters-assets"
+          rm -rf "$ASSETS_ROOT"
+          git clone --depth 1 --branch agent/pack03-mountain-dojo-final-art-v2 \
+            https://github.com/Tehkne-Solutions/taijifu-masters-assets.git "$ASSETS_ROOT"
+          git -C "$ASSETS_ROOT" lfs pull
+          python3 - <<'PY' 2>&1 | tee pack03-env01-intake.log
+          import hashlib
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          repo_root = Path.cwd()
+          assets_root = Path(os.environ['ASSETS_ROOT'])
+          contract = json.loads((repo_root / 'config/v2-arena-intake-contract.json').read_text(encoding='utf-8'))
+          source_root = assets_root / contract['source_root']
+          evidence = json.loads((source_root / 'ENV01_CANDIDATE_EVIDENCE.json').read_text(encoding='utf-8'))
+
+          expected = {
+              'background.png': '9eff3f1d443fbb49f265f939537e2a731156e72e3e302f8897b8408efe1f0e3d',
+              'midground.png': '516fd9ebe3fbcba707fafa96d6f86f88037a3004dfcbd3a885bccddc8f72a752',
+              'foreground.png': '65e32af104dabe15c92daefe02eaa3c15d457f7f56571a6474a577f8fbb10164',
+          }
+          if evidence.get('signature') != 'Tehkné Solutions' or evidence.get('arena_id') != 'mountain_dojo_night':
+              raise SystemExit('PACK03_ENV01_INTAKE=BLOCKED reason=evidence_identity')
+          for name, digest in expected.items():
+              path = source_root / name
+              if not path.is_file():
+                  raise SystemExit(f'PACK03_ENV01_INTAKE=BLOCKED reason=missing file={name}')
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              if actual != digest:
+                  raise SystemExit(f'PACK03_ENV01_INTAKE=BLOCKED reason=sha256 file={name} actual={actual}')
+              print(f'PACK03_ENV01_LAYER=PASS file={name} sha256={actual}')
+
+          manifest = json.loads((source_root / 'manifest.json').read_text(encoding='utf-8'))
+          if manifest.get('status') != 'art_pending' or manifest.get('promotion', {}).get('canonical_ready') is not False:
+              raise SystemExit('PACK03_ENV01_INTAKE=BLOCKED reason=premature_promotion')
+
+          required = [str(name) for name in contract['required_files']]
+          missing = [name for name in required if not (source_root / name).is_file()]
+          if missing:
+              raise SystemExit('PACK03_ENV01_INTAKE=BLOCKED reason=incomplete_source missing=' + '|'.join(missing))
+
+          destination = repo_root / contract['destination_root']
+          if destination.exists():
+              shutil.rmtree(destination)
+          shutil.copytree(source_root, destination)
+          print(f'PACK03_ENV01_SOURCE_FILE_COUNT={len(required)}/{len(required)}')
+          print('PACK03_ENV01_INTAKE=PASS candidate_branch=agent/pack03-mountain-dojo-final-art-v2')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - name: Install visual runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import candidate arena
+        run: |
+          set -o pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee pack03-env01-import.log
+
+      - name: Capture physical and posture-break states
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot \
+            --path . \
+            --rendering-method gl_compatibility \
+            --audio-driver Dummy \
+            --script res://scripts/ci/vfx02_canonical_impact_readability_review.gd \
+            2>&1 | tee pack03-env01-vfx02.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' pack03-env01-vfx02.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' pack03-env01-vfx02.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' pack03-env01-vfx02.log
+          grep -q 'VFX02_READABILITY=PASS' pack03-env01-vfx02.log
+
+      - name: Capture neutral and elemental states
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' ./godot \
+            --path . \
+            --rendering-method gl_compatibility \
+            --audio-driver Dummy \
+            --script res://scripts/ci/vfx03_final_presentation_coherence_review.gd \
+            2>&1 | tee pack03-env01-vfx03.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' pack03-env01-vfx03.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' pack03-env01-vfx03.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' pack03-env01-vfx03.log
+          grep -q 'VFX03_COHERENCE=PASS' pack03-env01-vfx03.log
+
+      - name: Assemble ENV-01 review set
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pack03-env01
+          cp artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png artifacts/pack03-env01/ENV01_NEUTRAL_DUO.review-1920x1080.png
+          cp artifacts/vfx02/VFX02_HIT.review-1920x1080.png artifacts/pack03-env01/ENV01_PHYSICAL_HIT.review-1920x1080.png
+          cp artifacts/vfx02/VFX02_POSTURE_BREAK.review-1920x1080.png artifacts/pack03-env01/ENV01_CRITICAL_POSTURE_BREAK.review-1920x1080.png
+          cp artifacts/vfx03/VFX03_ELEMENTAL.review-1920x1080.png artifacts/pack03-env01/ENV01_ELEMENTAL_STATE.review-1920x1080.png
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root=Path('artifacts/pack03-env01')
+          files=sorted(root.glob('*.png'))
+          if len(files) != 4:
+              raise SystemExit(f'PACK03_ENV01_CAPTURE_SET=BLOCKED count={len(files)}')
+          payload={
+              'schema':'tehkne/taijifu-pack03-env01-runtime-review/v1',
+              'signature':'Tehkné Solutions',
+              'arena_id':'mountain_dojo_night',
+              'asset_candidate_commit':'62b55080c276108255d97b49a8c9111431798ac0',
+              'asset_materializer_run_id':31836656628,
+              'states':{}
+          }
+          for p in files:
+              data=p.read_bytes()
+              payload['states'][p.name]={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+          (root/'PACK03_ENV01_RUNTIME_REVIEW.json').write_text(json.dumps(payload,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          print('PACK03_ENV01_CAPTURE_SET=PASS states=4 resolution=1920x1080')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PACK-03-ENV01-RUNTIME-REVIEW
+          path: |
+            pack03-env01-intake.log
+            pack03-env01-import.log
+            pack03-env01-vfx02.log
+            pack03-env01-vfx03.log
+            artifacts/pack03-env01/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo 'PACK 03 — ENV-01 candidate runtime review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Manual visual review is still required; this workflow never promotes art_final.' >> "$GITHUB_STEP_SUMMARY"
