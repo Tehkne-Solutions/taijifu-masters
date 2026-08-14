@@ -1,12 +1,15 @@
 {
-  "schema": "tehkne/taijifu-v2-arena-intake/v1",
+  "schema": "tehkne/taijifu-v2-arena-intake/v2",
   "signature": "Tehkné Solutions",
   "arena_id": "mountain_dojo_night",
   "display_name": "Mountain Dojo Night",
   "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
-  "source_ref": "assets-pack-03-v1.0.0",
-  "source_commit": "2b9ef783e2bed539cb6364c08051dfa3e3fdb220",
-  "source_release_sha256": "ffbea3b98ccde4bcb9f54d1aca932c9e91dd559529d7c01c38c9ba13a1dff39d",
+  "source_ref": "assets-first-playable-v1.0.0",
+  "source_commit": "b6767d9d30fb2980de5d0a57a8a4c414b854cad5",
+  "source_release_asset": "TAIJIFU_FIRST_PLAYABLE_ASSETS_v1.0.0.zip",
+  "source_release_sha256": "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2",
+  "source_content_sha256": "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec",
+  "source_snapshot_freeze": "releases/first-playable-v1.freeze.json",
   "source_root": "packs/stages/mountain_dojo_night/v1",
   "source_manifest": "packs/stages/mountain_dojo_night/v1/manifest.json",
   "destination_root": "assets/pack_03_stages/mountain_dojo_night",
@@ -18,6 +21,17 @@
     "lighting.json",
     "manifest.json"
   ],
+  "snapshot_contract": {
+    "lian_wu_root": "production/first_playable/lian_wu/first_playable_lot_01",
+    "lian_wu_frames": 45,
+    "lian_wu_animations": 10,
+    "training_rival_root": "production/first_playable/training_rival/first_playable_lot_01",
+    "training_rival_frames": 44,
+    "training_rival_animations": 10,
+    "fighter_frames": 89,
+    "fighter_animations": 20,
+    "stage_layers": 3
+  },
   "runtime_contract": {
     "viewport": "1920x1080",
     "parallax_layers": 3,
@@ -32,6 +46,8 @@
     "auto_fast_forward_assets_repo": false,
     "immutable_source_ref": true,
     "verify_source_commit": true,
+    "verify_snapshot_freeze": true,
+    "selective_lfs_materialization": true,
     "auto_import_when_complete": true,
     "atomic_replace": true
   }
