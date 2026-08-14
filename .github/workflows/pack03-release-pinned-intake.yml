@@ -24,7 +24,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-pack03-pinned'
           if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
-          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets 2>&1 | Tee-Object -FilePath pack03-c30-pinned.log
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath pack03-c30-pinned.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify pinned intake evidence

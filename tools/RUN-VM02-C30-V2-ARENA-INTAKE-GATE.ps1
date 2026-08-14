@@ -120,7 +120,12 @@ Write-Host "VM02_C30_PIPELINE_READY=PASS"
 Write-Host "VM02_C30_V2_ARENA_INTAKE_GATE=PASS"
 
 . $reportLib
-$branchName = (git branch --show-current).Trim()
+$branchNameRaw = git branch --show-current
+$branchName = if ($null -eq $branchNameRaw -or [string]::IsNullOrWhiteSpace([string]$branchNameRaw)) {
+  "detached"
+} else {
+  ([string]$branchNameRaw).Trim()
+}
 $commit = (git rev-parse --short=12 HEAD).Trim()
 Write-TehkneGateReport -Gate "VM02-C30-V2-ARENA-INTAKE-BRIDGE" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
   CONTRACT="PASS"
