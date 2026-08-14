@@ -14,6 +14,8 @@ const CANONICAL_FILES := [
 	CANONICAL_ROOT + "/midground.png",
 	CANONICAL_ROOT + "/foreground.png"
 ]
+const CANONICAL_DISPLAY_NAME := "MOUNTAIN DOJO NIGHT"
+const LEGACY_DISPLAY_NAME := "RUÍNAS DO CAMINHO TRIPLO"
 
 var _canonical_arena_active := false
 
@@ -34,6 +36,20 @@ func _ready() -> void:
 		_install_platform_readability()
 	_install_combat_feedback()
 	queue_redraw()
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	if not _canonical_arena_active:
+		return
+	# The First Playable controller still owns the generic battle-state label.
+	# Until arena identity is fully data-driven, fail closed against the legacy
+	# name so runtime evidence cannot present the wrong stage identity.
+	var root := get_parent()
+	if root == null:
+		return
+	var center_label := root.get_node_or_null("HUD/CenterInfo") as Label
+	if center_label != null and center_label.text == LEGACY_DISPLAY_NAME:
+		center_label.text = CANONICAL_DISPLAY_NAME
 
 func _canonical_arena_ready() -> bool:
 	# Export-safe: source PNGs are remapped to imported Texture2D resources in packaged builds.
@@ -97,6 +113,8 @@ func presentation_signature() -> Dictionary:
 		"arena_read": POLICY.ARENA_READ,
 		"canonical_arena": _canonical_arena_active,
 		"canonical_arena_id": &"mountain_dojo_night" if _canonical_arena_active else &"",
+		"canonical_display_name": CANONICAL_DISPLAY_NAME if _canonical_arena_active else "",
+		"legacy_display_name_suppressed": _canonical_arena_active,
 		"sky_layers": 0 if _canonical_arena_active else 4,
 		"mountain_layers": 0 if _canonical_arena_active else 2,
 		"parallax_layers": 3,
