@@ -93,6 +93,7 @@ class FirstPlayablePlaytestKitTest(unittest.TestCase):
             "build_id": "0.2.1-playtest+abc123",
             "git_sha": "abc123def456",
             "platform": platform,
+            "asset_snapshot": dict(kit.EXPECTED_ASSET_SNAPSHOT),
             "telemetry": {
                 "schema": kit.TELEMETRY_SCHEMA,
                 "privacy": "local_only",
@@ -101,6 +102,14 @@ class FirstPlayablePlaytestKitTest(unittest.TestCase):
             "files": [],
             "totals": {"file_count": 1, "size_bytes": 10},
         }
+
+    def write_web_manifest(self, payload: dict) -> None:
+        (self.root / "web-build" / "build-info.json").write_text(
+            json.dumps(payload), encoding="utf-8"
+        )
+
+    def write_windows_manifest(self, payload: dict) -> None:
+        self.windows_manifest.write_text(json.dumps(payload), encoding="utf-8")
 
     def run_kit(self) -> int:
         return kit.run(
@@ -114,7 +123,7 @@ class FirstPlayablePlaytestKitTest(unittest.TestCase):
             ]
         )
 
-    def test_builds_traceable_playtest_kit(self) -> None:
+    def test_builds_traceable_playtest_kit_with_exact_shared_snapshot(self) -> None:
         self.assertEqual(self.run_kit(), 0)
         kit_zip = self.output / "Taijifu-Masters-External-Playtest-Kit-0.2.1-playtest.zip"
         kit_checksum = kit_zip.with_suffix(".zip.sha256")
@@ -150,8 +159,16 @@ class FirstPlayablePlaytestKitTest(unittest.TestCase):
         self.assertEqual(manifest["signature"], "Tehkné Solutions")
         self.assertEqual(manifest["telemetry_schema"], kit.TELEMETRY_SCHEMA)
         self.assertEqual(manifest["privacy"], "local_only_no_automatic_upload")
+        self.assertEqual(manifest["asset_snapshot"], kit.EXPECTED_ASSET_SNAPSHOT)
+        self.assertTrue(manifest["asset_snapshot_consistent_across_builds"])
+        self.assertEqual(manifest["asset_snapshot"]["fighter_frames"], 89)
+        self.assertEqual(manifest["asset_snapshot"]["fighter_animations"], 20)
+        self.assertEqual(manifest["asset_snapshot"]["stage"], "mountain_dojo_night")
+        self.assertEqual(manifest["asset_snapshot"]["stage_layers"], 3)
         self.assertGreaterEqual(manifest["totals"]["file_count"], 11)
         self.assertIn("Nenhum relatório é enviado automaticamente", readme)
+        self.assertIn("assets-first-playable-v1.0.0", readme)
+        self.assertIn("89 frames / 20 animações", readme)
         self.assertEqual(
             hashlib.sha256(web_zip_bytes).hexdigest(),
             manifest["build_checksums"]["web_sha256"],
@@ -178,6 +195,24 @@ class FirstPlayablePlaytestKitTest(unittest.TestCase):
             f"{kit.sha256(self.windows_zip)}  /tmp/{kit.WINDOWS_ZIP_NAME}\n",
             encoding="utf-8",
         )
+        self.assertEqual(self.run_kit(), 2)
+
+    def test_rejects_tampered_asset_snapshot(self) -> None:
+        payload = self.build_manifest("web")
+        payload["asset_snapshot"]["fighter_frames"] = 88
+        self.write_web_manifest(payload)
+        self.assertEqual(self.run_kit(), 2)
+
+    def test_rejects_missing_asset_snapshot(self) -> None:
+        payload = self.build_manifest("windows")
+        payload.pop("asset_snapshot")
+        self.write_windows_manifest(payload)
+        self.assertEqual(self.run_kit(), 2)
+
+    def test_rejects_different_build_commits(self) -> None:
+        payload = self.build_manifest("web")
+        payload["git_sha"] = "different123"
+        self.write_web_manifest(payload)
         self.assertEqual(self.run_kit(), 2)
 
 

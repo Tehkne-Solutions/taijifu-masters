@@ -23,11 +23,27 @@ from typing import BinaryIO
 
 KIT_SCHEMA = "tehkne/taijifu-first-playable-kit/v1"
 BUILD_SCHEMA = "tehkne/taijifu-first-playable-build/v1"
+ASSET_SNAPSHOT_SCHEMA = "tehkne/taijifu-first-playable-asset-snapshot/v1"
 TELEMETRY_SCHEMA = "tehkne/taijifu-match-telemetry/v3"
 SIGNATURE = "Tehkné Solutions"
 FIXED_ZIP_TIME = (2020, 1, 1, 0, 0, 0)
 WINDOWS_ZIP_NAME = "Taijifu-Masters-First-Playable-Windows-x86_64.zip"
 WEB_ZIP_NAME = "Taijifu-Masters-First-Playable-Web.zip"
+EXPECTED_ASSET_SNAPSHOT = {
+    "schema": ASSET_SNAPSHOT_SCHEMA,
+    "signature": SIGNATURE,
+    "tag": "assets-first-playable-v1.0.0",
+    "commit": "b6767d9d30fb2980de5d0a57a8a4c414b854cad5",
+    "archive": "TAIJIFU_FIRST_PLAYABLE_ASSETS_v1.0.0.zip",
+    "archive_sha256": "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2",
+    "content_sha256": "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec",
+    "fighter_frames": 89,
+    "fighter_animations": 20,
+    "stage": "mountain_dojo_night",
+    "stage_layers": 3,
+    "immutable": True,
+    "source_pin_verified_by_build_gate": True,
+}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -85,6 +101,18 @@ def validate_checksum(archive: Path, checksum_path: Path) -> str:
     return actual
 
 
+def validate_asset_snapshot(payload: dict, *, path: Path) -> dict:
+    snapshot = payload.get("asset_snapshot")
+    if not isinstance(snapshot, dict):
+        raise ValueError(f"Snapshot de assets ausente em {path}")
+    if snapshot != EXPECTED_ASSET_SNAPSHOT:
+        raise ValueError(
+            "Snapshot de assets divergente em "
+            f"{path}: {json.dumps(snapshot, ensure_ascii=False, sort_keys=True)}"
+        )
+    return snapshot
+
+
 def validate_build_manifest(
     path: Path, *, platform: str, version: str
 ) -> dict:
@@ -102,6 +130,7 @@ def validate_build_manifest(
         raise ValueError(f"Contrato de telemetria ausente em {path}")
     if telemetry.get("privacy") != "local_only":
         raise ValueError(f"Privacidade local não declarada em {path}")
+    validate_asset_snapshot(payload, path=path)
     return payload
 
 
@@ -158,6 +187,14 @@ CONTEÚDO
 - tools/aggregate_first_playable_reports.py
 - manifests/kit-info.json
 
+BASE CANÔNICA DE ASSETS
+- snapshot: assets-first-playable-v1.0.0
+- Lian Wu: 45 frames / 10 animações
+- Training Rival: 44 frames / 10 animações
+- total: 89 frames / 20 animações
+- cenário: Mountain Dojo Night / 3 layers
+- snapshot imutável e verificado antes das builds Windows e Web
+
 FLUXO DO TESTADOR
 1. Windows: confira o SHA-256, extraia o ZIP e execute o arquivo .exe.
 2. Web: extraia o ZIP e sirva a pasta por HTTP; não abra index.html por file://.
@@ -203,10 +240,6 @@ def build_kit(args: argparse.Namespace) -> dict:
     root = paths["root"]
     project_file = root / "project.godot"
     version = project_value(project_file, "config/version")
-    git_sha = (
-        json.loads(paths["windows_manifest"].read_text(encoding="utf-8"))
-        .get("git_sha", "unknown")
-    )
 
     required_files = [
         paths["windows_zip"],
@@ -225,12 +258,19 @@ def build_kit(args: argparse.Namespace) -> dict:
     windows_sha = validate_checksum(
         paths["windows_zip"], paths["windows_checksum"]
     )
-    validate_build_manifest(
+    windows_manifest = validate_build_manifest(
         paths["windows_manifest"], platform="windows", version=version
     )
-    validate_build_manifest(
+    web_manifest = validate_build_manifest(
         paths["web_build"] / "build-info.json", platform="web", version=version
     )
+    windows_snapshot = windows_manifest["asset_snapshot"]
+    web_snapshot = web_manifest["asset_snapshot"]
+    if windows_snapshot != web_snapshot:
+        raise ValueError("Windows e Web foram construídos com snapshots de assets diferentes")
+    if windows_manifest.get("git_sha") != web_manifest.get("git_sha"):
+        raise ValueError("Windows e Web foram construídos a partir de commits diferentes")
+    git_sha = windows_manifest.get("git_sha", "unknown")
 
     output_dir = paths["output"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -309,6 +349,8 @@ def build_kit(args: argparse.Namespace) -> dict:
             "privacy": "local_only_no_automatic_upload",
             "telemetry_schema": TELEMETRY_SCHEMA,
             "platforms": ["windows-x86_64", "web"],
+            "asset_snapshot": windows_snapshot,
+            "asset_snapshot_consistent_across_builds": True,
             "build_checksums": {
                 "windows_sha256": windows_sha,
                 "web_sha256": web_sha,
@@ -361,6 +403,9 @@ def run(argv: list[str] | None = None) -> int:
                 "kit_checksum": result["kit_checksum"],
                 "kit_sha256": result["kit_sha256"],
                 "kit_size_bytes": result["kit_size_bytes"],
+                "asset_snapshot": result["manifest"]["asset_snapshot"]["tag"],
+                "fighter_frames": result["manifest"]["asset_snapshot"]["fighter_frames"],
+                "stage": result["manifest"]["asset_snapshot"]["stage"],
             },
             ensure_ascii=False,
         )
