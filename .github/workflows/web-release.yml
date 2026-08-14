@@ -8,6 +8,8 @@ on:
       - "scenes/**"
       - "scripts/**"
       - "assets/**"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "web/**"
       - "web-tests/**"
       - "vercel.json"
@@ -29,11 +31,34 @@ jobs:
   build-and-test-web:
     name: Exportar Godot Web e validar Chromium
     runs-on: ubuntu-22.04
-    timeout-minutes: 22
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Materializar snapshot canônico do First Playable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-web-release'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-web-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content first-playable-web-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "FIRST_PLAYABLE_WEB_SNAPSHOT=BLOCKED missing=$required" }
+          }
+          Write-Host 'FIRST_PLAYABLE_WEB_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 fighters=89 stage_layers=3'
 
       - name: Exportar build Web
         env:
@@ -91,6 +116,9 @@ jobs:
               "web_validation": "approved",
               "web_contract": validation["web_contract"],
               "telemetry": "local-v3",
+              "asset_snapshot": "assets-first-playable-v1.0.0",
+              "fighter_frames": 89,
+              "stage_layers": 3,
           }, indent=2))
           PY
 
@@ -145,6 +173,7 @@ jobs:
         with:
           name: taijifu-web-smoke-${{ github.sha }}
           path: |
+            first-playable-web-c30.log
             web-import.log
             web-build.log
             web-server.log
