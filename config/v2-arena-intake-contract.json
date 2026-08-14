@@ -4,6 +4,9 @@
   "arena_id": "mountain_dojo_night",
   "display_name": "Mountain Dojo Night",
   "source_repository": "https://github.com/Tehkne-Solutions/taijifu-masters-assets.git",
+  "source_ref": "assets-pack-03-v1.0.0",
+  "source_commit": "2b9ef783e2bed539cb6364c08051dfa3e3fdb220",
+  "source_release_sha256": "ffbea3b98ccde4bcb9f54d1aca932c9e91dd559529d7c01c38c9ba13a1dff39d",
   "source_root": "packs/stages/mountain_dojo_night/v1",
   "source_manifest": "packs/stages/mountain_dojo_night/v1/manifest.json",
   "destination_root": "assets/pack_03_stages/mountain_dojo_night",
@@ -26,7 +29,9 @@
   },
   "import_policy": {
     "auto_clone_assets_repo": true,
-    "auto_fast_forward_assets_repo": true,
+    "auto_fast_forward_assets_repo": false,
+    "immutable_source_ref": true,
+    "verify_source_commit": true,
     "auto_import_when_complete": true,
     "atomic_replace": true
   }

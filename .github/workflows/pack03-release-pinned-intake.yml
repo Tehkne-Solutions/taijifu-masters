@@ -1,0 +1,74 @@
+name: PACK 03 Release-Pinned Intake
+
+on:
+  pull_request:
+    paths:
+      - 'config/v2-arena-intake-contract.json'
+      - 'tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1'
+      - '.github/workflows/pack03-release-pinned-intake.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  c30-release-pin:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run C30 against isolated pinned Asset Vault clone
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-pack03-pinned'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets 2>&1 | Tee-Object -FilePath pack03-c30-pinned.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify pinned intake evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN_CONTRACT=PASS ref=assets-pack-03-v1.0.0 commit=2b9ef783e2bed539cb6364c08051dfa3e3fdb220' pack03-c30-pinned.log
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' pack03-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_FILE_COUNT=6/6' pack03-c30-pinned.log
+          grep -q 'VM02_C30_SOURCE_MANIFEST_SCHEMA=PASS' pack03-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_IMPORT=PASS' pack03-c30-pinned.log
+          grep -q 'VM02_C30_ARENA_CANONICAL_READY=PASS' pack03-c30-pinned.log
+          grep -q 'VM02_C30_V2_ARENA_INTAKE_GATE=PASS' pack03-c30-pinned.log
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          root=Path('assets/pack_03_stages/mountain_dojo_night')
+          expected={
+              'background.png':'dea8326025e65dcfd12bfa7073f0c666b37f267580b946649a6e6010b71269d9',
+              'midground.png':'000b550881f334ac6cf60d8f567ca051c85ccb61f4fd1e788bf3fcccef6ba907',
+              'foreground.png':'d7741b66dc15a16ad5c58d5f6b3fb9344b502f05bdac97d871dbde495de9430d',
+          }
+          for name,digest in expected.items():
+              actual=hashlib.sha256((root/name).read_bytes()).hexdigest()
+              if actual != digest:
+                  raise SystemExit(f'PACK03_PINNED_LAYER=BLOCKED file={name} actual={actual}')
+              print(f'PACK03_PINNED_LAYER=PASS file={name} sha256={actual}')
+          manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8-sig'))
+          if manifest.get('status')!='art_final' or manifest.get('version')!='1.0.0' or manifest.get('promotion',{}).get('canonical_ready') is not True:
+              raise SystemExit('PACK03_PINNED_MANIFEST=BLOCKED')
+          print('PACK03_PINNED_MANIFEST=PASS version=1.0.0 status=art_final')
+          print('PACK03_RELEASE_PINNED_INTAKE=PASS')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PACK-03-RELEASE-PINNED-INTAKE
+          path: pack03-c30-pinned.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: echo 'PACK 03 release-pinned C30 intake — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"

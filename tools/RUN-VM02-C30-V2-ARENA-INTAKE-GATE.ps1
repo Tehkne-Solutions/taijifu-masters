@@ -19,7 +19,13 @@ $progress = Get-Content $progressPath -Raw | ConvertFrom-Json
 if ($contract.signature -ne "Tehkné Solutions") { throw "VM02_C30_SIGNATURE=BLOCKED" }
 if ($contract.arena_id -ne "mountain_dojo_night") { throw "VM02_C30_ARENA_CONTRACT=BLOCKED" }
 if ([int]$contract.runtime_contract.parallax_layers -lt 3) { throw "VM02_C30_PARALLAX_CONTRACT=BLOCKED" }
+if (-not $contract.source_ref) { throw "VM02_C30_SOURCE_REF=BLOCKED reason=missing" }
+if (-not $contract.source_commit) { throw "VM02_C30_SOURCE_COMMIT=BLOCKED reason=missing" }
+if (-not [bool]$contract.import_policy.immutable_source_ref) { throw "VM02_C30_SOURCE_PIN=BLOCKED reason=mutable_policy" }
+if (-not [bool]$contract.import_policy.verify_source_commit) { throw "VM02_C30_SOURCE_PIN=BLOCKED reason=commit_verification_disabled" }
+if ([bool]$contract.import_policy.auto_fast_forward_assets_repo) { throw "VM02_C30_SOURCE_PIN=BLOCKED reason=fast_forward_forbidden" }
 Write-Host "VM02_C30_CONTRACT=PASS"
+Write-Host "VM02_C30_SOURCE_PIN_CONTRACT=PASS ref=$($contract.source_ref) commit=$($contract.source_commit)"
 
 if (-not $AssetsRepoRoot) {
   $workspace = Split-Path $RepoRoot -Parent
@@ -29,7 +35,7 @@ if (-not $AssetsRepoRoot) {
 $assetsRepoDetected = Test-Path (Join-Path $AssetsRepoRoot ".git")
 if (-not $assetsRepoDetected -and [bool]$contract.import_policy.auto_clone_assets_repo) {
   Write-Host "VM02_C30_ASSETS_REPO_CLONE=BEGIN path=$AssetsRepoRoot"
-  git clone --quiet $contract.source_repository $AssetsRepoRoot
+  git clone --quiet --no-checkout $contract.source_repository $AssetsRepoRoot
   if ($LASTEXITCODE -ne 0) { throw "VM02_C30_ASSETS_REPO_CLONE=BLOCKED" }
   $assetsRepoDetected = Test-Path (Join-Path $AssetsRepoRoot ".git")
   Write-Host "VM02_C30_ASSETS_REPO_CLONE=PASS"
@@ -37,17 +43,27 @@ if (-not $assetsRepoDetected -and [bool]$contract.import_policy.auto_clone_asset
 if (-not $assetsRepoDetected) { throw "VM02_C30_ASSETS_REPO=BLOCKED path=$AssetsRepoRoot" }
 Write-Host "VM02_C30_ASSETS_REPO=PASS path=$AssetsRepoRoot"
 
-if ([bool]$contract.import_policy.auto_fast_forward_assets_repo) {
-  Push-Location $AssetsRepoRoot
-  try {
-    git fetch origin --quiet
-    if ($LASTEXITCODE -ne 0) { throw "VM02_C30_ASSETS_FETCH=BLOCKED" }
-    $branch = (git branch --show-current).Trim()
-    if (-not $branch) { $branch = "main" }
-    git pull --ff-only --quiet origin $branch
-    if ($LASTEXITCODE -ne 0) { throw "VM02_C30_ASSETS_PULL=BLOCKED branch=$branch" }
-    Write-Host "VM02_C30_ASSETS_SYNC=PASS branch=$branch"
-  } finally { Pop-Location }
+Push-Location $AssetsRepoRoot
+try {
+  git fetch origin --tags --quiet
+  if ($LASTEXITCODE -ne 0) { throw "VM02_C30_ASSETS_FETCH=BLOCKED" }
+
+  $resolved = (git rev-list -n 1 ([string]$contract.source_ref)).Trim()
+  if ($LASTEXITCODE -ne 0 -or -not $resolved) { throw "VM02_C30_SOURCE_REF=BLOCKED ref=$($contract.source_ref)" }
+  if ($resolved -ne [string]$contract.source_commit) {
+    throw "VM02_C30_SOURCE_PIN=BLOCKED reason=tag_commit_mismatch resolved=$resolved expected=$($contract.source_commit)"
+  }
+
+  git checkout --detach --quiet ([string]$contract.source_commit)
+  if ($LASTEXITCODE -ne 0) { throw "VM02_C30_SOURCE_CHECKOUT=BLOCKED commit=$($contract.source_commit)" }
+  $head = (git rev-parse HEAD).Trim()
+  if ($head -ne [string]$contract.source_commit) {
+    throw "VM02_C30_SOURCE_PIN=BLOCKED reason=head_mismatch head=$head expected=$($contract.source_commit)"
+  }
+  Write-Host "VM02_C30_ASSETS_SYNC=PASS ref=$($contract.source_ref) commit=$head detached=true"
+  Write-Host "VM02_C30_SOURCE_PIN=PASS"
+} finally {
+  Pop-Location
 }
 
 $sourceRoot = Join-Path $AssetsRepoRoot ([string]$contract.source_root)
@@ -72,7 +88,13 @@ $manifestValid = $false
 if ($manifestReady) {
   try {
     $manifest = Get-Content $sourceManifest -Raw | ConvertFrom-Json
-    $manifestValid = ($manifest.signature -eq "Tehkné Solutions") -and ($manifest.arena_id -eq "mountain_dojo_night")
+    $manifestValid = (
+      ($manifest.signature -eq "Tehkné Solutions") -and
+      ($manifest.arena_id -eq "mountain_dojo_night") -and
+      ($manifest.version -eq "1.0.0") -and
+      ($manifest.status -eq "art_final") -and
+      ([bool]$manifest.promotion.canonical_ready)
+    )
   } catch { $manifestValid = $false }
 }
 Write-Host ("VM02_C30_SOURCE_MANIFEST_SCHEMA=" + $(if ($manifestValid) { "PASS" } else { "BLOCKED" }))
@@ -102,6 +124,9 @@ $branchName = (git branch --show-current).Trim()
 $commit = (git rev-parse --short=12 HEAD).Trim()
 Write-TehkneGateReport -Gate "VM02-C30-V2-ARENA-INTAKE-BRIDGE" -Status "PASS" -Branch $branchName -Commit $commit -Values ([ordered]@{
   CONTRACT="PASS"
+  SOURCE_REF=[string]$contract.source_ref
+  SOURCE_COMMIT=[string]$contract.source_commit
+  SOURCE_PIN="PASS"
   ASSETS_REPO="PASS"
   SOURCE_MANIFEST=$(if ($manifestReady -and $manifestValid) { "PASS" } else { "BLOCKED" })
   FILE_COUNT="$($contract.required_files.Count - $missing.Count)/$($contract.required_files.Count)"
