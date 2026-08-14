@@ -8,6 +8,8 @@ on:
       - "scripts/build-web.sh"
       - "scripts/build-windows.sh"
       - "scripts/create-first-playable-build-manifest.py"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "tools/playtest/**"
       - "playtest/pilots/**"
       - "tests/test_first_playable_report_aggregator.py"
@@ -25,6 +27,8 @@ on:
       - "scenes/**"
       - "scripts/**"
       - "assets/**"
+      - "config/v2-arena-intake-contract.json"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "web/**"
       - "web-tests/**"
       - "tools/playtest/**"
@@ -50,6 +54,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Materializar snapshot canônico antes dos builds externos
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-external-kit'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-kit-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content first-playable-kit-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "FIRST_PLAYABLE_EXTERNAL_KIT_SNAPSHOT=BLOCKED missing=$required" }
+          }
+          Write-Host 'FIRST_PLAYABLE_EXTERNAL_KIT_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 fighters=89 stage_layers=3'
 
       - name: Cache Godot e templates
         uses: actions/cache@v4
@@ -80,6 +107,41 @@ jobs:
         run: |
           set -o pipefail
           bash scripts/build-web.sh 2>&1 | tee first-playable-kit-web.log
+
+      - name: Validar proveniência idêntica nos builds Windows e Web
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          windows = json.loads(Path('windows-build/build-info.json').read_text(encoding='utf-8'))
+          web = json.loads(Path('web-build/build-info.json').read_text(encoding='utf-8'))
+          expected = {
+              'schema': 'tehkne/taijifu-first-playable-asset-snapshot/v1',
+              'signature': 'Tehkné Solutions',
+              'tag': 'assets-first-playable-v1.0.0',
+              'commit': 'b6767d9d30fb2980de5d0a57a8a4c414b854cad5',
+              'archive': 'TAIJIFU_FIRST_PLAYABLE_ASSETS_v1.0.0.zip',
+              'archive_sha256': '69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2',
+              'content_sha256': 'b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec',
+              'fighter_frames': 89,
+              'fighter_animations': 20,
+              'stage': 'mountain_dojo_night',
+              'stage_layers': 3,
+              'immutable': True,
+              'source_pin_verified_by_build_gate': True,
+          }
+          assert windows['asset_snapshot'] == expected
+          assert web['asset_snapshot'] == expected
+          assert windows['asset_snapshot'] == web['asset_snapshot']
+          assert windows['git_sha'] == web['git_sha']
+          assert 'mountain_dojo_night' in windows['features']
+          assert 'mountain_dojo_night' in web['features']
+          assert 'triple_path_ruins' not in windows['features']
+          assert 'triple_path_ruins' not in web['features']
+          print('FIRST_PLAYABLE_EXTERNAL_KIT_BUILD_PROVENANCE=PASS platform_pair=windows+web snapshot=assets-first-playable-v1.0.0 fighters=89 stage_layers=3')
+          print('SIGNATURE=Tehkné Solutions')
+          PY
 
       - name: Instalar Chromium do Playwright
         working-directory: web-tests
@@ -152,6 +214,19 @@ jobs:
           assert manifest["telemetry_schema"] == "tehkne/taijifu-match-telemetry/v3"
           assert manifest["privacy"] == "local_only_no_automatic_upload"
           assert set(manifest["platforms"]) == {"windows-x86_64", "web"}
+          assert manifest["asset_snapshot_consistent_across_builds"] is True
+          snapshot = manifest["asset_snapshot"]
+          assert snapshot["schema"] == "tehkne/taijifu-first-playable-asset-snapshot/v1"
+          assert snapshot["signature"] == "Tehkné Solutions"
+          assert snapshot["tag"] == "assets-first-playable-v1.0.0"
+          assert snapshot["commit"] == "b6767d9d30fb2980de5d0a57a8a4c414b854cad5"
+          assert snapshot["archive_sha256"] == "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2"
+          assert snapshot["content_sha256"] == "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec"
+          assert snapshot["fighter_frames"] == 89
+          assert snapshot["fighter_animations"] == 20
+          assert snapshot["stage"] == "mountain_dojo_night"
+          assert snapshot["stage_layers"] == 3
+          assert snapshot["immutable"] is True
 
           required = {
               "README-PLAYTEST.txt",
@@ -162,17 +237,29 @@ jobs:
               "docs/FIRST-PLAYABLE-PLAYTEST.md",
               "docs/FIRST-PLAYABLE-PLAYTEST-AGGREGATION.md",
               "tools/aggregate_first_playable_reports.py",
+              "manifests/windows-build-info.json",
+              "manifests/web-build-info.json",
               "manifests/kit-info.json",
           }
           with zipfile.ZipFile(zip_path) as archive:
               names = set(archive.namelist())
+              embedded_manifest = json.loads(archive.read("manifests/kit-info.json"))
+              windows_manifest = json.loads(archive.read("manifests/windows-build-info.json"))
+              web_manifest = json.loads(archive.read("manifests/web-build-info.json"))
           assert required.issubset(names), sorted(required - names)
+          assert embedded_manifest["asset_snapshot"] == snapshot
+          assert windows_manifest["asset_snapshot"] == snapshot
+          assert web_manifest["asset_snapshot"] == snapshot
 
           print(json.dumps({
               "kit": zip_path.name,
               "size_bytes": zip_path.stat().st_size,
               "sha256": actual,
               "files": manifest["totals"]["file_count"],
+              "asset_snapshot": snapshot["tag"],
+              "fighter_frames": snapshot["fighter_frames"],
+              "stage": snapshot["stage"],
+              "stage_layers": snapshot["stage_layers"],
           }, indent=2))
           PY
 
@@ -254,6 +341,7 @@ jobs:
               "sha256": actual,
               "files": manifest["totals"]["file_count"],
               "templates_empty": True,
+              "external_kit_snapshot": "assets-first-playable-v1.0.0",
           }, indent=2))
           PY
 
@@ -278,6 +366,7 @@ jobs:
         with:
           name: taijifu-external-playtest-kit-logs-${{ github.sha }}
           path: |
+            first-playable-kit-c30.log
             first-playable-kit-windows.log
             first-playable-kit-web.log
             first-playable-kit-web-server.log
