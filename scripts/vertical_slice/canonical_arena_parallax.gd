@@ -6,6 +6,14 @@ const BACKGROUND := ARENA_ROOT + "/background.png"
 const MIDGROUND := ARENA_ROOT + "/midground.png"
 const FOREGROUND := ARENA_ROOT + "/foreground.png"
 
+# PACK 03 is authored at 1920x1080 with safe fighter zone [280, 1640].
+# First Playable spawns are [720, 2080], therefore the exact world-space
+# alignment is +440px on X: 280+440=720 and 1640+440=2080.
+const ARENA_ORIGIN := Vector2(440.0, 0.0)
+const ASSET_SIZE := Vector2(1920.0, 1080.0)
+const SAFE_ASSET_LEFT := 280.0
+const SAFE_ASSET_RIGHT := 1640.0
+
 var _camera: Camera2D
 var _camera_origin := Vector2.ZERO
 var _layers: Array[Sprite2D] = []
@@ -20,6 +28,7 @@ func _ready() -> void:
 	_build_layer(MIDGROUND, "Midground", -12, 0.48)
 	_build_layer(FOREGROUND, "Foreground", 3, 1.0)
 	print("V2_CANONICAL_ARENA_RUNTIME=", "PASS" if canonical_ready() else "BLOCKED", " layers=", _layers.size())
+	print("V2_CANONICAL_ARENA_ORIGIN=PASS x=440 safe_world=720..2080")
 
 func _load_texture(path: String) -> Texture2D:
 	# Export-safe: PNG source files are remapped to imported textures in packaged builds.
@@ -37,7 +46,7 @@ func _build_layer(path: String, layer_name: String, layer_z: int, ratio: float) 
 	sprite.name = layer_name
 	sprite.texture = texture
 	sprite.centered = false
-	sprite.position = Vector2.ZERO
+	sprite.position = ARENA_ORIGIN
 	sprite.z_index = layer_z
 	sprite.set_meta("parallax_ratio", ratio)
 	add_child(sprite)
@@ -49,7 +58,10 @@ func _process(_delta: float) -> void:
 	var camera_delta := _camera.global_position - _camera_origin
 	for sprite in _layers:
 		var ratio := float(sprite.get_meta("parallax_ratio", 1.0))
-		sprite.position = Vector2(camera_delta.x * (1.0 - ratio), camera_delta.y * (1.0 - ratio))
+		sprite.position = ARENA_ORIGIN + Vector2(
+			camera_delta.x * (1.0 - ratio),
+			camera_delta.y * (1.0 - ratio)
+		)
 
 func canonical_ready() -> bool:
 	return _layers.size() == 3
@@ -61,6 +73,12 @@ func presentation_signature() -> Dictionary:
 		"background_ratio": 0.18,
 		"midground_ratio": 0.48,
 		"foreground_ratio": 1.0,
+		"asset_size": ASSET_SIZE,
+		"arena_origin": ARENA_ORIGIN,
+		"safe_asset_left": SAFE_ASSET_LEFT,
+		"safe_asset_right": SAFE_ASSET_RIGHT,
+		"safe_world_left": SAFE_ASSET_LEFT + ARENA_ORIGIN.x,
+		"safe_world_right": SAFE_ASSET_RIGHT + ARENA_ORIGIN.x,
 		"procedural_placeholder": false,
 		"visible_grid": false,
 		"export_safe_resource_loading": true,
