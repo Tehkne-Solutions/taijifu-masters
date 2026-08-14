@@ -16,54 +16,95 @@ on:
       - "tests/test_art_preflight_report_gate.py"
       - "tools/asset_forge/**"
       - "tools/release/**"
+      - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - ".github/workflows/first-playable-release-gate.yml"
   workflow_dispatch:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
     steps:
       - name: Checkout do jogo
         uses: actions/checkout@v4
 
-      - name: Checkout do snapshot canônico dos assets
+      - name: Checkout do snapshot composto canônico
         uses: actions/checkout@v4
         with:
           repository: Tehkne-Solutions/taijifu-masters-assets
-          ref: assets-pack-03-v1.0.0
+          ref: assets-first-playable-v1.0.0
           path: external/taijifu-masters-assets
-          lfs: true
+          lfs: false
           fetch-depth: 1
 
-      - name: Garantir snapshot imutável e objetos LFS
+      - name: Materializar somente LFS do First Playable
         working-directory: external/taijifu-masters-assets
         shell: bash
         run: |
           set -euo pipefail
-          git lfs pull
+          git lfs install --local
+          git lfs pull \
+            --include='production/first_playable/lian_wu/first_playable_lot_01/animations/**,production/first_playable/training_rival/first_playable_lot_01/animations/**,packs/stages/mountain_dojo_night/v1/*.png' \
+            --exclude=''
           ACTUAL=$(git rev-parse HEAD)
-          EXPECTED=2b9ef783e2bed539cb6364c08051dfa3e3fdb220
+          EXPECTED=b6767d9d30fb2980de5d0a57a8a4c414b854cad5
           test "$ACTUAL" = "$EXPECTED"
-          echo "FIRST_PLAYABLE_ASSET_SNAPSHOT=PASS ref=assets-pack-03-v1.0.0 commit=$ACTUAL"
+          echo "FIRST_PLAYABLE_ASSET_SNAPSHOT=PASS ref=assets-first-playable-v1.0.0 commit=$ACTUAL"
 
-      - name: Validar contrato release-pinned da arena
+      - name: Validar freeze e contrato do snapshot composto
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json
           from pathlib import Path
-          c=json.loads(Path('config/v2-arena-intake-contract.json').read_text(encoding='utf-8'))
-          assert c['signature']=='Tehkné Solutions'
-          assert c['source_ref']=='assets-pack-03-v1.0.0'
-          assert c['source_commit']=='2b9ef783e2bed539cb6364c08051dfa3e3fdb220'
-          assert c['import_policy']['immutable_source_ref'] is True
-          assert c['import_policy']['verify_source_commit'] is True
-          assert c['import_policy']['auto_fast_forward_assets_repo'] is False
-          print('FIRST_PLAYABLE_ARENA_PIN=PASS')
+
+          contract = json.loads(Path('config/v2-arena-intake-contract.json').read_text(encoding='utf-8'))
+          freeze = json.loads(Path('external/taijifu-masters-assets/releases/first-playable-v1.freeze.json').read_text(encoding='utf-8'))
+          assert contract['signature'] == 'Tehkné Solutions'
+          assert contract['source_ref'] == 'assets-first-playable-v1.0.0'
+          assert contract['source_commit'] == 'b6767d9d30fb2980de5d0a57a8a4c414b854cad5'
+          assert contract['source_release_sha256'] == '69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2'
+          assert contract['source_content_sha256'] == 'b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec'
+          assert contract['import_policy']['immutable_source_ref'] is True
+          assert contract['import_policy']['verify_source_commit'] is True
+          assert contract['import_policy']['verify_snapshot_freeze'] is True
+          assert contract['import_policy']['auto_fast_forward_assets_repo'] is False
+          assert contract['snapshot_contract']['fighter_frames'] == 89
+          assert contract['snapshot_contract']['fighter_animations'] == 20
+          assert contract['snapshot_contract']['stage_layers'] == 3
+          assert freeze['signature'] == 'Tehkné Solutions'
+          assert freeze['tag'] == contract['source_ref']
+          assert freeze['sha256'] == contract['source_release_sha256']
+          assert freeze['content_sha256'] == contract['source_content_sha256']
+          assert freeze['fighter_frames'] == 89
+          assert freeze['fighter_animations'] == 20
+          assert freeze['stage_layers'] == 3
+          print('FIRST_PLAYABLE_SNAPSHOT_FREEZE=PASS frames=89 animations=20 stage_layers=3')
           print('SIGNATURE=Tehkné Solutions')
           PY
+
+      - name: Executar C30 sobre o mesmo snapshot pinado
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $PWD 'external/taijifu-masters-assets'
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath first-playable-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content first-playable-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "FIRST_PLAYABLE_C30=BLOCKED missing=$required" }
+          }
+          Write-Host 'FIRST_PLAYABLE_C30=PASS snapshot=assets-first-playable-v1.0.0'
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -89,14 +130,16 @@ jobs:
             exit 1
           fi
 
-      - name: Gerar relatório artístico canônico estrito
+      - name: Gerar relatório artístico canônico v3 estrito
         shell: bash
         run: |
           set -euo pipefail
-          python external/taijifu-masters-assets/tools/validate_first_playable_art_production.py \
-            --report ../../artifacts/first-playable-art-preflight.json
+          python external/taijifu-masters-assets/tools/validate_first_playable_art_production_v3.py \
+            --report ../../artifacts/first-playable-art-preflight-v3.json | tee first-playable-art-v3.log
+          grep -q 'FIRST_PLAYABLE_ART_PRODUCTION_READY=true' first-playable-art-v3.log
+          grep -q 'FIRST_PLAYABLE_ART_PROGRESS=89/89' first-playable-art-v3.log
           python tools/release/validate_art_preflight_report.py \
-            artifacts/first-playable-art-preflight.json \
+            artifacts/first-playable-art-preflight-v3.json \
             --strict
 
       - name: Executar gate de integração estrito
@@ -104,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           python tools/release/run_first_playable_release_gate.py \
-            --art-report artifacts/first-playable-art-preflight.json \
+            --art-report artifacts/first-playable-art-preflight-v3.json \
             --strict-assets
 
       - name: Publicar relatórios
@@ -114,8 +157,10 @@ jobs:
           name: first-playable-release-gate
           path: |
             artifacts/first-playable-release-gate.json
-            artifacts/first-playable-art-preflight.json
+            artifacts/first-playable-art-preflight-v3.json
             first-playable-release-import.log
+            first-playable-c30.log
+            first-playable-art-v3.log
           if-no-files-found: warn
           retention-days: 14
 
