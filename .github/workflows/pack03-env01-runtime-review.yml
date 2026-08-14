@@ -1,4 +1,5 @@
 name: PACK 03 ENV-01 Runtime Review
+# v2.1 canonical stage identity revalidation
 
 on:
   pull_request:
