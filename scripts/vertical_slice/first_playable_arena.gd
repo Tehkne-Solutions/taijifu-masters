@@ -5,6 +5,19 @@ const PLAYABLE_LEFT := 80.0
 const PLAYABLE_RIGHT := 2720.0
 const FIRST_DUEL_P1_SPAWN := Vector2(720.0, 827.0)
 const FIRST_DUEL_P2_SPAWN := Vector2(2080.0, 827.0)
+const CANONICAL_ROOT := "res://assets/pack_03_stages/mountain_dojo_night"
+const CANONICAL_FILES := [
+	CANONICAL_ROOT + "/background.png",
+	CANONICAL_ROOT + "/midground.png",
+	CANONICAL_ROOT + "/foreground.png"
+]
+
+func _ready() -> void:
+	super._ready()
+	print(
+		"V2_CANONICAL_ARENA_BLOCKOUT_VISUALS=",
+		"RETIRED" if _canonical_presentation_active() else "FALLBACK"
+	)
 
 func start_battle_flow() -> void:
 	super.start_battle_flow()
@@ -60,6 +73,22 @@ func camera_left_limit() -> float:
 func is_position_safe(position: Vector2, margin: float = 95.0) -> bool:
 	return position.x >= PLAYABLE_LEFT + margin and position.x <= PLAYABLE_RIGHT - margin
 
+func _draw() -> void:
+	if not _canonical_presentation_active():
+		super._draw()
+		return
+
+	# PACK 03 owns the stage image. Keep gameplay cues, but retire the opaque
+	# TriplePath blockout background and colored debug/platform rectangles that
+	# previously covered the canonical art in every runtime capture.
+	if _active_manifestation >= 0 and _active_manifestation < _manifestation_slots.size():
+		var slot: Dictionary = _manifestation_slots[_active_manifestation]
+		var slot_position: Vector2 = slot["position"]
+		var slot_color: Color = slot["color"]
+		var pulse := 18.0 + sin(_elapsed * 4.0) * 4.0
+		draw_circle(slot_position, pulse, Color(slot_color, 0.24))
+		draw_arc(slot_position, pulse + 8.0, 0.0, TAU, 30, Color(slot_color, 0.82), 3.0)
+
 func presentation_signature() -> Dictionary:
 	return {
 		"continuous_floor": true,
@@ -72,8 +101,17 @@ func presentation_signature() -> Dictionary:
 		"initial_duel_camera_readable": true,
 		"initial_duel_p1_spawn": FIRST_DUEL_P1_SPAWN,
 		"initial_duel_p2_spawn": FIRST_DUEL_P2_SPAWN,
+		"canonical_stage_visual_owner": _canonical_presentation_active(),
+		"legacy_blockout_visuals": not _canonical_presentation_active(),
+		"collision_blockout_preserved": true,
 		"signature": "Tehkné Solutions"
 	}
+
+func _canonical_presentation_active() -> bool:
+	for path in CANONICAL_FILES:
+		if not ResourceLoader.exists(path, "Texture2D"):
+			return false
+	return true
 
 func _set_environment_round_active(active: bool) -> void:
 	var environment := get_node_or_null("../EnvironmentArt") as FirstPlayableEnvironmentArt

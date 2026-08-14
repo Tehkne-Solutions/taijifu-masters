@@ -39,19 +39,24 @@ jobs:
           evidence = json.loads((source_root / 'ENV01_CANDIDATE_EVIDENCE.json').read_text(encoding='utf-8'))
 
           expected = {
-              'background.png': '9eff3f1d443fbb49f265f939537e2a731156e72e3e302f8897b8408efe1f0e3d',
-              'midground.png': '516fd9ebe3fbcba707fafa96d6f86f88037a3004dfcbd3a885bccddc8f72a752',
-              'foreground.png': '65e32af104dabe15c92daefe02eaa3c15d457f7f56571a6474a577f8fbb10164',
+              'background.png': 'dea8326025e65dcfd12bfa7073f0c666b37f267580b946649a6e6010b71269d9',
+              'midground.png': '000b550881f334ac6cf60d8f567ca051c85ccb61f4fd1e788bf3fcccef6ba907',
+              'foreground.png': 'd7741b66dc15a16ad5c58d5f6b3fb9344b502f05bdac97d871dbde495de9430d',
           }
           if evidence.get('signature') != 'Tehkné Solutions' or evidence.get('arena_id') != 'mountain_dojo_night':
               raise SystemExit('PACK03_ENV01_INTAKE=BLOCKED reason=evidence_identity')
+          if evidence.get('art_pass', {}).get('version') != 'v2.1':
+              raise SystemExit('PACK03_ENV01_INTAKE=BLOCKED reason=art_version')
           for name, digest in expected.items():
               path = source_root / name
               if not path.is_file():
                   raise SystemExit(f'PACK03_ENV01_INTAKE=BLOCKED reason=missing file={name}')
               actual = hashlib.sha256(path.read_bytes()).hexdigest()
-              if actual != digest:
-                  raise SystemExit(f'PACK03_ENV01_INTAKE=BLOCKED reason=sha256 file={name} actual={actual}')
+              frozen = evidence.get('layers', {}).get(name, {}).get('sha256')
+              if actual != digest or frozen != digest:
+                  raise SystemExit(
+                      f'PACK03_ENV01_INTAKE=BLOCKED reason=sha256 file={name} actual={actual} frozen={frozen}'
+                  )
               print(f'PACK03_ENV01_LAYER=PASS file={name} sha256={actual}')
 
           manifest = json.loads((source_root / 'manifest.json').read_text(encoding='utf-8'))
@@ -68,7 +73,7 @@ jobs:
               shutil.rmtree(destination)
           shutil.copytree(source_root, destination)
           print(f'PACK03_ENV01_SOURCE_FILE_COUNT={len(required)}/{len(required)}')
-          print('PACK03_ENV01_INTAKE=PASS candidate_branch=agent/pack03-mountain-dojo-final-art-v2')
+          print('PACK03_ENV01_INTAKE=PASS candidate_branch=agent/pack03-mountain-dojo-final-art-v2 art=v2.1')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -143,22 +148,23 @@ jobs:
               'schema':'tehkne/taijifu-pack03-env01-runtime-review/v1',
               'signature':'Tehkné Solutions',
               'arena_id':'mountain_dojo_night',
-              'asset_candidate_commit':'62b55080c276108255d97b49a8c9111431798ac0',
-              'asset_materializer_run_id':31836656628,
+              'asset_candidate_commit':'059e0515e0a013b49202242a80c69425d4776f84',
+              'asset_materializer_run_id':31838440961,
+              'asset_art_pass':'v2.1',
               'states':{}
           }
           for p in files:
               data=p.read_bytes()
               payload['states'][p.name]={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
           (root/'PACK03_ENV01_RUNTIME_REVIEW.json').write_text(json.dumps(payload,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-          print('PACK03_ENV01_CAPTURE_SET=PASS states=4 resolution=1920x1080')
+          print('PACK03_ENV01_CAPTURE_SET=PASS states=4 resolution=1920x1080 art=v2.1')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PACK-03-ENV01-RUNTIME-REVIEW
+          name: PACK-03-ENV01-RUNTIME-REVIEW-V2-1
           path: |
             pack03-env01-intake.log
             pack03-env01-import.log
@@ -171,5 +177,5 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo 'PACK 03 — ENV-01 candidate runtime review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PACK 03 — ENV-01 candidate v2.1 runtime review — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
           echo 'Manual visual review is still required; this workflow never promotes art_final.' >> "$GITHUB_STEP_SUMMARY"

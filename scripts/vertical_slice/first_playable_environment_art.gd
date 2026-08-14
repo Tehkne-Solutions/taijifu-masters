@@ -23,6 +23,11 @@ func _ready() -> void:
 	print("V2_CANONICAL_ARENA_SELECTION=", "PASS" if _canonical_arena_active else "BLOCKED")
 	if _canonical_arena_active:
 		_install_canonical_arena()
+		# Collision remains owned by FirstPlayableArena, while this authored stone
+		# readability layer makes the five playable surfaces legible without
+		# resurrecting the old colored blockout rectangles.
+		_install_platform_readability()
+		print("V2_CANONICAL_PLATFORM_READABILITY=PASS")
 	else:
 		_install_parallax_layers()
 		_install_final_layer()
@@ -97,7 +102,7 @@ func presentation_signature() -> Dictionary:
 		"parallax_layers": 3,
 		"layered_parallax": true,
 		"foreground_separation": true,
-		"platform_readability_layer": not _canonical_arena_active,
+		"platform_readability_layer": true,
 		"fighter_first": true,
 		"celestial_body": &"canonical_art" if _canonical_arena_active else &"water_moon",
 		"mist_bands": 0 if _canonical_arena_active else 3,
