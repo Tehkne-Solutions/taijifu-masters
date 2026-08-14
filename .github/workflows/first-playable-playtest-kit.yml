@@ -169,10 +169,12 @@ jobs:
             sleep 1
           done
 
+          # O build Web padrão é o shell Sprint 0 essencial. Gamepad avançado e
+          # Controller Mastery permanecem no repositório como superfícies
+          # experimentais, mas não são injetados por scripts/build-web.sh. O kit
+          # externo valida somente a superfície realmente distribuída.
           npm --prefix web-tests test -- \
             web-smoke.spec.cjs \
-            controller-mastery-web.spec.cjs \
-            gamepad-web.spec.cjs \
             --reporter=line 2>&1 | tee first-playable-kit-web-test.log
 
       - name: Montar kit externo do jogador
