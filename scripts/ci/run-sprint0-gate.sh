@@ -53,6 +53,33 @@ test -s "${ROOT_DIR}/web-build/index.html"
 test -s "${ROOT_DIR}/web-build/index.wasm"
 test -s "${ROOT_DIR}/web-build/index.pck"
 
+log "Validando proveniência do snapshot dentro do build Web"
+python3 - "${ROOT_DIR}/web-build/build-info.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+snapshot = manifest["asset_snapshot"]
+assert manifest["signature"] == "Tehkné Solutions"
+assert snapshot["schema"] == "tehkne/taijifu-first-playable-asset-snapshot/v1"
+assert snapshot["signature"] == "Tehkné Solutions"
+assert snapshot["tag"] == "assets-first-playable-v1.0.0"
+assert snapshot["commit"] == "b6767d9d30fb2980de5d0a57a8a4c414b854cad5"
+assert snapshot["archive_sha256"] == "69b6b4641fb93bffa81555926887d44a0dfed5edaa4368b8a58a62f689bd58d2"
+assert snapshot["content_sha256"] == "b2b4e8e274cd1a819d3062c237907132b4067c3aac4a33ef2d7230e73f565eec"
+assert snapshot["fighter_frames"] == 89
+assert snapshot["fighter_animations"] == 20
+assert snapshot["stage"] == "mountain_dojo_night"
+assert snapshot["stage_layers"] == 3
+assert snapshot["immutable"] is True
+assert "mountain_dojo_night" in manifest["features"]
+assert "canonical_89_frame_fighter_runtime" in manifest["features"]
+assert "triple_path_ruins" not in manifest["features"]
+print("SPRINT0_BUILD_SNAPSHOT_PROVENANCE=PASS tag=assets-first-playable-v1.0.0 fighters=89 stage_layers=3")
+print("SIGNATURE=Tehkné Solutions")
+PY
+
 run_contract "tests/sprint0_minimal_main_menu_contract.gd"
 run_contract "tests/sprint0_single_native_flow_contract.gd"
 run_contract "tests/sprint0_minimal_autoloads_contract.gd"
