@@ -14,6 +14,7 @@ on:
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
       - "scripts/runtime/procedural_arena_pickup_runtime.gd"
+      - "scripts/runtime/pilot_feedback_guard_runtime.gd"
       - "scripts/ci/procedural_arena_pickups_smoke_test.gd"
       - "scripts/ai/bot_behavior_catalog.gd"
       - "scripts/core/**"
@@ -105,6 +106,9 @@ jobs:
 
       - name: Run First Playable menu and UI flow
         run: ./godot --headless --path . --script tests/first_playable_flow_test.gd
+
+      - name: Run Pilot 09 feedback navigation guard
+        run: ./godot --headless --path . --script tests/first_playable_pilot_feedback_guard_test.gd
 
       - name: Run First Playable AI behavior
         run: ./godot --headless --path . --script tests/first_playable_ai_behavior_test.gd
