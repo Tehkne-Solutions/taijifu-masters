@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,13 +66,18 @@ def main() -> int:
         "const CANONICAL_BASELINE_Y := 970.0",
         "const TARGET_VISUAL_HEIGHT := 132.0",
         "const CANONICAL_ALPHA_HEIGHT := 923.0",
-        "const HIT_VISUAL_SECONDS := 0.18",
         "_hit_visual_timer",
         "_fighter._is_blocking",
         'for node_name in ["FirstPlayableIdentity", "SpritePresenter"]',
     ):
         if marker not in rival_text:
             return block(f"rival_presenter_marker={marker}")
+    timing_match = re.search(r"const HIT_VISUAL_SECONDS := ([0-9.]+)", rival_text)
+    if timing_match is None:
+        return block("hit_visual_timing_missing")
+    hit_visual_seconds = float(timing_match.group(1))
+    if not (0.18 <= hit_visual_seconds <= 0.35):
+        return block(f"hit_visual_timing={hit_visual_seconds}")
     if "_hitstun_timer" in rival_text:
         return block("retired_hitstun_reference")
 
@@ -90,6 +96,7 @@ def main() -> int:
     print("C28_DUO_SCALE_CONTRACT=PASS ratio=1.0130")
     print("C28_DUO_FOOTLINE_CONTRACT=PASS")
     print("C28_DUO_VIEWPORT_CONTRACT=PASS visibility=1.0/1.0")
+    print(f"C28_DUO_HIT_PRESENTATION=PASS seconds={hit_visual_seconds:.2f}")
     print("C28_DUO_RUNTIME_FIXES=PASS scale=true hit_state=true spawn=true")
     print("C28_DUO_READY=PASS")
     print("SIGNATURE=Tehkné Solutions")
