@@ -1,13 +1,14 @@
 {
-  "schema": "tehkne/taijifu-base01-creator-battle-handoff/v1",
+  "schema": "tehkne/taijifu-base01-creator-battle-handoff/v2",
   "signature": "Tehkné Solutions",
   "component_id": "BASE01_CREATOR_BATTLE_HANDOFF",
-  "version": "1.0.0",
-  "status": "handoff_integrated_animation_runtime_blocked",
+  "version": "2.0.0",
+  "status": "integrated_runtime_activation_human_revalidation_required",
   "depends_on": {
     "character_creator_shell": "BASE01_CHARACTER_CREATOR_SHELL",
     "identity_preset_serialization": "BASE01_IDENTITY_PRESET_SERIALIZATION",
-    "first_playable_menu": "C62.7_CREATOR_MENU_ENTRY"
+    "first_playable_menu": "C62.7_CREATOR_MENU_ENTRY",
+    "shared_modular_animation_runtime": "C65_SHARED_MODULAR_ANIMATION_RUNTIME"
   },
   "selection_contract": {
     "source": "ModularFighterCreatorScene",
@@ -22,26 +23,48 @@
     "player": 1,
     "metadata_key": "creator_battle_handoff",
     "session_to_battle": true,
-    "visual_activation": false,
-    "visual_blocker": "shared_modular_animation_runtime",
+    "prebattle_visual_activation": false,
+    "prebattle_visual_blocker": "shared_modular_animation_runtime",
+    "battle_visual_activation_on_complete_assembly": true,
+    "battle_visual_blocker_after_success": "",
+    "visual_runtime": "shared_modular_animation_runtime_v1",
     "combat_build_fallback": "lian_wu_first_playable",
     "animated_presenter_fallback": "FirstPlayableLot01Presenter",
+    "fallback_visible_on_success": false,
+    "fallback_allowed_only_on_assembly_failure": true,
     "static_creator_sprite_regression_allowed": false,
     "collision_changes": false
+  },
+  "motion_quality": {
+    "current_runtime": "whole_assembler_transform_animation",
+    "authored_motion_final": false,
+    "current_states": ["idle", "run", "jump_start", "airborne", "fall", "attack_light", "guard", "dodge", "hit", "ko"],
+    "known_limitation": "multiple modular states are communicated by assembler scale/skew/rotation instead of dedicated authored modular motion",
+    "required_recovery_pack": "PACK_04_COMBAT_REACTIONS_AND_MOTION",
+    "human_revalidation_required": true
   },
   "validation": {
     "creator_save_selects_session": true,
     "creator_load_selects_session": true,
     "session_preset_validation": true,
+    "prebattle_fail_closed": true,
     "battle_receives_metadata": true,
+    "battle_promotes_visual_activation_after_complete_assembly": true,
+    "modular_presenter_active_on_success": true,
     "animated_fallback_preserved": true,
-    "premature_visual_activation_blocked": true,
-    "end_to_end_scene_smoke": true
+    "fallback_hidden_after_modular_success": true,
+    "static_sprite_regression_blocked": true,
+    "end_to_end_scene_smoke": "scripts/ci/base01_creator_battle_handoff_smoke.gd"
   },
   "release_policy": {
-    "handoff_may_merge_while_visual_blocked": true,
-    "visual_activation_requires": "C63_SHARED_MODULAR_ANIMATION_RUNTIME_PASS",
-    "fail_closed_on_invalid_preset": true
+    "technical_handoff_integrated": true,
+    "product_ready": false,
+    "product_ready_requires": [
+      "P0_CREATOR_HUMAN_REVALIDATION_PASS",
+      "PACK_04_AUTHORED_MOTION_PASS"
+    ],
+    "fail_closed_on_invalid_preset": true,
+    "ci_green_alone_may_not_promote_product_ready": true
   },
-  "next_stage": "C63_SHARED_MODULAR_ANIMATION_RUNTIME"
+  "next_stage": "P0_CREATOR_HUMAN_REVALIDATION_AND_PACK04"
 }
