@@ -22,6 +22,7 @@ static var selected_difficulty_id: StringName = &"disciple"
 static var participant_code := ""
 static var selected_creator_preset_id: StringName = &""
 static var pilot_completed_matches := 0
+static var pilot_enforcement_enabled := false
 
 static func set_difficulty(difficulty_id: StringName) -> void:
 	if pilot_sequence_locked():
@@ -52,17 +53,30 @@ static func set_participant_code(raw_value: String) -> bool:
 	if normalized == "" or not PILOT_ASSIGNMENTS.has(normalized):
 		participant_code = ""
 		pilot_completed_matches = 0
+		pilot_enforcement_enabled = false
 		return false
 	var changed := participant_code != normalized
 	participant_code = normalized
 	if changed:
 		pilot_completed_matches = 0
+	return true
+
+static func begin_pilot_session(raw_value: String) -> bool:
+	if not set_participant_code(raw_value):
+		pilot_enforcement_enabled = false
+		return false
+	pilot_enforcement_enabled = true
+	pilot_completed_matches = 0
 	selected_difficulty_id = pilot_required_difficulty()
 	return true
+
+static func end_pilot_session() -> void:
+	pilot_enforcement_enabled = false
 
 static func clear_participant_code() -> void:
 	participant_code = ""
 	pilot_completed_matches = 0
+	pilot_enforcement_enabled = false
 
 static func has_valid_participant_code() -> bool:
 	var normalized := normalize_participant_code(participant_code)
@@ -85,7 +99,7 @@ static func pilot_complete() -> bool:
 	return expected > 0 and pilot_completed_matches >= expected
 
 static func pilot_sequence_locked() -> bool:
-	return has_valid_participant_code() and not pilot_complete()
+	return pilot_enforcement_enabled and has_valid_participant_code() and not pilot_complete()
 
 static func pilot_required_difficulty() -> StringName:
 	var sequence := pilot_sequence()
@@ -113,6 +127,7 @@ static func pilot_progress_signature() -> Dictionary:
 		"expected_matches": pilot_expected_matches(),
 		"round_number": pilot_round_number(),
 		"required_difficulty": String(pilot_required_difficulty()),
+		"enforcement_enabled": pilot_enforcement_enabled,
 		"sequence_locked": pilot_sequence_locked(),
 		"complete": pilot_complete(),
 		"signature": "Tehkné Solutions",
@@ -191,3 +206,4 @@ static func reset() -> void:
 	participant_code = ""
 	selected_creator_preset_id = &""
 	pilot_completed_matches = 0
+	pilot_enforcement_enabled = false
