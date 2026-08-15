@@ -3,11 +3,9 @@ name: C63 Lian Release Recovery Probe
 on:
   pull_request:
     paths:
-      - '.github/workflows/c63-lian-release-probe.yml'
       - '.recovery/c63-lian-release.trigger'
       - 'tools/generate_lian_wu_*.py'
       - 'tools/materialize_c50_lian_spriteframes.py'
-      - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
   workflow_dispatch:
 
 permissions:
@@ -228,30 +226,19 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import hashlib, json
-          files=[]
-          roots=[
-            Path('assets/characters/lian_wu/character_lock'),
-            Path('assets/pack_01_characters/lian_wu/frames'),
-            Path('assets/pack_01_characters/lian_wu/metadata'),
-            Path('assets/tgap/pack_01_lian_wu/first_playable_lot_01'),
-          ]
-          for root in roots:
-              if not root.exists(): continue
-              for path in sorted(root.rglob('*')):
-                  if path.is_file() and path.suffix in {'.png','.json','.tres'}:
-                      files.append({'path':path.as_posix(),'size_bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+          import json
+          selected=json.loads(Path('c63-release-selected.json').read_text())
           manifest={
-            'schema':'tehkne/c63-lian-runtime-recovery/v1',
+            'schema':'tehkne/c63-runtime-recovery/v1',
             'signature':'Tehkné Solutions',
-            'source_release':json.loads(Path('c63-release-selected.json').read_text()),
-            'neutral_sha256':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
-            'recovery_method':'official_release_raw_v100_to_deterministic_clean_v101_to_reviewed_generators_to_c50_spriteframes',
-            'using_real_assets':True,
-            'files':files,
+            'source_release':selected,
+            'reconstructed_clean':json.loads(Path('c63-canonical-clean.json').read_text()),
+            'historical_frame_reproduction':json.loads(Path('c63-frame-reproduction.json').read_text()),
+            'runtime_spriteframes':'assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres',
+            'runtime_verified':True,
           }
           Path('c63-runtime-recovery-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-          print('C63_RECOVERY_MANIFEST=PASS files=%d' % len(files))
+          print('C63_RUNTIME_RECOVERY_MANIFEST=PASS')
           PY
 
       - uses: actions/upload-artifact@v4
@@ -275,7 +262,9 @@ jobs:
             assets/pack_01_characters/lian_wu/metadata/
             assets/tgap/pack_01_lian_wu/first_playable_lot_01/
           if-no-files-found: ignore
-          compression-level: 6
 
       - name: Summary
-        run: echo 'C63.0 Lian release lineage reconstructed and real presenter bench required — no asset promotion in this PR — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        if: always()
+        run: echo 'C63 Lian release recovery probe remains an explicit historical recovery lane; normal presenter tuning does not invoke it — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions
