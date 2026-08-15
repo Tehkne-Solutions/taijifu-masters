@@ -7,8 +7,10 @@ on:
       - "export_presets.cfg"
       - "scenes/vertical_slice/**"
       - "scenes/fighter/**"
+      - "scenes/characters/**"
       - "scripts/vertical_slice/**"
       - "scripts/fighter/**"
+      - "scripts/characters/**"
       - "scripts/telemetry/**"
       - "scripts/create-first-playable-build-manifest.py"
       - "scripts/arena/triple_path_arena.gd"
@@ -21,6 +23,7 @@ on:
       - "scripts/core/**"
       - "scripts/combat/**"
       - "scripts/visual/character_visual_catalog.gd"
+      - "assets/modular_fighters/**"
       - "config/v2-arena-intake-contract.json"
       - "tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1"
       - "tools/playtest/**"
@@ -101,6 +104,9 @@ jobs:
 
       - name: Run P0 combat spacing and hit reaction contract
         run: ./godot --headless --path . --script tests/first_playable_combat_spacing_reaction_test.gd
+
+      - name: Run P0 Character Creator product readiness contract
+        run: ./godot --headless --path . --script tests/first_playable_creator_product_readiness_test.gd
 
       - name: Run First Playable adaptive master contract
         run: ./godot --headless --path . --script tests/first_playable_adaptive_master_contract.gd
