@@ -33,16 +33,33 @@ func _run() -> void:
 	if menu.play_button.disabled:
 		await _fail("play must be enabled on first entry")
 		return
-	if FirstPlayableSession.participant_code != "TJFP-001":
-		await _fail("default anonymous participant code was not applied internally")
+	if FirstPlayableSession.participant_code != "":
+		await _fail("interactive menu must not auto-assign a pilot participant")
+		return
+	if menu.get_node_or_null("PilotParticipantDialog") == null:
+		await _fail("pilot participant dialog was not created")
+		return
+
+	if not FirstPlayableSession.set_participant_code("TJFP-001"):
+		await _fail("pilot participant assignment was rejected")
+		return
+	menu._update_difficulty_ui()
+	if FirstPlayableSession.selected_difficulty_id != &"apprentice":
+		await _fail("TJFP-001 did not start on assigned apprentice difficulty")
+		return
+	if not menu.easy_button.disabled or not menu.normal_button.disabled or not menu.hard_button.disabled:
+		await _fail("difficulty controls must lock during an official pilot sequence")
+		return
+	if not menu.creator_button.disabled:
+		await _fail("creator must be isolated during an official pilot sequence")
 		return
 
 	menu.select_difficulty(&"master")
-	if FirstPlayableSession.selected_difficulty_id != &"master":
-		await _fail("menu did not persist master difficulty")
+	if FirstPlayableSession.selected_difficulty_id != &"apprentice":
+		await _fail("pilot sequence allowed an out-of-order master override")
 		return
-	if "MESTRE" not in menu.difficulty_label.text:
-		await _fail("menu did not refresh the selected difficulty label")
+	if "APRENDIZ" not in menu.difficulty_label.text:
+		await _fail("menu did not present the assigned pilot difficulty")
 		return
 
 	await _dispose_active_scene()
@@ -63,14 +80,17 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
-	if battle.difficulty_controller.selected_difficulty_id != &"master":
-		await _fail("battle did not inherit menu difficulty")
+	if battle.difficulty_controller.selected_difficulty_id != &"apprentice":
+		await _fail("battle did not inherit assigned pilot difficulty")
 		return
-	if battle.bot_runtime.difficulty_id != &"master":
-		await _fail("bot did not receive menu difficulty")
+	if battle.bot_runtime.difficulty_id != &"apprentice":
+		await _fail("bot did not receive assigned pilot difficulty")
 		return
 	if not await _wait_for_battle(battle):
 		await _fail("battle did not reach active combat")
+		return
+	if battle.center_label.text != "MOUNTAIN DOJO NIGHT":
+		await _fail("battle HUD did not normalize canonical arena identity")
 		return
 
 	battle._update_hud()
@@ -93,6 +113,12 @@ func _run() -> void:
 	if battle._state != FirstPlayableController.MatchState.RESULT:
 		await _fail("battle did not reach result state")
 		return
+	if FirstPlayableSession.pilot_completed_matches != 1:
+		await _fail("completed pilot round did not advance runtime progress")
+		return
+	if FirstPlayableSession.pilot_required_difficulty() != &"apprentice":
+		await _fail("pilot advanced difficulty before two apprentice matches")
+		return
 	var result_overlay := battle.get_node("HUD/ResultOverlay") as Control
 	var result_title := battle.get_node("HUD/ResultOverlay/Panel/Content/Title") as Label
 	if not result_overlay.visible or result_title.text != "VITÓRIA":
@@ -108,8 +134,8 @@ func _run() -> void:
 	if result_overlay.visible:
 		await _fail("result overlay remained visible after rematch")
 		return
-	if battle.difficulty_controller.selected_difficulty_id != &"master":
-		await _fail("difficulty was lost after rematch")
+	if battle.difficulty_controller.selected_difficulty_id != &"apprentice":
+		await _fail("assigned pilot difficulty was lost after first rematch")
 		return
 
 	await _dispose_active_scene()
@@ -133,7 +159,7 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 			return false
 
 	if menu.get_node_or_null("Content/Participant") != null:
-		call_deferred("_fail", "participant form must not exist in player UI")
+		call_deferred("_fail", "persistent participant form must not exist in player UI")
 		return false
 	if menu.get_node_or_null("Content/Actions/PrototypeButton") != null:
 		call_deferred("_fail", "legacy prototype button must be physically removed")
@@ -146,8 +172,14 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 	if String(signature.get("first_playable_scene", "")) != BATTLE_SCENE:
 		call_deferred("_fail", "menu battle target is invalid")
 		return false
-	if bool(signature.get("participant_code_required", true)):
-		call_deferred("_fail", "participant code must not block entry")
+	if not bool(signature.get("participant_code_required", false)):
+		call_deferred("_fail", "pilot participant code must be required before play")
+		return false
+	if bool(signature.get("participant_code_auto_assigned", true)):
+		call_deferred("_fail", "participant code must never be silently assigned")
+		return false
+	if String(signature.get("participant_code_entry", "")) != "deferred_play_dialog":
+		call_deferred("_fail", "pilot code entry must be deferred to play")
 		return false
 	if bool(signature.get("legacy_prototype_exposed", true)):
 		call_deferred("_fail", "legacy prototype must not be exposed")
@@ -159,7 +191,7 @@ func _validate_menu(menu: FirstPlayableMenuController) -> bool:
 		call_deferred("_fail", "menu must not use site-like panels")
 		return false
 	if int(signature.get("form_fields", -1)) != 0:
-		call_deferred("_fail", "menu must not expose form fields")
+		call_deferred("_fail", "main menu must not expose persistent form fields")
 		return false
 	if not bool(signature.get("quick_game_ui", false)):
 		call_deferred("_fail", "menu must expose quick game UI")
