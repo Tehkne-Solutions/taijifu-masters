@@ -1,6 +1,6 @@
 extends SceneTree
 
-const MAX_AUTOLOADS := 9
+const MAX_AUTOLOADS := 10
 const REQUIRED := [
 	"TgapAssetLoader",
 	"InputBootstrapRuntime",
@@ -10,6 +10,7 @@ const REQUIRED := [
 	"CombatAttributeIntegrationRuntime",
 	"ElementalAdvantageRuntime",
 	"FirstPlayableCombatFeelRuntime",
+	"PilotFeedbackGuardRuntime",
 	"TaijifuWebBridge",
 ]
 const FORBIDDEN := [
