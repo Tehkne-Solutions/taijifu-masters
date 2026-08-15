@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - 'tools/c56_binary_chunks/**'
-      - '.github/workflows/c56-canonical-recovery.yml'
-      - 'assets/modular_fighters/base_01/**'
+      - 'assets/modular_fighters/base_01/face/face_01_balanced.png'
+      - 'assets/modular_fighters/base_01/eyes/eyes_01_focused.png'
+      - 'assets/modular_fighters/base_01/brows/brows_01_focused.png'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -57,3 +59,7 @@ jobs:
           fi
           git commit -m "fix(c56): reconstruct exact BASE-01 canonical binaries"
           git push origin "HEAD:${{ github.head_ref }}"
+
+      - name: Summary
+        if: always()
+        run: echo 'C56 historical binary recovery owns only face/eyes/brows binary materialization — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
