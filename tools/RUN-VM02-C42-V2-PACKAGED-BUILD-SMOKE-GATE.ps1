@@ -17,6 +17,13 @@ if ($missing.Count -gt 0) {
 }
 Write-Host "VM02_C42_REQUIRED_FILES=PASS"
 
+$projectText = Get-Content (Join-Path $RepoRoot "project.godot") -Raw
+if ($projectText -notmatch '(?m)^config/version="([^"]+)"\s*$') {
+  throw "VM02_C42_PROJECT_VERSION=BLOCKED"
+}
+$projectVersion = $Matches[1]
+Write-Host "VM02_C42_PROJECT_VERSION=PASS version=$projectVersion"
+
 $progress = Get-Content (Join-Path $RepoRoot "config\v2-production-progress.json") -Raw | ConvertFrom-Json
 if (-not [bool]$progress.v2_playable.runtime_ready) { throw "VM02_C42_RUNTIME_READY=BLOCKED" }
 Write-Host "VM02_C42_RUNTIME_READY=PASS"
@@ -46,10 +53,10 @@ $manifestPath = Join-Path $extractRoot "PLAYTEST-MANIFEST.json"
 if (-not (Test-Path $manifestPath)) { throw "VM02_C42_MANIFEST=BLOCKED missing" }
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.product -ne "Taijifu Masters") { throw "VM02_C42_MANIFEST=BLOCKED product" }
-if ($manifest.project_version -ne "0.2.2-playtest") { throw "VM02_C42_MANIFEST=BLOCKED version=$($manifest.project_version)" }
+if ($manifest.project_version -ne $projectVersion) { throw "VM02_C42_MANIFEST=BLOCKED version=$($manifest.project_version) expected=$projectVersion" }
 if (-not [bool]$manifest.runtime_ready) { throw "VM02_C42_MANIFEST=BLOCKED runtime_ready" }
 if ($manifest.canonical_arena -ne "mountain_dojo_night") { throw "VM02_C42_MANIFEST=BLOCKED arena=$($manifest.canonical_arena)" }
-Write-Host "VM02_C42_MANIFEST=PASS"
+Write-Host "VM02_C42_MANIFEST=PASS version=$projectVersion"
 
 $web = Join-Path $extractRoot "web"
 $webRequired = @("index.html","index.js","index.wasm","index.pck")
@@ -99,6 +106,7 @@ $report = @(
   "STATUS=PASS",
   "BRANCH=$branch",
   "COMMIT=$commit",
+  "PROJECT_VERSION=$projectVersion",
   "RUNTIME_READY=PASS",
   "PACKAGE=PASS",
   "MANIFEST=PASS",
@@ -118,4 +126,4 @@ $report = @(
 $report | ForEach-Object { Write-Host $_ }
 try { ($report -join [Environment]::NewLine) | Set-Clipboard; Write-Host "COPY_REPORT_CLIPBOARD=PASS" } catch { Write-Host "COPY_REPORT_CLIPBOARD=BLOCKED" }
 Write-Host "VM02_C42_V2_PACKAGED_BUILD_SMOKE_GATE=PASS"
-Write-Host "Tehkne Solutions"
+Write-Host "Tehkné Solutions"

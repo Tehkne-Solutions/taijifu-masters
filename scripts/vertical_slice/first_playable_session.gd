@@ -5,12 +5,29 @@ const VALID_DIFFICULTIES: Array[StringName] = [&"apprentice", &"disciple", &"mas
 const PILOT_ID := "pilot-09-r2"
 const PARTICIPANT_PREFIX := "TJFP-"
 const CREATOR_VISUAL_BLOCKER := "shared_modular_animation_runtime"
+const PILOT_MATCHES_PER_DIFFICULTY := 2
+const PILOT_ASSIGNMENTS := {
+	"TJFP-001": [&"apprentice", &"disciple", &"master"],
+	"TJFP-002": [&"disciple", &"master", &"apprentice"],
+	"TJFP-003": [&"master", &"apprentice", &"disciple"],
+	"TJFP-004": [&"apprentice", &"master", &"disciple"],
+	"TJFP-005": [&"master", &"disciple", &"apprentice"],
+	"TJFP-006": [&"disciple", &"apprentice", &"master"],
+	"TJFP-007": [&"apprentice", &"disciple", &"master"],
+	"TJFP-008": [&"disciple", &"master", &"apprentice"],
+	"TJFP-009": [&"master", &"apprentice", &"disciple"],
+}
 
 static var selected_difficulty_id: StringName = &"disciple"
 static var participant_code := ""
 static var selected_creator_preset_id: StringName = &""
+static var pilot_completed_matches := 0
+static var pilot_enforcement_enabled := false
 
 static func set_difficulty(difficulty_id: StringName) -> void:
+	if pilot_sequence_locked():
+		selected_difficulty_id = pilot_required_difficulty()
+		return
 	if difficulty_id in VALID_DIFFICULTIES:
 		selected_difficulty_id = difficulty_id
 
@@ -33,14 +50,99 @@ static func normalize_participant_code(raw_value: String) -> String:
 
 static func set_participant_code(raw_value: String) -> bool:
 	var normalized := normalize_participant_code(raw_value)
+	if normalized == "" or not PILOT_ASSIGNMENTS.has(normalized):
+		participant_code = ""
+		pilot_completed_matches = 0
+		pilot_enforcement_enabled = false
+		return false
+	var changed := participant_code != normalized
 	participant_code = normalized
-	return normalized != ""
+	if changed:
+		pilot_completed_matches = 0
+	return true
+
+static func begin_pilot_session(raw_value: String) -> bool:
+	if not set_participant_code(raw_value):
+		pilot_enforcement_enabled = false
+		return false
+	pilot_enforcement_enabled = true
+	pilot_completed_matches = 0
+	selected_difficulty_id = pilot_required_difficulty()
+	return true
+
+static func end_pilot_session() -> void:
+	pilot_enforcement_enabled = false
 
 static func clear_participant_code() -> void:
 	participant_code = ""
+	pilot_completed_matches = 0
+	pilot_enforcement_enabled = false
 
 static func has_valid_participant_code() -> bool:
-	return normalize_participant_code(participant_code) != ""
+	var normalized := normalize_participant_code(participant_code)
+	return normalized != "" and PILOT_ASSIGNMENTS.has(normalized)
+
+static func pilot_sequence() -> Array[StringName]:
+	if not has_valid_participant_code():
+		return []
+	var source: Array = PILOT_ASSIGNMENTS.get(participant_code, [])
+	var result: Array[StringName] = []
+	for difficulty_id in source:
+		result.append(StringName(difficulty_id))
+	return result
+
+static func pilot_expected_matches() -> int:
+	return pilot_sequence().size() * PILOT_MATCHES_PER_DIFFICULTY
+
+static func pilot_complete() -> bool:
+	var expected := pilot_expected_matches()
+	return expected > 0 and pilot_completed_matches >= expected
+
+static func pilot_sequence_locked() -> bool:
+	return pilot_enforcement_enabled and has_valid_participant_code() and not pilot_complete()
+
+static func pilot_required_difficulty() -> StringName:
+	var sequence := pilot_sequence()
+	if sequence.is_empty():
+		return selected_difficulty_id
+	var difficulty_index := mini(
+		floori(float(pilot_completed_matches) / float(PILOT_MATCHES_PER_DIFFICULTY)),
+		sequence.size() - 1
+	)
+	return sequence[difficulty_index]
+
+static func pilot_round_number() -> int:
+	var expected := pilot_expected_matches()
+	if expected <= 0:
+		return 0
+	return mini(pilot_completed_matches + 1, expected)
+
+static func pilot_progress_signature() -> Dictionary:
+	return {
+		"pilot_id": PILOT_ID,
+		"participant_code": participant_code,
+		"sequence": pilot_sequence(),
+		"matches_per_difficulty": PILOT_MATCHES_PER_DIFFICULTY,
+		"completed_matches": pilot_completed_matches,
+		"expected_matches": pilot_expected_matches(),
+		"round_number": pilot_round_number(),
+		"required_difficulty": String(pilot_required_difficulty()),
+		"enforcement_enabled": pilot_enforcement_enabled,
+		"sequence_locked": pilot_sequence_locked(),
+		"complete": pilot_complete(),
+		"signature": "Tehkné Solutions",
+	}
+
+static func mark_pilot_round_complete(actual_difficulty: StringName) -> bool:
+	if not pilot_sequence_locked():
+		return false
+	var expected := pilot_required_difficulty()
+	if actual_difficulty != expected:
+		return false
+	pilot_completed_matches += 1
+	if not pilot_complete():
+		selected_difficulty_id = pilot_required_difficulty()
+	return true
 
 static func set_creator_preset(preset_id: StringName) -> bool:
 	var id_text := String(preset_id)
@@ -103,3 +205,5 @@ static func reset() -> void:
 	selected_difficulty_id = &"disciple"
 	participant_code = ""
 	selected_creator_preset_id = &""
+	pilot_completed_matches = 0
+	pilot_enforcement_enabled = false

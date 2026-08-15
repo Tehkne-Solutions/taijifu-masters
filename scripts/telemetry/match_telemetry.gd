@@ -4,6 +4,11 @@ extends RefCounted
 const TELEMETRY_DIR := "user://telemetry"
 const TELEMETRY_SCHEMA := "tehkne/taijifu-match-telemetry/v4"
 const TELEMETRY_VERSION := 4
+const CANONICAL_FIRST_PLAYABLE_ARENA := "Mountain Dojo Night"
+const LEGACY_FIRST_PLAYABLE_ARENAS := [
+	"Ruínas do Caminho Triplo",
+	"RUÍNAS DO CAMINHO TRIPLO",
+]
 
 var _session_id := ""
 var _round_index := 0
@@ -101,6 +106,8 @@ func finish_round(
 ) -> String:
 	var metadata := _round_metadata.duplicate(true)
 	metadata.merge(result_metadata, true)
+	_normalize_first_playable_metadata(metadata)
+	_apply_pilot_round_integrity(metadata)
 	var round_data := {
 		"round_index": _round_index,
 		"duration_msec": Time.get_ticks_msec() - _round_started_msec,
@@ -129,11 +136,13 @@ func last_round_snapshot() -> Dictionary:
 	return _last_round.duplicate(true)
 
 func current_round_snapshot() -> Dictionary:
+	var metadata := _round_metadata.duplicate(true)
+	_normalize_first_playable_metadata(metadata)
 	return {
 		"round_index": _round_index,
 		"duration_msec": Time.get_ticks_msec() - _round_started_msec,
 		"winner_profile_id": "",
-		"metadata": _round_metadata.duplicate(true),
+		"metadata": metadata,
 		"players": _players.duplicate(true),
 		"events": _round_events.duplicate(true)
 	}
@@ -205,6 +214,43 @@ func _attach_first_playable_identity() -> void:
 	_session_metadata["participant_code"] = participant_code
 	_session_metadata["pilot_id"] = FirstPlayableSession.PILOT_ID
 
+func _normalize_first_playable_metadata(metadata: Dictionary) -> void:
+	if String(_session_metadata.get("experience", "")) != "first_playable":
+		return
+	var arena_label := String(metadata.get("arena", ""))
+	if arena_label == "" or arena_label in LEGACY_FIRST_PLAYABLE_ARENAS:
+		metadata["arena"] = CANONICAL_FIRST_PLAYABLE_ARENA
+
+func _apply_pilot_round_integrity(metadata: Dictionary) -> void:
+	if String(_session_metadata.get("experience", "")) != "first_playable":
+		return
+	if not FirstPlayableSession.pilot_enforcement_enabled:
+		return
+	if not FirstPlayableSession.has_valid_participant_code():
+		metadata["pilot_sequence_valid"] = false
+		metadata["pilot_sequence_error"] = "missing_or_unassigned_participant_code"
+		return
+	var expected_difficulty := FirstPlayableSession.pilot_required_difficulty()
+	var actual_difficulty := StringName(String(metadata.get("difficulty_id", "")))
+	var sequence_valid := actual_difficulty == expected_difficulty
+	var completed_result := String(metadata.get("result_reason", "")) != "abandoned"
+	metadata["pilot_id"] = FirstPlayableSession.PILOT_ID
+	metadata["participant_code"] = FirstPlayableSession.participant_code
+	metadata["pilot_runtime_enforced"] = true
+	metadata["pilot_round_number"] = FirstPlayableSession.pilot_round_number()
+	metadata["pilot_expected_matches"] = FirstPlayableSession.pilot_expected_matches()
+	metadata["pilot_expected_difficulty"] = String(expected_difficulty)
+	metadata["pilot_sequence_valid"] = sequence_valid
+	metadata["pilot_completed_matches_before_round"] = FirstPlayableSession.pilot_completed_matches
+	if not sequence_valid:
+		metadata["pilot_sequence_error"] = "difficulty_out_of_sequence"
+	elif completed_result:
+		FirstPlayableSession.mark_pilot_round_complete(actual_difficulty)
+	metadata["pilot_completed_matches_after_round"] = FirstPlayableSession.pilot_completed_matches
+	metadata["pilot_complete"] = FirstPlayableSession.pilot_complete()
+	if not FirstPlayableSession.pilot_complete():
+		metadata["pilot_next_difficulty"] = String(FirstPlayableSession.pilot_required_difficulty())
+
 func _participant_filename_prefix() -> String:
 	var participant_code := FirstPlayableSession.normalize_participant_code(
 		String(_session_metadata.get("participant_code", ""))
@@ -224,3 +270,5 @@ func _write_session() -> String:
 	file.close()
 	_last_written_path = path
 	return path
+
+# Tehkné Solutions

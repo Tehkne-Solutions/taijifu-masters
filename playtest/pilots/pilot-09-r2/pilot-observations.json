@@ -1,7 +1,7 @@
 {
   "schema": "tehkne/taijifu-first-playable-observations/v1",
   "pilot_id": "pilot-09-r2",
-  "build_version": "0.2.2-playtest",
+  "build_version": "0.2.3-playtest",
   "signature": "Tehkné Solutions",
   "observations": []
 }

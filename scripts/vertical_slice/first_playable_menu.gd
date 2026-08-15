@@ -4,8 +4,8 @@ extends Control
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
 const FIRST_PLAYABLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const CREATOR_SCENE := "res://scenes/characters/modular_fighter_creator_shell.tscn"
-const DEFAULT_PARTICIPANT_CODE := "TJFP-001"
 const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
+const C44_RUNTIME_PROOF_PARTICIPANT := "TJFP-001"
 
 @onready var play_button: Button = $Content/Actions/PlayButton
 @onready var creator_button: Button = $Content/Actions/CreatorButton
@@ -15,6 +15,10 @@ const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
 @onready var normal_button: Button = $Content/Difficulty/Options/NormalButton
 @onready var hard_button: Button = $Content/Difficulty/Options/HardButton
 
+var _participant_dialog: ConfirmationDialog
+var _participant_input: LineEdit
+var _participant_error: Label
+
 func _ready() -> void:
 	get_tree().paused = false
 	play_button.pressed.connect(_start_first_playable)
@@ -23,24 +27,26 @@ func _ready() -> void:
 	easy_button.pressed.connect(select_difficulty.bind(&"apprentice"))
 	normal_button.pressed.connect(select_difficulty.bind(&"disciple"))
 	hard_button.pressed.connect(select_difficulty.bind(&"master"))
+	_build_participant_dialog()
 
-	# Identificador técnico interno: não existe formulário ou bloqueio para o jogador.
-	FirstPlayableSession.set_participant_code(DEFAULT_PARTICIPANT_CODE)
 	play_button.disabled = false
-	creator_button.disabled = false
 	_apply_visual_policy()
 	_update_difficulty_ui()
 	play_button.grab_focus()
 
-	# C44 needs to prove the exported package enters the exact combat scene where
-	# the canonical arena is selected. This opt-in user argument is inert during
-	# normal interactive play and avoids treating a successful menu boot as arena proof.
+	# C44 proves that an exported package enters the exact combat scene where the
+	# canonical arena is selected. CI receives a deterministic anonymous pilot code
+	# only through this explicit proof argument; interactive players are never
+	# silently assigned to TJFP-001.
 	if C44_RUNTIME_PROOF_ARG in OS.get_cmdline_user_args():
+		FirstPlayableSession.begin_pilot_session(C44_RUNTIME_PROOF_PARTICIPANT)
 		print("V2_C44_RUNTIME_PROOF=ENTER_COMBAT")
 		call_deferred("_start_first_playable")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
+		return
+	if is_instance_valid(_participant_dialog) and _participant_dialog.visible:
 		return
 	if event is InputEventKey:
 		match event.physical_keycode:
@@ -67,10 +73,11 @@ func flow_signature() -> Dictionary:
 		"first_playable_scene": FIRST_PLAYABLE_SCENE,
 		"creator_scene": CREATOR_SCENE,
 		"creator_entry_exposed": true,
-		"creator_entry_role": "secondary_non_blocking",
+		"creator_entry_role": "secondary_non_blocking_outside_active_pilot",
 		"difficulty_ids": FirstPlayableSession.VALID_DIFFICULTIES.duplicate(),
-		"participant_code_required": false,
-		"participant_code": DEFAULT_PARTICIPANT_CODE,
+		"participant_code_required": true,
+		"participant_code_entry": "deferred_play_dialog",
+		"participant_code_auto_assigned": false,
 		"legacy_prototype_exposed": false,
 		"legacy_nodes_removed": true,
 		"site_like_panels": false,
@@ -80,6 +87,7 @@ func flow_signature() -> Dictionary:
 		"visual_policy": POLICY.UI_READ,
 		"quick_game_ui": true,
 		"quick_game_path_unchanged": true,
+		"pilot_sequence_locked": FirstPlayableSession.pilot_sequence_locked(),
 		"keyboard_shortcuts": {"play": "Enter", "creator": "C", "easy": "1", "normal": "2", "hard": "3"},
 		"mouse_supported": true,
 		"gamepad_focus_supported": true,
@@ -87,22 +95,96 @@ func flow_signature() -> Dictionary:
 	}
 
 func _start_first_playable() -> void:
-	if not FirstPlayableSession.has_valid_participant_code():
-		FirstPlayableSession.set_participant_code(DEFAULT_PARTICIPANT_CODE)
+	if not FirstPlayableSession.has_valid_participant_code() or not FirstPlayableSession.pilot_enforcement_enabled:
+		_show_participant_dialog()
+		return
+	if FirstPlayableSession.pilot_sequence_locked():
+		FirstPlayableSession.selected_difficulty_id = FirstPlayableSession.pilot_required_difficulty()
 	get_tree().change_scene_to_file(FIRST_PLAYABLE_SCENE)
 
 func _open_character_creator() -> void:
+	if FirstPlayableSession.pilot_sequence_locked():
+		return
 	get_tree().change_scene_to_file(CREATOR_SCENE)
 
 func _exit_game() -> void:
 	get_tree().quit()
 
+func _build_participant_dialog() -> void:
+	_participant_dialog = ConfirmationDialog.new()
+	_participant_dialog.name = "PilotParticipantDialog"
+	_participant_dialog.title = "PILOTO TAIJIFU • IDENTIFICAÇÃO ANÔNIMA"
+	_participant_dialog.dialog_text = "Digite o código recebido para esta sessão (TJFP-001 a TJFP-009)."
+	_participant_dialog.exclusive = true
+	_participant_dialog.get_ok_button().text = "INICIAR PILOTO"
+	_participant_dialog.get_cancel_button().text = "CANCELAR"
+	_participant_dialog.confirmed.connect(_confirm_participant_code)
+	add_child(_participant_dialog)
+
+	var content := VBoxContainer.new()
+	content.name = "PilotParticipantContent"
+	content.custom_minimum_size = Vector2(460, 82)
+	content.position = Vector2(18, 82)
+	_participant_dialog.add_child(content)
+
+	_participant_input = LineEdit.new()
+	_participant_input.name = "ParticipantCode"
+	_participant_input.placeholder_text = "TJFP-001"
+	_participant_input.max_length = 8
+	_participant_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_participant_input.text_submitted.connect(_on_participant_text_submitted)
+	content.add_child(_participant_input)
+
+	_participant_error = Label.new()
+	_participant_error.name = "ParticipantError"
+	_participant_error.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_participant_error.text = ""
+	content.add_child(_participant_error)
+
+func _show_participant_dialog() -> void:
+	if not is_instance_valid(_participant_dialog):
+		return
+	_participant_error.text = ""
+	_participant_input.text = ""
+	_participant_dialog.popup_centered(Vector2i(520, 250))
+	_participant_input.grab_focus()
+
+func _on_participant_text_submitted(_text: String) -> void:
+	_confirm_participant_code()
+
+func _confirm_participant_code() -> void:
+	if not FirstPlayableSession.begin_pilot_session(_participant_input.text):
+		_participant_error.text = "Código inválido para o Pilot 09 R2."
+		call_deferred("_show_participant_dialog")
+		return
+	_update_difficulty_ui()
+	call_deferred("_start_first_playable")
+
 func _update_difficulty_ui() -> void:
+	var pilot_locked := FirstPlayableSession.pilot_sequence_locked()
 	var selected := FirstPlayableSession.selected_difficulty_id
-	difficulty_label.text = "IA • %s" % FirstPlayableSession.difficulty_label()
+	if pilot_locked:
+		selected = FirstPlayableSession.pilot_required_difficulty()
+		FirstPlayableSession.selected_difficulty_id = selected
+		difficulty_label.text = "PILOTO %d/%d • IA %s" % [
+			FirstPlayableSession.pilot_round_number(),
+			FirstPlayableSession.pilot_expected_matches(),
+			FirstPlayableSession.difficulty_label(),
+		]
+	else:
+		difficulty_label.text = "IA • %s" % FirstPlayableSession.difficulty_label()
 	easy_button.text = "%s APRENDIZ" % ("●" if selected == &"apprentice" else "○")
 	normal_button.text = "%s DISCÍPULO" % ("●" if selected == &"disciple" else "○")
 	hard_button.text = "%s MESTRE" % ("●" if selected == &"master" else "○")
+	easy_button.disabled = pilot_locked
+	normal_button.disabled = pilot_locked
+	hard_button.disabled = pilot_locked
+	creator_button.disabled = pilot_locked
+	creator_button.tooltip_text = (
+		"Character Creator indisponível durante a sequência oficial do piloto."
+		if pilot_locked
+		else ""
+	)
 
 func _apply_visual_policy() -> void:
 	var background := get_node_or_null("Background") as ColorRect

@@ -52,10 +52,19 @@ func _process(delta: float) -> void:
 		_spawn_timer = _rng.randf_range(SPAWN_MIN, SPAWN_MAX)
 
 func _discover_fighters() -> void:
+	# This runtime is an autoload. Rebuild ownership from the active scene on every
+	# frame so freed fighters from a previous battle can never keep world systems
+	# alive inside menus or the Character Creator.
+	_fighters.clear()
+	var current_scene := get_tree().current_scene
+	if current_scene == null:
+		return
 	var found: Array[Node] = []
-	_collect_fighters(get_tree().root, found)
+	_collect_fighters(current_scene, found)
 	for node in found:
 		var fighter := node as FighterController
+		if not is_instance_valid(fighter):
+			continue
 		_fighters[int(fighter.player_index)] = fighter
 
 func _collect_fighters(node: Node, found: Array[Node]) -> void:
@@ -65,7 +74,7 @@ func _collect_fighters(node: Node, found: Array[Node]) -> void:
 		_collect_fighters(child, found)
 
 func _spawn_random_pickup() -> void:
-	if get_tree().current_scene == null:
+	if get_tree().current_scene == null or _fighters.size() < 2:
 		return
 	var rarity := _roll_rarity()
 	var item_ids := _eligible_items(rarity)
@@ -234,3 +243,5 @@ func active_pickup_count() -> int:
 
 func active_buff_count() -> int:
 	return _buffs.size()
+
+# Tehkné Solutions

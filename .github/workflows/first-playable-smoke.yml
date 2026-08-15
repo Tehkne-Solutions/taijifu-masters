@@ -13,6 +13,8 @@ on:
       - "scripts/create-first-playable-build-manifest.py"
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
+      - "scripts/runtime/procedural_arena_pickup_runtime.gd"
+      - "scripts/ci/procedural_arena_pickups_smoke_test.gd"
       - "scripts/ai/bot_behavior_catalog.gd"
       - "scripts/core/**"
       - "scripts/combat/**"
@@ -115,6 +117,9 @@ jobs:
 
       - name: Run First Playable playtest telemetry contract
         run: ./godot --headless --path . --script tests/first_playable_playtest_telemetry_test.gd
+
+      - name: Run pickup autoload scene isolation contract
+        run: ./godot --headless --path . --script scripts/ci/procedural_arena_pickups_smoke_test.gd
 
       - name: Upload First Playable diagnostics on failure
         if: failure()

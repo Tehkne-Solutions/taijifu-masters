@@ -94,7 +94,7 @@ jobs:
           assert manifest["schema"] == "tehkne/taijifu-first-playable-build/v1"
           assert manifest["platform"] == "windows"
           assert manifest["channel"] == "external-playtest"
-          assert manifest["version"] == "0.2.2-playtest"
+          assert manifest["version"] == "0.2.3-playtest"
           assert manifest["main_scene"] == "res://scenes/vertical_slice/first_playable_menu.tscn"
           assert manifest["signature"] == "Tehkné Solutions"
           assert manifest["totals"]["file_count"] >= 3
