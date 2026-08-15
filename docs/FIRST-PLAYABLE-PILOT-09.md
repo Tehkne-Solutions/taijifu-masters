@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Executar a rodada real `pilot-09-r2` com a build `0.2.2-playtest`, de 6 a 12 participantes, preservando anonimato e produzindo evidência suficiente para priorizar correções antes da arte final.
+Executar a rodada real `pilot-09-r2` com a build `0.2.3-playtest`, de 6 a 12 participantes, preservando anonimato e produzindo evidência suficiente para priorizar correções antes da arte final.
 
 Nenhum resultado é inventado. Dados sintéticos existem somente nos testes automatizados.
 
@@ -10,7 +10,7 @@ O comando operacional oficial é `tools/playtest/run_first_playable_pilot.py`. O
 
 ## Plano oficial
 
-A primeira rodada usa 9 códigos anônimos:
+A rodada usa 9 códigos anônimos:
 
 - 6 participantes no Windows;
 - 3 participantes no Web/Chromium;
@@ -21,6 +21,8 @@ A primeira rodada usa 9 códigos anônimos:
 - até 54 partidas previstas.
 
 O plano versionado está em `playtest/pilots/pilot-09-r2/`.
+
+Cada `TJFP-###` possui uma sequência própria de três dificuldades. O runtime oficial aplica essa ordem automaticamente e executa duas partidas por dificuldade. Durante uma sessão oficial do piloto, os controles de dificuldade permanecem travados e não devem ser usados para alterar a sequência.
 
 ## Privacidade
 
@@ -43,13 +45,13 @@ Contatos pessoais permanecem fora dos relatórios técnicos e fora do GitHub.
 Entregar somente o kit:
 
 ```text
-Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip
+Taijifu-Masters-External-Playtest-Kit-0.2.3-playtest.zip
 ```
 
 O coordenador usa o pacote privado:
 
 ```text
-Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.2-playtest.zip
+Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.3-playtest.zip
 ```
 
 O pacote privado não deve ser enviado integralmente aos participantes.
@@ -59,20 +61,24 @@ Cada participante recebe apenas:
 - o kit do jogador;
 - o código `TJFP-###` atribuído;
 - a plataforma;
-- a ordem das dificuldades;
+- a ordem esperada das dificuldades para conferência;
 - o protocolo `FIRST-PLAYABLE-PLAYTEST.md`.
 
 ## Fluxo no jogo
 
 1. Abrir o First Playable.
-2. Informar o código anônimo no menu.
-3. Confirmar que o botão `JOGAR CONTRA IA` foi liberado.
-4. Selecionar a dificuldade indicada.
-5. Jogar sem orientação na primeira tentativa.
-6. Responder à avaliação de equilíbrio após cada partida.
-7. No Web, usar `BAIXAR RELATÓRIO JSON`.
-8. No Windows, usar `LOCALIZAR RELATÓRIO JSON`.
-9. Usar a cópia para clipboard apenas como fallback.
+2. Acionar `JOGAR CONTRA IA`.
+3. Informar o código anônimo `TJFP-###` quando solicitado.
+4. Confirmar que o código foi aceito e que o jogo assumiu automaticamente a dificuldade atribuída ao primeiro bloco daquele participante.
+5. Não alterar manualmente a dificuldade durante a sessão oficial.
+6. Jogar sem orientação adicional na primeira tentativa.
+7. Ao terminar cada luta, responder obrigatoriamente à avaliação de equilíbrio antes de usar `REVANCHE` ou `MENU`.
+8. Confirmar que `REVANCHE` inicia a próxima partida na dificuldade exigida pela sequência do participante.
+9. Após duas partidas na mesma dificuldade, confirmar a transição automática para o próximo bloco.
+10. Após a sexta partida, confirmar `PILOTO CONCLUÍDO` e que uma sétima luta não pode ser iniciada.
+11. No Web, usar `BAIXAR RELATÓRIO JSON`.
+12. No Windows, usar `LOCALIZAR RELATÓRIO JSON`.
+13. Usar a cópia para clipboard apenas como fallback.
 
 O arquivo já deve nascer como:
 
@@ -81,6 +87,8 @@ TJFP-001__taijifu_1785450000-1234.json
 ```
 
 Não renomear quando o prefixo estiver correto.
+
+O relatório oficial deve registrar `pilot_id = pilot-09-r2`, `participant_code = TJFP-###`, `pilot_sequence_valid = true` e a arena canônica `Mountain Dojo Night`.
 
 ## Estrutura privada recomendada
 
@@ -109,8 +117,10 @@ python tools/playtest/run_first_playable_pilot.py intake \
 O intake:
 
 - valida schema de telemetria v3;
-- exige build `0.2.2-playtest`;
+- exige build `0.2.3-playtest`;
+- exige o piloto `pilot-09-r2`;
 - valida o código anônimo no nome e nos metadados;
+- valida a sequência de dificuldade registrada pelo runtime;
 - calcula SHA-256;
 - bloqueia arquivos e sessões duplicadas;
 - bloqueia possível PII;
@@ -170,7 +180,8 @@ O gate endurecido bloqueia:
 - observação rejeitada;
 - decisão inválida;
 - ID de backlog desconhecido;
-- mistura entre piloto ou build.
+- mistura entre piloto ou build;
+- sequência oficial de dificuldade inválida.
 
 ## Gate da Sprint 09
 
