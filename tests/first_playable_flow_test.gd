@@ -36,16 +36,22 @@ func _run() -> void:
 	if FirstPlayableSession.participant_code != "":
 		await _fail("interactive menu must not auto-assign a pilot participant")
 		return
+	if FirstPlayableSession.pilot_enforcement_enabled:
+		await _fail("interactive menu must not activate pilot enforcement before identification")
+		return
 	if menu.get_node_or_null("PilotParticipantDialog") == null:
 		await _fail("pilot participant dialog was not created")
 		return
 
-	if not FirstPlayableSession.set_participant_code("TJFP-001"):
+	if not FirstPlayableSession.begin_pilot_session("TJFP-001"):
 		await _fail("pilot participant assignment was rejected")
 		return
 	menu._update_difficulty_ui()
 	if FirstPlayableSession.selected_difficulty_id != &"apprentice":
 		await _fail("TJFP-001 did not start on assigned apprentice difficulty")
+		return
+	if not FirstPlayableSession.pilot_sequence_locked():
+		await _fail("official pilot session did not lock its sequence")
 		return
 	if not menu.easy_button.disabled or not menu.normal_button.disabled or not menu.hard_button.disabled:
 		await _fail("difficulty controls must lock during an official pilot sequence")
