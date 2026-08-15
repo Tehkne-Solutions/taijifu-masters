@@ -9,6 +9,7 @@ const MENU_SCENE := "res://scenes/vertical_slice/first_playable_menu.tscn"
 const PLAYER_PRESET: StringName = &"lian_wu_first_playable"
 const CPU_PRESET: StringName = &"training_rival_first_playable"
 const COUNTDOWN_SECONDS := 3
+const CANONICAL_ARENA_LABEL := "Mountain Dojo Night"
 
 @export_range(0.01, 2.0, 0.01) var countdown_step_seconds := 0.72
 @export_range(0.01, 1.0, 0.01) var fight_command_seconds := 0.42
@@ -129,7 +130,7 @@ func _start_match() -> void:
 		"time_limit_seconds": match_time_limit_seconds,
 		"player_character": "Lian Wu",
 		"cpu_character": "Rival de Treino",
-		"arena": "Ruínas do Caminho Triplo"
+		"arena": CANONICAL_ARENA_LABEL
 	})
 	_telemetry.record_event(&"p1", &"match_started", difficulty_controller.selected_difficulty_id)
 
@@ -154,7 +155,7 @@ func _start_match() -> void:
 	bot_runtime.personality_id = &"aggressive"
 	bot_runtime.enabled = true
 	_state = MatchState.BATTLE
-	center_label.text = "RUÍNAS DO CAMINHO TRIPLO"
+	center_label.text = CANONICAL_ARENA_LABEL.to_upper()
 	_telemetry.record_event(&"p1", &"battle_started", difficulty_controller.selected_difficulty_id)
 
 func _spawn_fighters() -> void:
@@ -418,3 +419,5 @@ func _add_key_action(action: StringName, keycode: Key) -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = keycode
 	InputMap.action_add_event(action, event)
+
+# Tehkné Solutions
