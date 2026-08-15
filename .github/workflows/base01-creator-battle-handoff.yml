@@ -7,6 +7,7 @@ on:
       - 'scripts/vertical_slice/first_playable_character_identity.gd'
       - 'scripts/characters/modular_fighter_creator_scene.gd'
       - 'scripts/characters/modular_fighter_creator_shell.gd'
+      - 'scripts/characters/modular_fighter_creator_bounded_scene.gd'
       - 'scripts/characters/modular_fighter_preset_store.gd'
       - 'scripts/ci/base01_creator_battle_handoff_smoke.gd'
       - 'assets/modular_fighters/base_01/production/BASE01_CREATOR_BATTLE_HANDOFF.json'
@@ -23,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate immutable C62.8 historical contract
+      - name: Validate C62.8 semantics through v2 successor contract
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -32,22 +33,49 @@ jobs:
           p=Path('assets/modular_fighters/base_01/production/BASE01_CREATOR_BATTLE_HANDOFF.json')
           data=json.loads(p.read_text())
           assert data['signature']=='Tehkné Solutions'
-          assert data['status']=='handoff_integrated_animation_runtime_blocked'
+          schema=data.get('schema','')
           sel=data['selection_contract']
           assert sel['source']=='ModularFighterCreatorScene'
           assert sel['triggers']==['preset_saved','preset_loaded']
           assert sel['canonical_base01_identity_required'] is True
           assert sel['legacy_v1_auto_activation'] is False
           battle=data['battle_contract']
-          # This JSON is the immutable C62.8 checkpoint. Its battle-time blocker was
-          # intentionally superseded by C65; pre-battle fail-closed semantics remain.
-          assert battle['visual_activation'] is False
-          assert battle['visual_blocker']=='shared_modular_animation_runtime'
-          assert battle['combat_build_fallback']=='lian_wu_first_playable'
-          assert battle['animated_presenter_fallback']=='FirstPlayableLot01Presenter'
-          assert battle['static_creator_sprite_regression_allowed'] is False
-          assert data['release_policy']['visual_activation_requires']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME_PASS'
-          print('C62_8_HISTORICAL_CONTRACT=PASS immutable=true superseded_by=C65')
+
+          if schema=='tehkne/taijifu-base01-creator-battle-handoff/v1':
+              # Historical C62.8 checkpoint. Battle-time visual blocker was superseded by C65.
+              assert data['status']=='handoff_integrated_animation_runtime_blocked'
+              assert battle['visual_activation'] is False
+              assert battle['visual_blocker']=='shared_modular_animation_runtime'
+              assert battle['combat_build_fallback']=='lian_wu_first_playable'
+              assert battle['animated_presenter_fallback']=='FirstPlayableLot01Presenter'
+              assert battle['static_creator_sprite_regression_allowed'] is False
+              assert data['release_policy']['visual_activation_requires']=='C63_SHARED_MODULAR_ANIMATION_RUNTIME_PASS'
+              print('C62_8_HISTORICAL_CONTRACT=PASS schema=v1 immutable=true superseded_by=C65')
+          elif schema=='tehkne/taijifu-base01-creator-battle-handoff/v2':
+              # P0.2 successor: preserves the historical prebattle fail-closed rule while
+              # recording the C65 battle-time promotion that the runtime has proven.
+              assert data['status']=='integrated_runtime_activation_human_revalidation_required'
+              assert battle['prebattle_visual_activation'] is False
+              assert battle['prebattle_visual_blocker']=='shared_modular_animation_runtime'
+              assert battle['battle_visual_activation_on_complete_assembly'] is True
+              assert battle['battle_visual_blocker_after_success']==''
+              assert battle['visual_runtime']=='shared_modular_animation_runtime_v1'
+              assert battle['combat_build_fallback']=='lian_wu_first_playable'
+              assert battle['animated_presenter_fallback']=='FirstPlayableLot01Presenter'
+              assert battle['fallback_visible_on_success'] is False
+              assert battle['fallback_allowed_only_on_assembly_failure'] is True
+              assert battle['static_creator_sprite_regression_allowed'] is False
+              motion=data['motion_quality']
+              assert motion['authored_motion_final'] is False
+              assert motion['required_recovery_pack']=='PACK_04_COMBAT_REACTIONS_AND_MOTION'
+              release=data['release_policy']
+              assert release['technical_handoff_integrated'] is True
+              assert release['product_ready'] is False
+              assert release['ci_green_alone_may_not_promote_product_ready'] is True
+              print('C62_8_HISTORICAL_CONTRACT=PASS schema=v2 prebattle_fail_closed=true superseded_by=C65')
+              print('P0_CREATOR_PRODUCT_READINESS=PASS technical=true product_ready=false')
+          else:
+              raise AssertionError('unsupported handoff schema: '+schema)
           PY
 
       - name: Install Godot 4.3
@@ -96,4 +124,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C62.8 pre-battle fail-closed preserved; C65 modular battle promotion validated — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C62.8 pre-battle fail-closed preserved; C65 modular battle promotion validated; P0.2 product readiness explicit — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
