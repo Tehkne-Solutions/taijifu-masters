@@ -5,8 +5,9 @@ func _init() -> void:
 
 func _run() -> void:
 	FirstPlayableSession.reset()
-	assert(FirstPlayableSession.set_participant_code("tjfp-007"), "O código anônimo válido deve ser aceito")
+	assert(FirstPlayableSession.begin_pilot_session("tjfp-007"), "O código anônimo válido deve iniciar o piloto")
 	assert(FirstPlayableSession.participant_code == "TJFP-007")
+	assert(FirstPlayableSession.pilot_enforcement_enabled)
 	assert(FirstPlayableSession.pilot_required_difficulty() == &"apprentice")
 
 	var telemetry := MatchTelemetry.new()
