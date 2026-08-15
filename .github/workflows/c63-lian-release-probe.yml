@@ -3,6 +3,7 @@ name: C63 Lian Release Recovery Probe
 on:
   pull_request:
     paths:
+      - '.github/workflows/c63-lian-release-probe.yml'
       - '.recovery/c63-lian-release.trigger'
       - 'tools/generate_lian_wu_*.py'
       - 'tools/materialize_c50_lian_spriteframes.py'
@@ -200,7 +201,7 @@ jobs:
                   push_error("C63_LIAN_PRESENTER=BLOCKED using_real_assets=false")
                   quit(2)
                   return
-              var sprite := presenter.get_node_or_null("CanonicalLianWuSprite") as AnimatedSprite2D
+              var sprite := presenter.get_node_or_null("Lot01AnimatedSprite") as AnimatedSprite2D
               if sprite == null or sprite.sprite_frames == null:
                   push_error("C63_LIAN_PRESENTER=BLOCKED spriteframes_missing")
                   quit(2)
@@ -226,8 +227,28 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import json
+          import hashlib, json
           selected=json.loads(Path('c63-release-selected.json').read_text())
+          roots=[
+            Path('assets/characters/lian_wu/character_lock'),
+            Path('assets/pack_01_characters/lian_wu/frames'),
+            Path('assets/pack_01_characters/lian_wu/metadata'),
+            Path('assets/tgap/pack_01_lian_wu/first_playable_lot_01'),
+          ]
+          runtime_files=[]
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or path.suffix.lower() not in {'.png','.json','.tres'}:
+                      continue
+                  runtime_files.append({
+                      'path':path.as_posix(),
+                      'size_bytes':path.stat().st_size,
+                      'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                  })
+          if not runtime_files:
+              raise SystemExit('C63_RUNTIME_RECOVERY_MANIFEST=BLOCKED runtime_files_missing')
           manifest={
             'schema':'tehkne/c63-runtime-recovery/v1',
             'signature':'Tehkné Solutions',
@@ -235,9 +256,12 @@ jobs:
             'reconstructed_clean':json.loads(Path('c63-canonical-clean.json').read_text()),
             'historical_frame_reproduction':json.loads(Path('c63-frame-reproduction.json').read_text()),
             'runtime_spriteframes':'assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres',
+            'runtime_files':runtime_files,
+            'runtime_file_count':len(runtime_files),
             'runtime_verified':True,
           }
           Path('c63-runtime-recovery-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          print('C63_RUNTIME_RECOVERY_HASHES=PASS files=%d' % len(runtime_files))
           print('C63_RUNTIME_RECOVERY_MANIFEST=PASS')
           PY
 
@@ -265,6 +289,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'C63 Lian release recovery probe remains an explicit historical recovery lane; normal presenter tuning does not invoke it — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63 Lian release recovery probe remains an explicit historical recovery lane; workflow self-trigger and runtime hashes are enforced — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
