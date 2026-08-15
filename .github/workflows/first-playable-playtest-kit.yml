@@ -194,7 +194,7 @@ jobs:
           import zipfile
           from pathlib import Path
 
-          version = "0.2.2-playtest"
+          version = "0.2.3-playtest"
           zip_path = Path(f"dist/Taijifu-Masters-External-Playtest-Kit-{version}.zip")
           checksum_path = Path(str(zip_path) + ".sha256")
           manifest_path = Path("playtest-kit-build/manifests/kit-info.json")
@@ -271,8 +271,8 @@ jobs:
           python3 tools/playtest/create_first_playable_pilot_coordinator_pack_r2.py \
             --project-root . \
             --pilot-id pilot-09-r2 \
-            --external-kit dist/Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip \
-            --external-kit-checksum dist/Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip.sha256 \
+            --external-kit dist/Taijifu-Masters-External-Playtest-Kit-0.2.3-playtest.zip \
+            --external-kit-checksum dist/Taijifu-Masters-External-Playtest-Kit-0.2.3-playtest.zip.sha256 \
             --output-dir dist \
             --stage-dir pilot-coordinator-build \
             2>&1 | tee first-playable-pilot-coordinator-package.log
@@ -286,7 +286,7 @@ jobs:
           from pathlib import Path
 
           pilot_id = "pilot-09-r2"
-          version = "0.2.2-playtest"
+          version = "0.2.3-playtest"
           name = f"Taijifu-Masters-Pilot-Coordinator-{pilot_id}-{version}.zip"
           zip_path = Path("dist") / name
           checksum_path = Path(str(zip_path) + ".sha256")
@@ -353,11 +353,11 @@ jobs:
         with:
           name: taijifu-external-playtest-kits-${{ github.sha }}
           path: |
-            dist/Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip
-            dist/Taijifu-Masters-External-Playtest-Kit-0.2.2-playtest.zip.sha256
+            dist/Taijifu-Masters-External-Playtest-Kit-0.2.3-playtest.zip
+            dist/Taijifu-Masters-External-Playtest-Kit-0.2.3-playtest.zip.sha256
             playtest-kit-build/manifests/kit-info.json
-            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.2-playtest.zip
-            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.2-playtest.zip.sha256
+            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.3-playtest.zip
+            dist/Taijifu-Masters-Pilot-Coordinator-pilot-09-r2-0.2.3-playtest.zip.sha256
             pilot-coordinator-build/manifests/coordinator-pack-info.json
           if-no-files-found: error
           retention-days: 60
