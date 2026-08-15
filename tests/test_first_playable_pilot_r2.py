@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_PILOT = "pilot-09-r2"
-ACTIVE_VERSION = "0.2.2-playtest"
+ACTIVE_VERSION = "0.2.3-playtest"
 
 
 def load_json(path: Path) -> dict:
@@ -53,6 +53,8 @@ class FirstPlayablePilotR2Tests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn(f'const PILOT_ID := "{ACTIVE_PILOT}"', session)
         self.assertIn('const PARTICIPANT_PREFIX := "TJFP-"', session)
+        self.assertIn("static func begin_pilot_session", session)
+        self.assertIn("pilot_enforcement_enabled", session)
 
         telemetry = (
             ROOT / "scripts" / "telemetry" / "match_telemetry.gd"
@@ -60,6 +62,22 @@ class FirstPlayablePilotR2Tests(unittest.TestCase):
         self.assertIn('"participant_code"', telemetry)
         self.assertIn('"pilot_id"', telemetry)
         self.assertIn('return "%s__" % participant_code', telemetry)
+        self.assertIn('"pilot_sequence_valid"', telemetry)
+        self.assertIn('CANONICAL_FIRST_PLAYABLE_ARENA := "Mountain Dojo Night"', telemetry)
+
+        menu = (
+            ROOT / "scripts" / "vertical_slice" / "first_playable_menu.gd"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn('DEFAULT_PARTICIPANT_CODE := "TJFP-001"', menu)
+        self.assertIn('"participant_code_auto_assigned": false', menu)
+        self.assertIn("FirstPlayableSession.begin_pilot_session", menu)
+
+        pickups = (
+            ROOT / "scripts" / "runtime" / "procedural_arena_pickup_runtime.gd"
+        ).read_text(encoding="utf-8")
+        self.assertIn("_fighters.clear()", pickups)
+        self.assertIn("_collect_fighters(current_scene, found)", pickups)
+        self.assertNotIn("_collect_fighters(get_tree().root, found)", pickups)
 
     def test_active_fixture_is_complete_and_anonymous(self) -> None:
         pilot_dir = ROOT / "playtest" / "pilots" / ACTIVE_PILOT
