@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena.gd" id="2_arena"]
-[ext_resource type="Script" path="res://scripts/runtime/tactical_bot_runtime.gd" id="3_bot"]
+[ext_resource type="Script" path="res://scripts/runtime/first_playable_tactical_bot_runtime.gd" id="3_bot"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_environment_art.gd" id="4_environment"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_arena_dressing.gd" id="5_dressing"]
 [ext_resource type="Script" path="res://scripts/vertical_slice/first_playable_difficulty_controller.gd" id="6_difficulty"]

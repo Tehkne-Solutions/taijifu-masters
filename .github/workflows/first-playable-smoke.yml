@@ -13,6 +13,7 @@ on:
       - "scripts/create-first-playable-build-manifest.py"
       - "scripts/arena/triple_path_arena.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
+      - "scripts/runtime/first_playable_tactical_bot_runtime.gd"
       - "scripts/runtime/procedural_arena_pickup_runtime.gd"
       - "scripts/runtime/pilot_feedback_guard_runtime.gd"
       - "scripts/ci/procedural_arena_pickups_smoke_test.gd"
@@ -97,6 +98,9 @@ jobs:
         run: |
           set -o pipefail
           timeout 30s ./godot --headless --path . --script tests/first_playable_combo_combat_contract.gd 2>&1 | tee first-playable-combo-contract.log
+
+      - name: Run P0 combat spacing and hit reaction contract
+        run: ./godot --headless --path . --script tests/first_playable_combat_spacing_reaction_test.gd
 
       - name: Run First Playable adaptive master contract
         run: ./godot --headless --path . --script tests/first_playable_adaptive_master_contract.gd
