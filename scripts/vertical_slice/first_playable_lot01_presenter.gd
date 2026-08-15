@@ -34,6 +34,8 @@ func _process(delta: float) -> void:
 		_hit_visual_timer = HIT_VISUAL_SECONDS
 	_last_health = _fighter.health
 	_hit_visual_timer = maxf(0.0, _hit_visual_timer - delta)
+	if _hit_visual_timer > 0.0 and _accepted_action_overrides_hit():
+		_hit_visual_timer = 0.0
 	_sprite.flip_h = _fighter.facing < 0.0
 	var next_animation := _resolve_animation()
 	if next_animation != _active_animation:
@@ -109,10 +111,15 @@ func _has_required_animations(frames: SpriteFrames) -> bool:
 			return false
 	return true
 
+func _accepted_action_overrides_hit() -> bool:
+	if _fighter is FirstPlayableCombatFighterController:
+		return (_fighter as FirstPlayableCombatFighterController).first_playable_visual_action_override_active()
+	return false
+
 func _resolve_animation() -> StringName:
 	if _fighter.health <= 0.0:
 		return &"ko"
-	if _hit_visual_timer > 0.0:
+	if _hit_visual_timer > 0.0 and not _accepted_action_overrides_hit():
 		return &"hit"
 	if _fighter._dodge_timer > 0.0:
 		return &"dodge"

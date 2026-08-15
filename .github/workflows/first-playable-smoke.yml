@@ -105,6 +105,9 @@ jobs:
       - name: Run P0 combat spacing and hit reaction contract
         run: ./godot --headless --path . --script tests/first_playable_combat_spacing_reaction_test.gd
 
+      - name: Run P0.1.2 reaction and accepted-action synchronization contract
+        run: ./godot --headless --path . --script tests/first_playable_reaction_action_sync_test.gd
+
       - name: Run P0 Character Creator product readiness contract
         run: ./godot --headless --path . --script tests/first_playable_creator_product_readiness_test.gd
 

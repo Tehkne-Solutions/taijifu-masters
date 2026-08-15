@@ -130,6 +130,18 @@ func _interrupt_for_first_playable_hit() -> void:
 	if is_instance_valid(_grabbed_target):
 		_release_grab_without_throw()
 
+func first_playable_visual_action_override_active() -> bool:
+	# Presentation may keep a short authored HIT tail after physical recoil, but it
+	# must yield as soon as gameplay has actually accepted a new discrete action.
+	# This keeps gameplay authoritative without extending hit-stun to match visuals.
+	if not _first_playable_recovery_active() or _first_playable_input_lock > 0.0:
+		return false
+	return (
+		_dodge_timer > 0.0
+		or _attack_phase != AttackPhase.NONE
+		or _is_blocking
+	)
+
 func first_playable_reaction_signature() -> Dictionary:
 	return {
 		"enabled": _first_playable_recovery_active(),
@@ -143,6 +155,7 @@ func first_playable_reaction_signature() -> Dictionary:
 		"last_reaction_id": String(_last_reaction_id),
 		"input_locked": _first_playable_input_lock > 0.0,
 		"knockback_locked": _first_playable_knockback_lock > 0.0,
+		"visual_action_override_active": first_playable_visual_action_override_active(),
 		"signature": "Tehkné Solutions",
 	}
 
