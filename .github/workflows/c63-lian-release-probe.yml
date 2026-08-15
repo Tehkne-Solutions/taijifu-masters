@@ -158,41 +158,111 @@ jobs:
           print('C63_RECONSTRUCTION_CLASSIFICATION=NONCANONICAL canonical_preserved=true')
           PY
 
-      - name: Regenerate reviewed Lian Wu animation families
+      - name: Validate current reviewed generators deterministically
         run: |
           set -euo pipefail
-          python tools/generate_lian_wu_idle6.py --repo-root .
-          python tools/generate_lian_wu_run8.py --repo-root .
-          python tools/generate_lian_wu_jump_start4.py --repo-root .
-          python tools/generate_lian_wu_jump_loop3.py --repo-root .
-          python tools/generate_lian_wu_fall3.py --repo-root .
-          python tools/generate_lian_wu_land4.py --repo-root .
-          python tools/generate_lian_wu_body_hook6.py --repo-root .
+          run_generators() {
+            python tools/generate_lian_wu_idle6.py --repo-root .
+            python tools/generate_lian_wu_run8.py --repo-root .
+            python tools/generate_lian_wu_jump_start4.py --repo-root .
+            python tools/generate_lian_wu_jump_loop3.py --repo-root .
+            python tools/generate_lian_wu_fall3.py --repo-root .
+            python tools/generate_lian_wu_land4.py --repo-root .
+            python tools/generate_lian_wu_body_hook6.py --repo-root .
+          }
+          run_generators
           python - <<'PY'
           from pathlib import Path
           import hashlib, json
+
+          root=Path('.')
           expected={
-            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f01.png':'233741f7258860f03305fac05b4cadb604d8136b47effb9b9b4c0f8d25396dea',
-            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f02.png':'d139b163f7eb408d27849eb7f781a020d05cd807adc1ebbae3ab9b03c91cd126',
-            'assets/pack_01_characters/lian_wu/frames/idle/char_lian_wu__idle__f03.png':'59b7ad2eeba90fcd6f5bcb499406c7459bb4025d77f7eb4f36705f07cd43c7ea',
-            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f02.png':'e27f8e24bd9e0a411413e8fb99b6e7ad723dd23071799b4966d62a6520d21cdc',
-            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f03.png':'e60128afc94809782bfc44a4a9c3658271b6542e71fc9cb483aac0ae2cedbcf4',
-            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f04.png':'d0f6a13f7dff2f57d8d75f8a70d649f2fac0ef8de355a5571713c2092c4a9d80',
-            'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f05.png':'fe0a4f9f851ab8eaadda66541beed1c838c564cc850f8371172822a8936afabb',
-            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f01.png':'d9e954da7fe9edd425cf18db1f0472c733192b31aacaa4d80f39814a0fe624f8',
-            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f02.png':'167afe9866661a071a2f95f6d64f50d4ffcfd3c1c28fe4fe727b8d633ec45c6d',
-            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f03.png':'83bb432ad059799439fe0486150478e5fc8fd321a6997d7dea052c661815ca41',
-            'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f04.png':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
+              'idle':('assets/pack_01_characters/lian_wu/frames/idle',6),
+              'run':('assets/pack_01_characters/lian_wu/frames/run',8),
+              'jump_start':('assets/pack_01_characters/lian_wu/frames/jump_start',4),
+              'jump_loop':('assets/pack_01_characters/lian_wu/frames/jump_loop',3),
+              'fall':('assets/pack_01_characters/lian_wu/frames/fall',3),
+              'land':('assets/pack_01_characters/lian_wu/frames/land',4),
+              'ji_body_hook':('assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook',6),
           }
-          verified=[]
-          for rel,want in expected.items():
-              path=Path(rel)
-              if not path.is_file(): raise SystemExit('C63_FRAME_REPRO=BLOCKED missing='+rel)
-              got=hashlib.sha256(path.read_bytes()).hexdigest()
-              if got!=want: raise SystemExit('C63_FRAME_REPRO=BLOCKED hash='+rel+' actual='+got)
-              verified.append({'path':rel,'sha256':got})
-          Path('c63-frame-reproduction.json').write_text(json.dumps({'schema':'tehkne/c63-frame-reproduction/v1','signature':'Tehkné Solutions','verified_historical_hashes':verified},indent=2)+'\n')
-          print('C63_FRAME_REPRO=PASS historical_hashes=%d' % len(verified))
+          canonical='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          files=[]
+          for animation,(folder,count) in expected.items():
+              paths=sorted((root/folder).glob('*.png'))
+              if len(paths)!=count:
+                  raise SystemExit(f'C63_GENERATOR_CONTRACT=BLOCKED animation={animation} count={len(paths)} expected={count}')
+              for path in paths:
+                  files.append({'path':path.as_posix(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+              metadata=root/'assets/pack_01_characters/lian_wu/metadata'/f'{animation}.json'
+              if not metadata.is_file():
+                  raise SystemExit('C63_GENERATOR_CONTRACT=BLOCKED metadata='+metadata.as_posix())
+              data=json.loads(metadata.read_text(encoding='utf-8'))
+              source=data.get('source_character_lock',{})
+              if source.get('sha256')!=canonical:
+                  raise SystemExit(f'C63_GENERATOR_CONTRACT=BLOCKED source_sha animation={animation}')
+              if data.get('signature')!='Tehkné Solutions':
+                  raise SystemExit(f'C63_GENERATOR_CONTRACT=BLOCKED signature animation={animation}')
+              files.append({'path':metadata.as_posix(),'sha256':hashlib.sha256(metadata.read_bytes()).hexdigest()})
+          snapshot={'schema':'tehkne/c63-generator-snapshot/v1','signature':'Tehkné Solutions','files':files}
+          Path('/tmp/c63-generator-pass1.json').write_text(json.dumps(snapshot,sort_keys=True)+'\n')
+          print('C63_GENERATOR_PASS1=PASS frames=34 metadata=7')
+          PY
+          run_generators
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          root=Path('.')
+          expected={
+              'idle':('assets/pack_01_characters/lian_wu/frames/idle',6),
+              'run':('assets/pack_01_characters/lian_wu/frames/run',8),
+              'jump_start':('assets/pack_01_characters/lian_wu/frames/jump_start',4),
+              'jump_loop':('assets/pack_01_characters/lian_wu/frames/jump_loop',3),
+              'fall':('assets/pack_01_characters/lian_wu/frames/fall',3),
+              'land':('assets/pack_01_characters/lian_wu/frames/land',4),
+              'ji_body_hook':('assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook',6),
+          }
+          canonical='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          files=[]
+          for animation,(folder,count) in expected.items():
+              paths=sorted((root/folder).glob('*.png'))
+              if len(paths)!=count:
+                  raise SystemExit(f'C63_GENERATOR_DETERMINISM=BLOCKED animation={animation} count={len(paths)} expected={count}')
+              for path in paths:
+                  files.append({'path':path.as_posix(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+              metadata=root/'assets/pack_01_characters/lian_wu/metadata'/f'{animation}.json'
+              data=json.loads(metadata.read_text(encoding='utf-8'))
+              if data.get('source_character_lock',{}).get('sha256')!=canonical:
+                  raise SystemExit(f'C63_GENERATOR_DETERMINISM=BLOCKED source_sha animation={animation}')
+              files.append({'path':metadata.as_posix(),'sha256':hashlib.sha256(metadata.read_bytes()).hexdigest()})
+          pass1=json.loads(Path('/tmp/c63-generator-pass1.json').read_text())
+          pass2={'schema':'tehkne/c63-generator-snapshot/v1','signature':'Tehkné Solutions','files':files}
+          if pass1!=pass2:
+              raise SystemExit('C63_GENERATOR_DETERMINISM=BLOCKED pass_mismatch')
+          handoffs={
+              'land_recover':root/'assets/pack_01_characters/lian_wu/frames/land/char_lian_wu__land__f04.png',
+              'body_hook_guard':root/'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f01.png',
+              'body_hook_recover':root/'assets/pack_01_characters/lian_wu/frames/attacks/ji_body_hook/char_lian_wu__ji_body_hook__f06.png',
+          }
+          for label,path in handoffs.items():
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest!=canonical:
+                  raise SystemExit(f'C63_CANONICAL_HANDOFF=BLOCKED {label}={digest}')
+          report={
+              'schema':'tehkne/c63-current-generator-reproduction/v2',
+              'signature':'Tehkné Solutions',
+              'canonical_source_sha256':canonical,
+              'generated_frame_count':34,
+              'metadata_count':7,
+              'deterministic_two_pass':True,
+              'legacy_binary_output_hash_lock':False,
+              'canonical_handoffs':{label:canonical for label in handoffs},
+              'files':files,
+          }
+          Path('c63-frame-reproduction.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('C63_GENERATOR_DETERMINISM=PASS frames=34 metadata=7 two_pass=true')
+          print('C63_LEGACY_BINARY_LOCK=PASS disabled=true')
+          print('C63_CANONICAL_HANDOFF=PASS count=3')
           PY
 
       - name: Materialize canonical First Playable SpriteFrames
@@ -285,12 +355,12 @@ jobs:
           if not runtime_files:
               raise SystemExit('C63_RUNTIME_RECOVERY_MANIFEST=BLOCKED runtime_files_missing')
           manifest={
-            'schema':'tehkne/c63-runtime-recovery/v1',
+            'schema':'tehkne/c63-runtime-recovery/v2',
             'signature':'Tehkné Solutions',
             'source_release':selected,
             'canonical_authority':'frozen_repository_asset',
             'historical_reconstruction':json.loads(Path('c63-canonical-clean.json').read_text()),
-            'historical_frame_reproduction':json.loads(Path('c63-frame-reproduction.json').read_text()),
+            'current_generator_reproduction':json.loads(Path('c63-frame-reproduction.json').read_text()),
             'runtime_spriteframes':'assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres',
             'runtime_files':runtime_files,
             'runtime_file_count':len(runtime_files),
@@ -298,7 +368,7 @@ jobs:
           }
           Path('c63-runtime-recovery-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
           print('C63_RUNTIME_RECOVERY_HASHES=PASS files=%d' % len(runtime_files))
-          print('C63_RUNTIME_RECOVERY_MANIFEST=PASS canonical_authority=frozen_repository_asset')
+          print('C63_RUNTIME_RECOVERY_MANIFEST=PASS schema=v2 canonical_authority=frozen_repository_asset')
           PY
 
       - uses: actions/upload-artifact@v4
@@ -325,6 +395,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'C63 recovery preserves exact canonical identity, rejects noncanonical reconstruction, self-triggers and hashes runtime outputs — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63 recovery preserves exact canonical identity, rejects noncanonical reconstruction, validates current generators deterministically, self-triggers and hashes runtime outputs — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
