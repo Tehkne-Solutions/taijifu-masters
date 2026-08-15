@@ -22,6 +22,7 @@ MedievalUIThemeRuntime="*res://scripts/runtime/medieval_ui_theme_runtime.gd"
 CombatAttributeIntegrationRuntime="*res://scripts/runtime/combat_attribute_integration_runtime.gd"
 ElementalAdvantageRuntime="*res://scripts/runtime/elemental_advantage_runtime.gd"
 FirstPlayableCombatFeelRuntime="*res://scripts/runtime/first_playable_combat_feel_runtime.gd"
+PilotFeedbackGuardRuntime="*res://scripts/runtime/pilot_feedback_guard_runtime.gd"
 TaijifuWebBridge="*res://scripts/runtime/web_platform_bridge_runtime.gd"
 
 [debug]
