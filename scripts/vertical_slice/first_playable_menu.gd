@@ -39,7 +39,7 @@ func _ready() -> void:
 	# only through this explicit proof argument; interactive players are never
 	# silently assigned to TJFP-001.
 	if C44_RUNTIME_PROOF_ARG in OS.get_cmdline_user_args():
-		FirstPlayableSession.set_participant_code(C44_RUNTIME_PROOF_PARTICIPANT)
+		FirstPlayableSession.begin_pilot_session(C44_RUNTIME_PROOF_PARTICIPANT)
 		print("V2_C44_RUNTIME_PROOF=ENTER_COMBAT")
 		call_deferred("_start_first_playable")
 
@@ -95,7 +95,7 @@ func flow_signature() -> Dictionary:
 	}
 
 func _start_first_playable() -> void:
-	if not FirstPlayableSession.has_valid_participant_code():
+	if not FirstPlayableSession.has_valid_participant_code() or not FirstPlayableSession.pilot_enforcement_enabled:
 		_show_participant_dialog()
 		return
 	if FirstPlayableSession.pilot_sequence_locked():
@@ -153,7 +153,7 @@ func _on_participant_text_submitted(_text: String) -> void:
 	_confirm_participant_code()
 
 func _confirm_participant_code() -> void:
-	if not FirstPlayableSession.set_participant_code(_participant_input.text):
+	if not FirstPlayableSession.begin_pilot_session(_participant_input.text):
 		_participant_error.text = "Código inválido para o Pilot 09 R2."
 		call_deferred("_show_participant_dialog")
 		return
