@@ -92,10 +92,13 @@ jobs:
           print('C63_RAW_LINEAGE=PASS files=4')
           PY
 
-      - name: Reconstruct canonical clean v1.0.1 neutral
+      - name: Preserve exact canonical neutral and classify historical reconstruction
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check Pillow
+          canonical='assets/characters/lian_wu/character_lock/lian_wu_neutral.png'
+          test -f "$canonical"
+          echo '0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5  assets/characters/lian_wu/character_lock/lian_wu_neutral.png' | sha256sum -c -
+          python -m pip install --disable-pip-version-check --quiet Pillow==12.3.0
           curl --fail --location --retry 3 \
             'https://raw.githubusercontent.com/Tehkne-Solutions/taijifu-masters-assets/f2f64600ce93396887e88d7b781553da54572da5/tools/build_lian_wu_canonical_clean_v101.py' \
             --output /tmp/build_lian_wu_canonical_clean_v101.py
@@ -104,24 +107,56 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import hashlib, json
-          expected={
-            'char_lian_wu__front_clean.png':'0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5',
-            'char_lian_wu__side_left_clean.png':'1144177a6fe20debe64b7b806a7a59bc0c4263cd6d21a29e04d070ec9040d7ae',
-            'char_lian_wu__back_clean.png':'fbfa0c5a678d515cde9b61fbee445ff35efa0713415960f15e43efa88359c3b3',
-            'char_lian_wu__side_right_clean.png':'660280bf3ef0918a274f3837e683711fa76776767f8a219782d0f0b102aeb9df',
+          from PIL import Image
+
+          canonical=Path('assets/characters/lian_wu/character_lock/lian_wu_neutral.png')
+          candidate=Path('/tmp/c63-clean/char_lian_wu__front_clean.png')
+          canonical_sha=hashlib.sha256(canonical.read_bytes()).hexdigest()
+          candidate_sha=hashlib.sha256(candidate.read_bytes()).hexdigest()
+          expected_canonical='0e435757b5c8a114f3ba91653f79bc86db51ee9cf3bfb74c529efed5d4ff7ab5'
+          expected_candidate='3da81e472862eea3519fc2390ddfc081603b9205efdb98493d83db8552a9063d'
+          expected_candidate_rgba='c2cf8ea213692090832b7859119e98ddf2c862b23f9a3f94200e5d15280b78e2'
+          expected_candidate_bounds=(303,70,720,970)
+          if canonical_sha != expected_canonical:
+              raise SystemExit('C63_CANONICAL_NEUTRAL=BLOCKED sha='+canonical_sha)
+          if candidate_sha != expected_candidate:
+              raise SystemExit('C63_RECONSTRUCTION_PROBE=BLOCKED file_sha='+candidate_sha)
+          with Image.open(candidate) as opened:
+              rgba=opened.convert('RGBA')
+              candidate_rgba=hashlib.sha256(rgba.tobytes()).hexdigest()
+              alpha=rgba.getchannel('A').point(lambda value:255 if value>=3 else 0)
+              bounds=alpha.getbbox() or (0,0,0,0)
+          if candidate_rgba != expected_candidate_rgba or bounds != expected_candidate_bounds:
+              raise SystemExit('C63_RECONSTRUCTION_PROBE=BLOCKED rgba=%s bounds=%s' % (candidate_rgba,bounds))
+          if candidate_sha == canonical_sha:
+              raise SystemExit('C63_RECONSTRUCTION_CLASSIFICATION=BLOCKED unexpectedly_canonical')
+          report={
+              'schema':'tehkne/c63-reconstruction-classification/v1',
+              'signature':'Tehkné Solutions',
+              'canonical':{
+                  'path':canonical.as_posix(),
+                  'sha256':canonical_sha,
+                  'authority':'frozen_repository_asset',
+                  'status':'canonical',
+              },
+              'historical_builder':{
+                  'source_commit':'f2f64600ce93396887e88d7b781553da54572da5',
+                  'candidate_file_sha256':candidate_sha,
+                  'candidate_rgba_sha256':candidate_rgba,
+                  'candidate_alpha_bounds':list(bounds),
+                  'classification':'NONCANONICAL',
+                  'may_replace_canonical':False,
+              },
+              'prior_evidence':{
+                  'c63_1':'PIXEL_EQUIVALENT_BYTE_ENCODING_DIVERGENCE_ACROSS_RECONSTRUCTION_ENVIRONMENTS',
+                  'c63_4':'RECONSTRUCTION_CLASSIFICATION_NONCANONICAL',
+              },
           }
-          rows=[]
-          for name,want in expected.items():
-              path=Path('/tmp/c63-clean')/name
-              got=hashlib.sha256(path.read_bytes()).hexdigest()
-              if got!=want:
-                  raise SystemExit('C63_CANONICAL_CLEAN=BLOCKED '+name+' actual='+got)
-              rows.append({'file':name,'sha256':got})
-          Path('c63-canonical-clean.json').write_text(json.dumps({'schema':'tehkne/c63-canonical-clean/v1','signature':'Tehkné Solutions','files':rows},indent=2)+'\n')
-          print('C63_CANONICAL_CLEAN=PASS front=0e435757 side_left=1144177a back=fbfa0c5a side_right=660280bf')
+          Path('c63-canonical-clean.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('C63_CANONICAL_NEUTRAL=PASS exact_sha=0e435757')
+          print('C63_RECONSTRUCTION_PROBE=PASS file_sha=3da81e47 rgba_sha=c2cf8ea2 bounds=303,70,720,970')
+          print('C63_RECONSTRUCTION_CLASSIFICATION=NONCANONICAL canonical_preserved=true')
           PY
-          mkdir -p assets/characters/lian_wu/character_lock
-          cp /tmp/c63-clean/char_lian_wu__front_clean.png assets/characters/lian_wu/character_lock/lian_wu_neutral.png
 
       - name: Regenerate reviewed Lian Wu animation families
         run: |
@@ -253,7 +288,8 @@ jobs:
             'schema':'tehkne/c63-runtime-recovery/v1',
             'signature':'Tehkné Solutions',
             'source_release':selected,
-            'reconstructed_clean':json.loads(Path('c63-canonical-clean.json').read_text()),
+            'canonical_authority':'frozen_repository_asset',
+            'historical_reconstruction':json.loads(Path('c63-canonical-clean.json').read_text()),
             'historical_frame_reproduction':json.loads(Path('c63-frame-reproduction.json').read_text()),
             'runtime_spriteframes':'assets/tgap/pack_01_lian_wu/first_playable_lot_01/lian_wu_first_playable_frames.tres',
             'runtime_files':runtime_files,
@@ -262,7 +298,7 @@ jobs:
           }
           Path('c63-runtime-recovery-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
           print('C63_RUNTIME_RECOVERY_HASHES=PASS files=%d' % len(runtime_files))
-          print('C63_RUNTIME_RECOVERY_MANIFEST=PASS')
+          print('C63_RUNTIME_RECOVERY_MANIFEST=PASS canonical_authority=frozen_repository_asset')
           PY
 
       - uses: actions/upload-artifact@v4
@@ -289,6 +325,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'C63 Lian release recovery probe remains an explicit historical recovery lane; workflow self-trigger and runtime hashes are enforced — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C63 recovery preserves exact canonical identity, rejects noncanonical reconstruction, self-triggers and hashes runtime outputs — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
