@@ -1,10 +1,6 @@
 name: C63 Lian v1.0.1 Tag LFS Probe
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/c63-lian-lfs-tag-probe.yml'
-      - '.github/workflows/c63-lian-release-probe.yml'
   workflow_dispatch:
 
 permissions:
@@ -73,4 +69,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C63.0 v1.0.1 tag/LFS exact-byte recovery probe — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        if: always()
+        run: echo 'C63 v1.0.1 tag/LFS probe is a manual historical recovery diagnostic — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions
