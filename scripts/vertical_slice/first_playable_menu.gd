@@ -6,6 +6,7 @@ const FIRST_PLAYABLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const CREATOR_SCENE := "res://scenes/characters/modular_fighter_creator_shell.tscn"
 const C44_RUNTIME_PROOF_ARG := "--v2-c44-runtime-proof"
 const C44_RUNTIME_PROOF_PARTICIPANT := "TJFP-001"
+const PILOT_PARTICIPANT_ARG_PREFIX := "--pilot-participant="
 
 @onready var play_button: Button = $Content/Actions/PlayButton
 @onready var creator_button: Button = $Content/Actions/CreatorButton
@@ -33,6 +34,14 @@ func _ready() -> void:
 	_apply_visual_policy()
 	_update_difficulty_ui()
 	play_button.grab_focus()
+
+	var bootstrap_participant := _pilot_participant_from_args()
+	if bootstrap_participant != "":
+		if FirstPlayableSession.begin_pilot_session(bootstrap_participant):
+			print("PILOT_PARTICIPANT_BOOTSTRAP=%s" % FirstPlayableSession.participant_code)
+			call_deferred("_start_first_playable")
+			return
+		push_warning("Código de piloto explícito rejeitado: %s" % bootstrap_participant)
 
 	# C44 proves that an exported package enters the exact combat scene where the
 	# canonical arena is selected. CI receives a deterministic anonymous pilot code
@@ -78,6 +87,10 @@ func flow_signature() -> Dictionary:
 		"participant_code_required": true,
 		"participant_code_entry": "deferred_play_dialog",
 		"participant_code_auto_assigned": false,
+		"participant_bootstrap_supported": true,
+		"participant_bootstrap_arg": PILOT_PARTICIPANT_ARG_PREFIX,
+		"participant_short_code_supported": true,
+		"participant_dialog_layout": "custom_non_overlapping_content",
 		"legacy_prototype_exposed": false,
 		"legacy_nodes_removed": true,
 		"site_like_panels": false,
@@ -114,8 +127,12 @@ func _build_participant_dialog() -> void:
 	_participant_dialog = ConfirmationDialog.new()
 	_participant_dialog.name = "PilotParticipantDialog"
 	_participant_dialog.title = "PILOTO TAIJIFU • IDENTIFICAÇÃO ANÔNIMA"
-	_participant_dialog.dialog_text = "Digite o código recebido para esta sessão (TJFP-001 a TJFP-009)."
+	# Do not use ConfirmationDialog.dialog_text together with a custom LineEdit.
+	# In the exported Windows build the built-in label shared the same content area
+	# and visually overlapped the typed participant code.
+	_participant_dialog.dialog_text = ""
 	_participant_dialog.exclusive = true
+	_participant_dialog.min_size = Vector2i(560, 290)
 	_participant_dialog.get_ok_button().text = "INICIAR PILOTO"
 	_participant_dialog.get_cancel_button().text = "CANCELAR"
 	_participant_dialog.confirmed.connect(_confirm_participant_code)
@@ -123,21 +140,37 @@ func _build_participant_dialog() -> void:
 
 	var content := VBoxContainer.new()
 	content.name = "PilotParticipantContent"
-	content.custom_minimum_size = Vector2(460, 82)
-	content.position = Vector2(18, 82)
+	content.custom_minimum_size = Vector2(500, 132)
+	content.position = Vector2(18, 54)
+	content.add_theme_constant_override("separation", 8)
 	_participant_dialog.add_child(content)
+
+	var instruction := Label.new()
+	instruction.name = "ParticipantInstruction"
+	instruction.text = "Use o código recebido para esta sessão. Ex.: TJFP-001. Também aceitamos apenas 001."
+	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	instruction.custom_minimum_size = Vector2(500, 42)
+	instruction.add_theme_color_override("font_color", Color(POLICY.BONE, 0.82))
+	content.add_child(instruction)
 
 	_participant_input = LineEdit.new()
 	_participant_input.name = "ParticipantCode"
-	_participant_input.placeholder_text = "TJFP-001"
+	_participant_input.placeholder_text = "TJFP-001 ou 001"
 	_participant_input.max_length = 8
 	_participant_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_participant_input.custom_minimum_size = Vector2(500, 44)
+	_participant_input.add_theme_font_size_override("font_size", 19)
+	_participant_input.add_theme_color_override("font_placeholder_color", Color(POLICY.BONE, 0.42))
+	_participant_input.text_changed.connect(_on_participant_text_changed)
 	_participant_input.text_submitted.connect(_on_participant_text_submitted)
 	content.add_child(_participant_input)
 
 	_participant_error = Label.new()
 	_participant_error.name = "ParticipantError"
 	_participant_error.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_participant_error.custom_minimum_size = Vector2(500, 26)
+	_participant_error.add_theme_color_override("font_color", POLICY.RIVAL_EMBER.lightened(0.24))
 	_participant_error.text = ""
 	content.add_child(_participant_error)
 
@@ -146,19 +179,49 @@ func _show_participant_dialog() -> void:
 		return
 	_participant_error.text = ""
 	_participant_input.text = ""
-	_participant_dialog.popup_centered(Vector2i(520, 250))
+	_participant_dialog.popup_centered(Vector2i(560, 290))
 	_participant_input.grab_focus()
+
+func _reopen_participant_dialog_with_error(submitted: String) -> void:
+	if not is_instance_valid(_participant_dialog):
+		return
+	_participant_dialog.popup_centered(Vector2i(560, 290))
+	_participant_input.text = submitted
+	_participant_error.text = "Código inválido. Use TJFP-001 a TJFP-009 ou apenas 001 a 009."
+	_participant_input.select_all()
+	_participant_input.grab_focus()
+
+func _on_participant_text_changed(_text: String) -> void:
+	if is_instance_valid(_participant_error):
+		_participant_error.text = ""
 
 func _on_participant_text_submitted(_text: String) -> void:
 	_confirm_participant_code()
 
 func _confirm_participant_code() -> void:
-	if not FirstPlayableSession.begin_pilot_session(_participant_input.text):
-		_participant_error.text = "Código inválido para o Pilot 09 R2."
-		call_deferred("_show_participant_dialog")
+	var submitted := _participant_input.text.strip_edges()
+	if not FirstPlayableSession.begin_pilot_session(submitted):
+		call_deferred("_reopen_participant_dialog_with_error", submitted)
 		return
 	_update_difficulty_ui()
 	call_deferred("_start_first_playable")
+
+func _pilot_participant_from_args() -> String:
+	var inspected: Array[String] = []
+	for raw_arg in OS.get_cmdline_args():
+		inspected.append(String(raw_arg))
+	for raw_arg in OS.get_cmdline_user_args():
+		var candidate := String(raw_arg)
+		if candidate not in inspected:
+			inspected.append(candidate)
+	for arg in inspected:
+		if not arg.begins_with(PILOT_PARTICIPANT_ARG_PREFIX):
+			continue
+		var raw_code := arg.trim_prefix(PILOT_PARTICIPANT_ARG_PREFIX)
+		var normalized := FirstPlayableSession.normalize_participant_code(raw_code)
+		if normalized != "":
+			return normalized
+	return ""
 
 func _update_difficulty_ui() -> void:
 	var pilot_locked := FirstPlayableSession.pilot_sequence_locked()
