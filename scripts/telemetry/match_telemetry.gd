@@ -224,6 +224,8 @@ func _normalize_first_playable_metadata(metadata: Dictionary) -> void:
 func _apply_pilot_round_integrity(metadata: Dictionary) -> void:
 	if String(_session_metadata.get("experience", "")) != "first_playable":
 		return
+	if not FirstPlayableSession.pilot_enforcement_enabled:
+		return
 	if not FirstPlayableSession.has_valid_participant_code():
 		metadata["pilot_sequence_valid"] = false
 		metadata["pilot_sequence_error"] = "missing_or_unassigned_participant_code"
@@ -234,6 +236,7 @@ func _apply_pilot_round_integrity(metadata: Dictionary) -> void:
 	var completed_result := String(metadata.get("result_reason", "")) != "abandoned"
 	metadata["pilot_id"] = FirstPlayableSession.PILOT_ID
 	metadata["participant_code"] = FirstPlayableSession.participant_code
+	metadata["pilot_runtime_enforced"] = true
 	metadata["pilot_round_number"] = FirstPlayableSession.pilot_round_number()
 	metadata["pilot_expected_matches"] = FirstPlayableSession.pilot_expected_matches()
 	metadata["pilot_expected_difficulty"] = String(expected_difficulty)
