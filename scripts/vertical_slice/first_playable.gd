@@ -3,7 +3,7 @@ extends Node2D
 
 signal presentation_cue_requested(cue_id: StringName, intensity: float)
 
-const FIGHTER_SCENE := preload("res://scenes/fighter/first_playable_fighter.tscn")
+const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const CHARACTER_IDENTITY := preload("res://scripts/vertical_slice/first_playable_character_identity.gd")
 const MENU_SCENE := "res://scenes/vertical_slice/first_playable_menu.tscn"
 const PLAYER_PRESET: StringName = &"lian_wu_first_playable"
@@ -352,54 +352,72 @@ func _check_world_limits() -> void:
 	for fighter in [player_one, player_two]:
 		if not is_instance_valid(fighter):
 			continue
-		if fighter.global_position.y > arena.kill_plane_y:
-			fighter.reset_fighter(arena.respawn_point(fighter.player_index))
-			_telemetry.record_event(_profile_id_for(fighter), &"ringout_reset")
+		arena.apply_sector_pressure(fighter)
+		if fighter.global_position.y > TriplePathArena.WORLD_HEIGHT + 120.0:
+			fighter.receive_hit(9999.0, 9999.0, Vector2.ZERO, fighter.global_position)
 
 func _update_camera(delta: float) -> void:
-	if not is_instance_valid(player_one) or not is_instance_valid(player_two):
-		return
 	var midpoint := (player_one.global_position + player_two.global_position) * 0.5
-	midpoint.y -= 65.0
-	var target := arena.clamp_camera_target(midpoint)
-	camera.global_position = camera.global_position.lerp(target, 1.0 - pow(0.0009, delta))
+	midpoint.y = clampf(midpoint.y - 80.0, 280.0, 720.0)
+	midpoint.x = clampf(midpoint.x, arena.camera_left_limit(), TriplePathArena.WORLD_WIDTH - 420.0)
+	camera.global_position = camera.global_position.lerp(midpoint, 1.0 - exp(-5.0 * delta))
 	var distance := player_one.global_position.distance_to(player_two.global_position)
-	var zoom_value := clampf(remap(distance, 240.0, 920.0, 1.05, 0.68), 0.68, 1.06)
-	camera.zoom = camera.zoom.lerp(Vector2.ONE * zoom_value, 1.0 - pow(0.002, delta))
+	var desired_zoom := clampf(1180.0 / maxf(900.0, distance + 420.0), 0.62, 1.0)
+	camera.zoom = camera.zoom.lerp(Vector2.ONE * desired_zoom, 1.0 - exp(-4.0 * delta))
 
 func _update_hud() -> void:
-	if not is_instance_valid(player_one) or not is_instance_valid(player_two):
-		return
-	player_one_label.text = "P1 • LIAN WU"
-	player_two_label.text = "CPU • RIVAL DE TREINO"
-	hud_controller.update_hud(
-		player_one,
-		player_two,
-		_time_remaining,
-		_difficulty_label()
-	)
+	player_one_label.text = _fighter_summary(player_one, "P1")
+	player_two_label.text = _fighter_summary(player_two, "CPU")
+	hud_controller.update_fighters(player_one, player_two)
+	if _state == MatchState.BATTLE:
+		state_label.text = "LIAN WU VS RIVAL • IA %s • TEMPO %02d" % [_difficulty_label(), ceili(_time_remaining)]
 
 func _difficulty_label() -> String:
-	return difficulty_controller.difficulty_label()
+	if is_instance_valid(difficulty_controller):
+		return difficulty_controller.current_label()
+	return BotBehaviorCatalog.difficulty_label(bot_runtime.difficulty_id)
 
-func _register_inputs() -> void:
-	_register_key_action(&"first_playable_pause", KEY_ESCAPE)
-	_register_key_action(&"first_playable_restart", KEY_ENTER)
-
-func _register_key_action(action_id: StringName, keycode: Key) -> void:
-	if InputMap.has_action(action_id):
-		return
-	InputMap.add_action(action_id)
-	var key := InputEventKey.new()
-	key.physical_keycode = keycode
-	InputMap.action_add_event(action_id, key)
+func _fighter_summary(fighter: FighterController, prefix: String) -> String:
+	return "%s • %s\n%s • %s" % [
+		prefix,
+		fighter.build.character_name.to_upper(),
+		String(fighter.build.element_id).to_upper(),
+		fighter.current_weapon_label()
+	]
 
 func _release_all_combat_actions() -> void:
-	for index in [1, 2]:
-		for suffix in ["left", "right", "down", "jump", "dodge", "attack", "push", "grab", "echo", "block", "swap", "element"]:
-			Input.action_release(&"p%d_%s" % [index, suffix])
+	for player_index in [1, 2]:
+		for suffix in ["left", "right", "down", "jump", "dodge", "attack", "push", "grab", "echo", "block", "element", "swap"]:
+			Input.action_release(StringName("p%d_%s" % [player_index, suffix]))
 
-func _profile_id_for(fighter: FighterController) -> StringName:
-	return &"p1" if fighter.player_index == 1 else &"p2"
+func _register_inputs() -> void:
+	_add_key_action(&"p1_left", KEY_A)
+	_add_key_action(&"p1_right", KEY_D)
+	_add_key_action(&"p1_down", KEY_S)
+	_add_key_action(&"p1_jump", KEY_W)
+	_add_key_action(&"p1_dodge", KEY_Q)
+	_add_key_action(&"p1_attack", KEY_F)
+	_add_key_action(&"p1_push", KEY_G)
+	_add_key_action(&"p1_grab", KEY_E)
+	_add_key_action(&"p1_echo", KEY_H)
+	_add_key_action(&"p1_block", KEY_R)
+	_add_key_action(&"p1_element", KEY_C)
+	_add_key_action(&"p1_swap", KEY_T)
+	for suffix in ["left", "right", "down", "jump", "dodge", "attack", "push", "grab", "echo", "block", "element", "swap"]:
+		var action := StringName("p2_%s" % suffix)
+		if not InputMap.has_action(action):
+			InputMap.add_action(action, 0.5)
+	_add_key_action(&"first_playable_restart", KEY_ENTER)
+	_add_key_action(&"first_playable_pause", KEY_ESCAPE)
+
+func _add_key_action(action: StringName, keycode: Key) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action, 0.5)
+	for existing_event in InputMap.action_get_events(action):
+		if existing_event is InputEventKey and existing_event.physical_keycode == keycode:
+			return
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	InputMap.action_add_event(action, event)
 
 # Tehkné Solutions
