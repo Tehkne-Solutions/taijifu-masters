@@ -6,8 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Piloto ativo: `pilot-09-r2` • Build: `0.2.2-playtest`.
+        Piloto ativo: `pilot-09-r2` • Build: `0.2.3-playtest`.
         Use somente o código anônimo `TJFP-###`. Não informe nome, e-mail, telefone, IP ou outros dados pessoais.
+        A dificuldade da sessão oficial é atribuída automaticamente pelo código do participante; não faça override manual.
 
   - type: input
     id: participant
@@ -31,7 +32,7 @@ body:
   - type: dropdown
     id: difficulty
     attributes:
-      label: Dificuldade
+      label: Dificuldade atribuída na ocorrência
       options:
         - Aprendiz
         - Discípulo
@@ -76,7 +77,7 @@ body:
     id: build
     attributes:
       label: Versão da build
-      value: 0.2.2-playtest
+      value: 0.2.3-playtest
     validations:
       required: true
 
@@ -93,9 +94,10 @@ body:
     attributes:
       label: Passos para reproduzir
       placeholder: |
-        1. Selecionar Discípulo
-        2. Concluir a partida
-        3. Pressionar Revanche
+        1. Informar TJFP-###
+        2. Jogar a dificuldade atribuída automaticamente
+        3. Concluir a partida
+        4. Registrar o comportamento observado
     validations:
       required: true
 

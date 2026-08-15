@@ -19,21 +19,27 @@ func _init() -> void:
 			errors.append("autoload de UI duplicada ainda presente: %s" % forbidden)
 
 	for required in [
-		"DEFAULT_PARTICIPANT_CODE",
 		'"legacy_nodes_removed": true',
 		'"legacy_prototype_exposed": false',
-		'"participant_code_required": false',
+		'"participant_code_required": true',
+		'"participant_code_entry": "deferred_play_dialog"',
+		'"participant_code_auto_assigned": false',
 		'"site_like_panels": false',
 		'"form_fields": 0',
 		'"quick_game_ui": true',
+		"FirstPlayableSession.begin_pilot_session",
+		"_build_participant_dialog()",
+		"_show_participant_dialog()",
 		"change_scene_to_file(FIRST_PLAYABLE_SCENE)"
 	]:
 		if not menu_source.contains(required):
 			errors.append("contrato de fluxo único ausente: %s" % required)
 
 	for forbidden_script in [
+		"DEFAULT_PARTICIPANT_CODE :=",
+		'"participant_code_required": false',
+		'"participant_code_auto_assigned": true',
 		"participant_panel",
-		"participant_input",
 		"participant_status",
 		"prototype_button",
 		"_open_complete_prototype"
@@ -41,6 +47,8 @@ func _init() -> void:
 		if menu_source.contains(forbidden_script):
 			errors.append("dependência legada ainda presente no controller: %s" % forbidden_script)
 
+	# O código anônimo existe apenas no diálogo criado sob demanda. A cena canônica
+	# continua sem formulário persistente, preservando o menu de jogo enxuto.
 	for forbidden_scene in [
 		'[node name="Participant"',
 		'[node name="ParticipantInput"',
