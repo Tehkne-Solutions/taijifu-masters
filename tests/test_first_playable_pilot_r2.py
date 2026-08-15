@@ -120,6 +120,37 @@ class FirstPlayablePilotR2Tests(unittest.TestCase):
         self.assertEqual(decisions["build_version"], ACTIVE_VERSION)
         self.assertEqual(decisions["decisions"], [])
 
+    def test_active_operational_docs_match_runtime_contract(self) -> None:
+        protocol = (ROOT / "docs" / "FIRST-PLAYABLE-PLAYTEST.md").read_text(
+            encoding="utf-8"
+        )
+        pilot_doc = (ROOT / "docs" / "FIRST-PLAYABLE-PILOT-09.md").read_text(
+            encoding="utf-8"
+        )
+        issue_template = (
+            ROOT / ".github" / "ISSUE_TEMPLATE" / "first-playable-playtest.yml"
+        ).read_text(encoding="utf-8")
+
+        for source in (protocol, pilot_doc, issue_template):
+            self.assertIn(ACTIVE_PILOT, source)
+            self.assertIn(ACTIVE_VERSION, source)
+            self.assertNotIn("0.2.2-playtest", source)
+
+        self.assertIn("aplica essa sequência automaticamente", protocol)
+        self.assertIn("Não tentar alterar manualmente a dificuldade", protocol)
+        self.assertIn("REVANCHE` só é liberada depois do feedback", protocol)
+        self.assertIn("PILOTO CONCLUÍDO", protocol)
+        self.assertNotIn("4. Selecionar a dificuldade.", protocol)
+
+        self.assertIn("aplica essa ordem automaticamente", pilot_doc)
+        self.assertIn("Não alterar manualmente a dificuldade", pilot_doc)
+        self.assertIn("PILOTO CONCLUÍDO", pilot_doc)
+        self.assertIn("pilot_sequence_valid = true", pilot_doc)
+        self.assertNotIn("Selecionar a dificuldade indicada", pilot_doc)
+
+        self.assertIn("atribuída automaticamente", issue_template)
+        self.assertNotIn("1. Selecionar Discípulo", issue_template)
+
     def test_hardened_cli_resolves_project_version(self) -> None:
         cli = load_hardened_cli()
         self.assertEqual(cli.project_build_version(), ACTIVE_VERSION)
