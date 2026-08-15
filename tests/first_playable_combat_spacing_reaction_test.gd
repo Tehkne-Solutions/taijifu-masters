@@ -1,9 +1,10 @@
 extends SceneTree
 
-const FIGHTER_SCENE := preload("res://scenes/fighter/first_playable_fighter.tscn")
+const FIGHTER_SCENE := preload("res://scenes/fighter/fighter.tscn")
 const FIRST_PLAYABLE_SCENE := preload("res://scenes/vertical_slice/first_playable.tscn")
 
 var _nodes: Array[Node] = []
+var _test_context: Node2D
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -23,12 +24,21 @@ func _run() -> void:
 	print("FIRST_PLAYABLE_COMBAT_SPACING_REACTION_OK")
 	quit(0)
 
+func _ensure_test_context() -> Node2D:
+	if is_instance_valid(_test_context):
+		return _test_context
+	_test_context = Node2D.new()
+	_test_context.name = "FirstPlayable"
+	root.add_child(_test_context)
+	_nodes.append(_test_context)
+	return _test_context
+
 func _spawn_fighter(player_index: int, preset: StringName, position: Vector2) -> FirstPlayableCombatFighterController:
 	var fighter := FIGHTER_SCENE.instantiate() as FirstPlayableCombatFighterController
 	fighter.player_index = player_index
 	fighter.build_preset = preset
+	_ensure_test_context().add_child(fighter)
 	fighter.global_position = position
-	root.add_child(fighter)
 	_nodes.append(fighter)
 	return fighter
 
@@ -49,6 +59,10 @@ func _validate_integrated_scene_uses_recovery_runtime() -> bool:
 		return false
 	if battle.player_two is not FirstPlayableCombatFighterController:
 		await _fail("Training Rival is not using FirstPlayableCombatFighterController")
+		return false
+	var signature := (battle.player_one as FirstPlayableCombatFighterController).first_playable_reaction_signature()
+	if not bool(signature.get("enabled", false)) or not bool(signature.get("context_scoped", false)):
+		await _fail("integrated fighter reaction recovery is not context-scoped and active")
 		return false
 	await _remove_node(battle)
 	return true
@@ -200,7 +214,7 @@ func _validate_bot_spacing_policy() -> bool:
 		await _fail("bot spacing recovery is still route-specific")
 		return false
 
-	bot.queue_free()
+	bot.free()
 	await _remove_node(bot_fighter)
 	await _remove_node(opponent)
 	return true
@@ -217,6 +231,7 @@ func _remove_node(node: Node) -> void:
 func _cleanup() -> void:
 	for node in _nodes.duplicate():
 		await _remove_node(node)
+	_test_context = null
 	FirstPlayableSession.reset()
 
 func _fail(message: String) -> void:
