@@ -4,7 +4,7 @@ extends MasteredWeaponFighterController
 # First Playable recovery layer.
 # The core fighter already receives an impulse, but normal movement steering can
 # overwrite it on the next physics frame. These short locks preserve readable
-# recoil without changing the competitive controller for non-First-Playable builds.
+# recoil while remaining inert outside the FirstPlayable scene.
 const HIT_INPUT_LOCK_SECONDS := 0.17
 const POSTURE_BREAK_INPUT_LOCK_SECONDS := 0.29
 const HIT_KNOCKBACK_LOCK_SECONDS := 0.15
@@ -25,14 +25,14 @@ func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 
 func _process_actions() -> void:
-	if _is_first_playable_fighter() and _first_playable_input_lock > 0.0:
+	if _first_playable_recovery_active() and _first_playable_input_lock > 0.0:
 		_is_blocking = false
 		_parry_timer = 0.0
 		return
 	super._process_actions()
 
 func _apply_movement(delta: float) -> void:
-	if _is_first_playable_fighter() and _first_playable_knockback_lock > 0.0:
+	if _first_playable_recovery_active() and _first_playable_knockback_lock > 0.0:
 		# Preserve the received impulse long enough to be visible. We only bleed
 		# horizontal speed slowly on the ground; gravity and move_and_slide still run.
 		if is_on_floor():
@@ -51,6 +51,7 @@ func receive_hit(
 	bypass_guard: bool = false,
 	disarm_multiplier: float = 1.0
 ) -> bool:
+	var recovery_active := _first_playable_recovery_active()
 	var posture_before := posture
 	var attacker_direction := signf(attacker_position.x - global_position.x)
 	var guarding_front := _is_blocking and attacker_direction == facing and not bypass_guard
@@ -58,7 +59,7 @@ func receive_hit(
 	var was_parrying := guarding_front and _parry_timer > 0.0
 	var adjusted_impulse := impulse
 
-	if _is_first_playable_fighter() and not was_evading and not was_parrying:
+	if recovery_active and not was_evading and not was_parrying:
 		var away := signf(global_position.x - attacker_position.x)
 		if away == 0.0:
 			away = -facing if facing != 0.0 else -1.0
@@ -79,7 +80,7 @@ func receive_hit(
 		bypass_guard,
 		disarm_multiplier
 	)
-	if not accepted or not _is_first_playable_fighter():
+	if not accepted or not recovery_active:
 		return accepted
 
 	var away_after := signf(global_position.x - attacker_position.x)
@@ -111,6 +112,16 @@ func receive_hit(
 	combat_state_changed.emit(self)
 	return accepted
 
+func _first_playable_recovery_active() -> bool:
+	if not _is_first_playable_fighter():
+		return false
+	var cursor: Node = self
+	while is_instance_valid(cursor):
+		if cursor.name == &"FirstPlayable":
+			return true
+		cursor = cursor.get_parent()
+	return false
+
 func _interrupt_for_first_playable_hit() -> void:
 	_is_blocking = false
 	_parry_timer = 0.0
@@ -121,7 +132,8 @@ func _interrupt_for_first_playable_hit() -> void:
 
 func first_playable_reaction_signature() -> Dictionary:
 	return {
-		"enabled": _is_first_playable_fighter(),
+		"enabled": _first_playable_recovery_active(),
+		"context_scoped": true,
 		"input_lock_seconds": HIT_INPUT_LOCK_SECONDS,
 		"posture_break_lock_seconds": POSTURE_BREAK_INPUT_LOCK_SECONDS,
 		"knockback_lock_seconds": HIT_KNOCKBACK_LOCK_SECONDS,
