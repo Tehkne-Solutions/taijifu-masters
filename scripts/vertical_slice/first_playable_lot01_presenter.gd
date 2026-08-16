@@ -11,6 +11,7 @@ const CANONICAL_ALPHA_HEIGHT := 900.0
 const CANONICAL_SCALE := TARGET_VISUAL_HEIGHT / CANONICAL_ALPHA_HEIGHT
 const BASELINE_OFFSET_Y := -(CANONICAL_BASELINE_Y - CANONICAL_CANVAS_SIZE.y * 0.5) * CANONICAL_SCALE
 const HIT_VISUAL_SECONDS := 0.30
+const CANONICAL_VISUAL_AUTHORITY_META := &"canonical_visual_authority"
 
 var _fighter: FighterController
 var _sprite: AnimatedSprite2D
@@ -54,6 +55,21 @@ func expected_sprite_frames_path() -> String:
 		return ""
 	return String(loader.call("resolve", TGAP_PACK_ALIAS, SPRITE_FRAMES_LOGICAL))
 
+func canonical_visual_authority_signature() -> Dictionary:
+	return {
+		"active": (
+			_using_real_assets
+			and is_instance_valid(_fighter)
+			and bool(_fighter.get_meta(CANONICAL_VISUAL_AUTHORITY_META, false))
+		),
+		"fighter_self_modulate_alpha": _fighter.self_modulate.a if is_instance_valid(_fighter) else 1.0,
+		"provisional_fighter_draw_visible": false if _using_real_assets else true,
+		"child_presenters_inherit_self_modulate": false,
+		"collision_changes": false,
+		"combat_logic_changes": false,
+		"signature": "Tehkné Solutions",
+	}
+
 func _try_activate_real_assets() -> void:
 	var sprite_frames_path := expected_sprite_frames_path()
 	if sprite_frames_path.is_empty() or not ResourceLoader.exists(sprite_frames_path):
@@ -73,6 +89,7 @@ func _try_activate_real_assets() -> void:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_using_real_assets = true
+	_claim_canonical_visual_authority()
 	_hide_legacy_visual_surfaces()
 	_active_animation = &"idle"
 	_sprite.play(_active_animation)
@@ -80,6 +97,19 @@ func _try_activate_real_assets() -> void:
 	print("V2_LIAN_CANONICAL_SCALE=%.6f" % CANONICAL_SCALE)
 	print("V2_LIAN_CANONICAL_BASELINE=PASS")
 	print("V2_LIAN_LEGACY_ATLAS=HIDDEN")
+	print("P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED fighter=p1 owner=canonical_presenter")
+
+func _claim_canonical_visual_authority() -> void:
+	if not is_instance_valid(_fighter):
+		return
+	_fighter.set_meta(CANONICAL_VISUAL_AUTHORITY_META, true)
+	# CanvasItem.self_modulate affects this fighter's own _draw() surface without
+	# modulating child presenters. This retires the historical stick/primitive
+	# placeholder while preserving canonical Sprite2D/Polygon2D children.
+	var self_tint := _fighter.self_modulate
+	self_tint.a = 0.0
+	_fighter.self_modulate = self_tint
+	_fighter.queue_redraw()
 
 func _install_modular_creator_overlay() -> void:
 	if not _using_real_assets or not is_instance_valid(_fighter):
@@ -88,7 +118,7 @@ func _install_modular_creator_overlay() -> void:
 		return
 	# P0.2: the modular graph is the visual authority for P1 in every First
 	# Playable entry path. Direct-to-battle resolves a deterministic production
-	# BASE-01 preset instead of silently retaining the LOT01 presentation.
+	# preset instead of silently retaining the LOT01 presentation.
 	if not FirstPlayableSession.ensure_battle_visual_preset():
 		push_error("P0_2_RUNTIME_ASSET_TRUTH=BLOCKED production_default_preset_unavailable")
 		return
