@@ -109,7 +109,9 @@ func _run() -> void:
 	var technique := TechniqueCatalog.get_technique(&"ji_body_hook")
 	battle.player_one._current_technique = technique
 	battle.player_one._attack_phase = FighterController.AttackPhase.ACTIVE
-	battle.player_one._attack_phase_timer = 0.03
+	# Keep the phase alive long enough for deterministic Xvfb capture. The value is
+	# test-local and never enters product frame-data or combat execution.
+	battle.player_one._attack_phase_timer = 999.0
 	for _frame in range(5):
 		await process_frame
 	if presenter.visual_state() != &"attack_light":
