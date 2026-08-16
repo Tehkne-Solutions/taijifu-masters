@@ -43,6 +43,7 @@ const PUNISH_RANGE := 245.0
 const HOLD_RANGE := 330.0
 const STUCK_SECONDS := 0.82
 
+var _match: FirstPlayableController
 var _tactical: TacticalBotRuntime
 var _bot: FighterController
 var _opponent: FighterController
@@ -68,6 +69,7 @@ func _process(delta: float) -> void:
 	if not _runtime_ready():
 		_transition_to(CombatState.OBSERVE)
 		_combat_inactivity_seconds = 0.0
+		_last_action_active = false
 		return
 
 	_state_seconds += delta
@@ -100,6 +102,7 @@ func runtime_signature() -> Dictionary:
 		"transition_counts": _transition_counts.duplicate(true),
 		"planner_owner": "TacticalBotRuntime",
 		"watchdog_owner": "FirstPlayableAiWatchdogRuntime",
+		"battle_only": true,
 		"signature": "Tehkné Solutions",
 	}
 
@@ -107,6 +110,8 @@ func _discover_runtime() -> void:
 	var match_root := get_parent()
 	if match_root == null:
 		return
+	if not is_instance_valid(_match):
+		_match = match_root as FirstPlayableController
 	if not is_instance_valid(_tactical):
 		_tactical = match_root.get_node_or_null("TacticalBotRuntime") as TacticalBotRuntime
 	if is_instance_valid(_tactical):
@@ -117,7 +122,9 @@ func _discover_runtime() -> void:
 
 func _runtime_ready() -> bool:
 	return (
-		is_instance_valid(_tactical)
+		is_instance_valid(_match)
+		and _match._state == FirstPlayableController.MatchState.BATTLE
+		and is_instance_valid(_tactical)
 		and _tactical.enabled
 		and is_instance_valid(_bot)
 		and is_instance_valid(_opponent)
