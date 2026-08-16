@@ -6,12 +6,15 @@ on:
       - "scripts/vertical_slice/first_playable_session.gd"
       - "scripts/vertical_slice/first_playable_lot01_presenter.gd"
       - "scripts/vertical_slice/first_playable_modular_fighter_presenter.gd"
+      - "scripts/vertical_slice/first_playable_skeletal_modular_fighter_presenter.gd"
+      - "scripts/vertical_slice/first_playable_modular_pose_runtime.gd"
       - "scripts/vertical_slice/first_playable_character_identity.gd"
       - "scripts/runtime/tactical_bot_runtime.gd"
       - "scripts/runtime/first_playable_ai_watchdog_runtime.gd"
       - "scripts/characters/**"
       - "assets/modular_fighters/**"
       - "tests/p0_2_structural_recovery_test.gd"
+      - "tests/p0_2_skeletal_pose_product_test.gd"
       - ".github/workflows/p0-2-structural-product-gate.yml"
   workflow_dispatch:
 
@@ -66,6 +69,15 @@ jobs:
           grep -q 'P0_2_STRUCTURAL_PRODUCT_GATE=PASS' p0-2-product-gate.log
           grep -q 'SIGNATURE=Tehkné Solutions' p0-2-product-gate.log
 
+      - name: Run skeletal pose product gate
+        run: |
+          set -o pipefail
+          timeout 45s ./godot --headless --path . --script tests/p0_2_skeletal_pose_product_test.gd 2>&1 | tee p0-2-skeletal-gate.log
+          grep -q 'P0_2_SKELETAL_AUTHORITY=PASS presenter_bypass=true root_affine=false' p0-2-skeletal-gate.log
+          grep -q 'P0_2_SKELETAL_DEFORMATION=PASS phases=anticipation,contact,recovery bones=11' p0-2-skeletal-gate.log
+          grep -q 'P0_2_SKELETAL_PRODUCT_GATE=PASS' p0-2-skeletal-gate.log
+          grep -q 'SIGNATURE=Tehkné Solutions' p0-2-skeletal-gate.log
+
       - name: Upload P0.2 diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -75,6 +87,7 @@ jobs:
             p0-2-c30.log
             p0-2-import.log
             p0-2-product-gate.log
+            p0-2-skeletal-gate.log
           if-no-files-found: ignore
 
 # Tehkné Solutions

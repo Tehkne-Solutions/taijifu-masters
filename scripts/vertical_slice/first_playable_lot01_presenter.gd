@@ -3,7 +3,7 @@ extends Node2D
 
 const TGAP_PACK_ALIAS := "lian_wu"
 const SPRITE_FRAMES_LOGICAL := "first_playable_spriteframes"
-const MODULAR_FIGHTER_PRESENTER := preload("res://scripts/vertical_slice/first_playable_modular_fighter_presenter.gd")
+const MODULAR_FIGHTER_PRESENTER := preload("res://scripts/vertical_slice/first_playable_skeletal_modular_fighter_presenter.gd")
 const CANONICAL_CANVAS_SIZE := Vector2(1024.0, 1024.0)
 const CANONICAL_BASELINE_Y := 969.0
 const TARGET_VISUAL_HEIGHT := 132.0

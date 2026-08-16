@@ -2,12 +2,16 @@ class_name FirstPlayableModularPoseRuntime
 extends Node
 
 ## P0.2 bridge between the First Playable combat state and the BASE-00 skeletal
-## pose rig. Runs after the legacy presenter and neutralizes its whole-assembler
-## skew/rotation so the visible motion comes from shared bone deformation.
+## pose rig. Runs after the modular presenter and owns combat-pose deformation
+## once the Skeleton2D graph is valid. Fighter physics remains world authority.
 ## Tehkné Solutions
 
 const TARGET_VISUAL_HEIGHT := 132.0
 const RUNTIME_ID := "first_playable_modular_pose_runtime_v1"
+const AUTHORITY_META := &"modular_skeletal_pose_authority"
+const OBSERVED_BONES := [
+	"pelvis", "torso", "head", "upper_arm_r", "forearm_r", "thigh_l", "thigh_r",
+]
 
 var _match: FirstPlayableController
 var _fighter: FighterController
@@ -24,6 +28,9 @@ func _ready() -> void:
 	process_priority = 100
 	_match = get_parent() as FirstPlayableController
 
+func _exit_tree() -> void:
+	_clear_authority()
+
 func _process(delta: float) -> void:
 	_discover_and_activate()
 	if _pose_rig == null or not _pose_rig.configured() or not is_instance_valid(_fighter):
@@ -37,7 +44,8 @@ func _process(delta: float) -> void:
 		_state_time += delta
 
 	# FighterController remains the sole world-translation/collision owner. The
-	# assembler keeps only canonical scale + authored-facing mirroring.
+	# modular root keeps only canonical scale + facing mirror. Combat expression
+	# belongs to the Skeleton2D bones once AUTHORITY_META is active.
 	var facing_sign := -1.0 if _fighter.facing < 0.0 else 1.0
 	_assembler.position = Vector2.ZERO
 	_assembler.rotation = 0.0
@@ -57,16 +65,53 @@ func active() -> bool:
 func pose_rig() -> ModularFighterPoseRig:
 	return _pose_rig
 
+func authority_active() -> bool:
+	return (
+		active()
+		and is_instance_valid(_fighter)
+		and bool(_fighter.get_meta(AUTHORITY_META, false))
+	)
+
+func deformation_signature() -> Dictionary:
+	var samples: Dictionary = {}
+	if active():
+		for bone_name in OBSERVED_BONES:
+			var bone := _pose_rig._bones.get(bone_name) as Bone2D
+			if bone == null:
+				continue
+			samples[bone_name] = {
+				"position": [bone.position.x, bone.position.y],
+				"rotation": bone.rotation,
+				"scale": [bone.scale.x, bone.scale.y],
+			}
+	return {
+		"runtime": RUNTIME_ID,
+		"active": active(),
+		"authority_active": authority_active(),
+		"visual_state": String(_state),
+		"attack_pose_phase": _pose_rig.attack_pose_phase() if active() else "none",
+		"bones": samples,
+		"observed_bone_count": samples.size(),
+		"assembler_position": [_assembler.position.x, _assembler.position.y] if is_instance_valid(_assembler) else [],
+		"assembler_rotation": _assembler.rotation if is_instance_valid(_assembler) else 0.0,
+		"assembler_skew": _assembler.skew if is_instance_valid(_assembler) else 0.0,
+		"whole_assembler_combat_pose": false,
+		"signature": "Tehkné Solutions",
+	}
+
 func runtime_signature() -> Dictionary:
 	var pose_signature := _pose_rig.runtime_signature() if _pose_rig != null else {}
 	return {
 		"runtime": RUNTIME_ID,
 		"active": active(),
+		"authority_active": authority_active(),
 		"blocked_reason": _blocked_reason,
 		"visual_state": String(_state),
 		"base_scale": _base_scale,
 		"legacy_root_affine_neutralized": active(),
+		"presenter_root_affine_bypassed": authority_active(),
 		"world_translation_owner": "fighter_physics",
+		"combat_pose_owner": "Skeleton2D",
 		"collision_changes": false,
 		"pose_rig": pose_signature,
 		"authored_animation": false,
@@ -109,16 +154,23 @@ func _discover_and_activate() -> void:
 	if not failures.is_empty():
 		_block("pose_rig_configure:%s" % ",".join(failures))
 		return
+	_fighter.set_meta(AUTHORITY_META, true)
 	print("P0_2_SKELETAL_POSE_RUNTIME=PASS bones=%d layers=%d" % [
 		_pose_rig.bone_count(),
 		_pose_rig.mesh_layer_count(),
 	])
+	print("P0_2_SKELETAL_POSE_AUTHORITY=PASS presenter_root_affine=bypassed")
 	print("P0_2_ROOT_AFFINE_ONLY=REJECTED owner=Skeleton2D")
 	print("SIGNATURE=Tehkné Solutions")
 
 func _block(reason: String) -> void:
 	_activation_attempted = true
 	_blocked_reason = reason
+	_clear_authority()
 	push_error("P0_2_SKELETAL_POSE_RUNTIME=BLOCKED reason=%s" % reason)
+
+func _clear_authority() -> void:
+	if is_instance_valid(_fighter) and _fighter.has_meta(AUTHORITY_META):
+		_fighter.remove_meta(AUTHORITY_META)
 
 # Tehkné Solutions
