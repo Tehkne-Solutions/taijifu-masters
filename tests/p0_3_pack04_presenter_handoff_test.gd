@@ -30,8 +30,6 @@ func _run() -> void:
 
 	battle.bot_runtime.enabled = false
 	battle._set_fighters_controls(false)
-	var p1 := context["p1"] as FirstPlayableCombatFighterController
-	var p2 := context["p2"] as FirstPlayableCombatFighterController
 	var p1_runtime := context["p1_runtime"] as FirstPlayablePack04ReactionRuntime
 	var p2_runtime := context["p2_runtime"] as FirstPlayablePack04ReactionRuntime
 	var p1_presenter := context["p1_presenter"] as FirstPlayableSkeletalModularFighterPresenter
@@ -42,13 +40,19 @@ func _run() -> void:
 		_fail("PACK04_PRESENTER_GATE=BLOCKED contract", battle)
 		return
 
+	# The PACK 04 reaction windows are intentionally short (0.14–0.20 s). A
+	# headless runner may deliver a large frame delta, so semantic assertions are
+	# made synchronously after entering a step. Presenters and the pose bridge are
+	# then ticked manually with delta=0 to validate the production handoff without
+	# making the gate dependent on host frame time.
+
 	# BLOCK: semantic PACK 04 state must deliberately select existing GUARD art.
 	p1_runtime.call("_begin_result", &"blocked")
 	p2_runtime.call("_begin_result", &"blocked")
-	await _settle_frames(2)
 	if p1_runtime.semantic_state() != &"block_recoil" or p2_runtime.semantic_state() != &"block_recoil":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED block_semantic", battle)
 		return
+	_tick_presenters(p1_presenter, p2_presenter, pose_runtime)
 	if p1_presenter.visual_state() != &"guard" or p2_presenter.active_animation() != &"guard":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED block_visual p1=%s p2=%s" % [
 			String(p1_presenter.visual_state()),
@@ -63,10 +67,10 @@ func _run() -> void:
 	# PARRY intentionally shares approved GUARD art until PACK 04 authored frames exist.
 	p1_runtime.call("_begin_result", &"parried")
 	p2_runtime.call("_begin_result", &"parried")
-	await _settle_frames(2)
 	if p1_runtime.semantic_state() != &"parry" or p2_runtime.semantic_state() != &"parry":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED parry_semantic", battle)
 		return
+	_tick_presenters(p1_presenter, p2_presenter, pose_runtime)
 	if p1_presenter.visual_state() != &"guard" or p2_presenter.active_animation() != &"guard":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED parry_visual", battle)
 		return
@@ -74,10 +78,10 @@ func _run() -> void:
 	# POSTURE BREAK intentionally shares existing HIT art; physics remains separate.
 	p1_runtime.call("_begin_result", &"posture_break")
 	p2_runtime.call("_begin_result", &"posture_break")
-	await _settle_frames(2)
 	if p1_runtime.semantic_state() != &"posture_break" or p2_runtime.semantic_state() != &"posture_break":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED posture_semantic", battle)
 		return
+	_tick_presenters(p1_presenter, p2_presenter, pose_runtime)
 	if p1_presenter.visual_state() != &"hit" or p2_presenter.active_animation() != &"hit":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED posture_visual p1=%s p2=%s" % [
 			String(p1_presenter.visual_state()),
@@ -92,10 +96,10 @@ func _run() -> void:
 	# KNOCKBACK is the second posture-break step and still uses approved HIT art.
 	p1_runtime.call("_advance_step")
 	p2_runtime.call("_advance_step")
-	await _settle_frames(2)
 	if p1_runtime.semantic_state() != &"knockback" or p2_runtime.semantic_state() != &"knockback":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED knockback_semantic", battle)
 		return
+	_tick_presenters(p1_presenter, p2_presenter, pose_runtime)
 	if p1_presenter.visual_state() != &"hit" or p2_presenter.active_animation() != &"hit":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED knockback_visual", battle)
 		return
@@ -103,10 +107,10 @@ func _run() -> void:
 	# NEUTRAL RECOVERY is the final posture-break step and explicitly uses IDLE.
 	p1_runtime.call("_advance_step")
 	p2_runtime.call("_advance_step")
-	await _settle_frames(2)
 	if p1_runtime.semantic_state() != &"neutral_recovery" or p2_runtime.semantic_state() != &"neutral_recovery":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED neutral_semantic", battle)
 		return
+	_tick_presenters(p1_presenter, p2_presenter, pose_runtime)
 	if p1_presenter.visual_state() != &"idle" or p2_presenter.active_animation() != &"idle":
 		_fail("PACK04_PRESENTER_GATE=BLOCKED neutral_visual p1=%s p2=%s" % [
 			String(p1_presenter.visual_state()),
@@ -152,6 +156,17 @@ func _run() -> void:
 	await process_frame
 	FirstPlayableSession.reset()
 	quit(0)
+
+func _tick_presenters(
+	p1_presenter: FirstPlayableSkeletalModularFighterPresenter,
+	p2_presenter: TrainingRivalLot01Presenter,
+	pose_runtime: FirstPlayableModularPoseRuntime
+) -> void:
+	# Manual zero-delta ticks preserve the exact production execution order:
+	# presenter state first, Skeleton2D bridge after (process_priority=100).
+	p1_presenter.call("_process", 0.0)
+	p2_presenter.call("_process", 0.0)
+	pose_runtime.call("_process", 0.0)
 
 func _validate_handoff_contract(
 	p1_presenter: FirstPlayableSkeletalModularFighterPresenter,
@@ -201,8 +216,6 @@ func _wait_for_presenters(battle: FirstPlayableController) -> Dictionary:
 				and pose_runtime.authority_active()
 			):
 				return {
-					"p1": p1,
-					"p2": p2,
 					"p1_runtime": p1_runtime,
 					"p2_runtime": p2_runtime,
 					"p1_presenter": p1_presenter,
@@ -211,10 +224,6 @@ func _wait_for_presenters(battle: FirstPlayableController) -> Dictionary:
 				}
 		await process_frame
 	return {}
-
-func _settle_frames(count: int) -> void:
-	for _frame in range(count):
-		await process_frame
 
 func _fail(marker: String, battle: FirstPlayableController = null) -> void:
 	push_error(marker)
