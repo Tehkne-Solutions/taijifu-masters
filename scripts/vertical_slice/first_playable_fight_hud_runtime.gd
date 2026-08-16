@@ -4,7 +4,7 @@ extends Node
 ## P0.2 fight-first HUD authority.
 ## Reframes the existing First Playable controls without changing combat logic:
 ## dominant health, thin secondary resources, isolated timer, compact difficulty,
-## and the martial-code strip inside the top fight HUD instead of a dashboard.
+## and the martial-code read integrated typographically into the fight HUD.
 ## Tehkné Solutions
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
@@ -13,7 +13,7 @@ const HEALTH_HEIGHT := 16.0
 const SECONDARY_HEIGHT := 5.0
 const TIMER_FONT_SIZE := 34
 const NAME_FONT_SIZE := 18
-const MARTIAL_STRIP_RECT := Rect2(390.0, 74.0, 500.0, 24.0)
+const MARTIAL_STRIP_RECT := Rect2(420.0, 74.0, 440.0, 24.0)
 const P1_NAME_RECT := Rect2(24.0, 7.0, 410.0, 29.0)
 const P2_NAME_RECT := Rect2(846.0, 7.0, 410.0, 29.0)
 const P1_HEALTH_RECT := Rect2(24.0, 39.0, 410.0, HEALTH_HEIGHT)
@@ -112,10 +112,15 @@ func _bind_martial_strip() -> void:
 		return
 	strip.position = MARTIAL_STRIP_RECT.position
 	strip.size = MARTIAL_STRIP_RECT.size
-	strip.add_theme_font_size_override("font_size", 10)
+	strip.add_theme_font_size_override("font_size", 9)
 	strip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	strip.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	strip.add_theme_color_override("font_shadow_color", Color(POLICY.INK, 0.92))
+	strip.add_theme_constant_override("shadow_offset_x", 1)
+	strip.add_theme_constant_override("shadow_offset_y", 1)
+	strip.modulate.a = 0.90
 	_martial_strip_bound = true
-	print("P0_2_FIGHT_HUD_MARTIAL_STRIP=PASS integrated_top=true")
+	print("P0_2_FIGHT_HUD_MARTIAL_STRIP=PASS integrated_top=true panel=false")
 
 func _update_semantics() -> void:
 	if not is_instance_valid(_match) or not is_instance_valid(_hud):
@@ -167,6 +172,7 @@ func surface_signature() -> Dictionary:
 		"p2_health_rect": _rect_array(P2_HEALTH_RECT),
 		"martial_strip_rect": _rect_array(strip_rect),
 		"martial_strip_visible": strip_visible,
+		"martial_strip_panel": false,
 		"persistent_controls_visible": _visible("Controls"),
 		"persistent_difficulty_visible": _visible("DifficultyInfo"),
 		"bottom_shade_visible": _visible("BottomShade"),
@@ -184,6 +190,8 @@ func presentation_signature() -> Dictionary:
 		"difficulty_secondary": true,
 		"fighter_names_single_line": true,
 		"martial_strip_integrated_top": true,
+		"martial_strip_typographic_only": true,
+		"martial_strip_panel": false,
 		"persistent_keyboard_help": false,
 		"bottom_dashboard": false,
 		"top_reserved_height": TOP_RESERVED_HEIGHT,
