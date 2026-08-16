@@ -13,6 +13,7 @@ on:
       - "scripts/runtime/first_playable_ai_watchdog_runtime.gd"
       - "scripts/characters/**"
       - "assets/modular_fighters/**"
+      - "config/p0_2_modular_fighter_motion_library_v1.json"
       - "tests/p0_2_structural_recovery_test.gd"
       - "tests/p0_2_skeletal_pose_product_test.gd"
       - ".github/workflows/p0-2-structural-product-gate.yml"
@@ -74,6 +75,7 @@ jobs:
           set -o pipefail
           timeout 45s ./godot --headless --path . --script tests/p0_2_skeletal_pose_product_test.gd 2>&1 | tee p0-2-skeletal-gate.log
           grep -q 'P0_2_SKELETAL_AUTHORITY=PASS presenter_bypass=true root_affine=false' p0-2-skeletal-gate.log
+          grep -q 'P0_2_AUTHORED_SKELETAL_MOTION=PASS library=modular_fighter_motion_library_v1 clips=12 procedural=false' p0-2-skeletal-gate.log
           grep -q 'P0_2_SKELETAL_DEFORMATION=PASS phases=anticipation,contact,recovery bones=11' p0-2-skeletal-gate.log
           grep -q 'P0_2_SKELETAL_PRODUCT_GATE=PASS' p0-2-skeletal-gate.log
           grep -q 'SIGNATURE=Tehkné Solutions' p0-2-skeletal-gate.log
