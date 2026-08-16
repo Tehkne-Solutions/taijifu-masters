@@ -11,6 +11,12 @@ const CANONICAL_SCALE := TARGET_VISUAL_HEIGHT / CANONICAL_ALPHA_HEIGHT
 const BASELINE_OFFSET_Y := -(CANONICAL_BASELINE_Y - CANONICAL_CANVAS_SIZE.y * 0.5) * CANONICAL_SCALE
 const HIT_VISUAL_SECONDS := 0.30
 const CANONICAL_VISUAL_AUTHORITY_META := &"canonical_visual_authority"
+const PROVISIONAL_CHILD_VISUALS: Array[StringName] = [
+	&"VisualOverlay",
+	&"ExpressionOverlay",
+	&"WeaponTrail",
+	&"CosmeticSockets",
+]
 
 var _fighter: FighterController
 var _sprite: AnimatedSprite2D
@@ -62,6 +68,8 @@ func canonical_visual_authority_signature() -> Dictionary:
 		),
 		"fighter_self_modulate_alpha": _fighter.self_modulate.a if is_instance_valid(_fighter) else 1.0,
 		"provisional_fighter_draw_visible": false if _using_real_assets else true,
+		"provisional_child_visuals_retired": _provisional_child_visuals_retired(),
+		"provisional_child_visuals": _provisional_child_visual_signature(),
 		"child_presenters_inherit_self_modulate": false,
 		"collision_changes": false,
 		"combat_logic_changes": false,
@@ -93,6 +101,7 @@ func _try_activate_real_assets() -> void:
 	print("V2_RIVAL_CANONICAL_BASELINE=PASS")
 	print("V2_RIVAL_LEGACY_VISUALS=HIDDEN")
 	print("P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED fighter=p2 owner=canonical_presenter")
+	print("P0_2_PROVISIONAL_CHILD_VISUALS=RETIRED fighter=p2 nodes=VisualOverlay,ExpressionOverlay,WeaponTrail,CosmeticSockets")
 
 func _claim_canonical_visual_authority() -> void:
 	if not is_instance_valid(_fighter):
@@ -110,6 +119,33 @@ func _hide_legacy_visual_surfaces() -> void:
 		var surface := _fighter.get_node_or_null(node_name) as CanvasItem
 		if surface != null:
 			surface.visible = false
+	for node_name in PROVISIONAL_CHILD_VISUALS:
+		var surface := _fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		if surface != null:
+			surface.visible = false
+			surface.process_mode = Node.PROCESS_MODE_DISABLED
+
+func _provisional_child_visuals_retired() -> bool:
+	if not is_instance_valid(_fighter) or not _using_real_assets:
+		return false
+	for node_name in PROVISIONAL_CHILD_VISUALS:
+		var surface := _fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		if surface == null or surface.visible or surface.process_mode != Node.PROCESS_MODE_DISABLED:
+			return false
+	return true
+
+func _provisional_child_visual_signature() -> Dictionary:
+	var result := {}
+	if not is_instance_valid(_fighter):
+		return result
+	for node_name in PROVISIONAL_CHILD_VISUALS:
+		var surface := _fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		result[String(node_name)] = {
+			"present": surface != null,
+			"visible": surface.visible if surface != null else false,
+			"process_disabled": surface.process_mode == Node.PROCESS_MODE_DISABLED if surface != null else false,
+		}
+	return result
 
 func _has_required_animations(frames: SpriteFrames) -> bool:
 	for animation_name in [

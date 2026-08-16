@@ -3,6 +3,12 @@ extends SceneTree
 const BATTLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const MAX_WAIT_FRAMES := 480
 const AUTHORITY_META := &"canonical_visual_authority"
+const RETIRED_CHILD_VISUALS: Array[StringName] = [
+	&"VisualOverlay",
+	&"ExpressionOverlay",
+	&"WeaponTrail",
+	&"CosmeticSockets",
+]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -48,6 +54,9 @@ func _run() -> void:
 		if bool(entry.get("provisional_fighter_draw_visible", true)):
 			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED provisional_draw_visible:%s" % str(entry), battle)
 			return
+		if not bool(entry.get("provisional_child_visuals_retired", false)):
+			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED provisional_children_active:%s" % str(entry), battle)
+			return
 		if bool(entry.get("collision_changes", true)) or bool(entry.get("combat_logic_changes", true)):
 			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED owner_scope:%s" % str(entry), battle)
 			return
@@ -61,6 +70,13 @@ func _run() -> void:
 			return
 		if fighter.modulate.a < 0.999 or not fighter.visible:
 			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED child_visibility_chain:index=%d" % fighter.player_index, battle)
+			return
+		if not _provisional_children_retired(fighter):
+			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED provisional_child_surface:index=%d" % fighter.player_index, battle)
+			return
+		var regional_hit_flash := fighter.get_node_or_null("RegionalHitFlash") as CanvasItem
+		if regional_hit_flash == null or not regional_hit_flash.visible or regional_hit_flash.process_mode == Node.PROCESS_MODE_DISABLED:
+			_fail("P0_2_CANONICAL_VISUAL_GATE=BLOCKED regional_hit_flash_retired:index=%d" % fighter.player_index, battle)
 			return
 
 	var modular := p1.get_node_or_null("FirstPlayableModularFighterPresenter") as FirstPlayableModularFighterPresenter
@@ -82,6 +98,7 @@ func _run() -> void:
 
 	print("P0_2_CANONICAL_VISUAL_AUTHORITY=PASS p1=true p2=true")
 	print("P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED p1=true p2=true self_modulate_alpha=0")
+	print("P0_2_PROVISIONAL_CHILD_VISUALS=RETIRED p1=true p2=true regional_hit_flash=preserved")
 	print("P0_2_CANONICAL_CHILD_PRESENTERS=PASS p1=modular_polygon p2=lot01_sprite")
 	print("P0_2_CANONICAL_VISUAL_PRODUCT_GATE=PASS")
 	print("SIGNATURE=Tehkné Solutions")
@@ -109,6 +126,13 @@ func _wait_for_authority(battle: FirstPlayableController) -> bool:
 				return true
 		await process_frame
 	return false
+
+func _provisional_children_retired(fighter: FighterController) -> bool:
+	for node_name in RETIRED_CHILD_VISUALS:
+		var surface := fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		if surface == null or surface.visible or surface.process_mode != Node.PROCESS_MODE_DISABLED:
+			return false
+	return true
 
 func _cleanup() -> void:
 	ModularFighterPresetStore.delete_user_preset(FirstPlayableSession.PRODUCTION_DEFAULT_PRESET_ID)
