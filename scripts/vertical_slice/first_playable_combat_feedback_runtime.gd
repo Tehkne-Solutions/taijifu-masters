@@ -50,7 +50,7 @@ func _connect_fighter(fighter: MasteredWeaponFighterController) -> void:
 		fighter.impact_resolved.connect(_on_impact_resolved)
 
 func _on_impact_resolved(
-	_target: MasteredWeaponFighterController,
+	target: MasteredWeaponFighterController,
 	attacker: FighterController,
 	technique: TechniqueData,
 	result_id: StringName,
@@ -94,7 +94,12 @@ func _on_impact_resolved(
 	_spawn_impact_popup(world_position, technique_name, result_label, color, profile_id, result_id)
 	if critical:
 		_show_center_feedback(result_label, color)
-	_punch_camera(intensity, result_id)
+	var impact_direction := Vector2(attacker.facing, 0.0)
+	if is_instance_valid(target):
+		var delta := target.global_position - attacker.global_position
+		if absf(delta.x) > 0.001:
+			impact_direction = Vector2(signf(delta.x), 0.0)
+	_punch_camera(intensity, result_id, impact_direction)
 
 func _register_combo(profile_id: String) -> void:
 	_combo_counts[profile_id] = int(_combo_counts.get(profile_id, 0)) + 1
@@ -149,7 +154,6 @@ func _spawn_impact_popup(world_position: Vector2, technique_name: String, result
 	var popup := _make_label("ImpactPopup", Vector2.ZERO, Vector2(190.0, 38.0), 12)
 	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	popup.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Normal hits keep the technique name; defensive/critical states use the short result only.
 	popup.text = technique_name if result_id == &"hit" else result_label
 	popup.add_theme_color_override("font_color", color)
 	popup.modulate.a = 1.0
@@ -195,11 +199,11 @@ func _show_center_feedback(text: String, color: Color) -> void:
 		if token == _critical_token and is_instance_valid(_center_label): _center_label.text = ""
 	)
 
-func _punch_camera(intensity: float, result_id: StringName) -> void:
+func _punch_camera(intensity: float, result_id: StringName, impact_direction: Vector2) -> void:
 	if not is_instance_valid(_root): return
 	var composition := _root.get_node_or_null("FightCameraComposition")
 	if composition != null and composition.has_method("impact_punch"):
-		composition.call("impact_punch", clampf(intensity, 0.15, 1.0), result_id)
+		composition.call("impact_punch", clampf(intensity, 0.15, 1.0), result_id, impact_direction)
 
 func _update_combo_label(profile_id: String) -> void:
 	var label: Label = _combo_labels.get(profile_id)
@@ -223,6 +227,8 @@ func presentation_signature() -> Dictionary:
 		"popup_budget": MAX_ACTIVE_POPUPS,
 		"critical_feedback_priority": true,
 		"camera_punch_on_impact": true,
+		"camera_punch_directional": true,
+		"camera_punch_first_contact_frame": true,
 		"feedback_is_visual_only": true,
 		"damage_changes": false,
 		"frame_data_changes": false,
