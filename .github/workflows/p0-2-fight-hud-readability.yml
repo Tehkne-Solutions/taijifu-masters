@@ -1,0 +1,106 @@
+name: P0.2 Fight HUD Readability
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_fight_hud_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_character_identity.gd'
+      - 'scripts/vertical_slice/first_playable_combat_guide.gd'
+      - 'scripts/vertical_slice/first_playable_martial_hud_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_hud_skin.gd'
+      - 'scripts/vertical_slice/first_playable.gd'
+      - 'scenes/vertical_slice/first_playable.tscn'
+      - 'scripts/ci/p0_2_fight_hud_readability_review.gd'
+      - '.github/workflows/p0-2-fight-hud-readability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fight-hud-readability:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize canonical First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-p02-hud'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath p0-2-hud-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require canonical snapshot authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' p0-2-hud-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' p0-2-hud-c30.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' p0-2-hud-c30.log
+          echo 'P0_2_HUD_CANONICAL_SNAPSHOT=PASS'
+
+      - name: Install visual runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee p0-2-hud-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' p0-2-hud-import.log; then
+            echo 'P0_2_HUD_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Capture and validate fight HUD readability
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/p0_2_fight_hud_readability_review.gd \
+            2>&1 | tee p0-2-hud-review.log
+          grep -q 'P0_2_FIGHT_HUD_HIERARCHY=PASS health=primary timer=isolated martial=integrated' p0-2-hud-review.log
+          grep -q 'P0_2_FIGHT_HUD_GAMEPLAY_AREA=PASS top_reserved=100' p0-2-hud-review.log
+          grep -q 'P0_2_FIGHT_HUD_GUIDE=PASS countdown=full battle_intro=compact active=hidden' p0-2-hud-review.log
+          grep -q 'P0_2_FIGHT_HUD_CAPTURE=PASS' p0-2-hud-review.log
+          grep -q 'P0_2_FIGHT_HUD_READABILITY=PASS' p0-2-hud-review.log
+          grep -q 'SIGNATURE=Tehkné Solutions' p0-2-hud-review.log
+          test -f artifacts/p0_2_hud/P0_2_FIGHT_HUD_READABILITY.review-1920x1080.png
+          test -f artifacts/p0_2_hud/P0_2_FIGHT_HUD_METRICS.json
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|P0_2_HUD_REVIEW=BLOCKED' p0-2-hud-review.log; then
+            echo 'P0_2_FIGHT_HUD_READABILITY=BLOCKED runtime_error'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: P0-2-FIGHT-HUD-READABILITY-EVIDENCE
+          path: |
+            p0-2-hud-c30.log
+            p0-2-hud-import.log
+            p0-2-hud-review.log
+            artifacts/p0_2_hud/P0_2_FIGHT_HUD_READABILITY.review-1920x1080.png
+            artifacts/p0_2_hud/P0_2_FIGHT_HUD_METRICS.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: echo 'P0.2 fight HUD readability — fight-first hierarchy + transient guide + graphical evidence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions

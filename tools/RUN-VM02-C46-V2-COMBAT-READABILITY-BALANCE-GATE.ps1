@@ -21,11 +21,15 @@ Write-Host "VM02_C46_REQUIRED_FILES=PASS"
 $camera = Get-Content (Join-Path $RepoRoot "scripts\vertical_slice\first_playable_camera_composition.gd") -Raw
 $bot = Get-Content (Join-Path $RepoRoot "scripts\ai\bot_behavior_catalog.gd") -Raw
 
-if ($camera -notmatch 'MIN_ZOOM := 0\.68') { throw "VM02_C46_CAMERA_MIN_ZOOM=BLOCKED" }
-if ($camera -notmatch 'MAX_ZOOM := 1\.06') { throw "VM02_C46_CAMERA_MAX_ZOOM=BLOCKED" }
+if ($camera -notmatch 'MIN_ZOOM := 0\.72') { throw "VM02_C46_CAMERA_MIN_ZOOM=BLOCKED" }
+if ($camera -notmatch 'MAX_ZOOM := 1\.34') { throw "VM02_C46_CAMERA_MAX_ZOOM=BLOCKED" }
+if ($camera -notmatch 'HORIZONTAL_PADDING := 220\.0') { throw "VM02_C46_CAMERA_HORIZONTAL_PADDING=BLOCKED" }
 if ($camera -notmatch 'CLOSE_FIGHT_ZOOM_FLOOR := 0\.94') { throw "VM02_C46_CLOSE_FIGHT_FRAMING=BLOCKED" }
+if ($camera -notmatch 'SCREEN_PRESENCE_TARGET_MIN := 0\.23') { throw "VM02_C46_SCREEN_PRESENCE_MIN=BLOCKED" }
+if ($camera -notmatch 'SCREEN_PRESENCE_TARGET_MAX := 0\.30') { throw "VM02_C46_SCREEN_PRESENCE_MAX=BLOCKED" }
 if ($camera -notmatch 'V2_C46_CAMERA_READABILITY=PASS') { throw "VM02_C46_CAMERA_MARKER=BLOCKED" }
 Write-Host "VM02_C46_CAMERA_READABILITY_CONTRACT=PASS"
+Write-Host "VM02_C46_FIGHTER_SCREEN_PRESENCE_CONTRACT=PASS"
 
 if ($bot -notmatch '"disciple": \{') { throw "VM02_C46_DISCIPLE_PROFILE=BLOCKED" }
 if ($bot -notmatch '"reaction_multiplier": 0\.98') { throw "VM02_C46_DISCIPLE_REACTION=BLOCKED" }
@@ -66,6 +70,7 @@ $report = @(
   "BRANCH=$branch",
   "COMMIT=$commit",
   "CAMERA_READABILITY=PASS",
+  "FIGHTER_SCREEN_PRESENCE=PASS",
   "CLOSE_FIGHT_FRAMING=PASS",
   "DISCIPLE_REBALANCE=PASS",
   "PLAYTEST_EVIDENCE=PASS",

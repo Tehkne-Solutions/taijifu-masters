@@ -21,7 +21,13 @@ func _init() -> void:
 
 	var guide := COMBAT_GUIDE.new() as FirstPlayableCombatGuide
 	var guide_signature := guide.presentation_signature()
-	assert(bool(guide_signature.get("persistent_compact_controls", false)))
+	# P0.2: combat help remains complete during onboarding, but no instruction
+	# panel is allowed to persist through the active round.
+	assert(not bool(guide_signature.get("persistent_compact_controls", true)))
+	assert(bool(guide_signature.get("full_guide_countdown_only", false)))
+	assert(float(guide_signature.get("compact_hint_battle_seconds", 99.0)) <= 2.0)
+	assert(bool(guide_signature.get("guide_hidden_during_active_round", false)))
+	assert(bool(guide_signature.get("gameplay_area_released_after_intro", false)))
 	assert(bool(guide_signature.get("attack_families_visible", false)))
 	assert(String(guide_signature.get("tai_key", "")) == "F")
 	assert(String(guide_signature.get("ji_key", "")) == "G")

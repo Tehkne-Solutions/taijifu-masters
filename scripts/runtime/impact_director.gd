@@ -24,6 +24,12 @@ const ELEMENT_COLORS := {
 var _bursts: Array[Dictionary] = []
 var _connect_timer := 0.0
 var _hitstop_token := 0
+var _hitstop_deadline_usec := 0
+var _active_hitstop_scale := 1.0
+var _hitstop_active := false
+var _hitstop_count := 0
+var _last_hitstop_duration := 0.0
+var _last_hitstop_scale := 1.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -143,12 +149,51 @@ func _update_bursts(delta: float) -> void:
 			_bursts.remove_at(index)
 
 func _apply_hitstop(duration: float, time_scale: float) -> void:
+	if duration <= 0.0:
+		return
 	_hitstop_token += 1
 	var token := _hitstop_token
-	Engine.time_scale = minf(Engine.time_scale, time_scale)
-	await get_tree().create_timer(duration, true, false, true).timeout
-	if token == _hitstop_token:
-		Engine.time_scale = 1.0
+	var now_usec := Time.get_ticks_usec()
+	var requested_deadline := now_usec + int(round(duration * 1000000.0))
+	_hitstop_deadline_usec = maxi(_hitstop_deadline_usec, requested_deadline)
+	_active_hitstop_scale = minf(_active_hitstop_scale if _hitstop_active else 1.0, clampf(time_scale, 0.01, 1.0))
+	_hitstop_active = true
+	_hitstop_count += 1
+	_last_hitstop_duration = duration
+	_last_hitstop_scale = time_scale
+	Engine.time_scale = minf(Engine.time_scale, _active_hitstop_scale)
+	_restore_hitstop_when_due(token)
+
+func _restore_hitstop_when_due(token: int) -> void:
+	while token == _hitstop_token:
+		var remaining_usec := _hitstop_deadline_usec - Time.get_ticks_usec()
+		if remaining_usec <= 0:
+			break
+		var remaining_seconds := float(remaining_usec) / 1000000.0
+		await get_tree().create_timer(maxf(0.001, remaining_seconds), true, false, true).timeout
+	if token != _hitstop_token:
+		return
+	Engine.time_scale = 1.0
+	_hitstop_active = false
+	_hitstop_deadline_usec = 0
+	_active_hitstop_scale = 1.0
+
+func hitstop_runtime_signature() -> Dictionary:
+	var remaining_seconds := 0.0
+	if _hitstop_active:
+		remaining_seconds = maxf(0.0, float(_hitstop_deadline_usec - Time.get_ticks_usec()) / 1000000.0)
+	return {
+		"active": _hitstop_active,
+		"count": _hitstop_count,
+		"remaining_real_seconds": remaining_seconds,
+		"active_time_scale": _active_hitstop_scale,
+		"last_duration_seconds": _last_hitstop_duration,
+		"last_time_scale": _last_hitstop_scale,
+		"overlap_policy": "extend_longest_deadline",
+		"clock": "monotonic_real_time",
+		"max_hitstop_seconds": MAX_HITSTOP_SECONDS,
+		"signature": "Tehkné Solutions",
+	}
 
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
@@ -307,6 +352,8 @@ func presentation_signature() -> Dictionary:
 		"camera_shake_delegated_to": &"FightCameraComposition",
 		"hitstop_owner": true,
 		"hitstop_visual_only": true,
+		"hitstop_overlap_policy": "extend_longest_deadline",
+		"hitstop_clock": "monotonic_real_time",
 		"damage_changes": false,
 		"frame_data_changes": false,
 		"ai_changes": false,
@@ -323,4 +370,9 @@ func last_burst_text() -> String:
 
 func _exit_tree() -> void:
 	_hitstop_token += 1
+	_hitstop_active = false
+	_hitstop_deadline_usec = 0
+	_active_hitstop_scale = 1.0
 	Engine.time_scale = 1.0
+
+# Tehkné Solutions

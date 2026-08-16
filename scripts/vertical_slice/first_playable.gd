@@ -357,6 +357,12 @@ func _check_world_limits() -> void:
 			fighter.receive_hit(9999.0, 9999.0, Vector2.ZERO, fighter.global_position)
 
 func _update_camera(delta: float) -> void:
+	# P0.2: FightCameraComposition is the sole production owner of framing, zoom
+	# and camera movement. Keep this historical path only as a fallback for scenes
+	# or tooling that intentionally instantiate the controller without composition.
+	var composition := get_node_or_null("FightCameraComposition") as FirstPlayableCameraComposition
+	if composition != null:
+		return
 	var midpoint := (player_one.global_position + player_two.global_position) * 0.5
 	midpoint.y = clampf(midpoint.y - 80.0, 280.0, 720.0)
 	midpoint.x = clampf(midpoint.x, arena.camera_left_limit(), TriplePathArena.WORLD_WIDTH - 420.0)
@@ -364,6 +370,17 @@ func _update_camera(delta: float) -> void:
 	var distance := player_one.global_position.distance_to(player_two.global_position)
 	var desired_zoom := clampf(1180.0 / maxf(900.0, distance + 420.0), 0.62, 1.0)
 	camera.zoom = camera.zoom.lerp(Vector2.ONE * desired_zoom, 1.0 - exp(-4.0 * delta))
+
+func camera_ownership_signature() -> Dictionary:
+	var composition := get_node_or_null("FightCameraComposition") as FirstPlayableCameraComposition
+	return {
+		"production_owner": "FightCameraComposition" if composition != null else "FirstPlayableControllerLegacyFallback",
+		"composition_active": composition != null,
+		"legacy_camera_writer_active": composition == null,
+		"legacy_fallback_preserved": true,
+		"single_production_owner": composition != null,
+		"signature": "Tehkné Solutions",
+	}
 
 func _update_hud() -> void:
 	player_one_label.text = _fighter_summary(player_one, "P1")

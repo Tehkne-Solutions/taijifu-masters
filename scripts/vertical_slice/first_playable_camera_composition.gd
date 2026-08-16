@@ -1,30 +1,36 @@
 class_name FirstPlayableCameraComposition
 extends Node
 
-# C46: framing tuned from the first packaged interactive playtest.
-# Fighters must read as the primary visual subject; the arena remains context, not empty space.
-const MIN_ZOOM := 0.68
-const MAX_ZOOM := 1.06
-const BASELINE_Y := 500.0
-const VERTICAL_RANGE := 56.0
-const HORIZONTAL_PADDING := 300.0
+# C46 + P0.2 Slice 08: framing tuned from packaged playtests and canonical-art review.
+# Fighters remain world-space unchanged; camera framing makes them the primary visual subject.
+const MIN_ZOOM := 0.72
+const MAX_ZOOM := 1.34
+const BASELINE_Y := 530.0
+const VERTICAL_RANGE := 60.0
+const HORIZONTAL_PADDING := 220.0
 const FOCUS_LERP := 6.0
 const ZOOM_LERP := 5.6
 const SHAKE_DECAY := 9.0
 const MAX_SHAKE_PIXELS := 7.0
+const IMMEDIATE_KICK_RATIO := 0.72
 const CLOSE_FIGHT_DISTANCE := 260.0
 const CLOSE_FIGHT_ZOOM_FLOOR := 0.94
+const SCREEN_PRESENCE_TARGET_MIN := 0.23
+const SCREEN_PRESENCE_TARGET_MAX := 0.30
 
 var _root: Node2D
 var _camera: Camera2D
 var _shake_strength := 0.0
 var _shake_phase := 0.0
+var _last_impact_kick := Vector2.ZERO
+var _impact_punch_count := 0
 
 func _ready() -> void:
 	process_priority = 100
 	_root = get_parent() as Node2D
 	_camera = _root.get_node_or_null("Camera2D") as Camera2D
 	print("V2_C46_CAMERA_READABILITY=PASS min=%.2f max=%.2f" % [MIN_ZOOM, MAX_ZOOM])
+	print("P0_2_FIGHTER_SCREEN_PRESENCE=ARMED world_scale_unchanged=true padding=%.0f baseline=%.0f" % [HORIZONTAL_PADDING, BASELINE_Y])
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(_root) or not is_instance_valid(_camera):
@@ -60,14 +66,32 @@ func _process(delta: float) -> void:
 	_camera.zoom = _camera.zoom.lerp(Vector2.ONE * desired_zoom, 1.0 - exp(-ZOOM_LERP * delta))
 	_apply_shake(delta)
 
-func impact_punch(intensity: float, result_id: StringName = &"hit") -> void:
+func impact_punch(
+	intensity: float,
+	result_id: StringName = &"hit",
+	impact_direction: Vector2 = Vector2.ZERO
+) -> void:
 	var multiplier := 1.0
 	match result_id:
 		&"blocked": multiplier = 0.45
 		&"evaded": multiplier = 0.20
 		&"parried": multiplier = 0.85
 		&"posture_break": multiplier = 1.20
-	_shake_strength = maxf(_shake_strength, clampf(intensity * multiplier, 0.0, 1.0))
+	var strength := clampf(intensity * multiplier, 0.0, 1.0)
+	_shake_strength = maxf(_shake_strength, strength)
+	_impact_punch_count += 1
+
+	# The first contact frame must already carry a readable camera response.
+	# Later frames keep the existing decaying shake; the immediate kick is bounded
+	# by the same MAX_SHAKE_PIXELS contract and never changes fighter physics.
+	if is_instance_valid(_camera) and strength > 0.0:
+		var direction := impact_direction
+		if direction.length_squared() <= 0.0001:
+			direction = Vector2.RIGHT
+		direction = direction.normalized()
+		var kick_pixels := minf(MAX_SHAKE_PIXELS, MAX_SHAKE_PIXELS * strength * IMMEDIATE_KICK_RATIO)
+		_last_impact_kick = direction * kick_pixels
+		_camera.offset = _last_impact_kick
 
 func _apply_shake(delta: float) -> void:
 	if _shake_strength <= 0.001:
@@ -82,22 +106,42 @@ func _apply_shake(delta: float) -> void:
 	_camera.offset = direction * amplitude
 	_shake_strength = maxf(0.0, _shake_strength - delta * SHAKE_DECAY)
 
+func impact_runtime_signature() -> Dictionary:
+	return {
+		"punch_count": _impact_punch_count,
+		"shake_strength": _shake_strength,
+		"last_impact_kick": [_last_impact_kick.x, _last_impact_kick.y],
+		"last_impact_kick_pixels": _last_impact_kick.length(),
+		"max_kick_pixels": MAX_SHAKE_PIXELS,
+		"immediate_kick_ratio": IMMEDIATE_KICK_RATIO,
+		"immediate_directional_kick": true,
+		"physics_changes": false,
+		"signature": "Tehkné Solutions",
+	}
+
 func presentation_signature() -> Dictionary:
 	return {
 		"framing": &"fighter_readability_priority",
 		"min_zoom": MIN_ZOOM,
 		"max_zoom": MAX_ZOOM,
+		"baseline_y": BASELINE_Y,
 		"vertical_range": VERTICAL_RANGE,
 		"horizontal_padding": HORIZONTAL_PADDING,
 		"close_fight_distance": CLOSE_FIGHT_DISTANCE,
 		"close_fight_zoom_floor": CLOSE_FIGHT_ZOOM_FLOOR,
+		"screen_presence_target_min": SCREEN_PRESENCE_TARGET_MIN,
+		"screen_presence_target_max": SCREEN_PRESENCE_TARGET_MAX,
+		"world_fighter_scale_changes": false,
 		"both_fighters_visible": true,
 		"reduced_vertical_motion": true,
 		"focus_lerp": FOCUS_LERP,
 		"zoom_lerp": ZOOM_LERP,
 		"impact_camera_punch": true,
+		"impact_camera_immediate_kick": true,
+		"impact_camera_directional_kick": true,
 		"impact_camera_punch_visual_only": true,
 		"max_shake_pixels": MAX_SHAKE_PIXELS,
+		"max_immediate_kick_pixels": MAX_SHAKE_PIXELS,
 		"physics_changes": false,
 		"collision_changes": false,
 		"signature": "Tehkné Solutions"

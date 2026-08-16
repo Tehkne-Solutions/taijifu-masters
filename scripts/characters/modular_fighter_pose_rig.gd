@@ -2,12 +2,13 @@ class_name ModularFighterPoseRig
 extends Node
 
 ## Runtime realization of the BASE-00 shared 2D rig contract.
-## Existing modular Sprite2D layers stay as source-of-truth textures/materials;
-## gameplay presentation is performed by aligned Polygon2D meshes driven by one
-## Skeleton2D. This is procedural pose animation, not authored frame animation.
+## Existing modular Sprite2D layers remain the source-of-truth textures/materials;
+## aligned Polygon2D meshes are driven by Skeleton2D using explicit authored
+## keyframes loaded from a fail-closed motion library.
 ## Tehkné Solutions
 
-const RUNTIME_ID := "modular_skeletal_pose_rig_v1"
+const RUNTIME_ID := "modular_skeletal_pose_rig_v2"
+const MOTION_LIBRARY_PATH := "res://config/p0_2_modular_fighter_motion_library_v1.json"
 const GRID_COLUMNS := 9
 const GRID_ROWS := 11
 const BONE_LAYOUT := {
@@ -44,6 +45,7 @@ var _bones: Dictionary = {}
 var _rest_transforms: Dictionary = {}
 var _bindings: Array[Dictionary] = []
 var _reference_rect := Rect2()
+var _motion_library: ModularFighterMotionLibrary
 var _configured := false
 var _last_pose := "idle"
 var _last_attack_pose_phase := "none"
@@ -62,6 +64,16 @@ func configure(
 		return failures
 	if assembler.get_node_or_null("PoseSkeleton") != null:
 		failures.append("pose_rig_duplicate_skeleton")
+		return failures
+
+	_motion_library = ModularFighterMotionLibrary.new()
+	var motion_failures := _motion_library.load_from_path(MOTION_LIBRARY_PATH)
+	if not motion_failures.is_empty():
+		for failure in motion_failures:
+			failures.append(String(failure))
+		return failures
+	if not _motion_library.valid():
+		failures.append("motion_library_not_authoritative")
 		return failures
 
 	_assembler = assembler
@@ -119,7 +131,12 @@ func mesh_layer_count() -> int:
 func attack_pose_phase() -> String:
 	return _last_attack_pose_phase
 
+func motion_library() -> ModularFighterMotionLibrary:
+	return _motion_library
+
 func runtime_signature() -> Dictionary:
+	var library_signature := _motion_library.presentation_signature() if _motion_library != null else {}
+	var authored := _motion_library != null and _motion_library.valid()
 	return {
 		"runtime": RUNTIME_ID,
 		"configured": _configured,
@@ -137,8 +154,12 @@ func runtime_signature() -> Dictionary:
 		"world_translation_owner": "fighter_physics",
 		"root_affine_only": false,
 		"regional_cutouts": false,
-		"authored_animation": false,
-		"motion_source": "procedural_skeletal_pose_rig_v1",
+		"authored_animation": authored,
+		"motion_source": _motion_library.library_id() if authored else "blocked",
+		"motion_library": library_signature,
+		"runtime_interpolation": authored,
+		"runtime_pose_generation": false,
+		"procedural_pose_functions": false,
 		"signature": "Tehkné Solutions",
 	}
 
@@ -149,7 +170,7 @@ func apply_pose(
 	attack_phase_timer: float,
 	technique: TechniqueData
 ) -> void:
-	if not _configured:
+	if not _configured or _motion_library == null or not _motion_library.valid():
 		return
 	_sync_layer_visibility()
 	_reset_bones()
@@ -158,25 +179,25 @@ func apply_pose(
 
 	match state:
 		&"idle":
-			_apply_idle(state_time)
+			_apply_motion_clip("idle", state_time)
 		&"run":
-			_apply_run(state_time)
+			_apply_motion_clip("run", state_time)
 		&"jump_start":
-			_apply_jump_start()
+			_apply_motion_clip("jump_start", state_time)
 		&"airborne":
-			_apply_airborne()
+			_apply_motion_clip("airborne", state_time)
 		&"fall":
-			_apply_fall()
+			_apply_motion_clip("fall", state_time)
 		&"attack_light":
-			_apply_attack(attack_phase, attack_phase_timer, technique)
+			_apply_attack_clip(attack_phase, attack_phase_timer, technique)
 		&"guard":
-			_apply_guard()
+			_apply_motion_clip("guard", state_time)
 		&"dodge":
-			_apply_dodge()
+			_apply_motion_clip("dodge", state_time)
 		&"hit":
-			_apply_hit(state_time)
+			_apply_motion_clip("hit", state_time)
 		&"ko":
-			_apply_ko(state_time)
+			_apply_motion_clip("ko", state_time)
 
 func _build_skeleton() -> void:
 	_skeleton = Skeleton2D.new()
@@ -267,135 +288,44 @@ func _reset_bones() -> void:
 		if bone != null:
 			bone.transform = _rest_transforms[bone_name]
 
-func _apply_idle(time: float) -> void:
-	var breath := sin(time * 2.35)
-	_rotate("torso", breath * 0.008)
-	_rotate("head", -breath * 0.006)
-	_translate("torso", Vector2(0.0, breath * 1.8))
-	_rotate("upper_arm_l", breath * 0.010)
-	_rotate("upper_arm_r", -breath * 0.010)
+func _apply_motion_clip(clip_id: String, elapsed_seconds: float, explicit_progress: float = -1.0) -> void:
+	var sample := _motion_library.sample_clip(clip_id, elapsed_seconds, explicit_progress)
+	if sample.is_empty():
+		return
+	for bone_name in BONE_LAYOUT.keys():
+		var bone := _bones.get(bone_name) as Bone2D
+		var transform_variant: Variant = sample.get(String(bone_name), {})
+		if bone == null or not (transform_variant is Dictionary):
+			continue
+		var transform := transform_variant as Dictionary
+		bone.rotation += float(transform.get("rotation", 0.0))
+		var position_variant: Variant = transform.get("position", [0.0, 0.0])
+		if position_variant is Array:
+			var position := position_variant as Array
+			if position.size() == 2:
+				bone.position += Vector2(float(position[0]), float(position[1]))
 
-func _apply_run(time: float) -> void:
-	var stride := sin(time * 14.0)
-	var rebound := absf(cos(time * 14.0))
-	_rotate("torso", -0.055)
-	_rotate("head", 0.022)
-	_rotate("upper_arm_l", -stride * 0.16)
-	_rotate("forearm_l", stride * 0.10)
-	_rotate("upper_arm_r", stride * 0.16)
-	_rotate("forearm_r", -stride * 0.10)
-	_rotate("thigh_l", stride * 0.18)
-	_rotate("shin_l", -stride * 0.13)
-	_rotate("thigh_r", -stride * 0.18)
-	_rotate("shin_r", stride * 0.13)
-	_translate("pelvis", Vector2(0.0, rebound * 2.0))
-
-func _apply_jump_start() -> void:
-	_translate("pelvis", Vector2(0.0, 6.0))
-	_rotate("thigh_l", -0.10)
-	_rotate("thigh_r", 0.10)
-	_rotate("shin_l", 0.16)
-	_rotate("shin_r", -0.16)
-	_rotate("upper_arm_l", 0.08)
-	_rotate("upper_arm_r", -0.08)
-
-func _apply_airborne() -> void:
-	_rotate("torso", -0.045)
-	_rotate("thigh_l", -0.12)
-	_rotate("shin_l", 0.18)
-	_rotate("thigh_r", 0.08)
-	_rotate("shin_r", -0.12)
-	_rotate("upper_arm_l", 0.10)
-	_rotate("upper_arm_r", -0.14)
-
-func _apply_fall() -> void:
-	_rotate("torso", 0.055)
-	_rotate("head", -0.03)
-	_rotate("thigh_l", 0.07)
-	_rotate("thigh_r", -0.07)
-	_rotate("forearm_l", 0.12)
-	_rotate("forearm_r", -0.12)
-
-func _apply_attack(
+func _apply_attack_clip(
 	attack_phase: int,
 	attack_phase_timer: float,
 	technique: TechniqueData
 ) -> void:
-	var progress := _attack_phase_progress(attack_phase, attack_phase_timer, technique)
+	var clip_id := ""
 	match attack_phase:
 		FighterController.AttackPhase.STARTUP:
 			_last_attack_pose_phase = "anticipation"
-			var windup := _smooth(progress)
-			_rotate("pelvis", -0.035 * windup)
-			_rotate("torso", -0.105 * windup)
-			_rotate("head", 0.035 * windup)
-			_rotate("upper_arm_r", -0.22 * windup)
-			_rotate("forearm_r", -0.18 * windup)
-			_rotate("upper_arm_l", 0.07 * windup)
-			_translate("pelvis", Vector2(-5.0 * windup, 1.5 * windup))
+			clip_id = "attack_anticipation"
 		FighterController.AttackPhase.ACTIVE:
 			_last_attack_pose_phase = "contact"
-			var snap := 1.0 - absf(progress * 2.0 - 1.0) * 0.18
-			_rotate("pelvis", 0.075 * snap)
-			_rotate("torso", 0.155 * snap)
-			_rotate("head", -0.055 * snap)
-			_rotate("upper_arm_r", 0.42 * snap)
-			_rotate("forearm_r", 0.50 * snap)
-			_rotate("upper_arm_l", -0.13 * snap)
-			_rotate("thigh_l", -0.07 * snap)
-			_rotate("thigh_r", 0.08 * snap)
-			_translate("pelvis", Vector2(8.0 * snap, -1.0))
+			clip_id = "attack_contact"
 		FighterController.AttackPhase.RECOVERY:
 			_last_attack_pose_phase = "recovery"
-			var settle := 1.0 - _smooth(progress)
-			_rotate("pelvis", 0.045 * settle)
-			_rotate("torso", 0.085 * settle)
-			_rotate("upper_arm_r", 0.25 * settle)
-			_rotate("forearm_r", 0.20 * settle)
-			_translate("pelvis", Vector2(4.0 * settle, 0.0))
+			clip_id = "attack_recovery"
 		_:
 			_last_attack_pose_phase = "none"
-
-func _apply_guard() -> void:
-	_rotate("torso", -0.035)
-	_rotate("head", 0.02)
-	_rotate("upper_arm_l", 0.26)
-	_rotate("forearm_l", -0.42)
-	_rotate("upper_arm_r", -0.24)
-	_rotate("forearm_r", 0.44)
-	_rotate("thigh_l", -0.045)
-	_rotate("thigh_r", 0.045)
-	_translate("pelvis", Vector2(-2.0, 3.0))
-
-func _apply_dodge() -> void:
-	_rotate("pelvis", -0.08)
-	_rotate("torso", -0.18)
-	_rotate("head", 0.08)
-	_rotate("upper_arm_l", 0.12)
-	_rotate("upper_arm_r", -0.12)
-	_rotate("thigh_l", 0.12)
-	_rotate("thigh_r", -0.10)
-	_translate("pelvis", Vector2(-8.0, 3.0))
-
-func _apply_hit(time: float) -> void:
-	var recoil := clampf(1.0 - time / 0.18, 0.0, 1.0)
-	_rotate("pelvis", -0.08 * recoil)
-	_rotate("torso", -0.19 * recoil)
-	_rotate("head", -0.10 * recoil)
-	_rotate("upper_arm_l", 0.18 * recoil)
-	_rotate("upper_arm_r", -0.20 * recoil)
-	_translate("torso", Vector2(-6.0 * recoil, 0.0))
-
-func _apply_ko(time: float) -> void:
-	var fall := _smooth(clampf(time / 0.42, 0.0, 1.0))
-	_rotate("pelvis", 0.32 * fall)
-	_rotate("torso", 0.52 * fall)
-	_rotate("head", 0.28 * fall)
-	_rotate("upper_arm_l", -0.20 * fall)
-	_rotate("upper_arm_r", 0.26 * fall)
-	_rotate("thigh_l", 0.16 * fall)
-	_rotate("thigh_r", -0.12 * fall)
-	_translate("pelvis", Vector2(8.0 * fall, 14.0 * fall))
+			return
+	var progress := _attack_phase_progress(attack_phase, attack_phase_timer, technique)
+	_apply_motion_clip(clip_id, 0.0, progress)
 
 func _attack_phase_progress(
 	attack_phase: int,
@@ -415,16 +345,6 @@ func _attack_phase_progress(
 	if duration <= 0.001:
 		return 1.0
 	return clampf(1.0 - attack_phase_timer / duration, 0.0, 1.0)
-
-func _rotate(bone_name: String, radians: float) -> void:
-	var bone := _bones.get(bone_name) as Bone2D
-	if bone != null:
-		bone.rotation += radians
-
-func _translate(bone_name: String, offset: Vector2) -> void:
-	var bone := _bones.get(bone_name) as Bone2D
-	if bone != null:
-		bone.position += offset
 
 func _sync_layer_visibility() -> void:
 	for binding in _bindings:
@@ -452,6 +372,7 @@ func _restore_sources() -> void:
 	_skeleton = null
 	_bones.clear()
 	_rest_transforms.clear()
+	_motion_library = null
 	_configured = false
 
 func _sprite_used_rect_to_local(sprite: Sprite2D, used_rect: Rect2i) -> Rect2:
@@ -466,9 +387,5 @@ func _point_in_reference_rect(normalized: Vector2) -> Vector2:
 		_reference_rect.size.x * normalized.x,
 		_reference_rect.size.y * normalized.y
 	)
-
-func _smooth(value: float) -> float:
-	var t := clampf(value, 0.0, 1.0)
-	return t * t * (3.0 - 2.0 * t)
 
 # Tehkné Solutions
