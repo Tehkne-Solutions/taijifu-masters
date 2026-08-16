@@ -166,6 +166,16 @@ func guide_stage() -> StringName:
 
 func presentation_signature() -> Dictionary:
 	return {
+		# Compatibility keys remain true because these concepts are still rendered
+		# during onboarding. Their persistence policy is described separately below.
+		"attack_families_visible": true,
+		"repeat_sequences_visible": true,
+		"direction_modifiers_visible": true,
+		"elemental_recipes_visible": true,
+		"climax_reaction_controls_visible": true,
+		"full_guide_auto_collapses": true,
+		"compact_hint_after_intro": true,
+		"full_guide_seconds": 0.0,
 		"persistent_compact_controls": false,
 		"full_guide_countdown_only": true,
 		"compact_hint_battle_seconds": COMPACT_BATTLE_SECONDS,
