@@ -1,0 +1,80 @@
+name: P0.2 Structural First Playable Product Gate
+
+on:
+  pull_request:
+    paths:
+      - "scripts/vertical_slice/first_playable_session.gd"
+      - "scripts/vertical_slice/first_playable_lot01_presenter.gd"
+      - "scripts/vertical_slice/first_playable_modular_fighter_presenter.gd"
+      - "scripts/vertical_slice/first_playable_character_identity.gd"
+      - "scripts/runtime/tactical_bot_runtime.gd"
+      - "scripts/runtime/first_playable_ai_watchdog_runtime.gd"
+      - "scripts/characters/**"
+      - "assets/modular_fighters/**"
+      - "tests/p0_2_structural_recovery_test.gd"
+      - ".github/workflows/p0-2-structural-product-gate.yml"
+  workflow_dispatch:
+
+jobs:
+  product-gate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize canonical First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-p02'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath p0-2-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require canonical snapshot authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' p0-2-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' p0-2-c30.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' p0-2-c30.log
+          echo 'P0_2_CANONICAL_SNAPSHOT=PASS'
+
+      - name: Install Godot 4.3
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project completely
+        run: |
+          set -euo pipefail
+          ./godot --headless --path . --import 2>&1 | tee p0-2-import.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error' p0-2-import.log; then
+            echo 'P0_2_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run structural product gate
+        run: |
+          set -o pipefail
+          timeout 45s ./godot --headless --path . --script tests/p0_2_structural_recovery_test.gd 2>&1 | tee p0-2-product-gate.log
+          grep -q 'P0_2_RUNTIME_ASSET_TRUTH=PASS' p0-2-product-gate.log
+          grep -q 'P0_2_AI_STATE_MODEL=PASS states=8' p0-2-product-gate.log
+          grep -q 'P0_2_AI_INACTIVITY_WATCHDOG=PASS difficulty=apprentice' p0-2-product-gate.log
+          grep -q 'P0_2_STRUCTURAL_PRODUCT_GATE=PASS' p0-2-product-gate.log
+          grep -q 'SIGNATURE=Tehkné Solutions' p0-2-product-gate.log
+
+      - name: Upload P0.2 diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-2-structural-product-gate-diagnostics
+          path: |
+            p0-2-c30.log
+            p0-2-import.log
+            p0-2-product-gate.log
+          if-no-files-found: ignore
+
+# Tehkné Solutions
