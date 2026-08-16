@@ -3,6 +3,16 @@ extends SceneTree
 const BATTLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const MAX_WAIT_FRAMES := 420
 const EXPECTED_WEAPON_MAIN := &"katana_lian_wu"
+const EXPECTED_PRODUCTION_SLOTS: Array[StringName] = [
+	&"face", &"eyes", &"brows",
+	&"hair_back", &"hair_front",
+	&"torso_outer", &"arms", &"waist", &"legs", &"feet",
+	&"head_accessory", &"shoulders", &"back_accessory",
+	&"weapon_back", &"weapon_main",
+]
+const INTENTIONALLY_EMPTY_SLOTS: Array[StringName] = [
+	&"torso_inner", &"hands", &"weapon_offhand",
+]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -61,10 +71,23 @@ func _run() -> void:
 		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED weapon_main_profile:%s" % String(profile.module_id(&"weapon_main")))
 		return
 
-	var module_count := _nonempty_module_count(profile)
-	if module_count < 16:
-		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED profile_module_count:%d" % module_count)
+	var unexpected_slots := PackedStringArray()
+	for slot in EXPECTED_PRODUCTION_SLOTS:
+		if profile.module_id(slot) == &"":
+			unexpected_slots.append("missing:%s" % String(slot))
+	for slot in INTENTIONALLY_EMPTY_SLOTS:
+		if profile.module_id(slot) != &"":
+			unexpected_slots.append("expected_empty:%s" % String(slot))
+	var nonempty_slots := _nonempty_module_slots(profile)
+	if nonempty_slots.size() != EXPECTED_PRODUCTION_SLOTS.size():
+		unexpected_slots.append("count:%d/%d" % [nonempty_slots.size(), EXPECTED_PRODUCTION_SLOTS.size()])
+	for raw_slot in nonempty_slots:
+		if StringName(raw_slot) not in EXPECTED_PRODUCTION_SLOTS:
+			unexpected_slots.append("unexpected:%s" % raw_slot)
+	if not unexpected_slots.is_empty():
+		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED profile_slot_contract:%s" % ",".join(unexpected_slots))
 		return
+	var module_count := nonempty_slots.size()
 
 	var packed := load(BATTLE_SCENE) as PackedScene
 	var battle := packed.instantiate() as FirstPlayableController if packed != null else null
@@ -107,15 +130,14 @@ func _run() -> void:
 		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED assembler", battle)
 		return
 	var missing_slots := PackedStringArray()
-	for raw_slot in profile.modules.keys():
-		var slot := String(raw_slot)
-		var module_id := String(profile.modules.get(slot, ""))
-		if module_id.is_empty():
-			continue
-		if assembler.get_node_or_null("Module_%s" % slot) == null:
-			missing_slots.append(slot)
+	for slot in EXPECTED_PRODUCTION_SLOTS:
+		if assembler.get_node_or_null("Module_%s" % String(slot)) == null:
+			missing_slots.append(String(slot))
+	for slot in INTENTIONALLY_EMPTY_SLOTS:
+		if assembler.get_node_or_null("Module_%s" % String(slot)) != null:
+			missing_slots.append("unexpected_node:%s" % String(slot))
 	if not missing_slots.is_empty():
-		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED runtime_slots_missing:%s" % ",".join(missing_slots), battle)
+		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED runtime_slots:%s" % ",".join(missing_slots), battle)
 		return
 
 	var lot01 := battle.player_one.get_node_or_null("FirstPlayableRealAssetPresenter") as FirstPlayableLot01Presenter
@@ -131,13 +153,15 @@ func _run() -> void:
 	var pose_signature := pose_runtime.pose_rig().runtime_signature()
 	var mesh_count := int(pose_signature.get("mesh_layer_count", 0))
 	var sprite_module_count := _sprite_module_count(assembler)
-	if mesh_count != sprite_module_count or mesh_count < module_count + 1:
-		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED mesh_parity meshes=%d sprites=%d profile=%d" % [
+	# Every non-empty profile module plus the shared body_base must have one
+	# deformable Polygon2D mesh. Optional empty slots must not inflate this count.
+	if mesh_count != sprite_module_count or mesh_count != module_count + 1:
+		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED mesh_parity meshes=%d sprites=%d profile=%d body=1" % [
 			mesh_count, sprite_module_count, module_count,
 		], battle)
 		return
 
-	print("P0_2_PRODUCTION_LIAN_PROFILE=PASS modules=%d stack=BASE01-05" % module_count)
+	print("P0_2_PRODUCTION_LIAN_PROFILE=PASS modules=%d stack=BASE01-05 intentional_empty=torso_inner,hands,weapon_offhand" % module_count)
 	print("P0_2_PRODUCTION_LIAN_COMPOSITION=PASS hair=%s uniform=%s armor=%s back=%s weapon_set=%s" % [
 		String(presenter.active_hair_style_id()),
 		String(presenter.active_uniform_set_id()),
@@ -149,7 +173,7 @@ func _run() -> void:
 		String(profile.combat_loadout_id), String(presenter.active_weapon_main_id()),
 	])
 	print("P0_2_PRODUCTION_LIAN_FALLBACK=PASS lot01=preserved_hidden")
-	print("P0_2_PRODUCTION_LIAN_MESH_PARITY=PASS sprites=%d meshes=%d" % [sprite_module_count, mesh_count])
+	print("P0_2_PRODUCTION_LIAN_MESH_PARITY=PASS sprites=%d meshes=%d profile=%d body=1" % [sprite_module_count, mesh_count, module_count])
 	print("P0_2_PRODUCTION_LIAN_PRODUCT_GATE=PASS")
 	print("SIGNATURE=Tehkné Solutions")
 	battle.queue_free()
@@ -167,12 +191,13 @@ func _wait_for_presenter(battle: FirstPlayableController) -> FirstPlayableModula
 		await process_frame
 	return null
 
-func _nonempty_module_count(profile: ModularFighterProfile) -> int:
-	var count := 0
+func _nonempty_module_slots(profile: ModularFighterProfile) -> Array[String]:
+	var slots: Array[String] = []
 	for raw_slot in profile.modules.keys():
 		if not String(profile.modules.get(raw_slot, "")).is_empty():
-			count += 1
-	return count
+			slots.append(String(raw_slot))
+	slots.sort()
+	return slots
 
 func _sprite_module_count(assembler: ModularFighterAssembler) -> int:
 	var count := 0
