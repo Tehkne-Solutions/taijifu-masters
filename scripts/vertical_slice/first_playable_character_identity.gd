@@ -10,6 +10,7 @@ const MASTER_MARTIAL_PLANNER := preload("res://scripts/vertical_slice/first_play
 const MASTER_PURSUIT_RUNTIME := preload("res://scripts/vertical_slice/first_playable_master_pursuit_runtime.gd")
 const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
+const MODULAR_POSE_RUNTIME := preload("res://scripts/vertical_slice/first_playable_modular_pose_runtime.gd")
 const AI_WATCHDOG_RUNTIME := preload("res://scripts/runtime/first_playable_ai_watchdog_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
@@ -69,6 +70,10 @@ func _install_first_playable_runtime() -> void:
 		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new()
 		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
 		match_root.add_child.call_deferred(feedback_runtime)
+	if not match_root.has_node("FirstPlayableModularPoseRuntime"):
+		var modular_pose := MODULAR_POSE_RUNTIME.new() as FirstPlayableModularPoseRuntime
+		modular_pose.name = "FirstPlayableModularPoseRuntime"
+		match_root.add_child.call_deferred(modular_pose)
 	if not match_root.has_node("FirstPlayableAiWatchdogRuntime"):
 		var ai_watchdog := AI_WATCHDOG_RUNTIME.new() as FirstPlayableAiWatchdogRuntime
 		ai_watchdog.name = "FirstPlayableAiWatchdogRuntime"
@@ -124,6 +129,7 @@ func presentation_signature() -> Dictionary:
 		"master_pursuit_runtime": true,
 		"martial_hud_runtime": true,
 		"combat_feedback_runtime": true,
+		"modular_skeletal_pose_runtime": true,
 		"ai_watchdog_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
@@ -141,7 +147,8 @@ func presentation_signature() -> Dictionary:
 	}
 
 # C50 intentionally contains no _draw() fallback.
-# Production fighters must render through canonical SpriteFrames presenters only.
-# P0.2 promotes the production modular graph over LOT01 for player one whenever
-# the modular asset contract can be resolved; LOT01 remains fail-closed evidence.
+# Production fighters must render through canonical asset presenters only.
+# P0.2 promotes the production modular graph over LOT01 and drives the aligned
+# modular layers through a shared Skeleton2D deformation rig. This remains a
+# procedural pose runtime until authored shared animation assets replace it.
 # Tehkné Solutions
