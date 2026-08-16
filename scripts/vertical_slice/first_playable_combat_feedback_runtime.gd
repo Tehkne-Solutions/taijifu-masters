@@ -5,6 +5,9 @@ const FEEDBACK_LIFETIME := 0.46
 const CRITICAL_LIFETIME := 0.44
 const COMBO_RESET_SECONDS := 1.10
 const MAX_ACTIVE_POPUPS := 2
+const IMPACT_POPUP_SIZE := Vector2(190.0, 38.0)
+const IMPACT_POPUP_TRAVEL := Vector2(0.0, -24.0)
+const IMPACT_POPUP_SAFE_RECT := Rect2(8.0, 158.0, 1264.0, 432.0)
 
 var _root: Node
 var _p1: MasteredWeaponFighterController
@@ -151,7 +154,7 @@ func _spawn_impact_popup(world_position: Vector2, technique_name: String, result
 	if not is_instance_valid(_layer):
 		return
 	_cleanup_popup_budget()
-	var popup := _make_label("ImpactPopup", Vector2.ZERO, Vector2(190.0, 38.0), 12)
+	var popup := _make_label("ImpactPopup", Vector2.ZERO, IMPACT_POPUP_SIZE, 12)
 	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	popup.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	popup.text = technique_name if result_id == &"hit" else result_label
@@ -159,17 +162,29 @@ func _spawn_impact_popup(world_position: Vector2, technique_name: String, result
 	popup.modulate.a = 1.0
 	var screen_pos := _world_to_screen(world_position)
 	var side_offset := -42.0 if profile_id == "p1" else 42.0
-	popup.position = screen_pos + Vector2(-95.0 + side_offset, -54.0)
+	var desired_position := screen_pos + Vector2(-95.0 + side_offset, -54.0)
+	popup.position = _clamp_popup_start(desired_position, popup.size)
 	_layer.add_child(popup)
 	_active_popups.append(popup)
 
 	var tween := popup.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(popup, "position", popup.position + Vector2(0.0, -24.0), FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(popup, "position", popup.position + IMPACT_POPUP_TRAVEL, FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tween.tween_property(popup, "modulate:a", 0.0, FEEDBACK_LIFETIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tween.chain().tween_callback(func() -> void:
 		_active_popups.erase(popup)
 		if is_instance_valid(popup): popup.queue_free()
+	)
+
+func _clamp_popup_start(desired_position: Vector2, popup_size: Vector2) -> Vector2:
+	# Clamp the entire animated path, not just the spawn frame. Popups travel 24 px
+	# upward, so the start Y must reserve that travel above the safe-area top.
+	var safe_min := IMPACT_POPUP_SAFE_RECT.position
+	var safe_max := IMPACT_POPUP_SAFE_RECT.end - popup_size
+	var min_start_y := safe_min.y - IMPACT_POPUP_TRAVEL.y
+	return Vector2(
+		clampf(desired_position.x, safe_min.x, safe_max.x),
+		clampf(desired_position.y, min_start_y, safe_max.y)
 	)
 
 func _world_to_screen(world_position: Vector2) -> Vector2:
@@ -225,6 +240,15 @@ func presentation_signature() -> Dictionary:
 		"short_defensive_feedback": true,
 		"combo_counter_per_side": true,
 		"popup_budget": MAX_ACTIVE_POPUPS,
+		"popup_safe_area_clamped": true,
+		"popup_safe_rect": {
+			"x": IMPACT_POPUP_SAFE_RECT.position.x,
+			"y": IMPACT_POPUP_SAFE_RECT.position.y,
+			"w": IMPACT_POPUP_SAFE_RECT.size.x,
+			"h": IMPACT_POPUP_SAFE_RECT.size.y,
+		},
+		"popup_travel_safe": true,
+		"popup_travel_y": IMPACT_POPUP_TRAVEL.y,
 		"critical_feedback_priority": true,
 		"camera_punch_on_impact": true,
 		"camera_punch_directional": true,
