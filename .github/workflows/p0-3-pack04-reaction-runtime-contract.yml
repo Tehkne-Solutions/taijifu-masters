@@ -4,9 +4,12 @@ on:
   pull_request:
     paths:
       - 'scripts/fighter/first_playable_combat_fighter_controller.gd'
+      - 'scripts/runtime/tgap_asset_loader.gd'
+      - 'scripts/vertical_slice/first_playable_pack04_tgap_materialization.gd'
       - 'scripts/vertical_slice/first_playable_pack04_reaction_runtime.gd'
       - 'scripts/vertical_slice/first_playable_skeletal_modular_fighter_presenter.gd'
       - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
+      - 'tests/p0_3_pack04_tgap_materialization_contract_test.gd'
       - 'tests/p0_3_pack04_reaction_runtime_contract_test.gd'
       - 'tests/p0_3_pack04_presenter_handoff_test.gd'
       - '.github/workflows/p0-3-pack04-reaction-runtime-contract.yml'
@@ -63,6 +66,25 @@ jobs:
           fi
           echo 'PACK04_RUNTIME_IMPORT=PASS'
 
+      - name: Run TGAP materialization contract gate
+        run: |
+          set -o pipefail
+          timeout 90s ./godot --headless --audio-driver Dummy --path . \
+            --script res://tests/p0_3_pack04_tgap_materialization_contract_test.gd \
+            2>&1 | tee pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_DEFAULT=PASS available=false' pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_COMPLETE_FIXTURE=PASS assets=34 synthetic=true runtime_active=false' pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_APPROVAL_GATE=PASS rejected=PENDING' pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_CHECKSUM_GATE=PASS tamper=rejected' pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_TGAP_AUTHORITY=PASS install=false staging=false promotion=false catalog_write=false' pack04-materialization.log
+          grep -q 'PACK04_TGAP_MATERIALIZATION_CONTRACT=PASS production_art_status=BLOCKED playtest_02=BLOCKED' pack04-materialization.log
+          grep -q 'SIGNATURE=Tehkné Solutions' pack04-materialization.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|PACK04_MATERIALIZATION_GATE=BLOCKED|production_art_status=PASS' pack04-materialization.log; then
+            echo 'PACK04_TGAP_MATERIALIZATION_CI=BLOCKED'
+            exit 1
+          fi
+          echo 'PACK04_TGAP_MATERIALIZATION_CI=PASS production_art_status=blocked'
+
       - name: Run semantic reaction runtime product gate
         run: |
           set -o pipefail
@@ -114,6 +136,7 @@ jobs:
           path: |
             pack04-runtime-c30.log
             pack04-runtime-import.log
+            pack04-materialization.log
             pack04-runtime-product.log
             pack04-presenter-handoff.log
           if-no-files-found: ignore
@@ -121,6 +144,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'P0.3 PACK 04 semantic runtime + presenter fallback handoff ready; authored reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.3 PACK 04 TGAP materialization + semantic runtime + presenter fallback ready; production reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
