@@ -73,6 +73,7 @@ jobs:
             2>&1 | tee p0-2-visual-authority-product.log
           grep -q 'P0_2_CANONICAL_VISUAL_AUTHORITY=PASS p1=true p2=true' p0-2-visual-authority-product.log
           grep -q 'P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED p1=true p2=true self_modulate_alpha=0' p0-2-visual-authority-product.log
+          grep -q 'P0_2_PROVISIONAL_CHILD_VISUALS=RETIRED p1=true p2=true regional_hit_flash=preserved' p0-2-visual-authority-product.log
           grep -q 'P0_2_CANONICAL_CHILD_PRESENTERS=PASS p1=modular_polygon p2=lot01_sprite' p0-2-visual-authority-product.log
           grep -q 'P0_2_CANONICAL_VISUAL_PRODUCT_GATE=PASS' p0-2-visual-authority-product.log
           grep -q 'SIGNATURE=Tehkné Solutions' p0-2-visual-authority-product.log
@@ -89,6 +90,7 @@ jobs:
             --script res://scripts/ci/p0_2_canonical_visual_authority_review.gd \
             2>&1 | tee p0-2-visual-authority-review.log
           grep -q 'P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED p1=true p2=true' p0-2-visual-authority-review.log
+          grep -q 'P0_2_PROVISIONAL_CHILD_VISUALS=RETIRED p1=true p2=true regional_hit_flash=preserved' p0-2-visual-authority-review.log
           grep -q 'P0_2_CANONICAL_CHILD_RENDER=PASS p1=modular_polygon p2=lot01_sprite' p0-2-visual-authority-review.log
           grep -q 'P0_2_ACTIVE_ROUND_ONBOARDING=RELEASED guide=hidden' p0-2-visual-authority-review.log
           grep -q 'P0_2_CANONICAL_VISUAL_AUTHORITY_REVIEW=PASS' p0-2-visual-authority-review.log
@@ -118,6 +120,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'P0.2 canonical visual authority — provisional fighter draw retired behind real presenters — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.2 canonical visual authority — parent placeholder and provisional child overlays retired behind real presenters — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
