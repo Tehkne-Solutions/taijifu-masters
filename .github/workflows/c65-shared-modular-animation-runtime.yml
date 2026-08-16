@@ -5,7 +5,10 @@ on:
     paths:
       - 'scripts/vertical_slice/first_playable_session.gd'
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
+      - 'scripts/vertical_slice/first_playable_skeletal_modular_fighter_presenter.gd'
+      - 'scripts/vertical_slice/first_playable_modular_pose_runtime.gd'
       - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
+      - 'scripts/characters/modular_fighter_pose_rig.gd'
       - 'scripts/ci/c65_shared_modular_animation_runtime_smoke.gd'
       - 'scripts/ci/c65_shared_modular_visual_review.gd'
       - 'assets/modular_fighters/base_01/production/BASE01_SHARED_MODULAR_ANIMATION_RUNTIME.json'
