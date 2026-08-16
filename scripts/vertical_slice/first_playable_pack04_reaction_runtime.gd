@@ -3,7 +3,8 @@ extends Node
 
 ## Semantic bridge for PACK 04 combat reactions.
 ## Observes already-resolved combat outcomes and publishes a canonical visual
-## reaction state. Until the approved PACK 04 release is materialized, every new
+## reaction state. TGAP materialization is probed read-only; until a future
+## presenter-activation slice consumes the approved PACK 04 assets, every new
 ## reaction state remains explicitly on an existing-art fallback.
 ## This runtime never changes damage, frame data, collision or world physics.
 ## Tehkné Solutions
@@ -11,7 +12,6 @@ extends Node
 const RUNTIME_ID := "first_playable_pack04_reaction_runtime_v1"
 const PACK_ID := "PACK_04_COMBAT_REACTIONS_AND_MOTION"
 const EXPECTED_RELEASE_TAG := "assets-pack-04-v1.0.0"
-const PACK04_ART_AVAILABLE := false
 
 const META_SEMANTIC_STATE := &"pack04_reaction_semantic_state"
 const META_VISUAL_OVERRIDE := &"pack04_reaction_visual_override"
@@ -60,6 +60,7 @@ var _fallback_active := false
 var _last_result_id: StringName = &"none"
 var _transition_count := 0
 var _connected := false
+var _materialization := FirstPlayablePack04TgapMaterialization.new()
 
 func _ready() -> void:
 	process_priority = -20
@@ -71,9 +72,12 @@ func _ready() -> void:
 		_fighter.impact_resolved.connect(_on_impact_resolved)
 	_connected = true
 	_clear_state()
-	print("PACK04_REACTION_RUNTIME=ARMED fighter=p%d art_available=false release=%s" % [
+	var materialization := materialization_status()
+	print("PACK04_REACTION_RUNTIME=ARMED fighter=p%d art_available=%s runtime_active=false release=%s status=%s" % [
 		_fighter.player_index,
+		str(bool(materialization.get("available", false))).to_lower(),
 		EXPECTED_RELEASE_TAG,
+		String(materialization.get("status", "blocked")),
 	])
 
 func _exit_tree() -> void:
@@ -106,10 +110,15 @@ func visual_override() -> StringName:
 func fallback_active() -> bool:
 	return _fallback_active
 
+func materialization_status(force: bool = false) -> Dictionary:
+	return _materialization.status(null, force)
+
 func art_available() -> bool:
-	return PACK04_ART_AVAILABLE
+	return bool(materialization_status().get("available", false))
 
 func runtime_signature() -> Dictionary:
+	var materialization := materialization_status()
+	var materialized := bool(materialization.get("available", false))
 	return {
 		"runtime": RUNTIME_ID,
 		"pack_id": PACK_ID,
@@ -119,8 +128,10 @@ func runtime_signature() -> Dictionary:
 		"required_state_count": REQUIRED_STATES.size(),
 		"result_sequences": _sequence_signature(),
 		"fallback_visuals": _fallback_signature(),
-		"pack04_art_available": PACK04_ART_AVAILABLE,
-		"pack04_art_status": "blocked_release_not_materialized",
+		"pack04_art_available": materialized,
+		"pack04_art_status": "materialized_pending_runtime_activation" if materialized else "blocked_release_not_materialized",
+		"pack04_runtime_art_active": false,
+		"pack04_materialization": materialization,
 		"semantic_state": String(_semantic_state),
 		"visual_override": String(_visual_override),
 		"visual_source": _visual_source,
@@ -193,11 +204,13 @@ func _existing_step(visual_state: StringName, duration: float) -> Dictionary:
 	}
 
 func _pack04_step(state: StringName, duration: float) -> Dictionary:
+	# Slice 03 only proves TGAP materialization. Presenter activation of the new
+	# PNGs remains a separate gate, so approved existing states stay authoritative.
 	return {
 		"semantic": state,
 		"visual": FALLBACK_VISUALS.get(state, &"idle"),
 		"duration": duration,
-		"source": "pack04_missing_asset_fallback",
+		"source": "pack04_materialized_pending_runtime_fallback" if art_available() else "pack04_missing_asset_fallback",
 		"fallback": true,
 	}
 
