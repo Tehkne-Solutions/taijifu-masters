@@ -10,6 +10,7 @@ const MASTER_MARTIAL_PLANNER := preload("res://scripts/vertical_slice/first_play
 const MASTER_PURSUIT_RUNTIME := preload("res://scripts/vertical_slice/first_playable_master_pursuit_runtime.gd")
 const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
+const AI_WATCHDOG_RUNTIME := preload("res://scripts/runtime/first_playable_ai_watchdog_runtime.gd")
 const LIAN_WU_PRESENTER := preload("res://scripts/vertical_slice/first_playable_lot01_presenter.gd")
 const TRAINING_RIVAL_PRESENTER := preload("res://scripts/vertical_slice/training_rival_lot01_presenter.gd")
 const VISUAL_SCALE := Vector2(1.28, 1.28)
@@ -68,6 +69,10 @@ func _install_first_playable_runtime() -> void:
 		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new()
 		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
 		match_root.add_child.call_deferred(feedback_runtime)
+	if not match_root.has_node("FirstPlayableAiWatchdogRuntime"):
+		var ai_watchdog := AI_WATCHDOG_RUNTIME.new() as FirstPlayableAiWatchdogRuntime
+		ai_watchdog.name = "FirstPlayableAiWatchdogRuntime"
+		match_root.add_child.call_deferred(ai_watchdog)
 
 func _install_real_asset_presenter() -> void:
 	if not is_instance_valid(_fighter) or not is_instance_valid(_fighter.build):
@@ -119,10 +124,12 @@ func presentation_signature() -> Dictionary:
 		"master_pursuit_runtime": true,
 		"martial_hud_runtime": true,
 		"combat_feedback_runtime": true,
+		"ai_watchdog_runtime": true,
 		"real_asset_handoff": true,
 		"lian_wu_presenter": true,
 		"training_rival_presenter": true,
 		"creator_battle_handoff": true,
+		"production_default_modular_cutover": true,
 		"creator_visual_activation": false,
 		"creator_visual_blocker": FirstPlayableSession.CREATOR_VISUAL_BLOCKER,
 		"static_creator_sprite_regression_allowed": false,
@@ -135,6 +142,6 @@ func presentation_signature() -> Dictionary:
 
 # C50 intentionally contains no _draw() fallback.
 # Production fighters must render through canonical SpriteFrames presenters only.
-# Creator battle handoff remains visual-fail-closed until the shared modular
-# animation runtime can preserve the First Playable animation contract.
+# P0.2 promotes the production modular graph over LOT01 for player one whenever
+# the modular asset contract can be resolved; LOT01 remains fail-closed evidence.
 # Tehkné Solutions
