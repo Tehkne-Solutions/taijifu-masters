@@ -16,6 +16,8 @@ const EXPECTED_CLOSE_ZOOM_MAX := 1.345
 const EXPECTED_FAR_ZOOM := 0.72
 const EXPECTED_FAR_ZOOM_MIN := 0.70
 const EXPECTED_FAR_ZOOM_MAX := 0.76
+const EXPECTED_BASELINE_Y := 530.0
+const EXPECTED_VERTICAL_RANGE := 60.0
 const CAMERA_SETTLE_TOLERANCE := 0.008
 const CAMERA_SETTLE_POLL_SECONDS := 0.05
 const CAMERA_SETTLE_MAX_POLLS := 60
@@ -56,6 +58,7 @@ func _run() -> void:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED rival_sprite", battle)
 		return
 	var camera_signature := composition.presentation_signature()
+	var owner_signature := battle.camera_ownership_signature()
 	if bool(camera_signature.get("world_fighter_scale_changes", true)):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED world_scale_mutation", battle)
 		return
@@ -65,8 +68,22 @@ func _run() -> void:
 	if absf(float(camera_signature.get("max_zoom", 0.0)) - EXPECTED_CLOSE_ZOOM) > 0.001:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED max_zoom:%s" % str(camera_signature), battle)
 		return
+	if absf(float(camera_signature.get("baseline_y", 0.0)) - EXPECTED_BASELINE_Y) > 0.01:
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED baseline_y:%s" % str(camera_signature), battle)
+		return
+	if absf(float(camera_signature.get("vertical_range", 0.0)) - EXPECTED_VERTICAL_RANGE) > 0.01:
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED vertical_range:%s" % str(camera_signature), battle)
+		return
 	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 220.0) > 0.01:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED horizontal_padding:%s" % str(camera_signature), battle)
+		return
+	if (
+		not bool(owner_signature.get("composition_active", false))
+		or bool(owner_signature.get("legacy_camera_writer_active", true))
+		or not bool(owner_signature.get("single_production_owner", false))
+		or String(owner_signature.get("production_owner", "")) != "FightCameraComposition"
+	):
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED camera_owner:%s" % str(owner_signature), battle)
 		return
 
 	var guide := battle.get_node_or_null("HUD/CombatGuide") as FirstPlayableCombatGuide
@@ -119,6 +136,7 @@ func _run() -> void:
 	_write_metrics({
 		"signature": "Tehkné Solutions",
 		"camera": camera_signature,
+		"camera_owner": owner_signature,
 		"world_fighter_scale_changes": false,
 		"camera_settle_policy": {
 			"mode": "condition_based",
@@ -132,6 +150,7 @@ func _run() -> void:
 		"close_capture": CLOSE_OUTPUT,
 	})
 
+	print("P0_2_CAMERA_SINGLE_OWNER=PASS owner=FightCameraComposition legacy_writer=false")
 	print("P0_2_FIGHTER_FAR_FRAMING=PASS zoom=%.3f p1_visible=%.4f p2_visible=%.4f" % [
 		far_zoom,
 		float(far_metrics.get("p1_visible_fraction", 0.0)),
@@ -183,7 +202,9 @@ func _settle_camera(camera: Camera2D, target_zoom: float) -> bool:
 
 func _screen_metrics(battle: FirstPlayableController, assembler: ModularFighterAssembler, rival_sprite: AnimatedSprite2D) -> Dictionary:
 	var viewport_size := Vector2(get_root().get_visible_rect().size)
-	var gameplay_rect := Rect2(Vector2(0.0, 100.0), Vector2(viewport_size.x, maxf(1.0, viewport_size.y - 150.0)))
+	# Slice 04 removed persistent lower HUD/controls. The active combat safe area
+	# reserves the 100 px fighting HUD at the top and uses the viewport down to the floor.
+	var gameplay_rect := Rect2(Vector2(0.0, 100.0), Vector2(viewport_size.x, maxf(1.0, viewport_size.y - 100.0)))
 	var p1_rect := _modular_screen_rect(assembler)
 	var p2_rect := _sprite_screen_rect(rival_sprite)
 	return {
