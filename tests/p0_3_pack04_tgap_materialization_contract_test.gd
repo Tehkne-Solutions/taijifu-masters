@@ -40,12 +40,17 @@ func _run() -> void:
 	if int(complete.get("asset_count", 0)) != 34 or bool(complete.get("runtime_active", true)):
 		_fail("PACK04_MATERIALIZATION_GATE=BLOCKED fixture_completion_contract", loader)
 		return
+	if String(complete.get("checksum_authority", "")) != "checksums.sha256":
+		_fail("PACK04_MATERIALIZATION_GATE=BLOCKED checksum_authority", loader)
+		return
 	print("PACK04_MATERIALIZATION_COMPLETE_FIXTURE=PASS assets=34 synthetic=true runtime_active=false")
+	print("PACK04_MATERIALIZATION_CHECKSUM_FORMAT=PASS file=checksums.sha256 format=sha256sum entries=37")
 
 	var approval := fixture.get("approval", {}) as Dictionary
 	approval["approved"] = false
 	approval["human_review"] = "PENDING"
 	_write_json(PACK_ROOT + "/approval.json", approval)
+	_refresh_checksums(fixture.get("asset_paths", []) as Array)
 	var rejected_approval := probe.status(loader, true)
 	if bool(rejected_approval.get("available", true)) or not _has_blocker(rejected_approval, "human_review_not_approved"):
 		_fail("PACK04_MATERIALIZATION_GATE=BLOCKED approval_fail_open", loader)
@@ -55,6 +60,7 @@ func _run() -> void:
 	approval["approved"] = true
 	approval["human_review"] = "PASS"
 	_write_json(PACK_ROOT + "/approval.json", approval)
+	_refresh_checksums(fixture.get("asset_paths", []) as Array)
 	var first_asset := String(fixture.get("first_asset", ""))
 	var asset_file := FileAccess.open(PACK_ROOT + "/" + first_asset, FileAccess.READ_WRITE)
 	if asset_file == null:
@@ -79,8 +85,8 @@ func _run() -> void:
 func _build_fixture() -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(PACK_ROOT))
 	var assets: Array = []
-	var checksum_files := {}
 	var mappings := {}
+	var asset_paths: Array = []
 	var first_asset := ""
 	var combo_index := 0
 	for fighter in FIGHTERS:
@@ -104,7 +110,7 @@ func _build_fixture() -> Dictionary:
 					"state": state,
 					"sha256": sha,
 				})
-				checksum_files[relative_path] = sha
+				asset_paths.append(relative_path)
 				mappings[fighter][state].append(relative_path)
 				if first_asset.is_empty():
 					first_asset = relative_path
@@ -116,18 +122,19 @@ func _build_fixture() -> Dictionary:
 		"tgap_pack_id": "pack_04_combat_reactions_and_motion",
 		"version": "1.0.0",
 		"release_tag": "assets-pack-04-v1.0.0",
+		"signature": "Tehkné Solutions",
 	}
 	var manifest := identity.duplicate(true)
 	manifest["schema"] = "tehkne/taijifu-pack04-materialization/v1"
 	manifest["assets"] = assets
 	manifest["asset_count"] = 34
-	manifest["signature"] = "Tehkné Solutions"
 	_write_json(PACK_ROOT + "/manifest.json", manifest)
 
 	var runtime_map := identity.duplicate(true)
 	runtime_map["schema"] = "tehkne/taijifu-pack04-runtime-map/v1"
 	runtime_map["mappings"] = mappings
-	runtime_map["signature"] = "Tehkné Solutions"
+	runtime_map["states"] = STATES.duplicate()
+	runtime_map["characters"] = FIGHTERS.duplicate()
 	_write_json(PACK_ROOT + "/runtime-map.json", runtime_map)
 
 	var approval := identity.duplicate(true)
@@ -137,14 +144,12 @@ func _build_fixture() -> Dictionary:
 	approval["reviewer"] = "synthetic-contract-fixture"
 	approval["evidence"] = ["synthetic://p0.3/materialization-contract"]
 	approval["synthetic_fixture"] = true
-	approval["signature"] = "Tehkné Solutions"
+	approval["status"] = "pass"
+	approval["human_visual_review"] = "pass"
+	approval["identity_continuity"] = "pass"
+	approval["weapon_continuity"] = "pass"
 	_write_json(PACK_ROOT + "/approval.json", approval)
-
-	var checksums := identity.duplicate(true)
-	checksums["schema"] = "tehkne/taijifu-pack04-checksums/v1"
-	checksums["files"] = checksum_files
-	checksums["signature"] = "Tehkné Solutions"
-	_write_json(PACK_ROOT + "/checksums.json", checksums)
+	_refresh_checksums(asset_paths)
 
 	var catalog := {
 		"schema": "tgap/install-catalog/v1",
@@ -165,7 +170,25 @@ func _build_fixture() -> Dictionary:
 	}
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TEST_ROOT))
 	_write_json(TEST_ROOT + "/tgap-catalog.json", catalog)
-	return {"approval": approval, "first_asset": first_asset}
+	return {"approval": approval, "first_asset": first_asset, "asset_paths": asset_paths}
+
+func _refresh_checksums(asset_paths: Array) -> void:
+	var checksum_paths := asset_paths.duplicate()
+	checksum_paths.append("manifest.json")
+	checksum_paths.append("runtime-map.json")
+	checksum_paths.append("approval.json")
+	checksum_paths.sort()
+	var lines := PackedStringArray()
+	for relative_path_variant in checksum_paths:
+		var relative_path := String(relative_path_variant)
+		var full_path := PACK_ROOT + "/" + relative_path
+		var sha := FileAccess.get_sha256(full_path).to_lower()
+		lines.append("%s  %s" % [sha, relative_path])
+	var file := FileAccess.open(PACK_ROOT + "/checksums.sha256", FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string("\n".join(lines) + "\n")
+	file.close()
 
 func _write_json(path: String, data: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)

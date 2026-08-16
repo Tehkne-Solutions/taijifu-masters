@@ -74,6 +74,7 @@ jobs:
             2>&1 | tee pack04-materialization.log
           grep -q 'PACK04_MATERIALIZATION_DEFAULT=PASS available=false' pack04-materialization.log
           grep -q 'PACK04_MATERIALIZATION_COMPLETE_FIXTURE=PASS assets=34 synthetic=true runtime_active=false' pack04-materialization.log
+          grep -q 'PACK04_MATERIALIZATION_CHECKSUM_FORMAT=PASS file=checksums.sha256 format=sha256sum entries=37' pack04-materialization.log
           grep -q 'PACK04_MATERIALIZATION_APPROVAL_GATE=PASS rejected=PENDING' pack04-materialization.log
           grep -q 'PACK04_MATERIALIZATION_CHECKSUM_GATE=PASS tamper=rejected' pack04-materialization.log
           grep -q 'PACK04_MATERIALIZATION_TGAP_AUTHORITY=PASS install=false staging=false promotion=false catalog_write=false' pack04-materialization.log
@@ -83,7 +84,7 @@ jobs:
             echo 'PACK04_TGAP_MATERIALIZATION_CI=BLOCKED'
             exit 1
           fi
-          echo 'PACK04_TGAP_MATERIALIZATION_CI=PASS production_art_status=blocked'
+          echo 'PACK04_TGAP_MATERIALIZATION_CI=PASS production_art_status=blocked checksum=checksums.sha256'
 
       - name: Run semantic reaction runtime product gate
         run: |
@@ -144,6 +145,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'P0.3 PACK 04 TGAP materialization + semantic runtime + presenter fallback ready; production reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.3 PACK 04 TGAP materialization + semantic runtime + presenter fallback ready; checksum authority aligned to assets release; production reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
