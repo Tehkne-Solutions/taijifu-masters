@@ -146,9 +146,9 @@ func _run() -> void:
 		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED lot01_fallback_boundary", battle)
 		return
 
-	var pose_runtime := battle.get_node_or_null("FirstPlayableModularPoseRuntime") as FirstPlayableModularPoseRuntime
-	if pose_runtime == null or not pose_runtime.authority_active():
-		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED skeletal_authority", battle)
+	var pose_runtime := await _wait_for_pose_runtime(battle)
+	if pose_runtime == null:
+		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED skeletal_authority_timeout", battle)
 		return
 	var pose_signature := pose_runtime.pose_rig().runtime_signature()
 	var mesh_count := int(pose_signature.get("mesh_layer_count", 0))
@@ -188,6 +188,14 @@ func _wait_for_presenter(battle: FirstPlayableController) -> FirstPlayableModula
 			var presenter := battle.player_one.get_node_or_null("FirstPlayableModularFighterPresenter") as FirstPlayableModularFighterPresenter
 			if presenter != null and presenter.using_modular_assets():
 				return presenter
+		await process_frame
+	return null
+
+func _wait_for_pose_runtime(battle: FirstPlayableController) -> FirstPlayableModularPoseRuntime:
+	for _frame in range(MAX_WAIT_FRAMES):
+		var runtime := battle.get_node_or_null("FirstPlayableModularPoseRuntime") as FirstPlayableModularPoseRuntime
+		if runtime != null and runtime.authority_active() and runtime.pose_rig() != null:
+			return runtime
 		await process_frame
 	return null
 
