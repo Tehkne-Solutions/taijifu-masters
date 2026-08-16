@@ -6,6 +6,16 @@ const NEUTRAL_OUTPUT := "P0_2_PRODUCTION_LIAN.neutral-1920x1080.png"
 const ATTACK_OUTPUT := "P0_2_PRODUCTION_LIAN.attack-1920x1080.png"
 const METRICS_OUTPUT := "P0_2_PRODUCTION_LIAN_METRICS.json"
 const MAX_WAIT_FRAMES := 480
+const REQUIRED_PRODUCTION_NODES: Array[String] = [
+	"Module_face", "Module_eyes", "Module_brows",
+	"Module_hair_back", "Module_hair_front",
+	"Module_torso_outer", "Module_arms", "Module_waist", "Module_legs", "Module_feet",
+	"Module_head_accessory", "Module_shoulders", "Module_back_accessory",
+	"Module_weapon_back", "Module_weapon_main",
+]
+const INTENTIONALLY_EMPTY_NODES: Array[String] = [
+	"Module_torso_inner", "Module_hands", "Module_weapon_offhand",
+]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -64,16 +74,13 @@ func _run() -> void:
 		_fail("P0_2_PRODUCTION_LIAN_REVIEW=BLOCKED pose_runtime", battle)
 		return
 
-	var required_nodes := [
-		"Module_hair_back", "Module_hair_front",
-		"Module_torso_inner", "Module_torso_outer", "Module_arms", "Module_hands",
-		"Module_waist", "Module_legs", "Module_feet",
-		"Module_head_accessory", "Module_shoulders", "Module_back_accessory",
-		"Module_weapon_back", "Module_weapon_main",
-	]
-	for node_name in required_nodes:
+	for node_name in REQUIRED_PRODUCTION_NODES:
 		if assembler.get_node_or_null(node_name) == null:
 			_fail("P0_2_PRODUCTION_LIAN_REVIEW=BLOCKED missing_node:%s" % node_name, battle)
+			return
+	for node_name in INTENTIONALLY_EMPTY_NODES:
+		if assembler.get_node_or_null(node_name) != null:
+			_fail("P0_2_PRODUCTION_LIAN_REVIEW=BLOCKED intentional_empty_node_present:%s" % node_name, battle)
 			return
 
 	if presenter.active_hair_style_id() != FirstPlayableSession.PRODUCTION_HAIR_STYLE:
@@ -135,6 +142,8 @@ func _run() -> void:
 		"profile_stack": FirstPlayableSession.production_default_visual_signature().get("profile_stack", []),
 		"module_count": module_count,
 		"mesh_count": mesh_count,
+		"required_production_nodes": REQUIRED_PRODUCTION_NODES,
+		"intentionally_empty_nodes": INTENTIONALLY_EMPTY_NODES,
 		"hair_style": String(presenter.active_hair_style_id()),
 		"uniform_set": String(presenter.active_uniform_set_id()),
 		"armor_set": String(presenter.active_armor_set_id()),
@@ -149,7 +158,7 @@ func _run() -> void:
 		"authored_animation": false,
 	})
 
-	print("P0_2_PRODUCTION_LIAN_VISUAL_STACK=PASS modules=%d meshes=%d hair=true uniform=true armor=true back=true" % [module_count, mesh_count])
+	print("P0_2_PRODUCTION_LIAN_VISUAL_STACK=PASS modules=%d meshes=%d hair=true uniform=true armor=true back=true intentional_empty=torso_inner,hands,weapon_offhand" % [module_count, mesh_count])
 	print("P0_2_PRODUCTION_LIAN_WEAPON_VISIBILITY=PASS neutral=false attack=true bridge=Sprite2D_to_Polygon2D")
 	print("P0_2_PRODUCTION_LIAN_NEUTRAL_CAPTURE=res://artifacts/p0_2_lian/%s" % NEUTRAL_OUTPUT)
 	print("P0_2_PRODUCTION_LIAN_ATTACK_CAPTURE=res://artifacts/p0_2_lian/%s" % ATTACK_OUTPUT)
