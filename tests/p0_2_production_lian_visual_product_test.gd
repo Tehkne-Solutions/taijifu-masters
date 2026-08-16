@@ -120,8 +120,8 @@ func _run() -> void:
 
 	var lot01 := battle.player_one.get_node_or_null("FirstPlayableRealAssetPresenter") as FirstPlayableLot01Presenter
 	var lot01_sprite := lot01.get_node_or_null("Lot01AnimatedSprite") as AnimatedSprite2D if lot01 != null else null
-	if lot01 == null or lot01_sprite == null or lot01_sprite.visible:
-		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED lot01_fallback_visible", battle)
+	if lot01 == null or lot01_sprite == null or lot01.visible:
+		_fail("P0_2_PRODUCTION_LIAN_GATE=BLOCKED lot01_fallback_boundary", battle)
 		return
 
 	var pose_runtime := battle.get_node_or_null("FirstPlayableModularPoseRuntime") as FirstPlayableModularPoseRuntime
@@ -148,6 +148,7 @@ func _run() -> void:
 	print("P0_2_PRODUCTION_LIAN_COMBAT_OWNER=PASS loadout=%s visual_weapon=%s" % [
 		String(profile.combat_loadout_id), String(presenter.active_weapon_main_id()),
 	])
+	print("P0_2_PRODUCTION_LIAN_FALLBACK=PASS lot01=preserved_hidden")
 	print("P0_2_PRODUCTION_LIAN_MESH_PARITY=PASS sprites=%d meshes=%d" % [sprite_module_count, mesh_count])
 	print("P0_2_PRODUCTION_LIAN_PRODUCT_GATE=PASS")
 	print("SIGNATURE=Tehkné Solutions")
