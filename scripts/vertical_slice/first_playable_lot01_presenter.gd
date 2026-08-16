@@ -84,13 +84,23 @@ func _try_activate_real_assets() -> void:
 func _install_modular_creator_overlay() -> void:
 	if not _using_real_assets or not is_instance_valid(_fighter):
 		return
-	if _fighter.player_index != 1 or not FirstPlayableSession.has_creator_preset():
+	if _fighter.player_index != 1:
+		return
+	# P0.2: the modular graph is the visual authority for P1 in every First
+	# Playable entry path. Direct-to-battle resolves a deterministic production
+	# BASE-01 preset instead of silently retaining the LOT01 presentation.
+	if not FirstPlayableSession.ensure_battle_visual_preset():
+		push_error("P0_2_RUNTIME_ASSET_TRUTH=BLOCKED production_default_preset_unavailable")
 		return
 	if _fighter.has_node("FirstPlayableModularFighterPresenter"):
 		return
 	var modular := MODULAR_FIGHTER_PRESENTER.new() as FirstPlayableModularFighterPresenter
 	modular.name = "FirstPlayableModularFighterPresenter"
 	_fighter.add_child(modular)
+	print("P0_2_RUNTIME_ASSET_TRUTH=ARMED source=%s preset=%s" % [
+		FirstPlayableSession.battle_visual_source(),
+		String(FirstPlayableSession.creator_preset_id()),
+	])
 
 func _hide_legacy_visual_surfaces() -> void:
 	if not is_instance_valid(_fighter):

@@ -5,6 +5,9 @@ const VALID_DIFFICULTIES: Array[StringName] = [&"apprentice", &"disciple", &"mas
 const PILOT_ID := "pilot-09-r2"
 const PARTICIPANT_PREFIX := "TJFP-"
 const CREATOR_VISUAL_BLOCKER := "shared_modular_animation_runtime"
+const PRODUCTION_DEFAULT_PRESET_ID := &"production_default_base01"
+const PRODUCTION_DEFAULT_PROFILE_ID := &"production_default_base01"
+const PRODUCTION_DEFAULT_DISPLAY_NAME := "LIAN WU • BASE-01"
 const PILOT_MATCHES_PER_DIFFICULTY := 2
 const PILOT_ASSIGNMENTS := {
 	"TJFP-001": [&"apprentice", &"disciple", &"master"],
@@ -177,6 +180,44 @@ static func has_creator_preset() -> bool:
 	var result := ModularFighterPresetStore.load_user_preset(selected_creator_preset_id)
 	return bool(result.get("ok", false))
 
+static func ensure_battle_visual_preset() -> bool:
+	# P0.2: entering combat directly must resolve to the production modular graph.
+	# A user-selected Creator preset always wins; the deterministic BASE-01 default
+	# is materialized only when no valid user preset is active.
+	if has_creator_preset():
+		return true
+
+	var profile := ModularFighterProfile.new()
+	profile.profile_id = PRODUCTION_DEFAULT_PROFILE_ID
+	profile.display_name = PRODUCTION_DEFAULT_DISPLAY_NAME
+	profile.base_body_id = &"base_fighter_v1"
+	profile.authored_facing = 1
+	profile.set_skin_palette_id(&"skin_tone_03_warm")
+	for slot_name in ["face", "eyes", "brows"]:
+		var slot := StringName(slot_name)
+		var default_id := profile.base01_default_identity_id(slot)
+		if default_id == &"":
+			return false
+		var failures := profile.set_base01_identity_module(slot, default_id)
+		if not failures.is_empty():
+			return false
+	var validation := profile.validate_against_standard()
+	if not validation.is_empty():
+		return false
+	var save_failures := ModularFighterPresetStore.save_user_preset(profile, PRODUCTION_DEFAULT_PRESET_ID)
+	if not save_failures.is_empty():
+		return false
+	selected_creator_preset_id = PRODUCTION_DEFAULT_PRESET_ID
+	return has_creator_preset()
+
+static func using_production_default_preset() -> bool:
+	return has_creator_preset() and selected_creator_preset_id == PRODUCTION_DEFAULT_PRESET_ID
+
+static func battle_visual_source() -> String:
+	if not has_creator_preset():
+		return "unresolved"
+	return "production_default" if using_production_default_preset() else "creator_preset"
+
 static func creator_preset_id() -> StringName:
 	return selected_creator_preset_id if has_creator_preset() else &""
 
@@ -193,10 +234,14 @@ static func creator_battle_handoff_signature() -> Dictionary:
 	return {
 		"preset_selected": has_creator_preset(),
 		"preset_id": String(creator_preset_id()),
+		"visual_source": battle_visual_source(),
+		"production_default_preset_id": String(PRODUCTION_DEFAULT_PRESET_ID),
+		"production_default_active": using_production_default_preset(),
 		"session_handoff": true,
 		"visual_activation": false,
 		"visual_blocker": CREATOR_VISUAL_BLOCKER,
 		"combat_build_fallback": "lian_wu_first_playable",
+		"unintended_lot01_fallback_allowed": false,
 		"static_sprite_regression_allowed": false,
 		"signature": "Tehkné Solutions",
 	}
@@ -207,3 +252,5 @@ static func reset() -> void:
 	selected_creator_preset_id = &""
 	pilot_completed_matches = 0
 	pilot_enforcement_enabled = false
+
+# Tehkné Solutions
