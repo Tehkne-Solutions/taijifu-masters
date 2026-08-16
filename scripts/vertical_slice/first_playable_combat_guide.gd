@@ -2,44 +2,64 @@ class_name FirstPlayableCombatGuide
 extends Control
 
 const POLICY := preload("res://scripts/vertical_slice/first_playable_visual_policy.gd")
-const FULL_GUIDE_SECONDS := 7.5
+const COMPACT_BATTLE_SECONDS := 1.8
 
+enum GuideStage { FULL, COMPACT, HIDDEN }
+
+var _match: FirstPlayableController
 var _panel: PanelContainer
 var _full_column: VBoxContainer
 var _compact_hint: Label
-var _elapsed := 0.0
-var _collapsed := false
+var _stage := GuideStage.HIDDEN
+var _battle_elapsed := 0.0
+var _battle_seen := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	anchor_top = 1.0
 	offset_left = 18.0
-	offset_top = -132.0
 	offset_right = -18.0
-	offset_bottom = -14.0
+	_match = get_parent().get_parent() as FirstPlayableController
 	_build()
+	_set_stage(GuideStage.HIDDEN)
 
 func _process(delta: float) -> void:
-	if _collapsed:
+	if not is_instance_valid(_match):
+		_match = get_parent().get_parent() as FirstPlayableController
+	if not is_instance_valid(_match):
 		return
-	_elapsed += delta
-	if _elapsed >= FULL_GUIDE_SECONDS:
-		_set_collapsed(true)
+	var match_state := int(_match.get("_state"))
+	match match_state:
+		FirstPlayableController.MatchState.COUNTDOWN:
+			_battle_seen = false
+			_battle_elapsed = 0.0
+			_set_stage(GuideStage.FULL)
+		FirstPlayableController.MatchState.BATTLE:
+			if not _battle_seen:
+				_battle_seen = true
+				_battle_elapsed = 0.0
+				_set_stage(GuideStage.COMPACT)
+			else:
+				_battle_elapsed += delta
+				if _battle_elapsed >= COMPACT_BATTLE_SECONDS:
+					_set_stage(GuideStage.HIDDEN)
+		_:
+			_set_stage(GuideStage.HIDDEN)
 
 func _build() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "CombatGuidePanel"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(POLICY.INK, 0.78)
-	panel_style.border_color = Color(POLICY.GOLD, 0.24)
+	panel_style.bg_color = Color(POLICY.INK, 0.76)
+	panel_style.border_color = Color(POLICY.GOLD, 0.22)
 	panel_style.set_border_width_all(1)
-	panel_style.set_corner_radius_all(5)
+	panel_style.set_corner_radius_all(4)
 	panel_style.content_margin_left = 12
 	panel_style.content_margin_right = 12
-	panel_style.content_margin_top = 7
-	panel_style.content_margin_bottom = 7
+	panel_style.content_margin_top = 6
+	panel_style.content_margin_bottom = 6
 	_panel.add_theme_stylebox_override("panel", panel_style)
 	add_child(_panel)
 
@@ -83,24 +103,35 @@ func _build() -> void:
 	_compact_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_compact_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_compact_hint.add_theme_font_size_override("font_size", 10)
-	_compact_hint.add_theme_color_override("font_color", Color(POLICY.BONE, 0.74))
+	_compact_hint.add_theme_color_override("font_color", Color(POLICY.BONE, 0.78))
 	_compact_hint.visible = false
 	_panel.add_child(_compact_hint)
 
-func _set_collapsed(active: bool) -> void:
-	_collapsed = active
+func _set_stage(next_stage: GuideStage) -> void:
+	if _stage == next_stage and visible:
+		return
+	_stage = next_stage
 	if not is_instance_valid(_panel):
 		return
-	_full_column.visible = not active
-	_compact_hint.visible = active
-	if active:
-		offset_top = -52.0
-		offset_bottom = -14.0
-		_panel.modulate.a = 0.72
-	else:
-		offset_top = -132.0
-		offset_bottom = -14.0
-		_panel.modulate.a = 1.0
+	match _stage:
+		GuideStage.FULL:
+			visible = true
+			offset_top = -112.0
+			offset_bottom = -14.0
+			_full_column.visible = true
+			_compact_hint.visible = false
+			_panel.modulate.a = 0.96
+		GuideStage.COMPACT:
+			visible = true
+			offset_top = -43.0
+			offset_bottom = -14.0
+			_full_column.visible = false
+			_compact_hint.visible = true
+			_panel.modulate.a = 0.68
+		GuideStage.HIDDEN:
+			_full_column.visible = false
+			_compact_hint.visible = false
+			visible = false
 
 func _add_chip(parent: HBoxContainer, key_text: String, action_text: String, accent: Color) -> void:
 	var chip := HBoxContainer.new()
@@ -127,24 +158,31 @@ func _add_chip(parent: HBoxContainer, key_text: String, action_text: String, acc
 	action.add_theme_color_override("font_color", Color(POLICY.BONE, 0.92))
 	chip.add_child(action)
 
+func guide_stage() -> StringName:
+	match _stage:
+		GuideStage.FULL: return &"full"
+		GuideStage.COMPACT: return &"compact"
+		_: return &"hidden"
+
 func presentation_signature() -> Dictionary:
 	return {
-		"persistent_compact_controls": true,
-		"full_guide_auto_collapses": true,
-		"full_guide_seconds": FULL_GUIDE_SECONDS,
-		"compact_hint_after_intro": true,
-		"attack_families_visible": true,
+		"persistent_compact_controls": false,
+		"full_guide_countdown_only": true,
+		"compact_hint_battle_seconds": COMPACT_BATTLE_SECONDS,
+		"guide_hidden_during_active_round": true,
+		"gameplay_area_released_after_intro": true,
+		"attack_families_visible_during_onboarding": true,
 		"tai_key": "F",
 		"ji_key": "G",
 		"fu_key": "H",
-		"repeat_sequences_visible": true,
-		"direction_modifiers_visible": true,
-		"elemental_recipes_visible": true,
-		"climax_reaction_controls_visible": true,
+		"repeat_sequences_visible_during_onboarding": true,
+		"direction_modifiers_visible_during_onboarding": true,
+		"elemental_recipes_visible_during_onboarding": true,
+		"climax_reaction_controls_visible_during_onboarding": true,
 		"dedicated_magic_button_visible": false,
-		"movement_visible": true,
-		"jump_visible": true,
-		"defense_visible": true,
+		"movement_visible_during_onboarding": true,
+		"jump_visible_during_onboarding": true,
+		"defense_visible_during_onboarding": true,
 		"arena_fighter_readability": true,
 		"site_panel": false,
 		"signature": "Tehkné Solutions"
