@@ -1,13 +1,13 @@
 class_name FirstPlayableCameraComposition
 extends Node
 
-# C46: framing tuned from the first packaged interactive playtest.
-# Fighters must read as the primary visual subject; the arena remains context, not empty space.
-const MIN_ZOOM := 0.68
-const MAX_ZOOM := 1.06
+# C46 + P0.2 Slice 08: framing tuned from packaged playtests and canonical-art review.
+# Fighters remain world-space unchanged; camera framing makes them the primary visual subject.
+const MIN_ZOOM := 0.72
+const MAX_ZOOM := 1.34
 const BASELINE_Y := 500.0
 const VERTICAL_RANGE := 56.0
-const HORIZONTAL_PADDING := 300.0
+const HORIZONTAL_PADDING := 220.0
 const FOCUS_LERP := 6.0
 const ZOOM_LERP := 5.6
 const SHAKE_DECAY := 9.0
@@ -15,6 +15,8 @@ const MAX_SHAKE_PIXELS := 7.0
 const IMMEDIATE_KICK_RATIO := 0.72
 const CLOSE_FIGHT_DISTANCE := 260.0
 const CLOSE_FIGHT_ZOOM_FLOOR := 0.94
+const SCREEN_PRESENCE_TARGET_MIN := 0.23
+const SCREEN_PRESENCE_TARGET_MAX := 0.30
 
 var _root: Node2D
 var _camera: Camera2D
@@ -28,6 +30,7 @@ func _ready() -> void:
 	_root = get_parent() as Node2D
 	_camera = _root.get_node_or_null("Camera2D") as Camera2D
 	print("V2_C46_CAMERA_READABILITY=PASS min=%.2f max=%.2f" % [MIN_ZOOM, MAX_ZOOM])
+	print("P0_2_FIGHTER_SCREEN_PRESENCE=ARMED world_scale_unchanged=true padding=%.0f" % HORIZONTAL_PADDING)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(_root) or not is_instance_valid(_camera):
@@ -125,6 +128,9 @@ func presentation_signature() -> Dictionary:
 		"horizontal_padding": HORIZONTAL_PADDING,
 		"close_fight_distance": CLOSE_FIGHT_DISTANCE,
 		"close_fight_zoom_floor": CLOSE_FIGHT_ZOOM_FLOOR,
+		"screen_presence_target_min": SCREEN_PRESENCE_TARGET_MIN,
+		"screen_presence_target_max": SCREEN_PRESENCE_TARGET_MAX,
+		"world_fighter_scale_changes": false,
 		"both_fighters_visible": true,
 		"reduced_vertical_motion": true,
 		"focus_lerp": FOCUS_LERP,
