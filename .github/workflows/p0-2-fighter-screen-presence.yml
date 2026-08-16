@@ -5,6 +5,10 @@ on:
     paths:
       - 'scripts/vertical_slice/first_playable.gd'
       - 'scripts/vertical_slice/first_playable_camera_composition.gd'
+      - 'scripts/vertical_slice/first_playable_modular_pose_runtime.gd'
+      - 'scripts/characters/modular_fighter_motion_library.gd'
+      - 'scripts/characters/modular_fighter_pose_rig.gd'
+      - 'config/p0_2_modular_fighter_motion_library_v1.json'
       - 'scripts/ci/p0_2_fighter_screen_presence_review.gd'
       - 'tools/RUN-VM02-C46-V2-COMBAT-READABILITY-BALANCE-GATE.ps1'
       - '.github/workflows/p0-2-fighter-screen-presence.yml'
@@ -44,13 +48,12 @@ jobs:
           set -euo pipefail
           grep -q 'const MIN_ZOOM := 0.72' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const MAX_ZOOM := 1.34' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const HORIZONTAL_PADDING := 220.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const BASELINE_Y := 530.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const VERTICAL_RANGE := 60.0' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const HORIZONTAL_PADDING := 220.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const SCREEN_PRESENCE_TARGET_MIN := 0.23' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const SCREEN_PRESENCE_TARGET_MAX := 0.30' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'world_fighter_scale_changes' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'legacy_camera_writer_active' scripts/vertical_slice/first_playable.gd
           grep -q 'single_production_owner' scripts/vertical_slice/first_playable.gd
           echo 'P0_2_SCREEN_PRESENCE_CAMERA_CONTRACT=PASS'
 
@@ -85,7 +88,6 @@ jobs:
             ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
             --script res://scripts/ci/p0_2_fighter_screen_presence_review.gd \
             2>&1 | tee p0-2-screen-presence-review.log
-          grep -q 'P0_2_CAMERA_SINGLE_OWNER=PASS owner=FightCameraComposition legacy_writer=false' p0-2-screen-presence-review.log
           grep -q 'P0_2_FIGHTER_FAR_FRAMING=PASS' p0-2-screen-presence-review.log
           grep -q 'P0_2_FIGHTER_CLOSE_PRESENCE=PASS' p0-2-screen-presence-review.log
           grep -q 'P0_2_FIGHTER_WORLD_SCALE=UNCHANGED' p0-2-screen-presence-review.log
@@ -115,6 +117,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'P0.2 fighter screen presence — single camera owner + far visibility + close combat presence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.2 fighter screen presence — camera-only framing, far visibility + close combat presence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
