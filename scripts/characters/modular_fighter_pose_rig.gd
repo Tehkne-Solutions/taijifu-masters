@@ -85,7 +85,15 @@ func configure(
 		if mesh == null:
 			failures.append("pose_rig_layer_bind_failed:%s" % String(source.name))
 			continue
-		_bindings.append({"source": source, "mesh": mesh})
+		var original_self_modulate := source.self_modulate
+		_bindings.append({
+			"source": source,
+			"mesh": mesh,
+			"source_self_modulate": original_self_modulate,
+		})
+		var hidden_source := original_self_modulate
+		hidden_source.a = 0.0
+		source.self_modulate = hidden_source
 
 	if not failures.is_empty():
 		_restore_sources()
@@ -137,7 +145,7 @@ func runtime_signature() -> Dictionary:
 func apply_pose(
 	state: StringName,
 	state_time: float,
-	attack_phase: FighterController.AttackPhase,
+	attack_phase: int,
 	attack_phase_timer: float,
 	technique: TechniqueData
 ) -> void:
@@ -232,7 +240,6 @@ func _build_deformable_layer(source: Sprite2D) -> Polygon2D:
 		mesh.add_bone(NodePath(String(bone_name)), weights)
 
 	_assembler.add_child(mesh)
-	source.visible = false
 	return mesh
 
 func _normalized_bone_weight(bone_name: String, point: Vector2) -> float:
@@ -310,7 +317,7 @@ func _apply_fall() -> void:
 	_rotate("forearm_r", -0.12)
 
 func _apply_attack(
-	attack_phase: FighterController.AttackPhase,
+	attack_phase: int,
 	attack_phase_timer: float,
 	technique: TechniqueData
 ) -> void:
@@ -391,7 +398,7 @@ func _apply_ko(time: float) -> void:
 	_translate("pelvis", Vector2(8.0 * fall, 14.0 * fall))
 
 func _attack_phase_progress(
-	attack_phase: FighterController.AttackPhase,
+	attack_phase: int,
 	attack_phase_timer: float,
 	technique: TechniqueData
 ) -> float:
@@ -424,17 +431,19 @@ func _sync_layer_visibility() -> void:
 		var source := binding.get("source") as Sprite2D
 		var mesh := binding.get("mesh") as Polygon2D
 		if source != null and mesh != null:
-			# Source visibility is still the ownership boundary used by equipment
-			# runtimes; the deformable mirror follows it but the source stays hidden.
+			# Equipment runtimes continue to own source.visible. The source texture
+			# itself is alpha-hidden so the deformable mirror can follow that policy.
 			mesh.visible = source.visible
-			source.visible = false
+			var hidden_source: Color = binding.get("source_self_modulate", Color.WHITE)
+			hidden_source.a = 0.0
+			source.self_modulate = hidden_source
 
 func _restore_sources() -> void:
 	for binding in _bindings:
 		var source := binding.get("source") as Sprite2D
 		var mesh := binding.get("mesh") as Polygon2D
 		if source != null:
-			source.visible = true
+			source.self_modulate = binding.get("source_self_modulate", Color.WHITE)
 		if mesh != null:
 			mesh.queue_free()
 	_bindings.clear()
