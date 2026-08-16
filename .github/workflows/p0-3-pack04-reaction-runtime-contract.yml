@@ -1,0 +1,99 @@
+name: P0.3 PACK 04 Reaction Runtime Contract
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/fighter/first_playable_combat_fighter_controller.gd'
+      - 'scripts/vertical_slice/first_playable_pack04_reaction_runtime.gd'
+      - 'tests/p0_3_pack04_reaction_runtime_contract_test.gd'
+      - '.github/workflows/p0-3-pack04-reaction-runtime-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reaction-runtime-contract:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize canonical First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-pack04-runtime'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath pack04-runtime-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require canonical snapshot authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' pack04-runtime-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' pack04-runtime-c30.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' pack04-runtime-c30.log
+          echo 'PACK04_RUNTIME_CANONICAL_SNAPSHOT=PASS'
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee pack04-runtime-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' pack04-runtime-import.log; then
+            echo 'PACK04_RUNTIME_IMPORT=BLOCKED'
+            exit 1
+          fi
+          echo 'PACK04_RUNTIME_IMPORT=PASS'
+
+      - name: Run semantic reaction runtime product gate
+        run: |
+          set -o pipefail
+          timeout 90s ./godot --headless --audio-driver Dummy --path . \
+            --script res://tests/p0_3_pack04_reaction_runtime_contract_test.gd \
+            2>&1 | tee pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_DUAL_FIGHTER=PASS p1=true p2=true' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_STATES=PASS states=block_recoil,parry,posture_break,knockback,neutral_recovery' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_SIGNAL_OBSERVER=PASS result=blocked semantic=block_recoil' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_SEQUENCE=PASS hit=existing_hit>knockback>neutral_recovery' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_FALLBACKS=PASS block_recoil=guard parry=guard posture_break=hit knockback=hit neutral_recovery=idle' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_ART_STATUS=BLOCKED release=assets-pack-04-v1.0.0' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_PHYSICS_AUTHORITY=PASS owner=fighter_physics changes=false' pack04-runtime-product.log
+          grep -q 'PACK04_RUNTIME_CONTRACT_GATE=PASS' pack04-runtime-product.log
+          grep -q 'SIGNATURE=Tehkné Solutions' pack04-runtime-product.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|PACK04_RUNTIME_GATE=BLOCKED|PACK04_RUNTIME_ART_STATUS=PASS' pack04-runtime-product.log; then
+            echo 'PACK04_RUNTIME_CONTRACT_CI=BLOCKED'
+            exit 1
+          fi
+          echo 'PACK04_RUNTIME_CONTRACT_CI=PASS art_status=blocked'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: P0-3-PACK04-REACTION-RUNTIME-CONTRACT-EVIDENCE
+          path: |
+            pack04-runtime-c30.log
+            pack04-runtime-import.log
+            pack04-runtime-product.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: echo 'P0.3 PACK 04 semantic runtime ready; authored reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions
