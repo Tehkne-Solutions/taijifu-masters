@@ -7,7 +7,14 @@ const PARTICIPANT_PREFIX := "TJFP-"
 const CREATOR_VISUAL_BLOCKER := "shared_modular_animation_runtime"
 const PRODUCTION_DEFAULT_PRESET_ID := &"production_default_base01"
 const PRODUCTION_DEFAULT_PROFILE_ID := &"production_default_base01"
-const PRODUCTION_DEFAULT_DISPLAY_NAME := "LIAN WU • BASE-01"
+const PRODUCTION_DEFAULT_DISPLAY_NAME := "LIAN WU • PRODUCTION"
+const PRODUCTION_HAIR_STYLE := &"hair_01_lian_topknot"
+const PRODUCTION_UNIFORM_SET := &"uniform_01_lian_martial"
+const PRODUCTION_ARMOR_SET := &"armor_01_taijifu_guard"
+const PRODUCTION_BACK_ACCESSORY := &"back_01_guardian_panel"
+const PRODUCTION_WEAPON_SET := &"weapon_01_lian_serene_katana"
+const PRODUCTION_WEAPON_BACK := &"sheath_lian_wu_blue"
+const PRODUCTION_COMBAT_LOADOUT := &"combat_lian_wu_first_playable"
 const PILOT_MATCHES_PER_DIFFICULTY := 2
 const PILOT_ASSIGNMENTS := {
 	"TJFP-001": [&"apprentice", &"disciple", &"master"],
@@ -181,9 +188,10 @@ static func has_creator_preset() -> bool:
 	return bool(result.get("ok", false))
 
 static func ensure_battle_visual_preset() -> bool:
-	# P0.2: entering combat directly must resolve to the production modular graph.
-	# A user-selected Creator preset always wins; the deterministic BASE-01 default
-	# is materialized only when no valid user preset is active.
+	# P0.2: direct combat resolves to the complete approved Lian production graph.
+	# A user-selected Creator preset always wins. The stable historical preset ID
+	# is retained so handoff/persistence contracts do not break while its contents
+	# are promoted from sparse BASE-01 identity to the approved BASE-01..05 stack.
 	if has_creator_preset():
 		return true
 
@@ -201,14 +209,45 @@ static func ensure_battle_visual_preset() -> bool:
 		var failures := profile.set_base01_identity_module(slot, default_id)
 		if not failures.is_empty():
 			return false
+
+	var composition_failures := PackedStringArray()
+	composition_failures.append_array(ModularFighterHairRuntime.set_profile_style(profile, PRODUCTION_HAIR_STYLE))
+	composition_failures.append_array(ModularFighterUniformRuntime.set_profile_set(profile, PRODUCTION_UNIFORM_SET))
+	composition_failures.append_array(ModularFighterArmorRuntime.set_profile_armor_set(profile, PRODUCTION_ARMOR_SET))
+	composition_failures.append_array(ModularFighterArmorRuntime.set_profile_back_accessory(profile, PRODUCTION_BACK_ACCESSORY))
+	profile.set_module(&"weapon_back", PRODUCTION_WEAPON_BACK)
+	profile.combat_loadout_id = PRODUCTION_COMBAT_LOADOUT
+	composition_failures.append_array(ModularFighterEquipmentRuntime.set_profile_weapon_set(profile, PRODUCTION_WEAPON_SET))
+	composition_failures.append_array(ModularFighterHairRuntime.validate_profile_pair(profile))
+	composition_failures.append_array(ModularFighterUniformRuntime.validate_profile_set(profile))
+	composition_failures.append_array(ModularFighterArmorRuntime.validate_profile(profile))
+	composition_failures.append_array(ModularFighterEquipmentRuntime.validate_profile(profile))
+	composition_failures.append_array(ModularFighterEquipmentRuntime.validate_weapon_main_profile(profile))
+	composition_failures.append_array(ModularFighterEquipmentRuntime.validate_profile_weapon_set(profile))
+	if not composition_failures.is_empty():
+		push_error("P0_2_PRODUCTION_LIAN_PRESET=BLOCKED failures=%s" % ",".join(composition_failures))
+		return false
+
 	var validation := profile.validate_against_standard()
 	if not validation.is_empty():
+		push_error("P0_2_PRODUCTION_LIAN_PRESET=BLOCKED standard=%s" % ",".join(validation))
 		return false
 	var save_failures := ModularFighterPresetStore.save_user_preset(profile, PRODUCTION_DEFAULT_PRESET_ID)
 	if not save_failures.is_empty():
+		push_error("P0_2_PRODUCTION_LIAN_PRESET=BLOCKED save=%s" % ",".join(save_failures))
 		return false
 	selected_creator_preset_id = PRODUCTION_DEFAULT_PRESET_ID
-	return has_creator_preset()
+	if not has_creator_preset():
+		return false
+	print("P0_2_PRODUCTION_LIAN_PRESET=PASS hair=%s uniform=%s armor=%s back=%s weapon_set=%s weapon_back=%s" % [
+		String(PRODUCTION_HAIR_STYLE),
+		String(PRODUCTION_UNIFORM_SET),
+		String(PRODUCTION_ARMOR_SET),
+		String(PRODUCTION_BACK_ACCESSORY),
+		String(PRODUCTION_WEAPON_SET),
+		String(PRODUCTION_WEAPON_BACK),
+	])
+	return true
 
 static func using_production_default_preset() -> bool:
 	return has_creator_preset() and selected_creator_preset_id == PRODUCTION_DEFAULT_PRESET_ID
@@ -230,6 +269,23 @@ static func creator_profile_result() -> Dictionary:
 		}
 	return ModularFighterPresetStore.load_user_preset(selected_creator_preset_id)
 
+static func production_default_visual_signature() -> Dictionary:
+	return {
+		"preset_id": String(PRODUCTION_DEFAULT_PRESET_ID),
+		"base_body": "base_fighter_v1",
+		"skin": "skin_tone_03_warm",
+		"hair_style": String(PRODUCTION_HAIR_STYLE),
+		"uniform_set": String(PRODUCTION_UNIFORM_SET),
+		"armor_set": String(PRODUCTION_ARMOR_SET),
+		"back_accessory": String(PRODUCTION_BACK_ACCESSORY),
+		"weapon_set": String(PRODUCTION_WEAPON_SET),
+		"weapon_back": String(PRODUCTION_WEAPON_BACK),
+		"combat_loadout": String(PRODUCTION_COMBAT_LOADOUT),
+		"profile_stack": ["BASE-01", "BASE-02", "BASE-03", "BASE-04", "BASE-05"],
+		"legacy_sparse_base01_default": false,
+		"signature": "Tehkné Solutions",
+	}
+
 static func creator_battle_handoff_signature() -> Dictionary:
 	return {
 		"preset_selected": has_creator_preset(),
@@ -237,6 +293,7 @@ static func creator_battle_handoff_signature() -> Dictionary:
 		"visual_source": battle_visual_source(),
 		"production_default_preset_id": String(PRODUCTION_DEFAULT_PRESET_ID),
 		"production_default_active": using_production_default_preset(),
+		"production_default_visual": production_default_visual_signature(),
 		"session_handoff": true,
 		"visual_activation": false,
 		"visual_blocker": CREATOR_VISUAL_BLOCKER,
