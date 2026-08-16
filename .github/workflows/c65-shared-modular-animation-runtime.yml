@@ -3,6 +3,7 @@ name: C65 Shared Modular Animation Runtime
 on:
   pull_request:
     paths:
+      - 'scripts/vertical_slice/first_playable_session.gd'
       - 'scripts/vertical_slice/first_playable_modular_fighter_presenter.gd'
       - 'scripts/vertical_slice/first_playable_lot01_presenter.gd'
       - 'scripts/ci/c65_shared_modular_animation_runtime_smoke.gd'
@@ -51,7 +52,7 @@ jobs:
           assert combat['collision_changes'] is False
           assert combat['physics_changes'] is False
           assert combat['balance_changes'] is False
-          print('C65_CONTRACT=PASS states=10 fallback=lian_lot01')
+          print('C65_CONTRACT=PASS states=10 fallback=lian_lot01_fail_closed')
           print('SIGNATURE=Tehkné Solutions')
           PY
 
@@ -74,7 +75,7 @@ jobs:
             exit 1
           fi
 
-      - name: Run C64 canonical LOT01 fallback smoke
+      - name: Run C64 canonical LOT01 fail-closed evidence smoke
         run: |
           set -euo pipefail
           ./godot --headless --path . --script res://scripts/ci/c64_lian_first_playable_lot01_smoke.gd 2>&1 | tee c65-c64-fallback.log
@@ -85,7 +86,7 @@ jobs:
             exit 1
           fi
 
-      - name: Run creator to battle shared animation smoke
+      - name: Run creator and production-default shared animation smoke
         run: |
           set -euo pipefail
           ./godot --headless --path . --script res://scripts/ci/c65_shared_modular_animation_runtime_smoke.gd 2>&1 | tee c65-runtime.log
@@ -95,7 +96,7 @@ jobs:
           grep -q 'C65_VISUAL_ACTIVATION=PASS runtime=shared_modular_animation_runtime_v1' c65-runtime.log
           grep -q 'C65_LIAN_FALLBACK=PASS preserved=true hidden_when_modular_active=true' c65-runtime.log
           grep -q 'C65_COMBAT_BUILD=PASS character=lian_wu unchanged=true' c65-runtime.log
-          grep -q 'C65_NO_PRESET_FALLBACK=PASS lian_visible=true modular_absent=true' c65-runtime.log
+          grep -q 'P0_2_RUNTIME_ASSET_TRUTH=PASS source=production_default lot01_visible=false' c65-runtime.log
           grep -q 'C65_SHARED_MODULAR_ANIMATION_RUNTIME=PASS' c65-runtime.log
           if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|ERROR:' c65-runtime.log; then
             echo 'C65_RUNTIME_ERRORS=BLOCKED'
@@ -133,4 +134,4 @@ jobs:
           if-no-files-found: ignore
 
       - name: Summary
-        run: echo 'C65 shared modular animation runtime + active-fight Xvfb visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'C65 shared modular animation runtime + production-default cutover + active-fight Xvfb visual review gate — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
