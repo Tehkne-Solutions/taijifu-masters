@@ -5,7 +5,10 @@ on:
     paths:
       - 'scripts/fighter/first_playable_combat_fighter_controller.gd'
       - 'scripts/vertical_slice/first_playable_pack04_reaction_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_skeletal_modular_fighter_presenter.gd'
+      - 'scripts/vertical_slice/training_rival_lot01_presenter.gd'
       - 'tests/p0_3_pack04_reaction_runtime_contract_test.gd'
+      - 'tests/p0_3_pack04_presenter_handoff_test.gd'
       - '.github/workflows/p0-3-pack04-reaction-runtime-contract.yml'
   workflow_dispatch:
 
@@ -81,6 +84,29 @@ jobs:
           fi
           echo 'PACK04_RUNTIME_CONTRACT_CI=PASS art_status=blocked'
 
+      - name: Run presenter handoff product gate
+        run: |
+          set -o pipefail
+          timeout 90s ./godot --headless --audio-driver Dummy --path . \
+            --script res://tests/p0_3_pack04_presenter_handoff_test.gd \
+            2>&1 | tee pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_HANDOFF=PASS p1=skeletal_modular p2=training_rival' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_BLOCK=PASS p1=guard p2=guard' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_PARRY=PASS p1=guard p2=guard' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_POSTURE=PASS p1=hit p2=hit' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_KNOCKBACK=PASS p1=hit p2=hit' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_NEUTRAL=PASS p1=idle p2=idle' pack04-presenter-handoff.log
+          grep -q 'PACK04_SKELETON_HANDOFF=PASS states=guard,hit,idle authored_library_preserved=true' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_ART_STATUS=BLOCKED release=assets-pack-04-v1.0.0' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_GAMEPLAY_AUTHORITY=PASS owner=fighter_physics changes=false' pack04-presenter-handoff.log
+          grep -q 'PACK04_PRESENTER_HANDOFF_GATE=PASS' pack04-presenter-handoff.log
+          grep -q 'SIGNATURE=Tehkné Solutions' pack04-presenter-handoff.log
+          if grep -Eq 'SCRIPT ERROR|Parse Error|PACK04_PRESENTER_GATE=BLOCKED|PACK04_PRESENTER_ART_STATUS=PASS' pack04-presenter-handoff.log; then
+            echo 'PACK04_PRESENTER_HANDOFF_CI=BLOCKED'
+            exit 1
+          fi
+          echo 'PACK04_PRESENTER_HANDOFF_CI=PASS art_status=blocked'
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -89,11 +115,12 @@ jobs:
             pack04-runtime-c30.log
             pack04-runtime-import.log
             pack04-runtime-product.log
+            pack04-presenter-handoff.log
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Summary
         if: always()
-        run: echo 'P0.3 PACK 04 semantic runtime ready; authored reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.3 PACK 04 semantic runtime + presenter fallback handoff ready; authored reaction art remains blocked — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions

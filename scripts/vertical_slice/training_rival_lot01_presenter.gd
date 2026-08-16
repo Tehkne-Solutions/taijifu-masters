@@ -50,6 +50,9 @@ func _process(delta: float) -> void:
 func using_real_assets() -> bool:
 	return _using_real_assets
 
+func active_animation() -> StringName:
+	return _active_animation
+
 func expected_sprite_frames_path() -> String:
 	return SPRITE_FRAMES_PATH
 
@@ -59,7 +62,28 @@ func canonical_scale() -> float:
 func canonical_baseline_offset_y() -> float:
 	return BASELINE_OFFSET_Y
 
+func pack04_visual_override() -> StringName:
+	var runtime := _pack04_runtime()
+	return runtime.visual_override() if runtime != null else &""
+
+func pack04_handoff_signature() -> Dictionary:
+	var runtime := _pack04_runtime()
+	var runtime_signature := runtime.runtime_signature() if runtime != null else {}
+	return {
+		"active": runtime != null,
+		"visual_override": String(pack04_visual_override()),
+		"visual_source": String(runtime_signature.get("visual_source", "none")),
+		"fallback_active": bool(runtime_signature.get("fallback_active", false)),
+		"pack04_art_available": bool(runtime_signature.get("pack04_art_available", false)),
+		"pack04_art_status": String(runtime_signature.get("pack04_art_status", "runtime_unavailable")),
+		"gameplay_owner": "fighter_physics",
+		"collision_changes": false,
+		"combat_logic_changes": false,
+		"signature": "Tehkné Solutions",
+	}
+
 func canonical_visual_authority_signature() -> Dictionary:
+	var pack04 := pack04_handoff_signature()
 	return {
 		"active": (
 			_using_real_assets
@@ -71,6 +95,12 @@ func canonical_visual_authority_signature() -> Dictionary:
 		"provisional_child_visuals_retired": _provisional_child_visuals_retired(),
 		"provisional_child_visuals": _provisional_child_visual_signature(),
 		"child_presenters_inherit_self_modulate": false,
+		"pack04_reaction_handoff": bool(pack04.get("active", false)),
+		"pack04_visual_override": String(pack04.get("visual_override", "")),
+		"pack04_visual_source": String(pack04.get("visual_source", "none")),
+		"pack04_fallback_active": bool(pack04.get("fallback_active", false)),
+		"pack04_art_available": bool(pack04.get("pack04_art_available", false)),
+		"pack04_art_status": String(pack04.get("pack04_art_status", "runtime_unavailable")),
 		"collision_changes": false,
 		"combat_logic_changes": false,
 		"signature": "Tehkné Solutions",
@@ -163,9 +193,17 @@ func _accepted_action_overrides_hit() -> bool:
 		return (_fighter as FirstPlayableCombatFighterController).first_playable_visual_action_override_active()
 	return false
 
+func _pack04_runtime() -> FirstPlayablePack04ReactionRuntime:
+	if not (_fighter is FirstPlayableCombatFighterController):
+		return null
+	return (_fighter as FirstPlayableCombatFighterController).pack04_reaction_runtime()
+
 func _resolve_animation() -> StringName:
 	if _fighter.health <= 0.0:
 		return &"ko"
+	var pack04_override := pack04_visual_override()
+	if not String(pack04_override).is_empty():
+		return pack04_override
 	if _hit_visual_timer > 0.0 and not _accepted_action_overrides_hit():
 		return &"hit"
 	if _fighter._dodge_timer > 0.0:
