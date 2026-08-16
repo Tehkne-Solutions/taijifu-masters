@@ -5,6 +5,10 @@ on:
     paths:
       - 'scripts/runtime/impact_director.gd'
       - 'scripts/vertical_slice/first_playable_camera_composition.gd'
+      - 'scripts/vertical_slice/first_playable_modular_pose_runtime.gd'
+      - 'scripts/characters/modular_fighter_motion_library.gd'
+      - 'scripts/characters/modular_fighter_pose_rig.gd'
+      - 'config/p0_2_modular_fighter_motion_library_v1.json'
       - 'scripts/ci/vfx01_presentation_owner_bench.gd'
       - 'scripts/ci/vfx02_canonical_impact_readability_review.gd'
       - 'config/v2-arena-intake-contract.json'
