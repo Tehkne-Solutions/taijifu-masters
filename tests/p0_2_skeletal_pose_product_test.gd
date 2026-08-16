@@ -3,6 +3,7 @@ extends SceneTree
 const BATTLE_SCENE := "res://scenes/vertical_slice/first_playable.tscn"
 const MAX_WAIT_FRAMES := 420
 const EXPECTED_BONE_COUNT := 11
+const MIN_VISUAL_MODULES := 4
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -69,8 +70,14 @@ func _run() -> void:
 	if rig.bone_count() != EXPECTED_BONE_COUNT:
 		_fail("P0_2_SKELETAL_GATE=BLOCKED bone_count:%d" % rig.bone_count())
 		return
-	if rig.mesh_layer_count() < 5:
-		_fail("P0_2_SKELETAL_GATE=BLOCKED mesh_layers:%d" % rig.mesh_layer_count())
+	var visual_module_count := _visual_sprite_module_count(assembler)
+	if visual_module_count < MIN_VISUAL_MODULES:
+		_fail("P0_2_SKELETAL_GATE=BLOCKED visual_modules:%d" % visual_module_count)
+		return
+	if rig.mesh_layer_count() != visual_module_count:
+		_fail("P0_2_SKELETAL_GATE=BLOCKED mesh_module_parity meshes=%d modules=%d" % [
+			rig.mesh_layer_count(), visual_module_count,
+		])
 		return
 	var rig_signature := rig.runtime_signature()
 	if String(rig_signature.get("skeleton_type", "")) != "Skeleton2D":
@@ -126,6 +133,7 @@ func _run() -> void:
 		return
 
 	print("P0_2_SKELETAL_AUTHORITY=PASS presenter_bypass=true root_affine=false")
+	print("P0_2_SKELETAL_LAYER_PARITY=PASS modules=%d meshes=%d" % [visual_module_count, rig.mesh_layer_count()])
 	print("P0_2_SKELETAL_DEFORMATION=PASS phases=anticipation,contact,recovery bones=%d meshes=%d" % [
 		rig.bone_count(), rig.mesh_layer_count(),
 	])
@@ -144,6 +152,13 @@ func _wait_for_runtime(battle: FirstPlayableController) -> FirstPlayableModularP
 			return runtime
 		await process_frame
 	return null
+
+func _visual_sprite_module_count(assembler: ModularFighterAssembler) -> int:
+	var count := 0
+	for child in assembler.get_children():
+		if child is Sprite2D and String(child.name).begins_with("Module_"):
+			count += 1
+	return count
 
 func _bone_rotation(signature: Dictionary, bone_name: String) -> float:
 	var bones = signature.get("bones", {})
