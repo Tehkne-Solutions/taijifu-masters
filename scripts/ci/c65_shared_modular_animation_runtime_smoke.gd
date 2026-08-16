@@ -160,24 +160,40 @@ func _run() -> void:
 	_cleanup()
 	FirstPlayableSession.reset()
 
-	var fallback_battle := (load(BATTLE_SCENE) as PackedScene).instantiate() as FirstPlayableController
-	get_root().add_child(fallback_battle)
-	for _frame in range(16):
+	# P0.2 regression: direct-to-battle must materialize the deterministic
+	# production BASE-01 profile and hide LOT01. The historical no-preset LOT01
+	# behavior is now an explicit product failure.
+	var default_battle := (load(BATTLE_SCENE) as PackedScene).instantiate() as FirstPlayableController
+	get_root().add_child(default_battle)
+	for _frame in range(20):
 		await process_frame
-	var fallback_lian := fallback_battle.player_one.get_node_or_null("FirstPlayableRealAssetPresenter") as FirstPlayableLot01Presenter
-	if fallback_lian == null or not fallback_lian.using_real_assets() or not fallback_lian.visible:
-		_fail("C65_SHARED_RUNTIME=BLOCKED no_preset_lian_fallback")
+	var default_lian := default_battle.player_one.get_node_or_null("FirstPlayableRealAssetPresenter") as FirstPlayableLot01Presenter
+	var default_modular := default_battle.player_one.get_node_or_null("FirstPlayableModularFighterPresenter") as FirstPlayableModularFighterPresenter
+	if default_lian == null or not default_lian.using_real_assets():
+		_fail("C65_SHARED_RUNTIME=BLOCKED production_default_lot01_evidence_missing")
 		return
-	if fallback_battle.player_one.has_node("FirstPlayableModularFighterPresenter"):
-		_fail("C65_SHARED_RUNTIME=BLOCKED no_preset_modular_overlay")
+	if default_modular == null or not default_modular.using_modular_assets():
+		_fail("C65_SHARED_RUNTIME=BLOCKED production_default_modular_missing")
 		return
-	print("C65_NO_PRESET_FALLBACK=PASS lian_visible=true modular_absent=true")
-	fallback_battle.queue_free()
+	if default_modular.active_preset_id() != FirstPlayableSession.PRODUCTION_DEFAULT_PRESET_ID:
+		_fail("C65_SHARED_RUNTIME=BLOCKED production_default_preset_mismatch")
+		return
+	if default_lian.visible:
+		_fail("C65_SHARED_RUNTIME=BLOCKED unintended_lot01_fallback_visible")
+		return
+	if FirstPlayableSession.battle_visual_source() != "production_default":
+		_fail("C65_SHARED_RUNTIME=BLOCKED production_default_visual_source")
+		return
+	print("P0_2_RUNTIME_ASSET_TRUTH=PASS source=production_default lot01_visible=false")
+	default_battle.queue_free()
 	await process_frame
+	_cleanup()
+	FirstPlayableSession.reset()
 	quit(0)
 
 func _cleanup() -> void:
 	ModularFighterPresetStore.delete_user_preset(TEST_PRESET)
+	ModularFighterPresetStore.delete_user_preset(FirstPlayableSession.PRODUCTION_DEFAULT_PRESET_ID)
 
 func _fail(marker: String) -> void:
 	push_error(marker)
