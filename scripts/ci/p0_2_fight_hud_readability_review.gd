@@ -72,6 +72,9 @@ func _run() -> void:
 	if bool(presentation.get("persistent_keyboard_help", true)) or bool(presentation.get("bottom_dashboard", true)):
 		_fail("P0_2_HUD_REVIEW=BLOCKED technical_dashboard_regression", battle)
 		return
+	if not bool(presentation.get("martial_strip_typographic_only", false)) or bool(presentation.get("martial_strip_panel", true)):
+		_fail("P0_2_HUD_REVIEW=BLOCKED martial_strip_app_panel", battle)
+		return
 	var top_reserved := float(surfaces.get("top_reserved_height", INF))
 	if top_reserved > MAX_TOP_RESERVED_HEIGHT:
 		_fail("P0_2_HUD_REVIEW=BLOCKED top_reserved=%.2f" % top_reserved, battle)
@@ -87,6 +90,9 @@ func _run() -> void:
 		return
 	if not bool(surfaces.get("martial_strip_visible", false)):
 		_fail("P0_2_HUD_REVIEW=BLOCKED martial_strip_missing", battle)
+		return
+	if bool(surfaces.get("martial_strip_panel", true)):
+		_fail("P0_2_HUD_REVIEW=BLOCKED martial_strip_surface_panel", battle)
 		return
 	var martial_rect := _rect_from_array(surfaces.get("martial_strip_rect", []))
 	if martial_rect.end.y > MAX_TOP_RESERVED_HEIGHT + 0.01:
@@ -139,6 +145,7 @@ func _run() -> void:
 		"surfaces": surfaces,
 	})
 	print("P0_2_FIGHT_HUD_HIERARCHY=PASS health=primary timer=isolated martial=integrated")
+	print("P0_2_FIGHT_HUD_MARTIAL_READ=PASS typographic_only=true panel=false")
 	print("P0_2_FIGHT_HUD_GAMEPLAY_AREA=PASS top_reserved=%.0f vertical_ratio=%.4f bottom_persistent=false" % [top_reserved, gameplay_ratio])
 	print("P0_2_FIGHT_HUD_GUIDE=PASS countdown=full battle_intro=compact active=hidden")
 	print("P0_2_FIGHT_HUD_CAPTURE=PASS output=res://artifacts/p0_2_hud/%s" % OUTPUT_FILE)
