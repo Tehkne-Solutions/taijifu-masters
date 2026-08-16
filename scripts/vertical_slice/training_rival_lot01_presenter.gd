@@ -10,6 +10,7 @@ const CANONICAL_ALPHA_HEIGHT := 923.0
 const CANONICAL_SCALE := TARGET_VISUAL_HEIGHT / CANONICAL_ALPHA_HEIGHT
 const BASELINE_OFFSET_Y := -(CANONICAL_BASELINE_Y - CANONICAL_CANVAS_SIZE.y * 0.5) * CANONICAL_SCALE
 const HIT_VISUAL_SECONDS := 0.30
+const CANONICAL_VISUAL_AUTHORITY_META := &"canonical_visual_authority"
 
 var _fighter: FighterController
 var _sprite: AnimatedSprite2D
@@ -52,6 +53,21 @@ func canonical_scale() -> float:
 func canonical_baseline_offset_y() -> float:
 	return BASELINE_OFFSET_Y
 
+func canonical_visual_authority_signature() -> Dictionary:
+	return {
+		"active": (
+			_using_real_assets
+			and is_instance_valid(_fighter)
+			and bool(_fighter.get_meta(CANONICAL_VISUAL_AUTHORITY_META, false))
+		),
+		"fighter_self_modulate_alpha": _fighter.self_modulate.a if is_instance_valid(_fighter) else 1.0,
+		"provisional_fighter_draw_visible": false if _using_real_assets else true,
+		"child_presenters_inherit_self_modulate": false,
+		"collision_changes": false,
+		"combat_logic_changes": false,
+		"signature": "Tehkné Solutions",
+	}
+
 func _try_activate_real_assets() -> void:
 	if not ResourceLoader.exists(SPRITE_FRAMES_PATH):
 		return
@@ -68,6 +84,7 @@ func _try_activate_real_assets() -> void:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_using_real_assets = true
+	_claim_canonical_visual_authority()
 	_hide_legacy_visual_surfaces()
 	_active_animation = &"idle"
 	_sprite.play(_active_animation)
@@ -75,6 +92,16 @@ func _try_activate_real_assets() -> void:
 	print("V2_RIVAL_CANONICAL_SCALE=%.6f" % CANONICAL_SCALE)
 	print("V2_RIVAL_CANONICAL_BASELINE=PASS")
 	print("V2_RIVAL_LEGACY_VISUALS=HIDDEN")
+	print("P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED fighter=p2 owner=canonical_presenter")
+
+func _claim_canonical_visual_authority() -> void:
+	if not is_instance_valid(_fighter):
+		return
+	_fighter.set_meta(CANONICAL_VISUAL_AUTHORITY_META, true)
+	var self_tint := _fighter.self_modulate
+	self_tint.a = 0.0
+	_fighter.self_modulate = self_tint
+	_fighter.queue_redraw()
 
 func _hide_legacy_visual_surfaces() -> void:
 	if not is_instance_valid(_fighter):
