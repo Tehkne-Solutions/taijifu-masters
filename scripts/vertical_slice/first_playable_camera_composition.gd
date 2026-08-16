@@ -5,8 +5,8 @@ extends Node
 # Fighters remain world-space unchanged; camera framing makes them the primary visual subject.
 const MIN_ZOOM := 0.72
 const MAX_ZOOM := 1.34
-const BASELINE_Y := 500.0
-const VERTICAL_RANGE := 56.0
+const BASELINE_Y := 530.0
+const VERTICAL_RANGE := 60.0
 const HORIZONTAL_PADDING := 220.0
 const FOCUS_LERP := 6.0
 const ZOOM_LERP := 5.6
@@ -30,7 +30,7 @@ func _ready() -> void:
 	_root = get_parent() as Node2D
 	_camera = _root.get_node_or_null("Camera2D") as Camera2D
 	print("V2_C46_CAMERA_READABILITY=PASS min=%.2f max=%.2f" % [MIN_ZOOM, MAX_ZOOM])
-	print("P0_2_FIGHTER_SCREEN_PRESENCE=ARMED world_scale_unchanged=true padding=%.0f" % HORIZONTAL_PADDING)
+	print("P0_2_FIGHTER_SCREEN_PRESENCE=ARMED world_scale_unchanged=true padding=%.0f baseline=%.0f" % [HORIZONTAL_PADDING, BASELINE_Y])
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(_root) or not is_instance_valid(_camera):
@@ -124,6 +124,7 @@ func presentation_signature() -> Dictionary:
 		"framing": &"fighter_readability_priority",
 		"min_zoom": MIN_ZOOM,
 		"max_zoom": MAX_ZOOM,
+		"baseline_y": BASELINE_Y,
 		"vertical_range": VERTICAL_RANGE,
 		"horizontal_padding": HORIZONTAL_PADDING,
 		"close_fight_distance": CLOSE_FIGHT_DISTANCE,
