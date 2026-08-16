@@ -18,8 +18,10 @@ const KNOCKBACK_GROUND_DECELERATION := 520.0
 var _first_playable_input_lock := 0.0
 var _first_playable_knockback_lock := 0.0
 var _last_reaction_id: StringName = &"none"
+var _pack04_reaction_runtime: FirstPlayablePack04ReactionRuntime
 
 func _physics_process(delta: float) -> void:
+	_ensure_pack04_reaction_runtime()
 	_first_playable_input_lock = maxf(0.0, _first_playable_input_lock - delta)
 	_first_playable_knockback_lock = maxf(0.0, _first_playable_knockback_lock - delta)
 	super._physics_process(delta)
@@ -89,6 +91,8 @@ func receive_hit(
 	var posture_broken_now := posture > posture_before and posture_before <= build.max_posture() * 0.40
 
 	if guarding_front:
+		# Physical/telemetry ID retained for backwards compatibility. PACK 04 maps
+		# the already-resolved `blocked` outcome to canonical visual `block_recoil`.
 		_last_reaction_id = &"blocked_recoil"
 		_first_playable_knockback_lock = maxf(_first_playable_knockback_lock, BLOCK_KNOCKBACK_LOCK_SECONDS)
 		if absf(velocity.x) < MIN_BLOCK_HORIZONTAL_SPEED:
@@ -142,7 +146,12 @@ func first_playable_visual_action_override_active() -> bool:
 		or _is_blocking
 	)
 
+func pack04_reaction_runtime() -> FirstPlayablePack04ReactionRuntime:
+	_ensure_pack04_reaction_runtime()
+	return _pack04_reaction_runtime
+
 func first_playable_reaction_signature() -> Dictionary:
+	var pack04_signature := _pack04_reaction_runtime.runtime_signature() if is_instance_valid(_pack04_reaction_runtime) else {}
 	return {
 		"enabled": _first_playable_recovery_active(),
 		"context_scoped": true,
@@ -156,8 +165,18 @@ func first_playable_reaction_signature() -> Dictionary:
 		"input_locked": _first_playable_input_lock > 0.0,
 		"knockback_locked": _first_playable_knockback_lock > 0.0,
 		"visual_action_override_active": first_playable_visual_action_override_active(),
+		"pack04_semantic_runtime": pack04_signature,
+		"pack04_art_available": bool(pack04_signature.get("pack04_art_available", false)),
+		"pack04_fallback_observable": is_instance_valid(_pack04_reaction_runtime),
 		"signature": "Tehkné Solutions",
 	}
+
+func _ensure_pack04_reaction_runtime() -> void:
+	if is_instance_valid(_pack04_reaction_runtime) or not _first_playable_recovery_active():
+		return
+	_pack04_reaction_runtime = FirstPlayablePack04ReactionRuntime.new()
+	_pack04_reaction_runtime.name = "FirstPlayablePack04ReactionRuntime"
+	add_child(_pack04_reaction_runtime)
 
 func reset_fighter(spawn_position: Vector2) -> void:
 	super.reset_fighter(spawn_position)
