@@ -7,6 +7,12 @@ const ATTACK_OUTPUT := "P0_2_CANONICAL_FIGHTERS.attack-1920x1080.png"
 const METRICS_OUTPUT := "P0_2_CANONICAL_VISUAL_AUTHORITY_METRICS.json"
 const MAX_WAIT_FRAMES := 600
 const AUTHORITY_META := &"canonical_visual_authority"
+const RETIRED_CHILD_VISUALS: Array[StringName] = [
+	&"VisualOverlay",
+	&"ExpressionOverlay",
+	&"WeaponTrail",
+	&"CosmeticSockets",
+]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -67,6 +73,14 @@ func _run() -> void:
 	if p1.self_modulate.a > 0.001 or p2.self_modulate.a > 0.001:
 		_fail("P0_2_VISUAL_AUTHORITY_REVIEW=BLOCKED provisional_parent_alpha p1=%.4f p2=%.4f" % [p1.self_modulate.a, p2.self_modulate.a], battle)
 		return
+	if not _provisional_children_retired(p1) or not _provisional_children_retired(p2):
+		_fail("P0_2_VISUAL_AUTHORITY_REVIEW=BLOCKED provisional_child_visuals", battle)
+		return
+	for fighter in [p1, p2]:
+		var regional_hit_flash := fighter.get_node_or_null("RegionalHitFlash") as CanvasItem
+		if regional_hit_flash == null or not regional_hit_flash.visible or regional_hit_flash.process_mode == Node.PROCESS_MODE_DISABLED:
+			_fail("P0_2_VISUAL_AUTHORITY_REVIEW=BLOCKED regional_hit_flash_retired:index=%d" % fighter.player_index, battle)
+			return
 	if not modular.assembler().is_visible_in_tree():
 		_fail("P0_2_VISUAL_AUTHORITY_REVIEW=BLOCKED p1_canonical_hidden", battle)
 		return
@@ -104,11 +118,15 @@ func _run() -> void:
 		"onboarding_guide_visible": guide.visible if guide != null else false,
 		"provisional_parent_draw_alpha_p1": p1.self_modulate.a,
 		"provisional_parent_draw_alpha_p2": p2.self_modulate.a,
+		"provisional_child_visuals_retired_p1": _provisional_child_signature(p1),
+		"provisional_child_visuals_retired_p2": _provisional_child_signature(p2),
+		"regional_hit_flash_preserved": true,
 		"neutral_capture": NEUTRAL_OUTPUT,
 		"attack_capture": ATTACK_OUTPUT,
 	})
 
 	print("P0_2_PROVISIONAL_FIGHTER_DRAW=RETIRED p1=true p2=true")
+	print("P0_2_PROVISIONAL_CHILD_VISUALS=RETIRED p1=true p2=true regional_hit_flash=preserved")
 	print("P0_2_CANONICAL_CHILD_RENDER=PASS p1=modular_polygon p2=lot01_sprite")
 	print("P0_2_ACTIVE_ROUND_ONBOARDING=RELEASED guide=hidden")
 	print("P0_2_CANONICAL_VISUAL_NEUTRAL_CAPTURE=res://artifacts/p0_2_visual_authority/%s" % NEUTRAL_OUTPUT)
@@ -144,6 +162,24 @@ func _wait_for_battle_and_authority(battle: FirstPlayableController) -> bool:
 				return true
 		await process_frame
 	return false
+
+func _provisional_children_retired(fighter: FighterController) -> bool:
+	for node_name in RETIRED_CHILD_VISUALS:
+		var surface := fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		if surface == null or surface.visible or surface.process_mode != Node.PROCESS_MODE_DISABLED:
+			return false
+	return true
+
+func _provisional_child_signature(fighter: FighterController) -> Dictionary:
+	var result := {}
+	for node_name in RETIRED_CHILD_VISUALS:
+		var surface := fighter.get_node_or_null(NodePath(String(node_name))) as CanvasItem
+		result[String(node_name)] = {
+			"present": surface != null,
+			"visible": surface.visible if surface != null else false,
+			"process_disabled": surface.process_mode == Node.PROCESS_MODE_DISABLED if surface != null else false,
+		}
+	return result
 
 func _capture(filename: String) -> void:
 	var image := get_root().get_texture().get_image()
