@@ -9,6 +9,7 @@ const ADAPTIVE_MASTER_RUNTIME := preload("res://scripts/vertical_slice/first_pla
 const MASTER_MARTIAL_PLANNER := preload("res://scripts/vertical_slice/first_playable_master_martial_planner.gd")
 const MASTER_PURSUIT_RUNTIME := preload("res://scripts/vertical_slice/first_playable_master_pursuit_runtime.gd")
 const MARTIAL_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_martial_hud_runtime.gd")
+const FIGHT_HUD_RUNTIME := preload("res://scripts/vertical_slice/first_playable_fight_hud_runtime.gd")
 const COMBAT_FEEDBACK_RUNTIME := preload("res://scripts/vertical_slice/first_playable_combat_feedback_runtime.gd")
 const MODULAR_POSE_RUNTIME := preload("res://scripts/vertical_slice/first_playable_modular_pose_runtime.gd")
 const AI_WATCHDOG_RUNTIME := preload("res://scripts/runtime/first_playable_ai_watchdog_runtime.gd")
@@ -66,6 +67,10 @@ func _install_first_playable_runtime() -> void:
 		var martial_hud := MARTIAL_HUD_RUNTIME.new()
 		martial_hud.name = "FirstPlayableMartialHudRuntime"
 		match_root.add_child.call_deferred(martial_hud)
+	if not match_root.has_node("FirstPlayableFightHudRuntime"):
+		var fight_hud := FIGHT_HUD_RUNTIME.new() as FirstPlayableFightHudRuntime
+		fight_hud.name = "FirstPlayableFightHudRuntime"
+		match_root.add_child.call_deferred(fight_hud)
 	if not match_root.has_node("FirstPlayableCombatFeedbackRuntime"):
 		var feedback_runtime := COMBAT_FEEDBACK_RUNTIME.new()
 		feedback_runtime.name = "FirstPlayableCombatFeedbackRuntime"
@@ -128,6 +133,7 @@ func presentation_signature() -> Dictionary:
 		"master_martial_planner": true,
 		"master_pursuit_runtime": true,
 		"martial_hud_runtime": true,
+		"fight_hud_readability_runtime": true,
 		"combat_feedback_runtime": true,
 		"modular_skeletal_pose_runtime": true,
 		"ai_watchdog_runtime": true,
