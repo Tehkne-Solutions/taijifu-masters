@@ -10,10 +10,15 @@ const MIN_CLOSE_RATIO := 0.23
 const MAX_CLOSE_RATIO := 0.32
 const MIN_FAR_VISIBLE_FRACTION := 0.97
 const MIN_CLOSE_VISIBLE_FRACTION := 0.99
+const EXPECTED_CLOSE_ZOOM := 1.34
 const EXPECTED_CLOSE_ZOOM_MIN := 1.28
 const EXPECTED_CLOSE_ZOOM_MAX := 1.345
+const EXPECTED_FAR_ZOOM := 0.72
 const EXPECTED_FAR_ZOOM_MIN := 0.70
 const EXPECTED_FAR_ZOOM_MAX := 0.76
+const CAMERA_SETTLE_TOLERANCE := 0.008
+const CAMERA_SETTLE_POLL_SECONDS := 0.05
+const CAMERA_SETTLE_MAX_POLLS := 60
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -54,10 +59,10 @@ func _run() -> void:
 	if bool(camera_signature.get("world_fighter_scale_changes", true)):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED world_scale_mutation", battle)
 		return
-	if absf(float(camera_signature.get("min_zoom", 0.0)) - 0.72) > 0.001:
+	if absf(float(camera_signature.get("min_zoom", 0.0)) - EXPECTED_FAR_ZOOM) > 0.001:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED min_zoom:%s" % str(camera_signature), battle)
 		return
-	if absf(float(camera_signature.get("max_zoom", 0.0)) - 1.34) > 0.001:
+	if absf(float(camera_signature.get("max_zoom", 0.0)) - EXPECTED_CLOSE_ZOOM) > 0.001:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED max_zoom:%s" % str(camera_signature), battle)
 		return
 	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 220.0) > 0.01:
@@ -75,7 +80,9 @@ func _run() -> void:
 
 	# Opening distance: preserve tactical context and keep both fighters fully readable.
 	_set_fighters(p1, p2, Vector2(720.0, 827.0), Vector2(2080.0, 827.0))
-	await _settle_camera()
+	if not await _settle_camera(battle.camera, EXPECTED_FAR_ZOOM):
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED far_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_FAR_ZOOM], battle)
+		return
 	var far_metrics := _screen_metrics(battle, modular.assembler(), rival_sprite)
 	var far_zoom := battle.camera.zoom.x
 	if far_zoom < EXPECTED_FAR_ZOOM_MIN or far_zoom > EXPECTED_FAR_ZOOM_MAX:
@@ -88,7 +95,9 @@ func _run() -> void:
 
 	# Close combat: increase screen presence without changing fighter world scale.
 	_set_fighters(p1, p2, Vector2(1120.0, 827.0), Vector2(1580.0, 827.0))
-	await _settle_camera()
+	if not await _settle_camera(battle.camera, EXPECTED_CLOSE_ZOOM):
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED close_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_CLOSE_ZOOM], battle)
+		return
 	var close_metrics := _screen_metrics(battle, modular.assembler(), rival_sprite)
 	var close_zoom := battle.camera.zoom.x
 	if close_zoom < EXPECTED_CLOSE_ZOOM_MIN or close_zoom > EXPECTED_CLOSE_ZOOM_MAX:
@@ -111,6 +120,12 @@ func _run() -> void:
 		"signature": "Tehkné Solutions",
 		"camera": camera_signature,
 		"world_fighter_scale_changes": false,
+		"camera_settle_policy": {
+			"mode": "condition_based",
+			"tolerance": CAMERA_SETTLE_TOLERANCE,
+			"poll_seconds": CAMERA_SETTLE_POLL_SECONDS,
+			"max_polls": CAMERA_SETTLE_MAX_POLLS,
+		},
 		"far": far_metrics.merged({"zoom": far_zoom}),
 		"close": close_metrics.merged({"zoom": close_zoom}),
 		"far_capture": FAR_OUTPUT,
@@ -155,10 +170,16 @@ func _set_fighters(p1: FighterController, p2: FighterController, p1_position: Ve
 	p1.facing = 1.0
 	p2.facing = -1.0
 
-func _settle_camera() -> void:
-	await create_timer(0.95, true, false, true).timeout
-	for _frame in range(12):
-		await process_frame
+func _settle_camera(camera: Camera2D, target_zoom: float) -> bool:
+	if camera == null:
+		return false
+	for _poll in range(CAMERA_SETTLE_MAX_POLLS):
+		if absf(camera.zoom.x - target_zoom) <= CAMERA_SETTLE_TOLERANCE:
+			for _frame in range(3):
+				await process_frame
+			return absf(camera.zoom.x - target_zoom) <= CAMERA_SETTLE_TOLERANCE
+		await create_timer(CAMERA_SETTLE_POLL_SECONDS, true, false, true).timeout
+	return false
 
 func _screen_metrics(battle: FirstPlayableController, assembler: ModularFighterAssembler, rival_sprite: AnimatedSprite2D) -> Dictionary:
 	var viewport_size := Vector2(get_root().get_visible_rect().size)
