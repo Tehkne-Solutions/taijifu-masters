@@ -1,0 +1,92 @@
+name: P0.2 Impact Feel Product Gate
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime/impact_director.gd'
+      - 'scripts/fighter/first_playable_combat_fighter_controller.gd'
+      - 'scripts/vertical_slice/first_playable_camera_composition.gd'
+      - 'scripts/vertical_slice/first_playable_combat_feedback_runtime.gd'
+      - 'tests/p0_2_impact_feel_product_test.gd'
+      - '.github/workflows/p0-2-impact-feel-product-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  impact-feel-product-gate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize canonical First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-p02-impact'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath p0-2-impact-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require canonical snapshot authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VM02_C30_SOURCE_PIN=PASS' p0-2-impact-c30.log
+          grep -q 'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89' p0-2-impact-c30.log
+          grep -q 'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS' p0-2-impact-c30.log
+          echo 'P0_2_IMPACT_CANONICAL_SNAPSHOT=PASS'
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee p0-2-impact-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' p0-2-impact-import.log; then
+            echo 'P0_2_IMPACT_IMPORT=BLOCKED'
+            exit 1
+          fi
+
+      - name: Run impact feel product gate
+        run: |
+          set -o pipefail
+          timeout 45s ./godot --headless --audio-driver Dummy --path . \
+            --script res://tests/p0_2_impact_feel_product_test.gd \
+            2>&1 | tee p0-2-impact-feel.log
+          grep -q 'P0_2_IMMEDIATE_CAMERA_KICK=PASS directional=true max_px=7.0' p0-2-impact-feel.log
+          grep -q 'P0_2_HITSTOP_OVERLAP=PASS policy=extend_longest_deadline clock=monotonic_real_time' p0-2-impact-feel.log
+          grep -q 'P0_2_KNOCKBACK_CONTINUITY=PASS' p0-2-impact-feel.log
+          grep -q 'P0_2_IMPACT_FEEL_PRODUCT_GATE=PASS' p0-2-impact-feel.log
+          grep -q 'SIGNATURE=Tehkné Solutions' p0-2-impact-feel.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error|P0_2_IMPACT_FEEL_GATE=BLOCKED' p0-2-impact-feel.log; then
+            echo 'P0_2_IMPACT_FEEL=BLOCKED runtime_error'
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: P0-2-IMPACT-FEEL-PRODUCT-GATE-EVIDENCE
+          path: |
+            p0-2-impact-c30.log
+            p0-2-impact-import.log
+            p0-2-impact-feel.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: echo 'P0.2 impact feel — monotonic hitstop + immediate camera kick + recoil continuity — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions

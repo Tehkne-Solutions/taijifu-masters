@@ -5,6 +5,9 @@ const FEEDBACK_LIFETIME := 0.46
 const CRITICAL_LIFETIME := 0.44
 const COMBO_RESET_SECONDS := 1.10
 const MAX_ACTIVE_POPUPS := 2
+const IMPACT_POPUP_SIZE := Vector2(190.0, 38.0)
+const IMPACT_POPUP_TRAVEL := Vector2(0.0, -24.0)
+const IMPACT_POPUP_SAFE_RECT := Rect2(8.0, 158.0, 1264.0, 432.0)
 
 var _root: Node
 var _p1: MasteredWeaponFighterController
@@ -50,7 +53,7 @@ func _connect_fighter(fighter: MasteredWeaponFighterController) -> void:
 		fighter.impact_resolved.connect(_on_impact_resolved)
 
 func _on_impact_resolved(
-	_target: MasteredWeaponFighterController,
+	target: MasteredWeaponFighterController,
 	attacker: FighterController,
 	technique: TechniqueData,
 	result_id: StringName,
@@ -94,7 +97,12 @@ func _on_impact_resolved(
 	_spawn_impact_popup(world_position, technique_name, result_label, color, profile_id, result_id)
 	if critical:
 		_show_center_feedback(result_label, color)
-	_punch_camera(intensity, result_id)
+	var impact_direction := Vector2(attacker.facing, 0.0)
+	if is_instance_valid(target):
+		var delta := target.global_position - attacker.global_position
+		if absf(delta.x) > 0.001:
+			impact_direction = Vector2(signf(delta.x), 0.0)
+	_punch_camera(intensity, result_id, impact_direction)
 
 func _register_combo(profile_id: String) -> void:
 	_combo_counts[profile_id] = int(_combo_counts.get(profile_id, 0)) + 1
@@ -146,26 +154,37 @@ func _spawn_impact_popup(world_position: Vector2, technique_name: String, result
 	if not is_instance_valid(_layer):
 		return
 	_cleanup_popup_budget()
-	var popup := _make_label("ImpactPopup", Vector2.ZERO, Vector2(190.0, 38.0), 12)
+	var popup := _make_label("ImpactPopup", Vector2.ZERO, IMPACT_POPUP_SIZE, 12)
 	popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	popup.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Normal hits keep the technique name; defensive/critical states use the short result only.
 	popup.text = technique_name if result_id == &"hit" else result_label
 	popup.add_theme_color_override("font_color", color)
 	popup.modulate.a = 1.0
 	var screen_pos := _world_to_screen(world_position)
 	var side_offset := -42.0 if profile_id == "p1" else 42.0
-	popup.position = screen_pos + Vector2(-95.0 + side_offset, -54.0)
+	var desired_position := screen_pos + Vector2(-95.0 + side_offset, -54.0)
+	popup.position = _clamp_popup_start(desired_position, popup.size)
 	_layer.add_child(popup)
 	_active_popups.append(popup)
 
 	var tween := popup.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(popup, "position", popup.position + Vector2(0.0, -24.0), FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(popup, "position", popup.position + IMPACT_POPUP_TRAVEL, FEEDBACK_LIFETIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tween.tween_property(popup, "modulate:a", 0.0, FEEDBACK_LIFETIME).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tween.chain().tween_callback(func() -> void:
 		_active_popups.erase(popup)
 		if is_instance_valid(popup): popup.queue_free()
+	)
+
+func _clamp_popup_start(desired_position: Vector2, popup_size: Vector2) -> Vector2:
+	# Clamp the entire animated path, not just the spawn frame. Popups travel 24 px
+	# upward, so the start Y must reserve that travel above the safe-area top.
+	var safe_min := IMPACT_POPUP_SAFE_RECT.position
+	var safe_max := IMPACT_POPUP_SAFE_RECT.end - popup_size
+	var min_start_y := safe_min.y - IMPACT_POPUP_TRAVEL.y
+	return Vector2(
+		clampf(desired_position.x, safe_min.x, safe_max.x),
+		clampf(desired_position.y, min_start_y, safe_max.y)
 	)
 
 func _world_to_screen(world_position: Vector2) -> Vector2:
@@ -195,11 +214,11 @@ func _show_center_feedback(text: String, color: Color) -> void:
 		if token == _critical_token and is_instance_valid(_center_label): _center_label.text = ""
 	)
 
-func _punch_camera(intensity: float, result_id: StringName) -> void:
+func _punch_camera(intensity: float, result_id: StringName, impact_direction: Vector2) -> void:
 	if not is_instance_valid(_root): return
 	var composition := _root.get_node_or_null("FightCameraComposition")
 	if composition != null and composition.has_method("impact_punch"):
-		composition.call("impact_punch", clampf(intensity, 0.15, 1.0), result_id)
+		composition.call("impact_punch", clampf(intensity, 0.15, 1.0), result_id, impact_direction)
 
 func _update_combo_label(profile_id: String) -> void:
 	var label: Label = _combo_labels.get(profile_id)
@@ -221,8 +240,19 @@ func presentation_signature() -> Dictionary:
 		"short_defensive_feedback": true,
 		"combo_counter_per_side": true,
 		"popup_budget": MAX_ACTIVE_POPUPS,
+		"popup_safe_area_clamped": true,
+		"popup_safe_rect": {
+			"x": IMPACT_POPUP_SAFE_RECT.position.x,
+			"y": IMPACT_POPUP_SAFE_RECT.position.y,
+			"w": IMPACT_POPUP_SAFE_RECT.size.x,
+			"h": IMPACT_POPUP_SAFE_RECT.size.y,
+		},
+		"popup_travel_safe": true,
+		"popup_travel_y": IMPACT_POPUP_TRAVEL.y,
 		"critical_feedback_priority": true,
 		"camera_punch_on_impact": true,
+		"camera_punch_directional": true,
+		"camera_punch_first_contact_frame": true,
 		"feedback_is_visual_only": true,
 		"damage_changes": false,
 		"frame_data_changes": false,
