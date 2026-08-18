@@ -59,10 +59,14 @@ jobs:
           grep -q 'single_production_owner' scripts/vertical_slice/first_playable.gd
           echo 'P0_2_SCREEN_PRESENCE_CAMERA_CONTRACT=PASS stage_premium=true far_safe=true close_strong=true'
 
-      - name: Install visual runtime dependencies
+      - name: Verify visual runtime dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          set -euo pipefail
+          command -v unzip
+          command -v xvfb-run
+          ldconfig -p | grep -q 'libGL.so.1'
+          ldconfig -p | grep -q 'libfontconfig.so.1'
+          echo 'P0_2_SCREEN_PRESENCE_RUNTIME_DEPS=PASS preinstalled=true'
 
       - name: Install Godot 4.3
         run: |
