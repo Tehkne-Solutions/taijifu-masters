@@ -104,14 +104,14 @@ static func prototype_preset(preset_id: StringName) -> BuildProfile:
 		&"training_rival_first_playable":
 			profile.character_id = &"training_rival"
 			profile.character_name = "Rival de Treino"
-			profile.display_name = "Punho da Fornalha"
-			profile.tactical_summary = "Fogo, pressão frontal e dano elevado de postura."
+			profile.display_name = "Sabre da Fornalha"
+			profile.tactical_summary = "Fogo, pressão frontal e guarda compacta com sabre de treino."
 			profile.strength = 82.0; profile.defense = 65.0; profile.agility = 48.0; profile.resistance = 72.0
 			profile.technique = 58.0; profile.control = 74.0; profile.perception = 62.0; profile.focus = 55.0
-			profile.armor_weight = 36.0; profile.weapon_id = &"breaker_gauntlets"; profile.secondary_weapon_id = &"unarmed"; profile.element_id = &"fire"
-			profile.tai_techniques = [&"gauntlet_shouldering_entry", &"gauntlet_rising_break"]
-			profile.ji_techniques = [&"gauntlet_center_crush", &"gauntlet_quake_sweep"]
-			profile.fu_techniques = [&"gauntlet_guard_turn", &"fu_reversal"]
+			profile.armor_weight = 36.0; profile.weapon_id = &"wooden_training_saber"; profile.secondary_weapon_id = &"unarmed"; profile.element_id = &"fire"
+			profile.tai_techniques = [&"tai_advancing_kick", &"tai_aerial_arc"]
+			profile.ji_techniques = [&"ji_body_hook", &"ji_sweep"]
+			profile.fu_techniques = [&"fu_reversal", &"fu_flow_strike"]
 		&"adaptive_staff":
 			profile.character_id = &"kael"
 			profile.character_name = "Kael"

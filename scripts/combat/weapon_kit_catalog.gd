@@ -17,6 +17,20 @@ const KITS := {
 		"posture_multiplier": 0.98,
 		"preferred_range": 112.0
 	},
+	&"wooden_training_saber": {
+		"label": "SABRE DE TREINO",
+		# Autoridade visual do Training Rival no First Playable. Até o catálogo
+		# receber técnicas exclusivas de sabre, reutiliza a gramática corporal
+		# genérica já validada sem declarar manoplas inexistentes no runtime.
+		"air": &"tai_aerial_arc",
+		"low": &"ji_sweep",
+		"advance": &"tai_advancing_kick",
+		"neutral_ji": &"ji_body_hook",
+		"neutral_fu": &"fu_reversal",
+		"damage_multiplier": 1.06,
+		"posture_multiplier": 1.10,
+		"preferred_range": 108.0
+	},
 	&"training_staff": {
 		"label": "BASTÃO ADAPTATIVO",
 		"air": &"staff_vault_arc",
@@ -121,6 +135,8 @@ static func tactical_summary(weapon_id: StringName) -> String:
 	match weapon_id:
 		&"serene_katana":
 			return "Precisão, transição Fu e alcance médio controlado."
+		&"wooden_training_saber":
+			return "Pressão disciplinada, guarda compacta e alcance médio de treino."
 		&"training_staff":
 			return "Alcance, varredura e redirecionamento Fu."
 		&"seismic_gauntlets", &"breaker_gauntlets":
