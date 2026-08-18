@@ -1,0 +1,217 @@
+name: Vertical Slice Asset Truth
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/vertical-slice-asset-truth.yml'
+      - 'scenes/vertical_slice/**'
+      - 'scripts/vertical_slice/**'
+      - 'scripts/ci/**'
+      - 'scripts/characters/**'
+      - 'assets/modular_fighters/**'
+      - 'assets/tgap/**'
+      - 'config/v2-arena-intake-contract.json'
+      - 'tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  first-playable-asset-truth:
+    name: Lian + Rival + Mountain Dojo + Web Artifact
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize canonical First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-vs-playtest'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath vs-asset-truth-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content vs-asset-truth-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SOURCE_PIN=PASS',
+            'VM02_C30_SNAPSHOT_FREEZE=PASS',
+            'VM02_C30_SNAPSHOT_LIAN=PASS frames=45 animations=10',
+            'VM02_C30_SNAPSHOT_RIVAL=PASS frames=44 animations=10',
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "VS_ASSET_TRUTH=BLOCKED snapshot missing=$required" }
+          }
+          Write-Host 'VS_ASSET_TRUTH_SNAPSHOT=PASS fighters=89 stage_layers=3'
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee vs-asset-truth-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' vs-asset-truth-import.log; then
+            echo 'VS_ASSET_TRUTH_IMPORT=BLOCKED'
+            exit 1
+          fi
+          echo 'VS_ASSET_TRUTH_IMPORT=PASS'
+
+      - name: Prove complete production Lian composition
+        run: |
+          set -o pipefail
+          timeout 60s ./godot --headless --audio-driver Dummy --path . \
+            --script res://tests/p0_2_production_lian_visual_product_test.gd \
+            2>&1 | tee vs-asset-truth-lian.log
+          grep -q 'P0_2_PRODUCTION_LIAN_PROFILE=PASS' vs-asset-truth-lian.log
+          grep -q 'P0_2_PRODUCTION_LIAN_COMPOSITION=PASS hair=hair_01_lian_topknot uniform=uniform_01_lian_martial armor=armor_01_taijifu_guard back=back_01_guardian_panel weapon_set=weapon_01_lian_serene_katana' vs-asset-truth-lian.log
+          grep -q 'P0_2_PRODUCTION_LIAN_FALLBACK=PASS lot01=preserved_hidden' vs-asset-truth-lian.log
+          grep -q 'P0_2_PRODUCTION_LIAN_PRODUCT_GATE=PASS' vs-asset-truth-lian.log
+          echo 'VS_ASSET_TRUTH_LIAN=PASS modular=BASE01..05 fallback_hidden=true'
+
+      - name: Capture production Lian neutral and attack
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/p0_2_production_lian_visual_review.gd \
+            2>&1 | tee vs-asset-truth-lian-visual.log
+          grep -q 'P0_2_PRODUCTION_LIAN_VISUAL_STACK=PASS' vs-asset-truth-lian-visual.log
+          grep -q 'P0_2_PRODUCTION_LIAN_VISUAL_REVIEW=PASS' vs-asset-truth-lian-visual.log
+          test -f artifacts/p0_2_lian/P0_2_PRODUCTION_LIAN.neutral-1920x1080.png
+          test -f artifacts/p0_2_lian/P0_2_PRODUCTION_LIAN.attack-1920x1080.png
+          echo 'VS_ASSET_TRUTH_LIAN_CAPTURE=PASS resolution=1920x1080'
+
+      - name: Capture canonical duo
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/c28_canonical_duo_visual_review.gd \
+            2>&1 | tee vs-asset-truth-duo.log
+          grep -q 'C28_DUO_REAL_ASSETS=PASS lian=true rival=true fallback_hidden=true' vs-asset-truth-duo.log
+          grep -q 'C28_DUO_SCALE=PASS' vs-asset-truth-duo.log
+          grep -q 'C28_DUO_FOOTLINE=PASS' vs-asset-truth-duo.log
+          grep -q 'C28_DUO_VIEWPORT_VISIBILITY=PASS' vs-asset-truth-duo.log
+          grep -q 'C28_DUO_VISUAL=PASS' vs-asset-truth-duo.log
+          test -f artifacts/c28_duo/C28_CANONICAL_DUO.review-1920x1080.png
+          echo 'VS_ASSET_TRUTH_DUO=PASS lian=true rival=true'
+
+      - name: Prove Mountain Dojo Night and final presentation
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/vfx03_final_presentation_coherence_review.gd \
+            2>&1 | tee vs-asset-truth-presentation.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' vs-asset-truth-presentation.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' vs-asset-truth-presentation.log
+          grep -q 'V2_PRESENTATION_LEGACY_DRESSING=RETIRED' vs-asset-truth-presentation.log
+          grep -q 'VFX03_COHERENCE=PASS' vs-asset-truth-presentation.log
+          test -f artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png
+          echo 'VS_ASSET_TRUTH_STAGE=PASS arena=mountain_dojo_night layers=3 legacy_fallback=false'
+
+      - name: Export Web vertical slice
+        env:
+          GODOT_VERSION: '4.3'
+          GODOT_CHANNEL: stable
+        run: |
+          set -o pipefail
+          bash scripts/build-web.sh 2>&1 | tee vs-asset-truth-web-build.log
+          test -f web-build/index.html
+          test -f web-build/build-info.json
+          echo 'VS_ASSET_TRUTH_WEB_BUILD=PASS'
+
+      - name: Freeze asset truth summary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          payload = {
+              'schema': 'tehkne/taijifu-vertical-slice-asset-truth/v1',
+              'signature': 'Tehkné Solutions',
+              'status': 'PASS',
+              'lian': {
+                  'production_modular_stack': True,
+                  'base_modules': ['BASE-01','BASE-02','BASE-03','BASE-04','BASE-05'],
+                  'fallback_hidden': True,
+              },
+              'training_rival': {
+                  'canonical_runtime': True,
+                  'frame_count': 44,
+              },
+              'stage': {
+                  'id': 'mountain_dojo_night',
+                  'canonical_layers': 3,
+                  'legacy_fallback': False,
+              },
+              'snapshot': {
+                  'fighter_frames': 89,
+                  'stage_layers': 3,
+              },
+              'pack04': {
+                  'authored_reaction_art_active': False,
+                  'fallback_semantics_active': True,
+              },
+          }
+          root = Path('artifacts/vertical_slice_asset_truth')
+          root.mkdir(parents=True, exist_ok=True)
+          (root/'VERTICAL_SLICE_ASSET_TRUTH.json').write_text(json.dumps(payload, indent=2)+'\n', encoding='utf-8')
+          print('VERTICAL_SLICE_ASSET_TRUTH=PASS pack04_art=false')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VERTICAL-SLICE-ASSET-TRUTH-${{ github.sha }}
+          path: |
+            vs-asset-truth-c30.log
+            vs-asset-truth-import.log
+            vs-asset-truth-lian.log
+            vs-asset-truth-lian-visual.log
+            vs-asset-truth-duo.log
+            vs-asset-truth-presentation.log
+            vs-asset-truth-web-build.log
+            artifacts/p0_2_lian/P0_2_PRODUCTION_LIAN.neutral-1920x1080.png
+            artifacts/p0_2_lian/P0_2_PRODUCTION_LIAN.attack-1920x1080.png
+            artifacts/c28_duo/C28_CANONICAL_DUO.review-1920x1080.png
+            artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png
+            artifacts/vfx03/VFX03_CRITICAL.review-1920x1080.png
+            artifacts/vfx03/VFX03_ELEMENTAL.review-1920x1080.png
+            artifacts/vertical_slice_asset_truth/VERTICAL_SLICE_ASSET_TRUTH.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: TAIJIFU-FIRST-PLAYABLE-WEB-ASSET-TRUTH-${{ github.sha }}
+          path: web-build/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summary
+        if: always()
+        run: |
+          echo 'Vertical Slice Asset Truth: Lian modular + Training Rival + Mountain Dojo Night + Web artifact — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PACK 04 authored reaction art remains intentionally blocked until 34/34 final assets pass release review.' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions
