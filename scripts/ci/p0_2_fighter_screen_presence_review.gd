@@ -13,9 +13,9 @@ const MIN_CLOSE_VISIBLE_FRACTION := 0.99
 const EXPECTED_CLOSE_ZOOM := 1.46
 const EXPECTED_CLOSE_ZOOM_MIN := 1.44
 const EXPECTED_CLOSE_ZOOM_MAX := 1.465
-const EXPECTED_FAR_ZOOM := 1.00
-const EXPECTED_FAR_ZOOM_MIN := 0.98
-const EXPECTED_FAR_ZOOM_MAX := 1.02
+const EXPECTED_FAR_ZOOM := 0.72
+const EXPECTED_FAR_ZOOM_MIN := 0.70
+const EXPECTED_FAR_ZOOM_MAX := 0.76
 const EXPECTED_BASELINE_Y := 530.0
 const EXPECTED_VERTICAL_RANGE := 60.0
 const CAMERA_SETTLE_TOLERANCE := 0.008
@@ -65,7 +65,7 @@ func _run() -> void:
 	if StringName(camera_signature.get("framing", &"")) != &"stage_premium_fighter_first":
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED framing:%s" % str(camera_signature), battle)
 		return
-	if absf(float(camera_signature.get("min_zoom", 0.0)) - 0.94) > 0.001:
+	if absf(float(camera_signature.get("min_zoom", 0.0)) - EXPECTED_FAR_ZOOM) > 0.001:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED min_zoom:%s" % str(camera_signature), battle)
 		return
 	if absf(float(camera_signature.get("max_zoom", 0.0)) - EXPECTED_CLOSE_ZOOM) > 0.001:
@@ -77,7 +77,7 @@ func _run() -> void:
 	if absf(float(camera_signature.get("vertical_range", 0.0)) - EXPECTED_VERTICAL_RANGE) > 0.01:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED vertical_range:%s" % str(camera_signature), battle)
 		return
-	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 360.0) > 0.01:
+	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 220.0) > 0.01:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED horizontal_padding:%s" % str(camera_signature), battle)
 		return
 	if (
@@ -98,7 +98,7 @@ func _run() -> void:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED onboarding_not_released", battle)
 		return
 
-	# Opening distance: context remains visible, but fighters are no longer thumbnail-small.
+	# Opening distance: tactical context and both fighters must remain fully readable.
 	_set_fighters(p1, p2, Vector2(720.0, 827.0), Vector2(2080.0, 827.0))
 	if not await _settle_camera(battle.camera, EXPECTED_FAR_ZOOM):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED far_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_FAR_ZOOM], battle)
@@ -113,7 +113,7 @@ func _run() -> void:
 		return
 	_capture(FAR_OUTPUT)
 
-	# Close combat: increase screen presence without changing fighter world scale.
+	# Close combat: strong presence without changing fighter world scale.
 	_set_fighters(p1, p2, Vector2(1120.0, 827.0), Vector2(1580.0, 827.0))
 	if not await _settle_camera(battle.camera, EXPECTED_CLOSE_ZOOM):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED close_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_CLOSE_ZOOM], battle)
