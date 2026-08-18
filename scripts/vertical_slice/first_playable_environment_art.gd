@@ -6,6 +6,7 @@ const FINAL_LAYER := preload("res://scripts/vertical_slice/first_playable_arena_
 const PARALLAX_LAYER := preload("res://scripts/vertical_slice/first_playable_parallax_layer.gd")
 const CANONICAL_ARENA := preload("res://scripts/vertical_slice/canonical_arena_parallax.gd")
 const PLATFORM_READABILITY_LAYER := preload("res://scripts/vertical_slice/first_playable_platform_readability_layer.gd")
+const PREMIUM_STAGE_RUNTIME := preload("res://scripts/vertical_slice/first_playable_stage_premium_runtime.gd")
 const IMPACT_DIRECTOR := preload("res://scripts/runtime/impact_director.gd")
 
 const CANONICAL_ROOT := "res://assets/pack_03_stages/mountain_dojo_night"
@@ -25,11 +26,10 @@ func _ready() -> void:
 	print("V2_CANONICAL_ARENA_SELECTION=", "PASS" if _canonical_arena_active else "BLOCKED")
 	if _canonical_arena_active:
 		_install_canonical_arena()
-		# Collision remains owned by FirstPlayableArena, while this authored stone
-		# readability layer makes the five playable surfaces legible without
-		# resurrecting the old colored blockout rectangles.
 		_install_platform_readability()
+		_install_stage_premium_runtime()
 		print("V2_CANONICAL_PLATFORM_READABILITY=PASS")
+		print("VS_STAGE_PREMIUM_SELECTION=PASS arena=mountain_dojo_night")
 	else:
 		_install_parallax_layers()
 		_install_final_layer()
@@ -41,9 +41,6 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if not _canonical_arena_active:
 		return
-	# The First Playable controller still owns the generic battle-state label.
-	# Until arena identity is fully data-driven, fail closed against the legacy
-	# name so runtime evidence cannot present the wrong stage identity.
 	var root := get_parent()
 	if root == null:
 		return
@@ -52,7 +49,6 @@ func _process(delta: float) -> void:
 		center_label.text = CANONICAL_DISPLAY_NAME
 
 func _canonical_arena_ready() -> bool:
-	# Export-safe: source PNGs are remapped to imported Texture2D resources in packaged builds.
 	for path in CANONICAL_FILES:
 		if not ResourceLoader.exists(path, "Texture2D"):
 			return false
@@ -65,6 +61,14 @@ func _install_canonical_arena() -> void:
 	var canonical = CANONICAL_ARENA.new()
 	canonical.name = "CanonicalArenaParallax"
 	root.add_child.call_deferred(canonical)
+
+func _install_stage_premium_runtime() -> void:
+	var root := get_parent()
+	if root == null or root.has_node("StagePremiumRuntime"):
+		return
+	var premium = PREMIUM_STAGE_RUNTIME.new() as FirstPlayableStagePremiumRuntime
+	premium.name = "StagePremiumRuntime"
+	root.add_child.call_deferred(premium)
 
 func _install_parallax_layers() -> void:
 	var root := get_parent()
@@ -104,8 +108,6 @@ func _install_combat_feedback() -> void:
 		var impact_director := IMPACT_DIRECTOR.new() as ImpactDirector
 		impact_director.name = "ImpactDirector"
 		root.add_child.call_deferred(impact_director)
-	# Audio ownership is explicit in first_playable.tscn. Environment art must
-	# never instantiate a parallel FirstPlayableAudioDirector.
 
 func presentation_signature() -> Dictionary:
 	return {
@@ -121,6 +123,8 @@ func presentation_signature() -> Dictionary:
 		"layered_parallax": true,
 		"foreground_separation": true,
 		"platform_readability_layer": true,
+		"stage_premium_runtime": _canonical_arena_active,
+		"animated_atmosphere": _canonical_arena_active,
 		"fighter_first": true,
 		"celestial_body": &"canonical_art" if _canonical_arena_active else &"water_moon",
 		"mist_bands": 0 if _canonical_arena_active else 3,
