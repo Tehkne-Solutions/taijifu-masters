@@ -1,0 +1,104 @@
+name: Stage Premium Runtime Review
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/vertical_slice/first_playable_stage_premium_runtime.gd'
+      - 'scripts/vertical_slice/first_playable_environment_art.gd'
+      - 'scripts/vertical_slice/first_playable_camera_composition.gd'
+      - '.github/workflows/stage-premium-runtime-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage-premium-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize official First Playable snapshot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assets = Join-Path $env:RUNNER_TEMP 'taijifu-masters-assets-stage-premium'
+          if (Test-Path $assets) { Remove-Item $assets -Recurse -Force }
+          & ./tools/RUN-VM02-C30-V2-ARENA-INTAKE-GATE.ps1 -RepoRoot $PWD -AssetsRepoRoot $assets *>&1 | Tee-Object -FilePath stage-premium-c30.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = Get-Content stage-premium-c30.log -Raw
+          foreach ($required in @(
+            'VM02_C30_SNAPSHOT_FIGHTER_FRAME_COUNT=89/89',
+            'VM02_C30_SNAPSHOT_STAGE=PASS layers=3',
+            'VM02_C30_FIRST_PLAYABLE_SNAPSHOT=PASS',
+            'VM02_C30_ARENA_CANONICAL_READY=PASS'
+          )) {
+            if (-not $log.Contains($required)) { throw "VS_STAGE_PREMIUM=BLOCKED snapshot missing=$required" }
+          }
+          Write-Host 'VS_STAGE_PREMIUM_SNAPSHOT=PASS fighters=89 stage_layers=3'
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Import fail closed
+        run: |
+          set -euo pipefail
+          rm -rf .godot
+          ./godot --headless --path . --import 2>&1 | tee stage-premium-import.log
+          if grep -Eq 'SHADER ERROR|Shader compilation failed|SCRIPT ERROR|Parse Error' stage-premium-import.log; then
+            echo 'VS_STAGE_PREMIUM_IMPORT=BLOCKED'
+            exit 1
+          fi
+          echo 'VS_STAGE_PREMIUM_IMPORT=PASS'
+
+      - name: Capture premium canonical stage
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy \
+            --script res://scripts/ci/vfx03_final_presentation_coherence_review.gd \
+            2>&1 | tee stage-premium-visual.log
+          grep -q 'V2_CANONICAL_ARENA_SELECTION=PASS' stage-premium-visual.log
+          grep -q 'V2_CANONICAL_ARENA_RUNTIME=PASS layers=3' stage-premium-visual.log
+          grep -q 'VS_STAGE_PREMIUM_SELECTION=PASS arena=mountain_dojo_night' stage-premium-visual.log
+          grep -q 'VS_STAGE_PREMIUM_RUNTIME=PASS' stage-premium-visual.log
+          grep -q 'VS_STAGE_PREMIUM_CAMERA=PASS' stage-premium-visual.log
+          grep -q 'VFX03_COHERENCE=PASS' stage-premium-visual.log
+          test -f artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png
+          test -f artifacts/vfx03/VFX03_CRITICAL.review-1920x1080.png
+          test -f artifacts/vfx03/VFX03_ELEMENTAL.review-1920x1080.png
+          echo 'VS_STAGE_PREMIUM_VISUAL=PASS canonical=true atmosphere=animated framing=fighter_first'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: STAGE-PREMIUM-RUNTIME-REVIEW-${{ github.sha }}
+          path: |
+            stage-premium-c30.log
+            stage-premium-import.log
+            stage-premium-visual.log
+            artifacts/vfx03/VFX03_BASELINE.review-1920x1080.png
+            artifacts/vfx03/VFX03_CRITICAL.review-1920x1080.png
+            artifacts/vfx03/VFX03_ELEMENTAL.review-1920x1080.png
+            artifacts/vfx03/VFX03_RECOVERY.review-1920x1080.png
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo 'Stage Premium Runtime Review — canonical PACK 03 + animated atmosphere + fighter-first camera — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+
+# Tehkné Solutions
