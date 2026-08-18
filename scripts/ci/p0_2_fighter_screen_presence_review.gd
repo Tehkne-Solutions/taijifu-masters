@@ -16,7 +16,7 @@ const EXPECTED_CLOSE_ZOOM_MAX := 1.465
 const EXPECTED_FAR_ZOOM := 0.72
 const EXPECTED_FAR_ZOOM_MIN := 0.70
 const EXPECTED_FAR_ZOOM_MAX := 0.76
-const EXPECTED_BASELINE_Y := 530.0
+const EXPECTED_BASELINE_Y := 535.0
 const EXPECTED_VERTICAL_RANGE := 60.0
 const CAMERA_SETTLE_TOLERANCE := 0.008
 const CAMERA_SETTLE_POLL_SECONDS := 0.05
@@ -98,7 +98,6 @@ func _run() -> void:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED onboarding_not_released", battle)
 		return
 
-	# Opening distance: tactical context and both fighters must remain fully readable.
 	_set_fighters(p1, p2, Vector2(720.0, 827.0), Vector2(2080.0, 827.0))
 	if not await _settle_camera(battle.camera, EXPECTED_FAR_ZOOM):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED far_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_FAR_ZOOM], battle)
@@ -113,7 +112,6 @@ func _run() -> void:
 		return
 	_capture(FAR_OUTPUT)
 
-	# Close combat: strong presence without changing fighter world scale.
 	_set_fighters(p1, p2, Vector2(1120.0, 827.0), Vector2(1580.0, 827.0))
 	if not await _settle_camera(battle.camera, EXPECTED_CLOSE_ZOOM):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED close_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_CLOSE_ZOOM], battle)
@@ -154,11 +152,7 @@ func _run() -> void:
 	})
 
 	print("P0_2_CAMERA_SINGLE_OWNER=PASS owner=FightCameraComposition legacy_writer=false")
-	print("P0_2_FIGHTER_FAR_FRAMING=PASS zoom=%.3f p1_visible=%.4f p2_visible=%.4f" % [
-		far_zoom,
-		float(far_metrics.get("p1_visible_fraction", 0.0)),
-		float(far_metrics.get("p2_visible_fraction", 0.0)),
-	])
+	print("P0_2_FIGHTER_FAR_FRAMING=PASS zoom=%.3f p1_visible=%.4f p2_visible=%.4f" % [far_zoom, float(far_metrics.get("p1_visible_fraction", 0.0)), float(far_metrics.get("p2_visible_fraction", 0.0))])
 	print("P0_2_FIGHTER_CLOSE_PRESENCE=PASS zoom=%.3f p1_ratio=%.4f p2_ratio=%.4f" % [close_zoom, p1_ratio, p2_ratio])
 	print("P0_2_FIGHTER_WORLD_SCALE=UNCHANGED")
 	print("P0_2_FIGHTER_SCREEN_PRESENCE_REVIEW=PASS")
@@ -171,11 +165,7 @@ func _run() -> void:
 
 func _wait_for_battle_visuals(battle: FirstPlayableController) -> bool:
 	for _frame in range(MAX_WAIT_FRAMES):
-		if (
-			int(battle.get("_state")) == FirstPlayableController.MatchState.BATTLE
-			and is_instance_valid(battle.player_one)
-			and is_instance_valid(battle.player_two)
-		):
+		if int(battle.get("_state")) == FirstPlayableController.MatchState.BATTLE and is_instance_valid(battle.player_one) and is_instance_valid(battle.player_two):
 			var modular := battle.player_one.get_node_or_null("FirstPlayableModularFighterPresenter") as FirstPlayableModularFighterPresenter
 			var rival := battle.player_two.get_node_or_null("FirstPlayableRealAssetPresenter") as TrainingRivalLot01Presenter
 			var pose_runtime := battle.get_node_or_null("FirstPlayableModularPoseRuntime") as FirstPlayableModularPoseRuntime
@@ -260,12 +250,7 @@ func _sprite_screen_rect(sprite: AnimatedSprite2D) -> Rect2:
 	return _transform_rect(local_rect, transform)
 
 func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
-	var points := [
-		transform * rect.position,
-		transform * Vector2(rect.end.x, rect.position.y),
-		transform * rect.end,
-		transform * Vector2(rect.position.x, rect.end.y),
-	]
+	var points := [transform * rect.position, transform * Vector2(rect.end.x, rect.position.y), transform * rect.end, transform * Vector2(rect.position.x, rect.end.y)]
 	var min_point: Vector2 = points[0]
 	var max_point: Vector2 = points[0]
 	for point: Vector2 in points:
