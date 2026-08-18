@@ -53,7 +53,7 @@ jobs:
           grep -q 'const MIN_FRAMING_SPAN := 760.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const CLOSE_FIGHT_DISTANCE := 520.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const CLOSE_FIGHT_ZOOM_FLOOR := 1.40' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const BASELINE_Y := 530.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const BASELINE_Y := 535.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const VERTICAL_RANGE := 60.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'world_fighter_scale_changes' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'single_production_owner' scripts/vertical_slice/first_playable.gd

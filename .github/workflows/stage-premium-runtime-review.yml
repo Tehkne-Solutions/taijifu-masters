@@ -38,10 +38,14 @@ jobs:
           }
           Write-Host 'VS_STAGE_PREMIUM_SNAPSHOT=PASS fighters=89 stage_layers=3'
 
-      - name: Install runtime dependencies
+      - name: Verify visual runtime dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends unzip xvfb libfontconfig1 libgl1 libxcursor1 libxinerama1 libxrandr2 libxi6
+          set -euo pipefail
+          command -v unzip
+          command -v xvfb-run
+          ldconfig -p | grep -q 'libGL.so.1'
+          ldconfig -p | grep -q 'libfontconfig.so.1'
+          echo 'VS_STAGE_PREMIUM_RUNTIME_DEPS=PASS preinstalled=true'
 
       - name: Install Godot 4.3
         run: |

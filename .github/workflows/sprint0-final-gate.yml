@@ -30,10 +30,13 @@ jobs:
         with:
           lfs: true
 
-      - name: Install system dependencies
+      - name: Verify system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends unzip curl ca-certificates
+          set -euo pipefail
+          command -v unzip
+          command -v curl
+          test -f /etc/ssl/certs/ca-certificates.crt
+          echo 'SPRINT0_RUNTIME_DEPS=PASS preinstalled=true'
 
       - name: Run Sprint 0 gate
         run: bash scripts/ci/run-sprint0-gate.sh
