@@ -1,22 +1,24 @@
 class_name FirstPlayableCameraComposition
 extends Node
 
-# C46 + P0.2 Slice 08: framing tuned from packaged playtests and canonical-art review.
-# Fighters remain world-space unchanged; camera framing makes them the primary visual subject.
-const MIN_ZOOM := 0.72
-const MAX_ZOOM := 1.34
+# Stage Premium: keep both fighters visible while raising their screen presence.
+# This is presentation-only: fighter world transforms, collision and physics remain unchanged.
+const MIN_ZOOM := 0.94
+const MAX_ZOOM := 1.46
 const BASELINE_Y := 530.0
 const VERTICAL_RANGE := 60.0
-const HORIZONTAL_PADDING := 220.0
+const HORIZONTAL_PADDING := 360.0
+const FRAMING_WIDTH := 1720.0
+const MIN_FRAMING_SPAN := 1000.0
 const FOCUS_LERP := 6.0
 const ZOOM_LERP := 5.6
 const SHAKE_DECAY := 9.0
 const MAX_SHAKE_PIXELS := 7.0
 const IMMEDIATE_KICK_RATIO := 0.72
-const CLOSE_FIGHT_DISTANCE := 260.0
-const CLOSE_FIGHT_ZOOM_FLOOR := 0.94
-const SCREEN_PRESENCE_TARGET_MIN := 0.23
-const SCREEN_PRESENCE_TARGET_MAX := 0.30
+const CLOSE_FIGHT_DISTANCE := 300.0
+const CLOSE_FIGHT_ZOOM_FLOOR := 1.26
+const SCREEN_PRESENCE_TARGET_MIN := 0.15
+const SCREEN_PRESENCE_TARGET_MAX := 0.22
 
 var _root: Node2D
 var _camera: Camera2D
@@ -30,7 +32,7 @@ func _ready() -> void:
 	_root = get_parent() as Node2D
 	_camera = _root.get_node_or_null("Camera2D") as Camera2D
 	print("V2_C46_CAMERA_READABILITY=PASS min=%.2f max=%.2f" % [MIN_ZOOM, MAX_ZOOM])
-	print("P0_2_FIGHTER_SCREEN_PRESENCE=ARMED world_scale_unchanged=true padding=%.0f baseline=%.0f" % [HORIZONTAL_PADDING, BASELINE_Y])
+	print("VS_STAGE_PREMIUM_CAMERA=PASS min=%.2f max=%.2f close_floor=%.2f world_scale_unchanged=true" % [MIN_ZOOM, MAX_ZOOM, CLOSE_FIGHT_ZOOM_FLOOR])
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(_root) or not is_instance_valid(_camera):
@@ -46,7 +48,8 @@ func _process(delta: float) -> void:
 
 	var midpoint := (fighter_one.global_position + fighter_two.global_position) * 0.5
 	var horizontal_distance := absf(fighter_one.global_position.x - fighter_two.global_position.x)
-	var desired_zoom := clampf(1120.0 / maxf(760.0, horizontal_distance + HORIZONTAL_PADDING), MIN_ZOOM, MAX_ZOOM)
+	var framing_span := maxf(MIN_FRAMING_SPAN, horizontal_distance + HORIZONTAL_PADDING)
+	var desired_zoom := clampf(FRAMING_WIDTH / framing_span, MIN_ZOOM, MAX_ZOOM)
 	if horizontal_distance <= CLOSE_FIGHT_DISTANCE:
 		desired_zoom = maxf(desired_zoom, CLOSE_FIGHT_ZOOM_FLOOR)
 
@@ -81,9 +84,6 @@ func impact_punch(
 	_shake_strength = maxf(_shake_strength, strength)
 	_impact_punch_count += 1
 
-	# The first contact frame must already carry a readable camera response.
-	# Later frames keep the existing decaying shake; the immediate kick is bounded
-	# by the same MAX_SHAKE_PIXELS contract and never changes fighter physics.
 	if is_instance_valid(_camera) and strength > 0.0:
 		var direction := impact_direction
 		if direction.length_squared() <= 0.0001:
@@ -121,12 +121,14 @@ func impact_runtime_signature() -> Dictionary:
 
 func presentation_signature() -> Dictionary:
 	return {
-		"framing": &"fighter_readability_priority",
+		"framing": &"stage_premium_fighter_first",
 		"min_zoom": MIN_ZOOM,
 		"max_zoom": MAX_ZOOM,
 		"baseline_y": BASELINE_Y,
 		"vertical_range": VERTICAL_RANGE,
 		"horizontal_padding": HORIZONTAL_PADDING,
+		"framing_width": FRAMING_WIDTH,
+		"min_framing_span": MIN_FRAMING_SPAN,
 		"close_fight_distance": CLOSE_FIGHT_DISTANCE,
 		"close_fight_zoom_floor": CLOSE_FIGHT_ZOOM_FLOOR,
 		"screen_presence_target_min": SCREEN_PRESENCE_TARGET_MIN,
