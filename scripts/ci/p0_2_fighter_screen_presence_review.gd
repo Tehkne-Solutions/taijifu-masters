@@ -7,15 +7,15 @@ const CLOSE_OUTPUT := "P0_2_FIGHTER_SCREEN_PRESENCE.close-1920x1080.png"
 const METRICS_OUTPUT := "P0_2_FIGHTER_SCREEN_PRESENCE_METRICS.json"
 const MAX_WAIT_FRAMES := 600
 const MIN_CLOSE_RATIO := 0.23
-const MAX_CLOSE_RATIO := 0.32
+const MAX_CLOSE_RATIO := 0.34
 const MIN_FAR_VISIBLE_FRACTION := 0.97
 const MIN_CLOSE_VISIBLE_FRACTION := 0.99
-const EXPECTED_CLOSE_ZOOM := 1.34
-const EXPECTED_CLOSE_ZOOM_MIN := 1.28
-const EXPECTED_CLOSE_ZOOM_MAX := 1.345
-const EXPECTED_FAR_ZOOM := 0.72
-const EXPECTED_FAR_ZOOM_MIN := 0.70
-const EXPECTED_FAR_ZOOM_MAX := 0.76
+const EXPECTED_CLOSE_ZOOM := 1.46
+const EXPECTED_CLOSE_ZOOM_MIN := 1.44
+const EXPECTED_CLOSE_ZOOM_MAX := 1.465
+const EXPECTED_FAR_ZOOM := 1.00
+const EXPECTED_FAR_ZOOM_MIN := 0.98
+const EXPECTED_FAR_ZOOM_MAX := 1.02
 const EXPECTED_BASELINE_Y := 530.0
 const EXPECTED_VERTICAL_RANGE := 60.0
 const CAMERA_SETTLE_TOLERANCE := 0.008
@@ -62,7 +62,10 @@ func _run() -> void:
 	if bool(camera_signature.get("world_fighter_scale_changes", true)):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED world_scale_mutation", battle)
 		return
-	if absf(float(camera_signature.get("min_zoom", 0.0)) - EXPECTED_FAR_ZOOM) > 0.001:
+	if StringName(camera_signature.get("framing", &"")) != &"stage_premium_fighter_first":
+		_fail("P0_2_SCREEN_PRESENCE=BLOCKED framing:%s" % str(camera_signature), battle)
+		return
+	if absf(float(camera_signature.get("min_zoom", 0.0)) - 0.94) > 0.001:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED min_zoom:%s" % str(camera_signature), battle)
 		return
 	if absf(float(camera_signature.get("max_zoom", 0.0)) - EXPECTED_CLOSE_ZOOM) > 0.001:
@@ -74,7 +77,7 @@ func _run() -> void:
 	if absf(float(camera_signature.get("vertical_range", 0.0)) - EXPECTED_VERTICAL_RANGE) > 0.01:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED vertical_range:%s" % str(camera_signature), battle)
 		return
-	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 220.0) > 0.01:
+	if absf(float(camera_signature.get("horizontal_padding", 0.0)) - 360.0) > 0.01:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED horizontal_padding:%s" % str(camera_signature), battle)
 		return
 	if (
@@ -95,7 +98,7 @@ func _run() -> void:
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED onboarding_not_released", battle)
 		return
 
-	# Opening distance: preserve tactical context and keep both fighters fully readable.
+	# Opening distance: context remains visible, but fighters are no longer thumbnail-small.
 	_set_fighters(p1, p2, Vector2(720.0, 827.0), Vector2(2080.0, 827.0))
 	if not await _settle_camera(battle.camera, EXPECTED_FAR_ZOOM):
 		_fail("P0_2_SCREEN_PRESENCE=BLOCKED far_camera_settle zoom=%.4f target=%.3f" % [battle.camera.zoom.x, EXPECTED_FAR_ZOOM], battle)
@@ -202,8 +205,6 @@ func _settle_camera(camera: Camera2D, target_zoom: float) -> bool:
 
 func _screen_metrics(battle: FirstPlayableController, assembler: ModularFighterAssembler, rival_sprite: AnimatedSprite2D) -> Dictionary:
 	var viewport_size := Vector2(get_root().get_visible_rect().size)
-	# Slice 04 removed persistent lower HUD/controls. The active combat safe area
-	# reserves the 100 px fighting HUD at the top and uses the viewport down to the floor.
 	var gameplay_rect := Rect2(Vector2(0.0, 100.0), Vector2(viewport_size.x, maxf(1.0, viewport_size.y - 100.0)))
 	var p1_rect := _modular_screen_rect(assembler)
 	var p2_rect := _sprite_screen_rect(rival_sprite)
