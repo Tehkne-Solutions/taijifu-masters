@@ -58,7 +58,7 @@ func _run() -> void:
 		&"training_rival",
 		"Rival de Treino",
 		&"fire",
-		&"breaker_gauntlets"
+		&"wooden_training_saber"
 	):
 		return
 
