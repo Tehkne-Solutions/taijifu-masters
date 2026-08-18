@@ -5,7 +5,7 @@ extends Node
 # Presentation-only: fighter transforms, collisions and physics remain unchanged.
 const MIN_ZOOM := 0.72
 const MAX_ZOOM := 1.46
-const BASELINE_Y := 530.0
+const BASELINE_Y := 535.0
 const VERTICAL_RANGE := 60.0
 const HORIZONTAL_PADDING := 220.0
 const FRAMING_WIDTH := 1120.0
