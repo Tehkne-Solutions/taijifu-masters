@@ -1,24 +1,24 @@
 class_name FirstPlayableCameraComposition
 extends Node
 
-# Stage Premium: keep both fighters visible while raising their screen presence.
-# This is presentation-only: fighter world transforms, collision and physics remain unchanged.
-const MIN_ZOOM := 0.94
+# Stage Premium: preserve full opening visibility and increase close-combat presence.
+# Presentation-only: fighter transforms, collisions and physics remain unchanged.
+const MIN_ZOOM := 0.72
 const MAX_ZOOM := 1.46
 const BASELINE_Y := 530.0
 const VERTICAL_RANGE := 60.0
-const HORIZONTAL_PADDING := 360.0
-const FRAMING_WIDTH := 1720.0
-const MIN_FRAMING_SPAN := 1000.0
+const HORIZONTAL_PADDING := 220.0
+const FRAMING_WIDTH := 1120.0
+const MIN_FRAMING_SPAN := 760.0
 const FOCUS_LERP := 6.0
 const ZOOM_LERP := 5.6
 const SHAKE_DECAY := 9.0
 const MAX_SHAKE_PIXELS := 7.0
 const IMMEDIATE_KICK_RATIO := 0.72
-const CLOSE_FIGHT_DISTANCE := 300.0
-const CLOSE_FIGHT_ZOOM_FLOOR := 1.26
-const SCREEN_PRESENCE_TARGET_MIN := 0.15
-const SCREEN_PRESENCE_TARGET_MAX := 0.22
+const CLOSE_FIGHT_DISTANCE := 520.0
+const CLOSE_FIGHT_ZOOM_FLOOR := 1.40
+const SCREEN_PRESENCE_TARGET_MIN := 0.18
+const SCREEN_PRESENCE_TARGET_MAX := 0.34
 
 var _root: Node2D
 var _camera: Camera2D
