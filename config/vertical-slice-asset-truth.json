@@ -1,0 +1,30 @@
+{
+  "schema": "tehkne/taijifu-vertical-slice-asset-truth-target/v1",
+  "signature": "Tehkné Solutions",
+  "stage": "mountain_dojo_night",
+  "stage_layers": 3,
+  "fighters": {
+    "lian_wu": {
+      "production_modular_profile": "production_default_base01",
+      "required_stack": ["BASE-01", "BASE-02", "BASE-03", "BASE-04", "BASE-05"],
+      "legacy_lot01_visible": false
+    },
+    "training_rival": {
+      "canonical_frame_count": 44,
+      "real_assets_required": true
+    }
+  },
+  "snapshot": {
+    "fighter_frames": 89,
+    "fighter_animations": 20
+  },
+  "pack04": {
+    "authored_reaction_art_required_for_this_gate": false,
+    "fallback_semantics_allowed": true,
+    "release_blocked_until": "34/34 authored reaction assets"
+  },
+  "output": {
+    "web_artifact_required": true,
+    "visual_evidence_resolution": "1920x1080"
+  }
+}
