@@ -46,18 +46,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'const MIN_ZOOM := 0.94' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const MIN_ZOOM := 0.72' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const MAX_ZOOM := 1.46' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const HORIZONTAL_PADDING := 360.0' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const FRAMING_WIDTH := 1720.0' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const MIN_FRAMING_SPAN := 1000.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const HORIZONTAL_PADDING := 220.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const FRAMING_WIDTH := 1120.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const MIN_FRAMING_SPAN := 760.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const CLOSE_FIGHT_DISTANCE := 520.0' scripts/vertical_slice/first_playable_camera_composition.gd
+          grep -q 'const CLOSE_FIGHT_ZOOM_FLOOR := 1.40' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const BASELINE_Y := 530.0' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'const VERTICAL_RANGE := 60.0' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const SCREEN_PRESENCE_TARGET_MIN := 0.15' scripts/vertical_slice/first_playable_camera_composition.gd
-          grep -q 'const SCREEN_PRESENCE_TARGET_MAX := 0.22' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'world_fighter_scale_changes' scripts/vertical_slice/first_playable_camera_composition.gd
           grep -q 'single_production_owner' scripts/vertical_slice/first_playable.gd
-          echo 'P0_2_SCREEN_PRESENCE_CAMERA_CONTRACT=PASS stage_premium=true'
+          echo 'P0_2_SCREEN_PRESENCE_CAMERA_CONTRACT=PASS stage_premium=true far_safe=true close_strong=true'
 
       - name: Install visual runtime dependencies
         run: |
@@ -119,6 +119,6 @@ jobs:
 
       - name: Summary
         if: always()
-        run: echo 'P0.2 fighter screen presence — Stage Premium camera-only framing, far visibility + close combat presence — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'P0.2 fighter screen presence — Stage Premium far-safe + close-combat framing — Tehkné Solutions' >> "$GITHUB_STEP_SUMMARY"
 
 # Tehkné Solutions
