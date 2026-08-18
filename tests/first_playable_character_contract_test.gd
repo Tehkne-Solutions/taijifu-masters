@@ -11,6 +11,7 @@ func _run() -> void:
 	_validate_lian(lian, failures)
 	_validate_rival(rival, failures)
 	_validate_katana_kit(lian, failures)
+	_validate_training_saber_kit(rival, failures)
 
 	if failures.is_empty():
 		print("FIRST_PLAYABLE_CHARACTER_CONTRACT_OK")
@@ -37,8 +38,8 @@ func _validate_rival(profile: BuildProfile, failures: Array[String]) -> void:
 		failures.append("Training Rival identity is invalid")
 	if profile.element_id != &"fire":
 		failures.append("Training Rival must use fire")
-	if profile.weapon_id != &"breaker_gauntlets" or profile.secondary_weapon_id != &"unarmed":
-		failures.append("Training Rival weapon contract is invalid")
+	if profile.weapon_id != &"wooden_training_saber" or profile.secondary_weapon_id != &"unarmed":
+		failures.append("Training Rival weapon contract must match canonical saber art")
 	if profile.strength <= profile.technique or profile.resistance <= profile.agility:
 		failures.append("Training Rival must remain a heavy pressure fighter")
 	if not CharacterVisualCatalog.uses_procedural_fallback(profile.character_id):
@@ -57,3 +58,20 @@ func _validate_katana_kit(lian: BuildProfile, failures: Array[String]) -> void:
 		var technique := TechniqueCatalog.get_technique(technique_id)
 		if technique.technique_id != technique_id or technique.display_name.strip_edges() == "":
 			failures.append("Katana context %s resolves an invalid technique" % String(context_id))
+
+func _validate_training_saber_kit(rival: BuildProfile, failures: Array[String]) -> void:
+	if WeaponKitCatalog.label_for(&"wooden_training_saber") != "SABRE DE TREINO":
+		failures.append("Training saber label is invalid")
+	if WeaponKitCatalog.preferred_range(&"wooden_training_saber") <= WeaponKitCatalog.preferred_range(&"breaker_gauntlets"):
+		failures.append("Training saber must have more range than breaker gauntlets")
+	for context_id in [&"air", &"low", &"advance", &"neutral_ji", &"neutral_fu"]:
+		var technique_id := WeaponKitCatalog.technique_for(&"wooden_training_saber", context_id, rival)
+		if technique_id == &"":
+			failures.append("Training saber context %s has no technique" % String(context_id))
+			continue
+		if not WeaponKitCatalog.is_technique_for_weapon(&"wooden_training_saber", technique_id):
+			failures.append("Training saber context %s escapes its weapon kit" % String(context_id))
+			continue
+		var technique := TechniqueCatalog.get_technique(technique_id)
+		if technique.technique_id != technique_id or technique.display_name.strip_edges() == "":
+			failures.append("Training saber context %s resolves an invalid technique" % String(context_id))
