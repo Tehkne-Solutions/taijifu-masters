@@ -1,0 +1,34 @@
+name: Lian Wu Character Lock Recovery Artifact
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lian-wu-character-lock-recovery-artifact.yml'
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate character lock binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+          test -f assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png
+          sha256sum assets/characters/lian_wu/character_lock/lian_wu_neutral.png
+          sha256sum assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png
+      - name: Stage recovery bundle
+        shell: bash
+        run: |
+          mkdir -p /tmp/lian-wu-character-lock-recovery
+          cp assets/characters/lian_wu/character_lock/lian_wu_neutral.png /tmp/lian-wu-character-lock-recovery/
+          cp assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png /tmp/lian-wu-character-lock-recovery/
+          cp assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json /tmp/lian-wu-character-lock-recovery/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LIAN_WU_CHARACTER_LOCK_RECOVERY
+          path: /tmp/lian-wu-character-lock-recovery/
+          if-no-files-found: error
+          retention-days: 14
