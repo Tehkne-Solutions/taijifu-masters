@@ -11,24 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate character lock binaries
+      - name: Validate Lian Wu binaries
         shell: bash
         run: |
           set -euo pipefail
           test -f assets/characters/lian_wu/character_lock/lian_wu_neutral.png
           test -f assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png
+          test -d assets/pack_01_characters/lian_wu/frames
           sha256sum assets/characters/lian_wu/character_lock/lian_wu_neutral.png
           sha256sum assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png
+          find assets/pack_01_characters/lian_wu/frames -type f -name '*.png' | sort | tee /tmp/lian-wu-frame-list.txt
+          test -s /tmp/lian-wu-frame-list.txt
       - name: Stage recovery bundle
         shell: bash
         run: |
-          mkdir -p /tmp/lian-wu-character-lock-recovery
-          cp assets/characters/lian_wu/character_lock/lian_wu_neutral.png /tmp/lian-wu-character-lock-recovery/
-          cp assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png /tmp/lian-wu-character-lock-recovery/
-          cp assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json /tmp/lian-wu-character-lock-recovery/
+          set -euo pipefail
+          ROOT=/tmp/lian-wu-recovery
+          mkdir -p "$ROOT/character_lock" "$ROOT/frames"
+          cp assets/characters/lian_wu/character_lock/lian_wu_neutral.png "$ROOT/character_lock/"
+          cp assets/characters/lian_wu/character_lock/lian_wu_combat_stance.png "$ROOT/character_lock/"
+          cp assets/characters/lian_wu/character_lock/C63_EXACT_RECOVERY.json "$ROOT/character_lock/"
+          cp -R assets/pack_01_characters/lian_wu/frames/. "$ROOT/frames/"
+          cp /tmp/lian-wu-frame-list.txt "$ROOT/"
       - uses: actions/upload-artifact@v4
         with:
-          name: LIAN_WU_CHARACTER_LOCK_RECOVERY
-          path: /tmp/lian-wu-character-lock-recovery/
+          name: LIAN_WU_FULL_FRAME_RECOVERY
+          path: /tmp/lian-wu-recovery/
           if-no-files-found: error
           retention-days: 14
